@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -14,8 +15,17 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/cristalhq/jwt/v3"
+)
+
+// Key is a type used to denote specific unique object instances in the request context.
+type Key int
+
+const (
+	// KeyClaims is the identifier used for storage of authentication token claims on the request context.
+	KeyClaims Key = iota
 )
 
 type authConfig struct {
@@ -50,10 +60,10 @@ func init() {
 		log.Fatalf("Unable to parse authentication configuration file. Error: %v", err)
 	}
 
-	// TODO: download the open-id configuration for the configured tenantid
-	// download the keys specified in the jwks_uri
-	// parse and store in a map by kid
+	initializeSigningKeys()
+}
 
+func initializeSigningKeys() {
 	var openIDConfig map[string]interface{} // Stores the JSON deserialized OpenID Connect configuration document
 	var openIDKeys map[string]interface{}   // Stores the JSON deserialized JWKS document
 
@@ -136,12 +146,15 @@ func badRequestError(w http.ResponseWriter, msg string) {
 }
 
 func redirectToMsa(w http.ResponseWriter, r *http.Request, nonce string) {
-	const redirectURITemplate string = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=%v&response_type=id_token&redirect_uri=%v&scope=openid&response_mode=form_post&nonce=%vprompt=select_account"
-	redirectURI := fmt.Sprintf(redirectURITemplate, config.ClientID, html.EscapeString(config.RedirectURI), nonce)
+	redirectURL := html.EscapeString(r.URL.String())
+
+	const redirectURITemplate string = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=%v&response_type=id_token&redirect_uri=%v&scope=openid&response_mode=form_post&nonce=%v&state=%v&prompt=select_account"
+	redirectURI := fmt.Sprintf(redirectURITemplate, config.ClientID, html.EscapeString(config.RedirectURI), nonce, redirectURL)
 
 	http.Redirect(w, r, redirectURI, http.StatusTemporaryRedirect)
 }
 
+// MethodFilteringMiddleware invokes a specific handler depending on the request method being used.
 func MethodFilteringMiddleware(handlerMap map[string]http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		method := r.Method
@@ -156,6 +169,10 @@ func MethodFilteringMiddleware(handlerMap map[string]http.Handler, next http.Han
 	})
 }
 
+//TODO: break token parsing and validation out into its own middleware, so we can be authentication aware
+// on non-authenticated endpoints (e.g., we can light up identification of users)
+
+// AuthMiddleware ensures that the incoming request is authenticated, and redirects the request if not. Used on paths to ensure that users requesting those resources are authenticated.
 func AuthMiddleware(next http.Handler) http.Handler {
 	/* Check the incoming request for a valid token. If not present, redirect.
 	   Tokens can be present in two places: one, presented as part of the Authorization header as a Bearer token
@@ -192,6 +209,20 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			msg := fmt.Sprintf("A token was received but was malformed: %v", err)
 			badRequestError(w, msg)
 
+			return
+		}
+
+		var stdClaims jwt.StandardClaims
+
+		err = json.Unmarshal(token.RawClaims(), &stdClaims)
+
+		if err != nil {
+			msg := fmt.Sprintf("An error occured deserializing the standard claims on the token. Error: %v", err)
+			badRequestError(w, msg)
+		}
+
+		if !stdClaims.IsValidAt(time.Now()) {
+			redirectToMsa(w, r, "1234")
 			return
 		}
 
@@ -268,16 +299,23 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// Deserialize Claims
+		var tokenClaims map[string]interface{}
+		err = json.Unmarshal(token.RawClaims(), &tokenClaims)
+
+		if err != nil {
+			msg := fmt.Sprintf("A token was received, but a failure was encountered while deserializing the claims the token contains. Error: %v", err)
+			badRequestError(w, msg)
+
+			return
+		}
+
+		// Token is now verified, and we have extracted the passed claims
+		// Associated the claims to the request context
+		ctx := context.WithValue(r.Context(), KeyClaims, tokenClaims)
+
 		// Token is now verified.
 		// TODO: add claims to request context
-		next.ServeHTTP(w, r)
-
-		// if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		// 	ctx := context.WithValue(r.Context(), "props", claims)
-		// 	next.ServeHTTP(w, r.WithContext(ctx))
-		// } else {
-		// 	fmt.Println(err)
-		// 	redirectToMsa(w, r, "1234")
-		// }
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
