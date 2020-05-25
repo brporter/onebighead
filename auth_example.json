@@ -1,0 +1,5 @@
+{
+    "ClientID": "yourClientID",
+    "ClientSecret": "yourClientSecret",
+    "RedirectURI": "yourRedirectUri"
+}

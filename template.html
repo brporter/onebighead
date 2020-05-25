@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{.Title}}</title>
+    </head>
+    <body>
+        <p>
+            {{printf "%s" .Body}}
+        </p>
+        <ul>
+        {{range .Items}}
+            <li>{{ .Name }} costs {{ printf "%8.2f" .Price }}</li>
+        {{end}}
+        </ul>
+    </body>
+</html>
