@@ -43,6 +43,9 @@ type signingKey struct {
 
 var config authConfig
 var signingKeys map[string]*signingKey
+var refreshTimer *time.Timer
+
+const refreshDuration time.Duration = time.Hour // refresh interval is every hour
 
 func init() {
 	/* read the auth configuration file, auth.json */
@@ -61,8 +64,18 @@ func init() {
 	}
 
 	initializeSigningKeys()
+
+	// set up the refresh timer to refresh our signing keys hourly
+	refreshTimer = time.NewTimer(refreshDuration)
+	go refreshSigningKeys()
 }
 
+// initializeSigningKeys examines the OpenID Connect configuration document identified in auth.json and downloads the keys specified
+// in the jwks_url property of that document. The jwks (JSON Web Key Set) document is then parsed and stored in a map of
+// signingKey structures, indexed by keyid.
+//
+// Later, when a token is received, we examine the header of that token for a key id (kid) claim, and use the value of that claim
+// to lookup the signing key for the token for verification purposes.
 func initializeSigningKeys() {
 	var openIDConfig map[string]interface{} // Stores the JSON deserialized OpenID Connect configuration document
 	var openIDKeys map[string]interface{}   // Stores the JSON deserialized JWKS document
@@ -138,6 +151,14 @@ func initializeSigningKeys() {
 	}
 }
 
+func refreshSigningKeys() {
+	<-refreshTimer.C
+
+	initializeSigningKeys()
+
+	refreshTimer.Reset(refreshDuration)
+}
+
 func badRequestError(w http.ResponseWriter, msg string) {
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte(msg))
@@ -145,17 +166,9 @@ func badRequestError(w http.ResponseWriter, msg string) {
 	log.Printf("[REQUEST FATAL ERROR] %v\n", msg)
 }
 
-func redirectToMsa(w http.ResponseWriter, r *http.Request, nonce string) {
-	redirectURL := html.EscapeString(r.URL.String())
-
-	const redirectURITemplate string = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=%v&response_type=id_token&redirect_uri=%v&scope=openid&response_mode=form_post&nonce=%v&state=%v&prompt=select_account"
-	redirectURI := fmt.Sprintf(redirectURITemplate, config.ClientID, html.EscapeString(config.RedirectURI), nonce, redirectURL)
-
-	http.Redirect(w, r, redirectURI, http.StatusTemporaryRedirect)
-}
-
 // MethodFilteringMiddleware invokes a specific handler depending on the request method being used.
-func MethodFilteringMiddleware(handlerMap map[string]http.Handler, next http.Handler) http.Handler {
+// If no mapping exists for the requests method, the handler identified by other is invoked instead.
+func MethodFilteringMiddleware(handlerMap map[string]http.Handler, other http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		method := r.Method
 
@@ -164,144 +177,69 @@ func MethodFilteringMiddleware(handlerMap map[string]http.Handler, next http.Han
 		if ok {
 			handler.ServeHTTP(w, r)
 		} else {
-			next.ServeHTTP(w, r)
+			other.ServeHTTP(w, r)
 		}
 	})
 }
 
-//TODO: break token parsing and validation out into its own middleware, so we can be authentication aware
+// TODO: break token parsing and validation out into its own middleware, so we can be authentication aware
 // on non-authenticated endpoints (e.g., we can light up identification of users)
 
-// AuthMiddleware ensures that the incoming request is authenticated, and redirects the request if not. Used on paths to ensure that users requesting those resources are authenticated.
-func AuthMiddleware(next http.Handler) http.Handler {
-	/* Check the incoming request for a valid token. If not present, redirect.
-	   Tokens can be present in two places: one, presented as part of the Authorization header as a Bearer token
-	   or alternatively stored in an auth cookie, authToken.
-
-	   TODO: Validate nonce
-
-	   If the token is not found in either these places, redirect to MSA for authentication. */
-
+// AuthContextMiddleware evaluates the request for the presence of an authentication token. If it is present,
+// it decodes and validates the token presented; if the token is deemed valid, it sets the context on the request.
+func AuthContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
-		var authToken string = ""
-
-		if len(authHeader) == 2 {
-			authToken = authHeader[1]
-		} else {
-			// No auth header. Cookie?
-			if cookie, err := r.Cookie("authToken"); err == nil {
-				authToken = cookie.Value
-			} else {
-				log.Printf("ERROR: Failed to retrieve authentication cookie and no bearer token present on the request. Redirect to MSA. Error: %v", err)
-			}
-		}
-
-		if len(authToken) == 0 {
-			// No auth cookie. Redirect to MSA
-			redirectToMsa(w, r, "1234")
-			return
-		}
-
-		token, err := jwt.ParseString(authToken)
+		token, err := evaluateToken(r)
 
 		if err != nil {
-			msg := fmt.Sprintf("A token was received but was malformed: %v", err)
-			badRequestError(w, msg)
+			if _, ok := err.(tokenNotPresentError); !ok {
+				// token was present, but there was an error
+				log.Printf("A token was present on the request, but setting context failed: %v", err)
+			}
+
+			// token just wasn't present
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		setContextAndForward(token, w, r, next)
+	})
+}
+
+// AuthRequiredMiddleware evaluates the request for the present of an authentication token. If no token is found, or if a token is found
+// but is invalid, a 403 is returned.
+func AuthRequiredMiddleware(next http.Handler) http.Handler {
+	return AuthContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		claims := r.Context().Value(KeyClaims)
+
+		if claims == nil {
+			// no claims context on the request; respond with 403 forbidden!
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("403 Forbidden"))
 
 			return
 		}
 
-		var stdClaims jwt.StandardClaims
+		next.ServeHTTP(w, r)
+	}))
+}
 
-		err = json.Unmarshal(token.RawClaims(), &stdClaims)
+// PromptForAuthentication issues a redirect to the authentication provider
+func PromptForAuthentication(w http.ResponseWriter, r *http.Request, state string) {
+	state = html.EscapeString(state)
+	nonce := "1234"
 
-		if err != nil {
-			msg := fmt.Sprintf("An error occured deserializing the standard claims on the token. Error: %v", err)
-			badRequestError(w, msg)
-		}
+	const redirectURITemplate string = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=%v&response_type=id_token&redirect_uri=%v&scope=openid&response_mode=form_post&nonce=%v&state=%v"
+	redirectURI := fmt.Sprintf(redirectURITemplate, config.ClientID, html.EscapeString(config.RedirectURI), nonce, state)
 
-		if !stdClaims.IsValidAt(time.Now()) {
-			redirectToMsa(w, r, "1234")
-			return
-		}
+	http.Redirect(w, r, redirectURI, http.StatusTemporaryRedirect)
+}
 
-		var verifier jwt.Verifier
-
-		if token.Header().Algorithm[0:2] == "HS" {
-			verifier, err = jwt.NewVerifierHS(token.Header().Algorithm, []byte(config.ClientSecret))
-		} else {
-			// We should have a key identifier claim in the header so we know which key to use for signature verification purposes
-			encodedHeaderBytes := token.RawHeader()
-			var headerBytes []byte = make([]byte, base64.StdEncoding.DecodedLen(len(encodedHeaderBytes)))
-			_, err = base64.StdEncoding.Decode(headerBytes, encodedHeaderBytes)
-
-			if err != nil {
-				msg := fmt.Sprintf("A token was received but the header was malformed: %v", err)
-				badRequestError(w, msg)
-
-				return
-			}
-
-			// Figure out which certificate we need for token verification purposes
-			var headerClaims map[string]interface{}
-			err = json.Unmarshal(headerBytes, &headerClaims)
-
-			if err != nil {
-				msg := fmt.Sprintf("A token was received, but the header was not parsable JSON: %v", err)
-				badRequestError(w, msg)
-
-				return
-			}
-
-			kid := headerClaims["kid"].(string)
-
-			if len(kid) == 0 {
-				msg := "A token was received, but the header lacked a key identification claim. Unable to validate token."
-				badRequestError(w, msg)
-
-				return
-			}
-
-			sk := signingKeys[kid]
-
-			if sk == nil {
-				msg := "A token was received, but the header-identifier signing key is unknown to us. Unable to validate token."
-				badRequestError(w, msg)
-
-				return
-			}
-
-			switch alg := token.Header().Algorithm; alg[0:2] {
-			case "RS":
-				verifier, err = jwt.NewVerifierRS(token.Header().Algorithm, sk.PublicKey.(*rsa.PublicKey))
-			case "ES":
-				verifier, err = jwt.NewVerifierES(token.Header().Algorithm, sk.PublicKey.(*ecdsa.PublicKey))
-			case "PS":
-				verifier, err = jwt.NewVerifierPS(token.Header().Algorithm, sk.PublicKey.(*rsa.PublicKey))
-			}
-		}
-
-		if err != nil {
-			msg := fmt.Sprintf("A token was received, but the while constructing the verifier for the token an unexpected error occurred: %v", err)
-			badRequestError(w, msg)
-
-			return
-		}
-
-		// verifier now contains the needed token verifier
-		err = verifier.Verify(token.Payload(), token.Signature())
-
-		if err != nil {
-			msg := fmt.Sprintf("The token is invalid: %v", err)
-			badRequestError(w, msg)
-
-			return
-		}
-
+func setContextAndForward(token *jwt.Token, w http.ResponseWriter, r *http.Request, next http.Handler) {
+	if token != nil {
 		// Deserialize Claims
 		var tokenClaims map[string]interface{}
-		err = json.Unmarshal(token.RawClaims(), &tokenClaims)
+		err := json.Unmarshal(token.RawClaims(), &tokenClaims)
 
 		if err != nil {
 			msg := fmt.Sprintf("A token was received, but a failure was encountered while deserializing the claims the token contains. Error: %v", err)
@@ -315,7 +253,152 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), KeyClaims, tokenClaims)
 
 		// Token is now verified.
-		// TODO: add claims to request context
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+		r = r.WithContext(ctx)
+	}
+
+	next.ServeHTTP(w, r)
+}
+
+type tokenNotPresentError int
+
+func (tokenNotPresentError) Error() string {
+	return fmt.Sprintf("No token was present.")
+}
+
+// evaluateToken evaluates the request for the presence of a token. If the token is present and is valid,
+// this function returns the token and a nil error value. Otherwise, the token returned is nil and an error value is returned.
+// If the token is simply not present, err will be a tokenNotPresentError
+func evaluateToken(r *http.Request) (*jwt.Token, error) {
+	authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
+	var authToken string = ""
+
+	if len(authHeader) == 2 {
+		authToken = authHeader[1]
+	} else {
+		// No auth header. Cookie?
+		if cookie, err := r.Cookie("authToken"); err == nil {
+			authToken = cookie.Value
+		} else {
+			return nil, tokenNotPresentError(0)
+		}
+	}
+
+	// parse the auth token
+	token, err := jwt.ParseString(authToken)
+
+	if err != nil {
+		return nil, fmt.Errorf("A token was received but was malformed: %v", err)
+	}
+
+	var stdClaims jwt.StandardClaims
+	err = json.Unmarshal(token.RawClaims(), &stdClaims)
+
+	if err != nil {
+		return nil, fmt.Errorf("An error occured deserializing the standard claims on the token. Error: %v", err)
+	}
+
+	if !stdClaims.IsValidAt(time.Now()) {
+		return nil, fmt.Errorf("The token provided is no longer valid. Expiration: %v", stdClaims.ExpiresAt)
+	}
+
+	alg := token.Header().Algorithm
+	var kid string
+
+	if alg[0:2] != "HS" {
+		// We should have a key identifier claim in the header so we know which key to use for signature verification purposes
+		encodedHeaderBytes := token.RawHeader()
+		var headerBytes []byte = make([]byte, base64.StdEncoding.DecodedLen(len(encodedHeaderBytes)))
+		_, err = base64.StdEncoding.Decode(headerBytes, encodedHeaderBytes)
+
+		if err != nil {
+			return nil, fmt.Errorf("A token was received but the header was malformed: %v", err)
+		}
+
+		// Figure out which certificate we need for token verification purposes
+		var headerClaims map[string]interface{}
+		err = json.Unmarshal(headerBytes, &headerClaims)
+
+		if err != nil {
+			return nil, fmt.Errorf("A token was received, but the header was not parsable JSON: %v", err)
+		}
+
+		kid = headerClaims["kid"].(string)
+	}
+
+	verifierList, err := constructVerifierList(kid, alg)
+
+	if err != nil {
+		return nil, fmt.Errorf("An error was encountered constructing the verifier list for the presented token: %v", err)
+	}
+
+	// verifierList is now filled with a set of potential verifiers for our public keys
+	var verifierErrors []error
+	for _, v := range verifierList {
+		err = v.Verify(token.Payload(), token.Signature())
+
+		if err == nil {
+			return token, nil
+		}
+
+		verifierErrors = append(verifierErrors, err)
+	}
+
+	return nil, fmt.Errorf("A token was received, but could not be verified: %v", verifierErrors)
+}
+
+func constructVerifierList(kid string, alg jwt.Algorithm) ([]jwt.Verifier, error) {
+	var signingKeysForConsideration []*signingKey
+	var verifierList []jwt.Verifier
+
+	if alg[0:2] == "HS" {
+		v, err := jwt.NewVerifierHS(alg, []byte(config.ClientSecret))
+
+		if err != nil {
+			return nil, fmt.Errorf("An error occurred while constructing the HMAC verifier for the presented auth token: %v", err)
+		}
+
+		verifierList = append(verifierList, v)
+	} else {
+		if len(kid) != 0 {
+			// token specified a key id. seek that key
+			sk, ok := signingKeys[kid]
+
+			if ok {
+				signingKeysForConsideration = append(signingKeysForConsideration, sk)
+			}
+		}
+
+		if len(signingKeysForConsideration) == 0 {
+			// consider all of our signing keys
+			for _, v := range signingKeys {
+				signingKeysForConsideration = append(signingKeysForConsideration, v)
+			}
+		}
+
+		var v jwt.Verifier
+		var err error
+
+		for _, sk := range signingKeysForConsideration {
+			if sk == nil {
+				return nil, fmt.Errorf("A nil valued signing key was presented for consideration")
+			}
+
+			switch alg[0:2] {
+			case "RS":
+				v, err = jwt.NewVerifierRS(alg, sk.PublicKey.(*rsa.PublicKey))
+			case "ES":
+				v, err = jwt.NewVerifierES(alg, sk.PublicKey.(*ecdsa.PublicKey))
+			case "PS":
+				v, err = jwt.NewVerifierPS(alg, sk.PublicKey.(*rsa.PublicKey))
+			}
+
+			if err != nil {
+				return nil, fmt.Errorf("While constructing the verifier list, an error was encountered constructing a verifier: %v", err)
+			}
+
+			verifierList = append(verifierList, v)
+		}
+	}
+
+	return verifierList, nil
 }
