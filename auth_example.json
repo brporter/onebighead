@@ -1,5 +1,6 @@
 {
-    "ClientID": "yourClientID",
-    "ClientSecret": "yourClientSecret",
-    "RedirectURI": "yourRedirectUri"
+    "client_id": "someid",
+    "client_secret": "somesecret",
+    "redirect_uri": "http://localhost:8080/auth",
+    "config_uri": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration"
 }

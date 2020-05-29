@@ -5,15 +5,16 @@ import (
 	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"html"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -46,6 +47,8 @@ var signingKeys map[string]*signingKey
 var refreshTimer *time.Timer
 
 const refreshDuration time.Duration = time.Hour // refresh interval is every hour
+
+/* Internal Functions */
 
 func init() {
 	/* read the auth configuration file, auth.json */
@@ -166,73 +169,16 @@ func badRequestError(w http.ResponseWriter, msg string) {
 	log.Printf("[REQUEST FATAL ERROR] %v\n", msg)
 }
 
-// MethodFilteringMiddleware invokes a specific handler depending on the request method being used.
-// If no mapping exists for the requests method, the handler identified by other is invoked instead.
-func MethodFilteringMiddleware(handlerMap map[string]http.Handler, other http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		method := r.Method
+func generateNonce() ([]byte, error) {
+	retVal := make([]byte, 64)
 
-		handler, ok := handlerMap[method]
+	_, err := rand.Read(retVal)
 
-		if ok {
-			handler.ServeHTTP(w, r)
-		} else {
-			other.ServeHTTP(w, r)
-		}
-	})
-}
+	if err != nil {
+		return nil, err
+	}
 
-// TODO: break token parsing and validation out into its own middleware, so we can be authentication aware
-// on non-authenticated endpoints (e.g., we can light up identification of users)
-
-// AuthContextMiddleware evaluates the request for the presence of an authentication token. If it is present,
-// it decodes and validates the token presented; if the token is deemed valid, it sets the context on the request.
-func AuthContextMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := evaluateToken(r)
-
-		if err != nil {
-			if _, ok := err.(tokenNotPresentError); !ok {
-				// token was present, but there was an error
-				log.Printf("A token was present on the request, but setting context failed: %v", err)
-			}
-
-			// token just wasn't present
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		setContextAndForward(token, w, r, next)
-	})
-}
-
-// AuthRequiredMiddleware evaluates the request for the present of an authentication token. If no token is found, or if a token is found
-// but is invalid, a 403 is returned.
-func AuthRequiredMiddleware(next http.Handler) http.Handler {
-	return AuthContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims := r.Context().Value(KeyClaims)
-
-		if claims == nil {
-			// no claims context on the request; respond with 403 forbidden!
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("403 Forbidden"))
-
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	}))
-}
-
-// PromptForAuthentication issues a redirect to the authentication provider
-func PromptForAuthentication(w http.ResponseWriter, r *http.Request, state string) {
-	state = html.EscapeString(state)
-	nonce := "1234"
-
-	const redirectURITemplate string = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=%v&response_type=id_token&redirect_uri=%v&scope=openid&response_mode=form_post&nonce=%v&state=%v"
-	redirectURI := fmt.Sprintf(redirectURITemplate, config.ClientID, html.EscapeString(config.RedirectURI), nonce, state)
-
-	http.Redirect(w, r, redirectURI, http.StatusTemporaryRedirect)
+	return retVal, nil
 }
 
 func setContextAndForward(token *jwt.Token, w http.ResponseWriter, r *http.Request, next http.Handler) {
@@ -259,12 +205,6 @@ func setContextAndForward(token *jwt.Token, w http.ResponseWriter, r *http.Reque
 	next.ServeHTTP(w, r)
 }
 
-type tokenNotPresentError int
-
-func (tokenNotPresentError) Error() string {
-	return fmt.Sprintf("No token was present.")
-}
-
 // evaluateToken evaluates the request for the presence of a token. If the token is present and is valid,
 // this function returns the token and a nil error value. Otherwise, the token returned is nil and an error value is returned.
 // If the token is simply not present, err will be a tokenNotPresentError
@@ -279,12 +219,17 @@ func evaluateToken(r *http.Request) (*jwt.Token, error) {
 		if cookie, err := r.Cookie("authToken"); err == nil {
 			authToken = cookie.Value
 		} else {
-			return nil, tokenNotPresentError(0)
+			return nil, TokenNotPresentError(0)
 		}
 	}
 
+	return evaluateTokenValue(authToken)
+
+}
+
+func evaluateTokenValue(tokenValue string) (*jwt.Token, error) {
 	// parse the auth token
-	token, err := jwt.ParseString(authToken)
+	token, err := jwt.ParseString(tokenValue)
 
 	if err != nil {
 		return nil, fmt.Errorf("A token was received but was malformed: %v", err)
@@ -401,4 +346,243 @@ func constructVerifierList(kid string, alg jwt.Algorithm) ([]jwt.Verifier, error
 	}
 
 	return verifierList, nil
+}
+
+/* Public Functions */
+
+// TokenNotPresentError represents an error that indicates that an authentication token was not present
+type TokenNotPresentError int
+
+func (TokenNotPresentError) Error() string {
+	return fmt.Sprintf("No token was present.")
+}
+
+// SignInController serves as a sign-in process initiation controller and token exchange endpoint. This controller starts and concludes the sign-in process.
+func SignInController(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		const redirectURITemplate string = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=%v&response_type=id_token&redirect_uri=%v&scope=openid&response_mode=form_post&nonce=%v&state=%v"
+
+		destination := r.URL.Query().Get("destination")
+
+		nonce, err := generateNonce()
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("500 Internal Server Error"))
+
+			log.Printf("[ERROR] A fatal error occurred generating a nonce for sign in: %v", err)
+
+			return
+		}
+
+		nonceValue := base64.StdEncoding.EncodeToString(nonce)
+
+		signInDestinationURI := fmt.Sprintf(redirectURITemplate, config.ClientID, url.QueryEscape(config.RedirectURI), url.QueryEscape(nonceValue), url.QueryEscape(destination))
+
+		http.SetCookie(w, &http.Cookie{Name: "nonce", Value: nonceValue, Expires: time.Now().Add(time.Minute), HttpOnly: true})
+		http.Redirect(w, r, signInDestinationURI, http.StatusTemporaryRedirect)
+	}
+
+	if r.Method == "POST" {
+		// A token may be present in a POST form field called 'id_token'.
+		// Retrieve this token, and place it in a cookie
+		nonceCookie, err := r.Cookie("nonce")
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("400 Bad Request"))
+
+			log.Printf("[ERROR] A token postback was received that lacked a nonce cookie.")
+		}
+
+		r.ParseForm()
+
+		var redirectURL string
+
+		if r.Form["state"] != nil && len(r.Form["state"]) > 0 && len(r.Form["state"][0]) != 0 {
+			redirectURL = r.Form["state"][0]
+		} else {
+			redirectURL = "/"
+		}
+
+		if r.Form["id_token"] != nil && len(r.Form["id_token"]) > 0 && len(r.Form["id_token"][0]) != 0 {
+			tokenValue := r.Form["id_token"][0]
+
+			token, err := evaluateTokenValue(tokenValue)
+
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 Bad Request"))
+
+				log.Printf("[ERROR] A POST was received with an invalid token.")
+				return
+			}
+
+			// check nonce
+			var tokenClaims map[string]interface{}
+			err = json.Unmarshal(token.RawClaims(), &tokenClaims)
+
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 Bad Request"))
+
+				log.Printf("[ERROR] A POST was received with a token whose claims could not be deserialized for nonce verfication: %v", err)
+				return
+			}
+
+			nonceClaim, ok := tokenClaims["nonce"].(string)
+
+			if !ok {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 Bad Request"))
+
+				log.Println("[ERROR] A POST was received with a token whose nonce was invalid.")
+
+				return
+			}
+
+			nonceClaimValue, err := base64.StdEncoding.DecodeString(nonceClaim)
+
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 Bad Request"))
+
+				log.Println("[ERROR] A POST was received with a nonce claim that was not decodable")
+
+				return
+			}
+
+			nonceValue, err := base64.StdEncoding.DecodeString(nonceCookie.Value)
+
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 Bad Request"))
+
+				log.Println("[ERROR] A POST was received with a nonce cookie that was not decodable")
+
+				return
+			}
+
+			if string(nonceValue) != string(nonceClaimValue) {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 Bad Request"))
+
+				log.Println("[ERROR] A POST was received with a token whose nonce was not expected.")
+
+				return
+			}
+
+			// expire the cookie when the token is scheduled to expire
+			expire := time.Unix(int64(tokenClaims["exp"].(float64)), 0)
+			cookie := http.Cookie{Name: "authToken", Value: r.Form["id_token"][0], Expires: expire}
+			http.SetCookie(w, &cookie)
+			http.Redirect(w, r, redirectURL, 302)
+		}
+	}
+}
+
+// SignOutController removes any auth token cookies present and redirects to /
+func SignOutController(w http.ResponseWriter, r *http.Request) {
+	authToken, err := r.Cookie("authToken")
+
+	if err == nil {
+		authToken.Expires = time.Now().AddDate(0, 0, -10)
+		http.SetCookie(w, authToken)
+	}
+
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+}
+
+// MethodFilteringMiddleware invokes a specific handler depending on the request method being used.
+// If no mapping exists for the requests method, the handler identified by other is invoked instead.
+func MethodFilteringMiddleware(handlerMap map[string]http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method := r.Method
+
+		handler, ok := handlerMap[method]
+
+		if ok {
+			handler.ServeHTTP(w, r)
+		} else {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			w.Write([]byte("405 Method Not Allowed"))
+		}
+	})
+}
+
+func AuthClaimMiddleware(map[string]interface{} demand, next http.Handler) http.Handler {
+	return AuthClaimMiddlewareWithRedirect(demand, "", next)
+}
+
+func AuthClaimMiddlewareWithRedirect(map[string]interface{} demand, string redirectURL, next http.Handler) http.Handler {
+	return AuthContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		claims := r.Context().Value(KeyClaims).(map[string]interface{})
+
+		for k, v := range demand {
+			m, ok := claims[k]
+
+			if !ok || m != v {
+
+				if (len(redirectURL) == 0) {
+					w.WriteHeader(http.StatusUnauthorized)
+					w.Write([]byte("401 Unauthorized"))
+
+					return
+				}
+
+				http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+				return
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	}))
+}
+
+// AuthContextMiddleware evaluates the request for the presence of an authentication token. If it is present,
+// it decodes and validates the token presented; if the token is deemed valid, it sets the context on the request.
+func AuthContextMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := evaluateToken(r)
+
+		if err != nil {
+			if _, ok := err.(TokenNotPresentError); !ok {
+				// token was present, but there was an error
+				log.Printf("A token was present on the request, but setting context failed: %v", err)
+			}
+
+			// token just wasn't present
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		setContextAndForward(token, w, r, next)
+	})
+}
+
+// AuthRequiredMiddleware evaluates the request for the present of an authentication token. If no token is found, or if a token is found
+// but is invalid, a 403 is returned.
+func AuthRequiredMiddleware(next http.Handler) http.Handler {
+	return AuthRequiredMiddlewareWithRedirect("", next)
+}
+
+func AuthRequiredMiddlewareWithRedirect(string redirectURL, next http.Handler) http.Handler {
+	return AuthContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		claims := r.Context().Value(KeyClaims)
+
+		if claims == nil {
+
+			if len(redirectURL) == 0 {
+				// no claims context on the request; respond with 403 forbidden!
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte("403 Forbidden"))
+	
+				return
+			}
+
+			http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		}
+
+		next.ServeHTTP(w, r)
+	}))
 }

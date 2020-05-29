@@ -8,7 +8,6 @@ import (
 	_ "log"
 	"net/http"
 
-	"github.com/brporter/onebighead.com/controllers"
 	"github.com/brporter/onebighead.com/middleware"
 )
 
@@ -32,10 +31,8 @@ func main() {
 		w.Write([]byte("Admin portal. You are authenticated!"))
 	})))
 
-	http.Handle("/auth", middleware.MethodFilteringMiddleware(
-		map[string]http.Handler{"POST": http.HandlerFunc(controllers.AuthController)},                                   // POST
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { middleware.PromptForAuthentication(w, r, "") }), // Everything Else
-	))
+	http.Handle("/signin", http.HandlerFunc(middleware.SignInController))
+	http.Handle("/signout", http.HandlerFunc(middleware.SignOutController))
 
 	http.Handle("/name", middleware.AuthContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
