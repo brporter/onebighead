@@ -57,39 +57,5 @@ func main() {
 		w.Write([]byte("Sup."))
 	}))
 
-	// http.Handle("/auth", middleware.MethodFilteringMiddleware(map[string]http.Handler{
-	// 	"POST": http.HandlerFunc(controllers.AuthController),
-	// }, middleware.AuthMiddleware(http.HandlerFunc(controllers.AuthController))))
-
-	// http.Handle("/protected", middleware.AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	w.WriteHeader(http.StatusAccepted)
-	// 	w.Write([]byte("You are authenticated!"))
-	// })))
-
-	// http.Handle("/", middleware.AuthContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	var p *Page
-
-	// 	claimsValue := r.Context().Value(middleware.KeyClaims)
-	// 	var claims map[string]interface{}
-
-	// 	if claimsValue != nil {
-	// 		claims = claimsValue.(map[string]interface{})
-	// 	}
-
-	// 	if len(claims) > 0 {
-	// 		p = &Page{
-	// 			Title: fmt.Sprintf("Hello, %v.", claims["given_name"].(string)),
-	// 			Body:  []byte("This is the body!"),
-	// 			Items: []Item{{Name: "Orange", Price: 1.25}, {Name: "Banana", Price: 3.00}}}
-	// 	} else {
-	// 		p = &Page{
-	// 			Title: "Hello, World. Not Authenticated!",
-	// 			Body:  []byte("This is the body!"),
-	// 			Items: []Item{{Name: "Orange", Price: 1.25}, {Name: "Banana", Price: 3.00}}}
-	// 	}
-
-	// 	templates.ExecuteTemplate(w, "template.html", p)
-	// })))
-
 	http.ListenAndServe(":8080", nil)
 }
