@@ -16,23 +16,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/brporter/onebighead.com/utility"
+
 	"github.com/cristalhq/jwt/v3"
 )
-
-// Key is a type used to denote specific unique object instances in the request context.
-type Key int
-
-const (
-	// KeyClaims is the identifier used for storage of authentication token claims on the request context.
-	KeyClaims Key = iota
-)
-
-type authConfig struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	RedirectURI  string `json:"redirect_uri"`
-	ConfigURI    string `json:"config_uri"`
-}
 
 type SigningKey struct {
 	Type      string
@@ -51,20 +38,26 @@ type SignInProvider struct {
 	RedirectURI     string
 }
 
-var providers []SignInProvider
-var signingKeys map[string]SigningKey
-var encodings []*base64.Encoding
+// Key is a type used to denote specific unique object instances in the request context.
+type Key int
 
-const refreshDuration time.Duration = time.Hour // refresh interval is every hour
+const (
+	// KeyClaims is the identifier used for storage of authentication token claims on the request context.
+	KeyClaims       Key           = iota
+	refreshDuration time.Duration = time.Hour
+)
+
+var (
+	providers   []SignInProvider
+	signingKeys map[string]SigningKey
+	encodings   []*base64.Encoding
+)
 
 /* Internal Functions */
 
 func init() {
 	// initialize possible base64 encoding providers, as the various OIDC providers use different base64 encoding standards.
-	encodings = make([]*base64.Encoding, 4)
-	encodings[0] = base64.StdEncoding
-	encodings[1] = base64.RawURLEncoding
-	encodings[2] = base64.URLEncoding
+	encodings = []*base64.Encoding{base64.StdEncoding, base64.RawURLEncoding, base64.URLEncoding}
 
 	signingKeys = make(map[string]SigningKey, 10)
 
@@ -102,16 +95,10 @@ func init() {
 // Later, when a token is received, we examine the header of that token for a key id (kid) claim, and use the value of that claim
 // to lookup the signing key for the token for verification purposes.
 func initializeSigningKeys(jwksURL string) ([]SigningKey, error) {
-	response, err := http.Get(jwksURL)
+	jwksBody, err := utility.HttpGet(jwksURL)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve the OpenID JSON Web Key Set from %v: %v", jwksURL, err)
-	}
-
-	jwksBody, err := ioutil.ReadAll(response.Body)
-
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read the OpenID Connect JSON Web Key Set request response: %v", err)
 	}
 
 	var keyDataEntries struct {
@@ -436,16 +423,10 @@ func ParseAuthConfig(configBytes []byte) ([]SignInProvider, []SigningKey, error)
 		provider.RedirectURI = config.RedirectURI
 		provider.Issuers = config.Issuers
 
-		configURIResponse, err := http.Get(config.ConfigURI)
+		providerConfigBytes, err := utility.HttpGet(config.ConfigURI)
 
 		if err != nil {
 			return nil, nil, fmt.Errorf("Failed to retrieve the configuration document for the %v provider at url %v: %v", provider.ProviderName, config.ConfigURI, err)
-		}
-
-		providerConfigBytes, err := ioutil.ReadAll(configURIResponse.Body)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to read the returned configuration document for the %v provider, retrieved from url %v: %v", provider.ProviderName, config.ConfigURI, err)
 		}
 
 		providerConfig := struct {
