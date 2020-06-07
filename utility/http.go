@@ -1,34 +1,39 @@
 package utility
 
 import (
-	_ "fmt"
 	"io/ioutil"
 	"net/http"
 )
 
-type HttpClient interface {
+// HTTPClient defines the interface of types capable of executing HTTP requests
+type HTTPClient interface {
 	Get(url string) ([]byte, error)
 }
 
-type HttpClientGeneratorFunc func() HttpClient
+// HTTPClientGeneratorFunc is a function capable of return an implementation of the HTTPClient interface
+type HTTPClientGeneratorFunc func() HTTPClient
 
-var HttpClientGenerator HttpClientGeneratorFunc = func() HttpClient {
-	return &systemHttpClient{}
+// HTTPClientGenerator is a function that is capable of generating an new HTTPClient
+var HTTPClientGenerator HTTPClientGeneratorFunc = func() HTTPClient {
+	return &systemHTTPClient{}
 }
 
-func NewHttpClient() HttpClient {
-	return HttpClientGenerator()
+// NewHTTPClient creates a new HTTPClient
+func NewHTTPClient() HTTPClient {
+	return HTTPClientGenerator()
 }
 
-type systemHttpClient struct {
+type systemHTTPClient struct {
 }
 
-func HttpGet(url string) ([]byte, error) {
-	client := NewHttpClient()
+// HTTPGet retrieves the document at the specified url and returns the bytes of the body of the document, if successful
+func HTTPGet(url string) ([]byte, error) {
+	client := NewHTTPClient()
 	return client.Get(url)
 }
 
-func (*systemHttpClient) Get(url string) ([]byte, error) {
+// Get retrieves the document at the specified url and returns the bytes of the body of the document, if successful
+func (*systemHTTPClient) Get(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 
 	if err != nil {

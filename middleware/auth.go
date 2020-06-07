@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"net/http"
@@ -21,12 +20,23 @@ import (
 	"github.com/cristalhq/jwt/v3"
 )
 
+// Key is a type used to denote specific unique object instances in the request context.
+type Key int
+
+const (
+	// KeyClaims is the identifier used for storage of authentication token claims on the request context.
+	KeyClaims  Key    = iota
+	authConfig string = "auth.json"
+)
+
+// SigningKey holds the public key used to sign a JWT token, along with key type and identifier information.
 type SigningKey struct {
 	Type      string
 	KeyID     string
 	PublicKey interface{}
 }
 
+// SignInProvider describes a JWT provider instance
 type SignInProvider struct {
 	ProviderName    string
 	Issuers         []string
@@ -38,54 +48,92 @@ type SignInProvider struct {
 	RedirectURI     string
 }
 
-// Key is a type used to denote specific unique object instances in the request context.
-type Key int
+type AuthenticationMiddleware struct {
+	Providers   []SignInProvider
+	SigningKeys map[string]SigningKey
+	Encodings   []*base64.Encoding
+}
 
-const (
-	// KeyClaims is the identifier used for storage of authentication token claims on the request context.
-	KeyClaims       Key           = iota
-	refreshDuration time.Duration = time.Hour
-)
+func NewAuthenticationMiddleware() (*AuthenticationMiddleware, error) {
+	retVal := &AuthenticationMiddleware{}
 
-var (
-	providers   []SignInProvider
-	signingKeys map[string]SigningKey
-	encodings   []*base64.Encoding
-)
+	retVal.Encodings = []*base64.Encoding{base64.StdEncoding, base64.RawURLEncoding, base64.URLEncoding}
 
-/* Internal Functions */
-
-func init() {
-	// initialize possible base64 encoding providers, as the various OIDC providers use different base64 encoding standards.
-	encodings = []*base64.Encoding{base64.StdEncoding, base64.RawURLEncoding, base64.URLEncoding}
-
-	signingKeys = make(map[string]SigningKey, 10)
-
-	/* read the auth configuration file, auth.json */
-	const AuthConfig string = "auth.json"
-
-	data, err := ioutil.ReadFile(AuthConfig)
+	err := retVal.RefreshConfig(nil, 0)
 
 	if err != nil {
-		log.Fatalf("Unable to read authentication configuration file: %v", err)
+		return nil, fmt.Errorf("While initializing, an error was encountered reading the needed configuration data: %v", err)
 	}
 
-	// TODO: move this into a single call firing off the goroutine for refreshes, rely on signals to
-	// hold initialization until the goroutine finishes the first iteration
-	identityProviders, sigKeys, err := ParseAuthConfig(data)
+	return retVal, nil
+}
+
+// ParseAuthConfig parses the bytes provided in configBytes as an auth configuration document, and then
+// initializes a SignInProvider struct for each configured signin provider.
+func parseAuthConfig(configBytes []byte) ([]SignInProvider, []SigningKey, error) {
+	providers := make([]SignInProvider, 0)
+	keys := make([]SigningKey, 0)
+
+	parsedAuthConfig := make([]struct {
+		Provider     string   `json:"provider"`
+		ClientID     string   `json:"client_id"`
+		ClientSecret string   `json:"client_secret"`
+		RedirectURI  string   `json:"redirect_uri"`
+		ConfigURI    string   `json:"config_uri"`
+		Issuers      []string `json:"issuers"`
+	}, 0)
+
+	err := json.Unmarshal(configBytes, &parsedAuthConfig)
 
 	if err != nil {
-		log.Fatalf("Unable to parse the authentication configuration data: %v", err)
+		return nil, nil, fmt.Errorf("Unable to parse the specified bytes as JSON: %v", err)
 	}
 
-	providers = identityProviders
+	for _, config := range parsedAuthConfig {
+		var provider SignInProvider
 
-	for _, v := range sigKeys {
-		signingKeys[v.KeyID] = v
+		// make certain all required values are present
+		provider.ProviderName = config.Provider
+		provider.ClientID = config.ClientID
+		provider.ClientSecret = config.ClientSecret
+		provider.RedirectURI = config.RedirectURI
+		provider.Issuers = config.Issuers
+
+		providerConfigBytes, err := utility.HTTPGet(config.ConfigURI)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to retrieve the configuration document for the %v provider at url %v: %v", provider.ProviderName, config.ConfigURI, err)
+		}
+
+		providerConfig := struct {
+			KeyURL           string   `json:"jwks_uri"`
+			SignInURL        string   `json:"authorization_endpoint"`
+			SignOutSupported bool     `json:"http_logout_supported"`
+			SignOutURL       string   `json:"end_session_endpoint"`
+			SupportedScopes  []string `json:"scopes_supported"`
+		}{}
+
+		err = json.Unmarshal(providerConfigBytes, &providerConfig)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to deserialize the JSON retrieved from the configuration document for %v provider, retrieved from url %v: %v", provider.ProviderName, config.ConfigURI, err)
+		}
+
+		signingKeys, err := initializeSigningKeys(providerConfig.KeyURL)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to initialize signing keys for provider '%v': %v", provider.ProviderName, err)
+		}
+
+		provider.SignInURL = providerConfig.SignInURL
+		provider.SignOutURL = providerConfig.SignOutURL
+		provider.SupportedScopes = providerConfig.SupportedScopes
+
+		providers = append(providers, provider)
+		keys = append(keys, signingKeys...)
 	}
 
-	// set up the refresh timer to refresh our auth configuration hourly
-	go refreshAuthConfig(time.NewTimer(refreshDuration), data)
+	return providers, keys, nil
 }
 
 // initializeSigningKeys examines the OpenID Connect configuration document identified in and downloads the keys specified
@@ -95,7 +143,7 @@ func init() {
 // Later, when a token is received, we examine the header of that token for a key id (kid) claim, and use the value of that claim
 // to lookup the signing key for the token for verification purposes.
 func initializeSigningKeys(jwksURL string) ([]SigningKey, error) {
-	jwksBody, err := utility.HttpGet(jwksURL)
+	jwksBody, err := utility.HTTPGet(jwksURL)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve the OpenID JSON Web Key Set from %v: %v", jwksURL, err)
@@ -175,31 +223,46 @@ func initializeSigningKeys(jwksURL string) ([]SigningKey, error) {
 	return signingKeys, nil
 }
 
-func refreshAuthConfig(refreshTimer *time.Timer, data []byte) {
+// RefreshConfig waits for the specified timer to be signaled, and then refreshes the middleware configuration.
+// The specified timer will be reset with the passed duration, and the method will loop, waiting again.
+// If the specified duration is 0, the method will return after the timer is signaled; if timer is nil, the method will not wait for timer to be signaled, but will
+// refresh the configuration immediately, and then exit.
+func (m *AuthenticationMiddleware) RefreshConfig(timer *time.Timer, duration time.Duration) error {
 	for {
-		<-refreshTimer.C
+		if timer != nil {
+			<-timer.C
+		}
 
-		identityProviders, sigKeys, err := ParseAuthConfig(data)
+		data, err := utility.FileGet(authConfig)
 
 		if err != nil {
-			log.Printf("Failed to refresh auth configuration: %v", err)
+			return fmt.Errorf("Unable to read authentication configuration data: %v", err)
 		}
 
-		providers = identityProviders
+		providers, signingKeys, err := parseAuthConfig(data)
 
-		for _, v := range sigKeys {
-			signingKeys[v.KeyID] = v
+		if err != nil {
+			return fmt.Errorf("Failed to refresh auth configuration. Will retry in %v. Error: %v", duration, err)
 		}
 
-		refreshTimer.Reset(refreshDuration)
+		m.Providers = providers
+
+		if m.SigningKeys == nil {
+			m.SigningKeys = make(map[string]SigningKey, 10)
+		}
+
+		for _, v := range signingKeys {
+			m.SigningKeys[v.KeyID] = v
+		}
+
+		if duration > 0 && timer != nil {
+			timer.Reset(duration)
+		} else {
+			break
+		}
 	}
-}
 
-func badRequestError(w http.ResponseWriter, msg string) {
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte(msg))
-
-	log.Printf("[REQUEST FATAL ERROR] %v\n", msg)
+	return nil
 }
 
 func generateNonce() ([]byte, error) {
@@ -222,7 +285,10 @@ func setContextAndForward(token *jwt.Token, w http.ResponseWriter, r *http.Reque
 
 		if err != nil {
 			msg := fmt.Sprintf("A token was received, but a failure was encountered while deserializing the claims the token contains. Error: %v", err)
-			badRequestError(w, msg)
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(msg))
+
+			log.Printf("[REQUEST FATAL ERROR] %v\n", msg)
 
 			return
 		}
@@ -238,10 +304,10 @@ func setContextAndForward(token *jwt.Token, w http.ResponseWriter, r *http.Reque
 	next.ServeHTTP(w, r)
 }
 
-// evaluateToken evaluates the request for the presence of a token. If the token is present and is valid,
+// EvaluateToken evaluates the request for the presence of a token. If the token is present and is valid,
 // this function returns the token and a nil error value. Otherwise, the token returned is nil and an error value is returned.
 // If the token is simply not present, err will be a tokenNotPresentError
-func evaluateToken(r *http.Request) (*jwt.Token, error) {
+func (m *AuthenticationMiddleware) EvaluateToken(r *http.Request) (*jwt.Token, error) {
 	authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
 	var authToken string = ""
 
@@ -256,10 +322,10 @@ func evaluateToken(r *http.Request) (*jwt.Token, error) {
 		}
 	}
 
-	return evaluateTokenValue(authToken)
+	return m.EvaluateTokenValue(authToken)
 }
 
-func evaluateTokenValue(tokenValue string) (*jwt.Token, error) {
+func (m *AuthenticationMiddleware) EvaluateTokenValue(tokenValue string) (*jwt.Token, error) {
 	// parse the auth token
 	token, err := jwt.ParseString(tokenValue)
 
@@ -287,7 +353,7 @@ func evaluateTokenValue(tokenValue string) (*jwt.Token, error) {
 
 		// guess at std encoding
 		var headerBytes []byte
-		for encoderIndex, encoder := range encodings {
+		for encoderIndex, encoder := range m.Encodings {
 			headerBytes = make([]byte, encoder.DecodedLen(len(encodedHeaderBytes)))
 
 			_, err = encoder.Decode(headerBytes, encodedHeaderBytes)
@@ -314,7 +380,7 @@ func evaluateTokenValue(tokenValue string) (*jwt.Token, error) {
 		kid = headerClaims["kid"].(string)
 	}
 
-	verifierList, err := constructVerifierList(kid, alg)
+	verifierList, err := constructVerifierList(m, kid, alg)
 
 	if err != nil {
 		return nil, fmt.Errorf("An error was encountered constructing the verifier list for the presented token: %v", err)
@@ -335,12 +401,12 @@ func evaluateTokenValue(tokenValue string) (*jwt.Token, error) {
 	return nil, fmt.Errorf("A token was received, but could not be verified: %v", verifierErrors)
 }
 
-func constructVerifierList(kid string, alg jwt.Algorithm) ([]jwt.Verifier, error) {
+func constructVerifierList(m *AuthenticationMiddleware, kid string, alg jwt.Algorithm) ([]jwt.Verifier, error) {
 	var signingKeysForConsideration []SigningKey
 	var verifierList []jwt.Verifier
 
 	if alg[0:2] == "HS" {
-		for _, v := range providers {
+		for _, v := range m.Providers {
 			v, err := jwt.NewVerifierHS(alg, []byte(v.ClientSecret))
 
 			if err != nil {
@@ -352,7 +418,7 @@ func constructVerifierList(kid string, alg jwt.Algorithm) ([]jwt.Verifier, error
 	} else {
 		if len(kid) != 0 {
 			// token specified a key id. seek that key
-			sk, ok := signingKeys[kid]
+			sk, ok := m.SigningKeys[kid]
 
 			if ok {
 				signingKeysForConsideration = append(signingKeysForConsideration, sk)
@@ -361,7 +427,7 @@ func constructVerifierList(kid string, alg jwt.Algorithm) ([]jwt.Verifier, error
 
 		if len(signingKeysForConsideration) == 0 {
 			// consider all of our signing keys
-			for _, v := range signingKeys {
+			for _, v := range m.SigningKeys {
 				signingKeysForConsideration = append(signingKeysForConsideration, v)
 			}
 		}
@@ -392,74 +458,6 @@ func constructVerifierList(kid string, alg jwt.Algorithm) ([]jwt.Verifier, error
 
 /* Public Functions */
 
-// ParseAuthConfig parses the bytes provided in configBytes as an auth configuration document, and then
-// initializes a SignInProvider struct for each configured signin provider.
-func ParseAuthConfig(configBytes []byte) ([]SignInProvider, []SigningKey, error) {
-	providers := make([]SignInProvider, 0)
-	keys := make([]SigningKey, 0)
-
-	parsedAuthConfig := make([]struct {
-		Provider     string   `json:"provider"`
-		ClientID     string   `json:"client_id"`
-		ClientSecret string   `json:"client_secret"`
-		RedirectURI  string   `json:"redirect_uri"`
-		ConfigURI    string   `json:"config_uri"`
-		Issuers      []string `json:"issuers"`
-	}, 0)
-
-	err := json.Unmarshal(configBytes, &parsedAuthConfig)
-
-	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to parse the specified bytes as JSON: %v", err)
-	}
-
-	for _, config := range parsedAuthConfig {
-		var provider SignInProvider
-
-		// make certain all required values are present
-		provider.ProviderName = config.Provider
-		provider.ClientID = config.ClientID
-		provider.ClientSecret = config.ClientSecret
-		provider.RedirectURI = config.RedirectURI
-		provider.Issuers = config.Issuers
-
-		providerConfigBytes, err := utility.HttpGet(config.ConfigURI)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to retrieve the configuration document for the %v provider at url %v: %v", provider.ProviderName, config.ConfigURI, err)
-		}
-
-		providerConfig := struct {
-			KeyURL           string   `json:"jwks_uri"`
-			SignInURL        string   `json:"authorization_endpoint"`
-			SignOutSupported bool     `json:"http_logout_supported"`
-			SignOutURL       string   `json:"end_session_endpoint"`
-			SupportedScopes  []string `json:"scopes_supported"`
-		}{}
-
-		err = json.Unmarshal(providerConfigBytes, &providerConfig)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to deserialize the JSON retrieved from the configuration document for %v provider, retrieved from url %v: %v", provider.ProviderName, config.ConfigURI, err)
-		}
-
-		signingKeys, err := initializeSigningKeys(providerConfig.KeyURL)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to initialize signing keys for provider '%v': %v", provider.ProviderName, err)
-		}
-
-		provider.SignInURL = providerConfig.SignInURL
-		provider.SignOutURL = providerConfig.SignOutURL
-		provider.SupportedScopes = providerConfig.SupportedScopes
-
-		providers = append(providers, provider)
-		keys = append(keys, signingKeys...)
-	}
-
-	return providers, keys, nil
-}
-
 // TokenNotPresentError represents an error that indicates that an authentication token was not present
 type TokenNotPresentError int
 
@@ -468,7 +466,7 @@ func (TokenNotPresentError) Error() string {
 }
 
 // SignInController serves as a sign-in process initiation controller and token exchange endpoint. This controller starts and concludes the sign-in process.
-func SignInController(w http.ResponseWriter, r *http.Request) {
+func (m *AuthenticationMiddleware) SignInController(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		const redirectURITemplate string = "%v?client_id=%v&response_type=id_token&redirect_uri=%v&scope=%v&response_mode=form_post&nonce=%v&state=%v"
 
@@ -477,7 +475,7 @@ func SignInController(w http.ResponseWriter, r *http.Request) {
 		var provider SignInProvider
 		var foundProvider = false
 
-		for _, p := range providers {
+		for _, p := range m.Providers {
 			if p.ProviderName == providerName {
 				provider = p
 				foundProvider = true
@@ -487,12 +485,12 @@ func SignInController(w http.ResponseWriter, r *http.Request) {
 
 		if !foundProvider {
 			// try and use the first provider specified in the auth config
-			if len(providers) > 0 {
-				provider = providers[0]
+			if len(m.Providers) > 0 {
+				provider = m.Providers[0]
 			} else {
 				// there are no providers!!
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte("500 Interna Server Error"))
+				w.Write([]byte("500 Internal Server Error"))
 
 				log.Printf("[ERROR] A request was received without a sign-in provider or specifying a sign-in provider that could not be found (%v), and no providers are configured. This condition is likely fatal and not recoverable", providerName)
 				return
@@ -550,7 +548,7 @@ func SignInController(w http.ResponseWriter, r *http.Request) {
 		if r.Form["id_token"] != nil && len(r.Form["id_token"]) > 0 && len(r.Form["id_token"][0]) != 0 {
 			tokenValue := r.Form["id_token"][0]
 
-			token, err := evaluateTokenValue(tokenValue)
+			token, err := m.EvaluateTokenValue(tokenValue)
 
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
@@ -626,7 +624,7 @@ func SignInController(w http.ResponseWriter, r *http.Request) {
 }
 
 // SignOutController removes any auth token cookies present and redirects to /
-func SignOutController(w http.ResponseWriter, r *http.Request) {
+func (m *AuthenticationMiddleware) SignOutController(w http.ResponseWriter, r *http.Request) {
 	authToken, err := r.Cookie("authToken")
 
 	if err == nil {
@@ -634,12 +632,18 @@ func SignOutController(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, authToken)
 	}
 
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	destination := r.URL.Query().Get("destination")
+
+	if len(destination) == 0 {
+		destination = "/"
+	}
+
+	http.Redirect(w, r, destination, http.StatusTemporaryRedirect)
 }
 
 // MethodFilteringMiddleware invokes a specific handler depending on the request method being used.
 // If no mapping exists for the requests method, the handler identified by other is invoked instead.
-func MethodFilteringMiddleware(handlerMap map[string]http.Handler) http.Handler {
+func (*AuthenticationMiddleware) MethodFilteringMiddleware(handlerMap map[string]http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		method := r.Method
 
@@ -654,12 +658,12 @@ func MethodFilteringMiddleware(handlerMap map[string]http.Handler) http.Handler 
 	})
 }
 
-func AuthClaimMiddleware(demand map[string]interface{}, next http.Handler) http.Handler {
-	return AuthClaimMiddlewareWithRedirect(demand, "", next)
+func (m *AuthenticationMiddleware) ClaimMiddleware(demand map[string]interface{}, next http.Handler) http.Handler {
+	return m.ClaimMiddlewareWithRedirect(demand, "", next)
 }
 
-func AuthClaimMiddlewareWithRedirect(demand map[string]interface{}, redirectURL string, next http.Handler) http.Handler {
-	return AuthContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (m *AuthenticationMiddleware) ClaimMiddlewareWithRedirect(demand map[string]interface{}, redirectURL string, next http.Handler) http.Handler {
+	return m.ContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := r.Context().Value(KeyClaims).(map[string]interface{})
 
 		for k, v := range demand {
@@ -685,9 +689,9 @@ func AuthClaimMiddlewareWithRedirect(demand map[string]interface{}, redirectURL 
 
 // AuthContextMiddleware evaluates the request for the presence of an authentication token. If it is present,
 // it decodes and validates the token presented; if the token is deemed valid, it sets the context on the request.
-func AuthContextMiddleware(next http.Handler) http.Handler {
+func (m *AuthenticationMiddleware) ContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := evaluateToken(r)
+		token, err := m.EvaluateToken(r)
 
 		if err != nil {
 			if _, ok := err.(TokenNotPresentError); !ok {
@@ -706,12 +710,12 @@ func AuthContextMiddleware(next http.Handler) http.Handler {
 
 // AuthRequiredMiddleware evaluates the request for the present of an authentication token. If no token is found, or if a token is found
 // but is invalid, a 403 is returned.
-func AuthRequiredMiddleware(next http.Handler) http.Handler {
-	return AuthRequiredMiddlewareWithRedirect("", next)
+func (m *AuthenticationMiddleware) RequiredMiddleware(next http.Handler) http.Handler {
+	return m.RequiredMiddlewareWithRedirect("", next)
 }
 
-func AuthRequiredMiddlewareWithRedirect(redirectURL string, next http.Handler) http.Handler {
-	return AuthContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (m *AuthenticationMiddleware) RequiredMiddlewareWithRedirect(redirectURL string, next http.Handler) http.Handler {
+	return m.ContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := r.Context().Value(KeyClaims)
 
 		if claims == nil {

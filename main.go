@@ -26,15 +26,21 @@ var templates = template.Must(template.ParseFiles("template.html"))
 
 func main() {
 
-	http.Handle("/admin", middleware.AuthRequiredMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	am, err := middleware.NewAuthenticationMiddleware()
+
+	if err != nil {
+		panic(err)
+	}
+
+	http.Handle("/admin", am.RequiredMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte("Admin portal. You are authenticated!"))
 	})))
 
-	http.Handle("/signin", http.HandlerFunc(middleware.SignInController))
-	http.Handle("/signout", http.HandlerFunc(middleware.SignOutController))
+	http.Handle("/signin", http.HandlerFunc(am.SignInController))
+	http.Handle("/signout", http.HandlerFunc(am.SignOutController))
 
-	http.Handle("/name", middleware.AuthContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/name", am.ContextMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 
 		claims := r.Context().Value(middleware.KeyClaims)
