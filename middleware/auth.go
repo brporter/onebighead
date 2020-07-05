@@ -54,6 +54,13 @@ type AuthenticationMiddleware struct {
 	Encodings   []*base64.Encoding
 }
 
+// TokenNotPresentError represents an error that indicates that an authentication token was not present
+type TokenNotPresentError int
+
+func (TokenNotPresentError) Error() string {
+	return fmt.Sprintf("No token was present.")
+}
+
 func NewAuthenticationMiddleware() (*AuthenticationMiddleware, error) {
 	retVal := &AuthenticationMiddleware{}
 
@@ -66,161 +73,6 @@ func NewAuthenticationMiddleware() (*AuthenticationMiddleware, error) {
 	}
 
 	return retVal, nil
-}
-
-// ParseAuthConfig parses the bytes provided in configBytes as an auth configuration document, and then
-// initializes a SignInProvider struct for each configured signin provider.
-func parseAuthConfig(configBytes []byte) ([]SignInProvider, []SigningKey, error) {
-	providers := make([]SignInProvider, 0)
-	keys := make([]SigningKey, 0)
-
-	parsedAuthConfig := make([]struct {
-		Provider     string   `json:"provider"`
-		ClientID     string   `json:"client_id"`
-		ClientSecret string   `json:"client_secret"`
-		RedirectURI  string   `json:"redirect_uri"`
-		ConfigURI    string   `json:"config_uri"`
-		Issuers      []string `json:"issuers"`
-	}, 0)
-
-	err := json.Unmarshal(configBytes, &parsedAuthConfig)
-
-	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to parse the specified bytes as JSON: %v", err)
-	}
-
-	for _, config := range parsedAuthConfig {
-		var provider SignInProvider
-
-		// make certain all required values are present
-		provider.ProviderName = config.Provider
-		provider.ClientID = config.ClientID
-		provider.ClientSecret = config.ClientSecret
-		provider.RedirectURI = config.RedirectURI
-		provider.Issuers = config.Issuers
-
-		providerConfigBytes, err := utility.HTTPGet(config.ConfigURI)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to retrieve the configuration document for the %v provider at url %v: %v", provider.ProviderName, config.ConfigURI, err)
-		}
-
-		providerConfig := struct {
-			KeyURL           string   `json:"jwks_uri"`
-			SignInURL        string   `json:"authorization_endpoint"`
-			SignOutSupported bool     `json:"http_logout_supported"`
-			SignOutURL       string   `json:"end_session_endpoint"`
-			SupportedScopes  []string `json:"scopes_supported"`
-		}{}
-
-		err = json.Unmarshal(providerConfigBytes, &providerConfig)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to deserialize the JSON retrieved from the configuration document for %v provider, retrieved from url %v: %v", provider.ProviderName, config.ConfigURI, err)
-		}
-
-		signingKeys, err := initializeSigningKeys(providerConfig.KeyURL)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to initialize signing keys for provider '%v': %v", provider.ProviderName, err)
-		}
-
-		provider.SignInURL = providerConfig.SignInURL
-		provider.SignOutURL = providerConfig.SignOutURL
-		provider.SupportedScopes = providerConfig.SupportedScopes
-
-		providers = append(providers, provider)
-		keys = append(keys, signingKeys...)
-	}
-
-	return providers, keys, nil
-}
-
-// initializeSigningKeys examines the OpenID Connect configuration document identified in and downloads the keys specified
-// in the jwks_url property of that document. The jwks (JSON Web Key Set) document is then parsed and stored in a map of
-// signingKey structures, indexed by keyid.
-//
-// Later, when a token is received, we examine the header of that token for a key id (kid) claim, and use the value of that claim
-// to lookup the signing key for the token for verification purposes.
-func initializeSigningKeys(jwksURL string) ([]SigningKey, error) {
-	jwksBody, err := utility.HTTPGet(jwksURL)
-
-	if err != nil {
-		return nil, fmt.Errorf("Failed to retrieve the OpenID JSON Web Key Set from %v: %v", jwksURL, err)
-	}
-
-	var keyDataEntries struct {
-		Keys []struct {
-			KeyType  string `json:"kty"`
-			Use      string `json:"use"`
-			KeyID    string `json:"kid"`
-			Modulus  string `json:"n"`
-			Exponent string `json:"e"`
-		} `json:"keys"`
-	}
-
-	keyDataEntries.Keys = make([]struct {
-		KeyType  string `json:"kty"`
-		Use      string `json:"use"`
-		KeyID    string `json:"kid"`
-		Modulus  string `json:"n"`
-		Exponent string `json:"e"`
-	}, 5)
-
-	err = json.Unmarshal(jwksBody, &keyDataEntries)
-
-	if err != nil {
-		return nil, fmt.Errorf("Failed to decode the JWKS document retrieved from %v: %v", jwksURL, err)
-	}
-
-	signingKeys := make([]SigningKey, len(keyDataEntries.Keys))
-
-	// The below ONLY supports RSA
-	for _, keyData := range keyDataEntries.Keys {
-		var sk SigningKey
-
-		if keyData.KeyType != "RSA" {
-			log.Printf("Unkown key type '%v' found in JWKS retrieved at %v. Skipping.\n", keyData.KeyType, jwksURL)
-			continue
-		}
-
-		if keyData.Use != "sig" {
-			log.Printf("Unknown key use '%v' found in JWKS retrieved at %v. Skipping.\n", keyData.Use, jwksURL)
-			continue
-		}
-
-		modulusBytes, err := base64.RawURLEncoding.DecodeString(keyData.Modulus)
-
-		if err != nil {
-			log.Printf("Failed to decode modulus component from key with id %v, in document retrieved at %v; modulus component was recorded as '%v': %v", keyData.KeyID, jwksURL, keyData.Modulus, err)
-		}
-
-		exponentBytes, err := base64.RawURLEncoding.DecodeString(keyData.Exponent)
-
-		if err != nil {
-			log.Printf("Failed to decode exponent component from key with id %v, in document retrieved at %v; exponent component was recorded as '%v': %v", keyData.KeyID, jwksURL, keyData.Exponent, err)
-		}
-
-		var modulus big.Int
-		modulus.SetBytes(modulusBytes)
-
-		for i := len(exponentBytes); i < 4; i++ {
-			exponentBytes = append(exponentBytes, 0)
-		}
-
-		exponent := int(exponentBytes[0])
-		exponent |= int(exponentBytes[1]) << 8
-		exponent |= int(exponentBytes[2]) << 16
-		exponent |= int(exponentBytes[3]) << 24
-
-		sk.KeyID = keyData.KeyID
-		sk.Type = keyData.KeyType
-		sk.PublicKey = &rsa.PublicKey{N: &modulus, E: exponent}
-
-		signingKeys = append(signingKeys, sk)
-	}
-
-	return signingKeys, nil
 }
 
 // RefreshConfig waits for the specified timer to be signaled, and then refreshes the middleware configuration.
@@ -263,45 +115,6 @@ func (m *AuthenticationMiddleware) RefreshConfig(timer *time.Timer, duration tim
 	}
 
 	return nil
-}
-
-func generateNonce() ([]byte, error) {
-	retVal := make([]byte, 64)
-
-	_, err := rand.Read(retVal)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return retVal, nil
-}
-
-func setContextAndForward(token *jwt.Token, w http.ResponseWriter, r *http.Request, next http.Handler) {
-	if token != nil {
-		// Deserialize Claims
-		var tokenClaims map[string]interface{}
-		err := json.Unmarshal(token.RawClaims(), &tokenClaims)
-
-		if err != nil {
-			msg := fmt.Sprintf("A token was received, but a failure was encountered while deserializing the claims the token contains. Error: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(msg))
-
-			log.Printf("[REQUEST FATAL ERROR] %v\n", msg)
-
-			return
-		}
-
-		// Token is now verified, and we have extracted the passed claims
-		// Associated the claims to the request context
-		ctx := context.WithValue(r.Context(), KeyClaims, tokenClaims)
-
-		// Token is now verified.
-		r = r.WithContext(ctx)
-	}
-
-	next.ServeHTTP(w, r)
 }
 
 // EvaluateToken evaluates the request for the presence of a token. If the token is present and is valid,
@@ -399,70 +212,6 @@ func (m *AuthenticationMiddleware) EvaluateTokenValue(tokenValue string) (*jwt.T
 	}
 
 	return nil, fmt.Errorf("A token was received, but could not be verified: %v", verifierErrors)
-}
-
-func constructVerifierList(m *AuthenticationMiddleware, kid string, alg jwt.Algorithm) ([]jwt.Verifier, error) {
-	var signingKeysForConsideration []SigningKey
-	var verifierList []jwt.Verifier
-
-	if alg[0:2] == "HS" {
-		for _, v := range m.Providers {
-			v, err := jwt.NewVerifierHS(alg, []byte(v.ClientSecret))
-
-			if err != nil {
-				return nil, fmt.Errorf("An error occurred while constructing the HMAC verifier for the presented auth token: %v", err)
-			}
-
-			verifierList = append(verifierList, v)
-		}
-	} else {
-		if len(kid) != 0 {
-			// token specified a key id. seek that key
-			sk, ok := m.SigningKeys[kid]
-
-			if ok {
-				signingKeysForConsideration = append(signingKeysForConsideration, sk)
-			}
-		}
-
-		if len(signingKeysForConsideration) == 0 {
-			// consider all of our signing keys
-			for _, v := range m.SigningKeys {
-				signingKeysForConsideration = append(signingKeysForConsideration, v)
-			}
-		}
-
-		var v jwt.Verifier
-		var err error
-
-		for _, sk := range signingKeysForConsideration {
-			switch alg[0:2] {
-			case "RS":
-				v, err = jwt.NewVerifierRS(alg, sk.PublicKey.(*rsa.PublicKey))
-			case "ES":
-				v, err = jwt.NewVerifierES(alg, sk.PublicKey.(*ecdsa.PublicKey))
-			case "PS":
-				v, err = jwt.NewVerifierPS(alg, sk.PublicKey.(*rsa.PublicKey))
-			}
-
-			if err != nil {
-				return nil, fmt.Errorf("While constructing the verifier list, an error was encountered constructing a verifier: %v", err)
-			}
-
-			verifierList = append(verifierList, v)
-		}
-	}
-
-	return verifierList, nil
-}
-
-/* Public Functions */
-
-// TokenNotPresentError represents an error that indicates that an authentication token was not present
-type TokenNotPresentError int
-
-func (TokenNotPresentError) Error() string {
-	return fmt.Sprintf("No token was present.")
 }
 
 // SignInController serves as a sign-in process initiation controller and token exchange endpoint. This controller starts and concludes the sign-in process.
@@ -734,3 +483,254 @@ func (m *AuthenticationMiddleware) RequiredMiddlewareWithRedirect(redirectURL st
 		next.ServeHTTP(w, r)
 	}))
 }
+
+// ParseAuthConfig parses the bytes provided in configBytes as an auth configuration document, and then
+// initializes a SignInProvider struct for each configured signin provider.
+func parseAuthConfig(configBytes []byte) ([]SignInProvider, []SigningKey, error) {
+	providers := make([]SignInProvider, 0)
+	keys := make([]SigningKey, 0)
+
+	parsedAuthConfig := make([]struct {
+		Provider     string   `json:"provider"`
+		ClientID     string   `json:"client_id"`
+		ClientSecret string   `json:"client_secret"`
+		RedirectURI  string   `json:"redirect_uri"`
+		ConfigURI    string   `json:"config_uri"`
+		Issuers      []string `json:"issuers"`
+	}, 0)
+
+	err := json.Unmarshal(configBytes, &parsedAuthConfig)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("Unable to parse the specified bytes as JSON: %v", err)
+	}
+
+	for _, config := range parsedAuthConfig {
+		var provider SignInProvider
+
+		// make certain all required values are present
+		provider.ProviderName = config.Provider
+		provider.ClientID = config.ClientID
+		provider.ClientSecret = config.ClientSecret
+		provider.RedirectURI = config.RedirectURI
+		provider.Issuers = config.Issuers
+
+		providerConfigBytes, err := utility.HTTPGet(config.ConfigURI)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to retrieve the configuration document for the %v provider at url %v: %v", provider.ProviderName, config.ConfigURI, err)
+		}
+
+		providerConfig := struct {
+			KeyURL           string   `json:"jwks_uri"`
+			SignInURL        string   `json:"authorization_endpoint"`
+			SignOutSupported bool     `json:"http_logout_supported"`
+			SignOutURL       string   `json:"end_session_endpoint"`
+			SupportedScopes  []string `json:"scopes_supported"`
+		}{}
+
+		err = json.Unmarshal(providerConfigBytes, &providerConfig)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to deserialize the JSON retrieved from the configuration document for %v provider, retrieved from url %v: %v", provider.ProviderName, config.ConfigURI, err)
+		}
+
+		signingKeys, err := initializeSigningKeys(providerConfig.KeyURL)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to initialize signing keys for provider '%v': %v", provider.ProviderName, err)
+		}
+
+		provider.SignInURL = providerConfig.SignInURL
+		provider.SignOutURL = providerConfig.SignOutURL
+		provider.SupportedScopes = providerConfig.SupportedScopes
+
+		providers = append(providers, provider)
+		keys = append(keys, signingKeys...)
+	}
+
+	return providers, keys, nil
+}
+
+// initializeSigningKeys examines the OpenID Connect configuration document identified in and downloads the keys specified
+// in the jwks_url property of that document. The jwks (JSON Web Key Set) document is then parsed and stored in a map of
+// signingKey structures, indexed by keyid.
+//
+// Later, when a token is received, we examine the header of that token for a key id (kid) claim, and use the value of that claim
+// to lookup the signing key for the token for verification purposes.
+func initializeSigningKeys(jwksURL string) ([]SigningKey, error) {
+	jwksBody, err := utility.HTTPGet(jwksURL)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to retrieve the OpenID JSON Web Key Set from %v: %v", jwksURL, err)
+	}
+
+	var keyDataEntries struct {
+		Keys []struct {
+			KeyType  string `json:"kty"`
+			Use      string `json:"use"`
+			KeyID    string `json:"kid"`
+			Modulus  string `json:"n"`
+			Exponent string `json:"e"`
+		} `json:"keys"`
+	}
+
+	keyDataEntries.Keys = make([]struct {
+		KeyType  string `json:"kty"`
+		Use      string `json:"use"`
+		KeyID    string `json:"kid"`
+		Modulus  string `json:"n"`
+		Exponent string `json:"e"`
+	}, 5)
+
+	err = json.Unmarshal(jwksBody, &keyDataEntries)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to decode the JWKS document retrieved from %v: %v", jwksURL, err)
+	}
+
+	signingKeys := make([]SigningKey, len(keyDataEntries.Keys))
+
+	// The below ONLY supports RSA
+	for _, keyData := range keyDataEntries.Keys {
+		var sk SigningKey
+
+		if keyData.KeyType != "RSA" {
+			log.Printf("Unkown key type '%v' found in JWKS retrieved at %v. Skipping.\n", keyData.KeyType, jwksURL)
+			continue
+		}
+
+		if keyData.Use != "sig" {
+			log.Printf("Unknown key use '%v' found in JWKS retrieved at %v. Skipping.\n", keyData.Use, jwksURL)
+			continue
+		}
+
+		modulusBytes, err := base64.RawURLEncoding.DecodeString(keyData.Modulus)
+
+		if err != nil {
+			log.Printf("Failed to decode modulus component from key with id %v, in document retrieved at %v; modulus component was recorded as '%v': %v", keyData.KeyID, jwksURL, keyData.Modulus, err)
+		}
+
+		exponentBytes, err := base64.RawURLEncoding.DecodeString(keyData.Exponent)
+
+		if err != nil {
+			log.Printf("Failed to decode exponent component from key with id %v, in document retrieved at %v; exponent component was recorded as '%v': %v", keyData.KeyID, jwksURL, keyData.Exponent, err)
+		}
+
+		var modulus big.Int
+		modulus.SetBytes(modulusBytes)
+
+		for i := len(exponentBytes); i < 4; i++ {
+			exponentBytes = append(exponentBytes, 0)
+		}
+
+		exponent := int(exponentBytes[0])
+		exponent |= int(exponentBytes[1]) << 8
+		exponent |= int(exponentBytes[2]) << 16
+		exponent |= int(exponentBytes[3]) << 24
+
+		sk.KeyID = keyData.KeyID
+		sk.Type = keyData.KeyType
+		sk.PublicKey = &rsa.PublicKey{N: &modulus, E: exponent}
+
+		signingKeys = append(signingKeys, sk)
+	}
+
+	return signingKeys, nil
+}
+
+func generateNonce() ([]byte, error) {
+	retVal := make([]byte, 64)
+
+	_, err := rand.Read(retVal)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return retVal, nil
+}
+
+func setContextAndForward(token *jwt.Token, w http.ResponseWriter, r *http.Request, next http.Handler) {
+	if token != nil {
+		// Deserialize Claims
+		var tokenClaims map[string]interface{}
+		err := json.Unmarshal(token.RawClaims(), &tokenClaims)
+
+		if err != nil {
+			msg := fmt.Sprintf("A token was received, but a failure was encountered while deserializing the claims the token contains. Error: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(msg))
+
+			log.Printf("[REQUEST FATAL ERROR] %v\n", msg)
+
+			return
+		}
+
+		// Token is now verified, and we have extracted the passed claims
+		// Associated the claims to the request context
+		ctx := context.WithValue(r.Context(), KeyClaims, tokenClaims)
+
+		// Token is now verified.
+		r = r.WithContext(ctx)
+	}
+
+	next.ServeHTTP(w, r)
+}
+
+func constructVerifierList(m *AuthenticationMiddleware, kid string, alg jwt.Algorithm) ([]jwt.Verifier, error) {
+	var signingKeysForConsideration []SigningKey
+	var verifierList []jwt.Verifier
+
+	if alg[0:2] == "HS" {
+		for _, v := range m.Providers {
+			v, err := jwt.NewVerifierHS(alg, []byte(v.ClientSecret))
+
+			if err != nil {
+				return nil, fmt.Errorf("An error occurred while constructing the HMAC verifier for the presented auth token: %v", err)
+			}
+
+			verifierList = append(verifierList, v)
+		}
+	} else {
+		if len(kid) != 0 {
+			// token specified a key id. seek that key
+			sk, ok := m.SigningKeys[kid]
+
+			if ok {
+				signingKeysForConsideration = append(signingKeysForConsideration, sk)
+			}
+		}
+
+		if len(signingKeysForConsideration) == 0 {
+			// consider all of our signing keys
+			for _, v := range m.SigningKeys {
+				signingKeysForConsideration = append(signingKeysForConsideration, v)
+			}
+		}
+
+		var v jwt.Verifier
+		var err error
+
+		for _, sk := range signingKeysForConsideration {
+			switch alg[0:2] {
+			case "RS":
+				v, err = jwt.NewVerifierRS(alg, sk.PublicKey.(*rsa.PublicKey))
+			case "ES":
+				v, err = jwt.NewVerifierES(alg, sk.PublicKey.(*ecdsa.PublicKey))
+			case "PS":
+				v, err = jwt.NewVerifierPS(alg, sk.PublicKey.(*rsa.PublicKey))
+			}
+
+			if err != nil {
+				return nil, fmt.Errorf("While constructing the verifier list, an error was encountered constructing a verifier: %v", err)
+			}
+
+			verifierList = append(verifierList, v)
+		}
+	}
+
+	return verifierList, nil
+}
+
+/* Public Functions */

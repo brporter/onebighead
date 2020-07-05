@@ -1,6 +1,23 @@
-{
-    "client_id": "someid",
-    "client_secret": "somesecret",
-    "redirect_uri": "http://localhost:8080/auth",
-    "config_uri": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration"
-}
+[
+    {
+        "provider": "microsoft",
+        "client_id": "your_client_id",
+        "client_secret": "your_client_secret",
+        "redirect_uri": "http://localhost:8080/signin",
+        "config_uri": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
+        "issuers": [
+            "https://login.microsoftonline.com"
+        ]
+    },
+    {
+        "provider": "google",
+        "client_id": "your_client_id",
+        "client_secret": "your_client_secret",
+        "redirect_uri": "http://localhost:8080/signin",
+        "config_uri": "https://accounts.google.com/.well-known/openid-configuration",
+        "issuers": [
+            "https://accounts.google.com",
+            "accounts.google.com"
+        ]
+    }
+]
