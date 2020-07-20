@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	_ "io/ioutil"
 	"log"
 	_ "log"
 	"net/http"
+	"time"
 
 	"github.com/brporter/onebighead.com/middleware"
 )
@@ -25,12 +27,29 @@ type Page struct {
 var templates = template.Must(template.ParseFiles("template.html"))
 
 func main() {
-
-	am, err := middleware.NewAuthenticationMiddleware()
+	configData, err := ioutil.ReadFile("auth.json")
 
 	if err != nil {
 		panic(err)
 	}
+
+	am, err := middleware.NewAuthenticationMiddleware(configData)
+
+	if err != nil {
+		panic(err)
+	}
+
+	go func() {
+		timer := time.NewTimer(time.Hour)
+
+		for {
+			<-timer.C
+
+			am.RefreshConfig(configData)
+
+			timer.Reset(time.Hour)
+		}
+	}()
 
 	http.Handle("/admin", am.RequiredMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)

@@ -210,6 +210,45 @@ func TestNewAuthenticationMiddleware_GoodConfigURIBadJWKS(t *testing.T) {
 	}
 }
 
+func TestEvaluateTokenValue(t *testing.T) {
+	testIOHelper.Error = nil
+	testIOHelper.FileData = []byte(`[
+		{
+			"provider": "foo",
+			"client_id": "foos_clientid",
+			"client_secret": "foos_secret",
+			"redirect_uri": "http://localhost:8080/signin",
+			"config_uri": "https://foos_oidc_discovery_document/",
+			"issuers": [
+				"https://foo"
+			]
+		},
+		{
+			"provider": "bar",
+			"client_id": "bars_clientid",
+			"client_secret": "bars_secret",
+			"redirect_uri": "http://localhost:8080/signin",
+			"config_uri": "https://bars_oidc_discovery_document",
+			"issuers": [
+				"https://bar",
+				"bar"
+			]
+		}
+	]`)
+
+	am, _ := middleware.NewAuthenticationMiddleware()
+
+	token, err := am.EvaluateTokenValue(ValidToken)
+
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if token == nil {
+		t.Fatal("Failed to convert token")
+	}
+}
+
 var ValidConfigData []byte
 var ValidFooOidcDocument []byte
 var ValidFooJwksDocument []byte
@@ -220,7 +259,11 @@ var BadOidcDocument []byte
 var BadJwksDocument []byte
 var GoneDocument []byte
 
+var ValidToken string
+
 func init() {
+	ValidToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.POstGetfAytaZS82wHcjoTyoqhMyxXiWdR7Nn7A29DNSl0EiXLdwJ6xC6AfgZWF1bOsS_TuYI3OG85AmiExREkrS6tDfTQ2B3WXlrr-wp5AokiRbz3_oB4OxG-W9KcEEbDRcZc0nH3L7LzYptiy1PtAylQGxHTWZXtGz4ht0bAecBgmpdgXMguEIcoqPJ1n3pIWk_dUZegpqx0Lka21H6XxUTxiy8OcaarA8zdnPUnV6AmNP3ecFawIFYdvJB_cm-GvpCSbr8G8y_Mllj8f4x9nBH8pQux89_6gUY618iYv7tuPWBFfEbLxtF2pZS6YC1aSfLQxeNe8djT9YjpvRZA"
+
 	ValidConfigData = []byte(`[
 		{
 			"provider": "foo",

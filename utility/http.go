@@ -10,17 +10,9 @@ type HTTPClient interface {
 	Get(url string) ([]byte, error)
 }
 
-// HTTPClientGeneratorFunc is a function capable of return an implementation of the HTTPClient interface
-type HTTPClientGeneratorFunc func() HTTPClient
-
-// HTTPClientGenerator is a function that is capable of generating an new HTTPClient
-var HTTPClientGenerator HTTPClientGeneratorFunc = func() HTTPClient {
-	return &systemHTTPClient{}
-}
-
 // NewHTTPClient creates a new HTTPClient
 func NewHTTPClient() HTTPClient {
-	return HTTPClientGenerator()
+	return &systemHTTPClient{}
 }
 
 type systemHTTPClient struct {

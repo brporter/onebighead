@@ -25,8 +25,11 @@ type Key int
 
 const (
 	// KeyClaims is the identifier used for storage of authentication token claims on the request context.
-	KeyClaims  Key    = iota
-	authConfig string = "auth.json"
+	KeyClaims Key = iota
+)
+
+var (
+	HTTPClient utility.HTTPClient
 )
 
 // SigningKey holds the public key used to sign a JWT token, along with key type and identifier information.
@@ -57,16 +60,91 @@ type AuthenticationMiddleware struct {
 // TokenNotPresentError represents an error that indicates that an authentication token was not present
 type TokenNotPresentError int
 
+func init() {
+	HTTPClient = utility.NewHTTPClient()
+}
+
 func (TokenNotPresentError) Error() string {
 	return fmt.Sprintf("No token was present.")
 }
 
-func NewAuthenticationMiddleware() (*AuthenticationMiddleware, error) {
+// ParseConfig parses the bytes provided in configBytes as an auth configuration document, and then
+// initializes a SignInProvider struct for each configured signin provider.
+func ParseConfig(configBytes []byte) ([]SignInProvider, []SigningKey, error) {
+	providers := make([]SignInProvider, 0)
+	keys := make([]SigningKey, 0)
+
+	parsedAuthConfig := make([]struct {
+		Provider     string   `json:"provider"`
+		ClientID     string   `json:"client_id"`
+		ClientSecret string   `json:"client_secret"`
+		RedirectURI  string   `json:"redirect_uri"`
+		ConfigURI    string   `json:"config_uri"`
+		Issuers      []string `json:"issuers"`
+	}, 0)
+
+	err := json.Unmarshal(configBytes, &parsedAuthConfig)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("Unable to parse the specified bytes as JSON: %v", err)
+	}
+
+	for _, config := range parsedAuthConfig {
+		var provider SignInProvider
+
+		// make certain all required values are present
+		provider.ProviderName = config.Provider
+		provider.ClientID = config.ClientID
+		provider.ClientSecret = config.ClientSecret
+		provider.RedirectURI = config.RedirectURI
+		provider.Issuers = config.Issuers
+
+		providerConfigBytes, err := HTTPClient.Get(config.ConfigURI)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to retrieve the configuration document for the %v provider at url %v: %v", provider.ProviderName, config.ConfigURI, err)
+		}
+
+		providerConfig := struct {
+			KeyURL           string   `json:"jwks_uri"`
+			SignInURL        string   `json:"authorization_endpoint"`
+			SignOutSupported bool     `json:"http_logout_supported"`
+			SignOutURL       string   `json:"end_session_endpoint"`
+			SupportedScopes  []string `json:"scopes_supported"`
+		}{}
+
+		err = json.Unmarshal(providerConfigBytes, &providerConfig)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to deserialize the JSON retrieved from the configuration document for %v provider, retrieved from url %v: %v", provider.ProviderName, config.ConfigURI, err)
+		}
+
+		signingKeys, err := initializeSigningKeys(providerConfig.KeyURL)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to initialize signing keys for provider '%v': %v", provider.ProviderName, err)
+		}
+
+		provider.SignInURL = providerConfig.SignInURL
+		provider.SignOutURL = providerConfig.SignOutURL
+		provider.SupportedScopes = providerConfig.SupportedScopes
+
+		providers = append(providers, provider)
+		keys = append(keys, signingKeys...)
+	}
+
+	return providers, keys, nil
+}
+
+func NewAuthenticationMiddleware(configData []byte) (*AuthenticationMiddleware, error) {
+	if configData == nil {
+		return nil, fmt.Errorf("configData cannot be nil")
+	}
+
 	retVal := &AuthenticationMiddleware{}
 
 	retVal.Encodings = []*base64.Encoding{base64.StdEncoding, base64.RawURLEncoding, base64.URLEncoding}
-
-	err := retVal.RefreshConfig(nil, 0)
+	err := retVal.RefreshConfig(configData)
 
 	if err != nil {
 		return nil, fmt.Errorf("While initializing, an error was encountered reading the needed configuration data: %v", err)
@@ -79,39 +157,21 @@ func NewAuthenticationMiddleware() (*AuthenticationMiddleware, error) {
 // The specified timer will be reset with the passed duration, and the method will loop, waiting again.
 // If the specified duration is 0, the method will return after the timer is signaled; if timer is nil, the method will not wait for timer to be signaled, but will
 // refresh the configuration immediately, and then exit.
-func (m *AuthenticationMiddleware) RefreshConfig(timer *time.Timer, duration time.Duration) error {
-	for {
-		if timer != nil {
-			<-timer.C
-		}
+func (m *AuthenticationMiddleware) RefreshConfig(configData []byte) error {
+	providers, signingKeys, err := ParseConfig(configData)
 
-		data, err := utility.FileGet(authConfig)
+	if err != nil {
+		return fmt.Errorf("Failed to refresh auth configuration. Error: %v", err)
+	}
 
-		if err != nil {
-			return fmt.Errorf("Unable to read authentication configuration data: %v", err)
-		}
+	m.Providers = providers
 
-		providers, signingKeys, err := parseAuthConfig(data)
+	if m.SigningKeys == nil {
+		m.SigningKeys = make(map[string]SigningKey, 10)
+	}
 
-		if err != nil {
-			return fmt.Errorf("Failed to refresh auth configuration. Will retry in %v. Error: %v", duration, err)
-		}
-
-		m.Providers = providers
-
-		if m.SigningKeys == nil {
-			m.SigningKeys = make(map[string]SigningKey, 10)
-		}
-
-		for _, v := range signingKeys {
-			m.SigningKeys[v.KeyID] = v
-		}
-
-		if duration > 0 && timer != nil {
-			timer.Reset(duration)
-		} else {
-			break
-		}
+	for _, v := range signingKeys {
+		m.SigningKeys[v.KeyID] = v
 	}
 
 	return nil
@@ -190,7 +250,9 @@ func (m *AuthenticationMiddleware) EvaluateTokenValue(tokenValue string) (*jwt.T
 			return nil, fmt.Errorf("A token was received, but the header was not parsable JSON: %v", err)
 		}
 
-		kid = headerClaims["kid"].(string)
+		if val, ok := headerClaims["kid"]; ok {
+			kid = val.(string)
+		}
 	}
 
 	verifierList, err := constructVerifierList(m, kid, alg)
@@ -484,74 +546,6 @@ func (m *AuthenticationMiddleware) RequiredMiddlewareWithRedirect(redirectURL st
 	}))
 }
 
-// ParseAuthConfig parses the bytes provided in configBytes as an auth configuration document, and then
-// initializes a SignInProvider struct for each configured signin provider.
-func parseAuthConfig(configBytes []byte) ([]SignInProvider, []SigningKey, error) {
-	providers := make([]SignInProvider, 0)
-	keys := make([]SigningKey, 0)
-
-	parsedAuthConfig := make([]struct {
-		Provider     string   `json:"provider"`
-		ClientID     string   `json:"client_id"`
-		ClientSecret string   `json:"client_secret"`
-		RedirectURI  string   `json:"redirect_uri"`
-		ConfigURI    string   `json:"config_uri"`
-		Issuers      []string `json:"issuers"`
-	}, 0)
-
-	err := json.Unmarshal(configBytes, &parsedAuthConfig)
-
-	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to parse the specified bytes as JSON: %v", err)
-	}
-
-	for _, config := range parsedAuthConfig {
-		var provider SignInProvider
-
-		// make certain all required values are present
-		provider.ProviderName = config.Provider
-		provider.ClientID = config.ClientID
-		provider.ClientSecret = config.ClientSecret
-		provider.RedirectURI = config.RedirectURI
-		provider.Issuers = config.Issuers
-
-		providerConfigBytes, err := utility.HTTPGet(config.ConfigURI)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to retrieve the configuration document for the %v provider at url %v: %v", provider.ProviderName, config.ConfigURI, err)
-		}
-
-		providerConfig := struct {
-			KeyURL           string   `json:"jwks_uri"`
-			SignInURL        string   `json:"authorization_endpoint"`
-			SignOutSupported bool     `json:"http_logout_supported"`
-			SignOutURL       string   `json:"end_session_endpoint"`
-			SupportedScopes  []string `json:"scopes_supported"`
-		}{}
-
-		err = json.Unmarshal(providerConfigBytes, &providerConfig)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to deserialize the JSON retrieved from the configuration document for %v provider, retrieved from url %v: %v", provider.ProviderName, config.ConfigURI, err)
-		}
-
-		signingKeys, err := initializeSigningKeys(providerConfig.KeyURL)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to initialize signing keys for provider '%v': %v", provider.ProviderName, err)
-		}
-
-		provider.SignInURL = providerConfig.SignInURL
-		provider.SignOutURL = providerConfig.SignOutURL
-		provider.SupportedScopes = providerConfig.SupportedScopes
-
-		providers = append(providers, provider)
-		keys = append(keys, signingKeys...)
-	}
-
-	return providers, keys, nil
-}
-
 // initializeSigningKeys examines the OpenID Connect configuration document identified in and downloads the keys specified
 // in the jwks_url property of that document. The jwks (JSON Web Key Set) document is then parsed and stored in a map of
 // signingKey structures, indexed by keyid.
@@ -559,7 +553,7 @@ func parseAuthConfig(configBytes []byte) ([]SignInProvider, []SigningKey, error)
 // Later, when a token is received, we examine the header of that token for a key id (kid) claim, and use the value of that claim
 // to lookup the signing key for the token for verification purposes.
 func initializeSigningKeys(jwksURL string) ([]SigningKey, error) {
-	jwksBody, err := utility.HTTPGet(jwksURL)
+	jwksBody, err := HTTPClient.Get(jwksURL)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve the OpenID JSON Web Key Set from %v: %v", jwksURL, err)
@@ -704,6 +698,7 @@ func constructVerifierList(m *AuthenticationMiddleware, kid string, alg jwt.Algo
 
 		if len(signingKeysForConsideration) == 0 {
 			// consider all of our signing keys
+			// TODO: m.SigningKeys is winding up containing an invalid RSA key
 			for _, v := range m.SigningKeys {
 				signingKeysForConsideration = append(signingKeysForConsideration, v)
 			}
@@ -732,5 +727,3 @@ func constructVerifierList(m *AuthenticationMiddleware, kid string, alg jwt.Algo
 
 	return verifierList, nil
 }
-
-/* Public Functions */
