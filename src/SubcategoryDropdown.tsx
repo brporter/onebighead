@@ -1,7 +1,13 @@
-import PropTypes from 'prop-types'
+import type { Category } from './types';
 
-function SubcategoryDropdown({ subcategories, selectedId, onChange }) {
-  if (!subcategories?.length) return null
+interface SubcategoryDropdownProps {
+  subcategories?: Category[];
+  selectedId: number | null;
+  onChange: (id: number | null) => void;
+}
+
+function SubcategoryDropdown({ subcategories, selectedId, onChange }: SubcategoryDropdownProps) {
+  if (!subcategories?.length) return null;
 
   return (
     <div className="subcategoryDropdown">
@@ -22,24 +28,8 @@ function SubcategoryDropdown({ subcategories, selectedId, onChange }) {
         ))}
       </select>
     </div>
-  )
+  );
 }
 
-SubcategoryDropdown.propTypes = {
-  subcategories: PropTypes.arrayOf(
-    PropTypes.shape({
-      categoryId: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-    })
-  ),
-  selectedId: PropTypes.number,
-  onChange: PropTypes.func.isRequired,
-}
-
-SubcategoryDropdown.defaultProps = {
-  subcategories: [],
-  selectedId: null,
-}
-
-export default SubcategoryDropdown
+export default SubcategoryDropdown;
 
