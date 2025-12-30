@@ -1,0 +1,403 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`App > snapshots > should render initial state 1`] = `
+<div>
+  <div
+    class="app"
+    data-mobile-view="categories"
+  >
+    <header
+      class="app__header"
+    >
+      <h1>
+        Vintage Macintosh Models
+      </h1>
+      <p
+        class="app__subtitle"
+      >
+        Browse categories, then view items and details.
+      </p>
+    </header>
+    <div
+      class="app__layout"
+    >
+      <nav
+        aria-label="Category navigation"
+        class="app__sidebar"
+      >
+        <aside
+          class="categoryTree"
+        >
+          <h2
+            class="categoryTree__title"
+          >
+            Categories
+          </h2>
+          <ul
+            class="categoryTree__list"
+          >
+            <li
+              class="categoryTree__node"
+            >
+              <div
+                class="categoryTree__row"
+                style="padding-left: 0px;"
+              >
+                <button
+                  aria-label="Collapse Root Category"
+                  class="categoryTree__toggle"
+                  type="button"
+                >
+                  ▾
+                </button>
+                <button
+                  class="categoryTree__item"
+                  type="button"
+                >
+                  Root Category
+                </button>
+              </div>
+              <ul
+                class="categoryTree__children"
+              >
+                <li
+                  class="categoryTree__node"
+                >
+                  <div
+                    class="categoryTree__row"
+                    style="padding-left: 14px;"
+                  >
+                    <span
+                      aria-hidden="true"
+                      class="categoryTree__toggle-spacer"
+                    >
+                      ▸
+                    </span>
+                    <button
+                      class="categoryTree__item"
+                      type="button"
+                    >
+                      Child Category
+                    </button>
+                  </div>
+                </li>
+                <li
+                  class="categoryTree__node"
+                >
+                  <div
+                    class="categoryTree__row"
+                    style="padding-left: 14px;"
+                  >
+                    <span
+                      aria-hidden="true"
+                      class="categoryTree__toggle-spacer"
+                    >
+                      ▸
+                    </span>
+                    <button
+                      class="categoryTree__item"
+                      type="button"
+                    >
+                      Another Child
+                    </button>
+                  </div>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </aside>
+      </nav>
+      <main
+        class="app__content"
+      >
+        <section
+          class="placeholder"
+        >
+          <p
+            class="placeholder__text"
+          >
+            Select a category to browse items
+          </p>
+        </section>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`App > snapshots > should render with category selected 1`] = `
+<div>
+  <div
+    class="app"
+    data-mobile-view="items"
+  >
+    <header
+      class="app__header"
+    >
+      <h1>
+        Vintage Macintosh Models
+      </h1>
+      <p
+        class="app__subtitle"
+      >
+        Browse categories, then view items and details.
+      </p>
+    </header>
+    <div
+      class="app__layout"
+    >
+      <nav
+        aria-label="Category navigation"
+        class="app__sidebar"
+      >
+        <aside
+          class="categoryTree"
+        >
+          <h2
+            class="categoryTree__title"
+          >
+            Categories
+          </h2>
+          <ul
+            class="categoryTree__list"
+          >
+            <li
+              class="categoryTree__node"
+            >
+              <div
+                class="categoryTree__row"
+                style="padding-left: 0px;"
+              >
+                <button
+                  aria-label="Collapse Root Category"
+                  class="categoryTree__toggle"
+                  type="button"
+                >
+                  ▾
+                </button>
+                <button
+                  class="categoryTree__item categoryTree__item--active"
+                  type="button"
+                >
+                  Root Category
+                </button>
+              </div>
+              <ul
+                class="categoryTree__children"
+              >
+                <li
+                  class="categoryTree__node"
+                >
+                  <div
+                    class="categoryTree__row"
+                    style="padding-left: 14px;"
+                  >
+                    <span
+                      aria-hidden="true"
+                      class="categoryTree__toggle-spacer"
+                    >
+                      ▸
+                    </span>
+                    <button
+                      class="categoryTree__item"
+                      type="button"
+                    >
+                      Child Category
+                    </button>
+                  </div>
+                </li>
+                <li
+                  class="categoryTree__node"
+                >
+                  <div
+                    class="categoryTree__row"
+                    style="padding-left: 14px;"
+                  >
+                    <span
+                      aria-hidden="true"
+                      class="categoryTree__toggle-spacer"
+                    >
+                      ▸
+                    </span>
+                    <button
+                      class="categoryTree__item"
+                      type="button"
+                    >
+                      Another Child
+                    </button>
+                  </div>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </aside>
+      </nav>
+      <main
+        class="app__content"
+      >
+        <section
+          class="app__items"
+        >
+          <nav
+            class="mobileNav"
+          >
+            <button
+              class="mobileNav__back"
+              type="button"
+            >
+              ← Categories
+            </button>
+          </nav>
+          <div
+            class="subcategoryDropdown"
+          >
+            <label
+              class="subcategoryDropdown__label"
+              for="subcategory-filter"
+            >
+              Filter by subcategory:
+            </label>
+            <select
+              class="subcategoryDropdown__select"
+              id="subcategory-filter"
+            >
+              <option
+                value=""
+              >
+                All items
+              </option>
+              <option
+                value="2"
+              >
+                Child Category
+              </option>
+              <option
+                value="3"
+              >
+                Another Child
+              </option>
+            </select>
+          </div>
+          <aside
+            class="list"
+          >
+            <div
+              class="list__header"
+            >
+              <h2
+                class="list__title"
+              >
+                Items
+              </h2>
+              <div
+                class="list__headerRight"
+              >
+                <div
+                  aria-label="Item count"
+                  class="list__count"
+                >
+                  2
+                   total
+                </div>
+                <button
+                  class="list__addButton"
+                  type="button"
+                >
+                  + Add Item
+                </button>
+              </div>
+            </div>
+            <div
+              class="list__tableWrap"
+            >
+              <table
+                class="list__table"
+              >
+                <thead>
+                  <tr>
+                    <th
+                      class="list__th list__th--name"
+                      scope="col"
+                    >
+                      Name
+                    </th>
+                    <th
+                      class="list__th"
+                      scope="col"
+                    >
+                      Summary
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    aria-label="Select Test Item 1"
+                    class="list__tr list__tr--clickable"
+                    role="button"
+                    tabindex="0"
+                  >
+                    <td
+                      class="list__td list__td--name"
+                    >
+                      Test Item 1
+                    </td>
+                    <td
+                      class="list__td list__td--summary"
+                    >
+                      Summary 1
+                    </td>
+                  </tr>
+                  <tr
+                    aria-label="Select Test Item 2"
+                    class="list__tr list__tr--clickable"
+                    role="button"
+                    tabindex="0"
+                  >
+                    <td
+                      class="list__td list__td--name"
+                    >
+                      Test Item 2
+                    </td>
+                    <td
+                      class="list__td list__td--summary"
+                    >
+                      Summary 2
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div
+              aria-label="Pagination"
+              class="list__pager"
+            >
+              <button
+                class="list__pagerButton"
+                disabled=""
+                type="button"
+              >
+                Previous
+              </button>
+              <div
+                class="list__pagerStatus"
+              >
+                Page 
+                1
+                 of 
+                1
+              </div>
+              <button
+                class="list__pagerButton"
+                disabled=""
+                type="button"
+              >
+                Next
+              </button>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+  </div>
+</div>
+`;

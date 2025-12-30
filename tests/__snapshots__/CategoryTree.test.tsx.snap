@@ -1,0 +1,234 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CategoryTree > snapshots > should render empty tree 1`] = `
+<div>
+  <aside
+    class="categoryTree"
+  >
+    <h2
+      class="categoryTree__title"
+    >
+      Categories
+    </h2>
+    <ul
+      class="categoryTree__list"
+    />
+  </aside>
+</div>
+`;
+
+exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
+<div>
+  <aside
+    class="categoryTree"
+  >
+    <h2
+      class="categoryTree__title"
+    >
+      Categories
+    </h2>
+    <ul
+      class="categoryTree__list"
+    >
+      <li
+        class="categoryTree__node"
+      >
+        <div
+          class="categoryTree__row"
+          style="padding-left: 0px;"
+        >
+          <button
+            aria-label="Collapse Root 1"
+            class="categoryTree__toggle"
+            type="button"
+          >
+            ▾
+          </button>
+          <button
+            class="categoryTree__item"
+            type="button"
+          >
+            Root 1
+          </button>
+        </div>
+        <ul
+          class="categoryTree__children"
+        >
+          <li
+            class="categoryTree__node"
+          >
+            <div
+              class="categoryTree__row"
+              style="padding-left: 14px;"
+            >
+              <button
+                aria-label="Expand Child 1-1"
+                class="categoryTree__toggle"
+                type="button"
+              >
+                ▸
+              </button>
+              <button
+                class="categoryTree__item"
+                type="button"
+              >
+                Child 1-1
+              </button>
+            </div>
+          </li>
+          <li
+            class="categoryTree__node"
+          >
+            <div
+              class="categoryTree__row"
+              style="padding-left: 14px;"
+            >
+              <span
+                aria-hidden="true"
+                class="categoryTree__toggle-spacer"
+              >
+                ▸
+              </span>
+              <button
+                class="categoryTree__item"
+                type="button"
+              >
+                Child 1-2
+              </button>
+            </div>
+          </li>
+        </ul>
+      </li>
+      <li
+        class="categoryTree__node"
+      >
+        <div
+          class="categoryTree__row"
+          style="padding-left: 0px;"
+        >
+          <span
+            aria-hidden="true"
+            class="categoryTree__toggle-spacer"
+          >
+            ▸
+          </span>
+          <button
+            class="categoryTree__item"
+            type="button"
+          >
+            Root 2
+          </button>
+        </div>
+      </li>
+    </ul>
+  </aside>
+</div>
+`;
+
+exports[`CategoryTree > snapshots > should render with selected category 1`] = `
+<div>
+  <aside
+    class="categoryTree"
+  >
+    <h2
+      class="categoryTree__title"
+    >
+      Categories
+    </h2>
+    <ul
+      class="categoryTree__list"
+    >
+      <li
+        class="categoryTree__node"
+      >
+        <div
+          class="categoryTree__row"
+          style="padding-left: 0px;"
+        >
+          <button
+            aria-label="Collapse Root 1"
+            class="categoryTree__toggle"
+            type="button"
+          >
+            ▾
+          </button>
+          <button
+            class="categoryTree__item"
+            type="button"
+          >
+            Root 1
+          </button>
+        </div>
+        <ul
+          class="categoryTree__children"
+        >
+          <li
+            class="categoryTree__node"
+          >
+            <div
+              class="categoryTree__row"
+              style="padding-left: 14px;"
+            >
+              <button
+                aria-label="Expand Child 1-1"
+                class="categoryTree__toggle"
+                type="button"
+              >
+                ▸
+              </button>
+              <button
+                class="categoryTree__item categoryTree__item--active"
+                type="button"
+              >
+                Child 1-1
+              </button>
+            </div>
+          </li>
+          <li
+            class="categoryTree__node"
+          >
+            <div
+              class="categoryTree__row"
+              style="padding-left: 14px;"
+            >
+              <span
+                aria-hidden="true"
+                class="categoryTree__toggle-spacer"
+              >
+                ▸
+              </span>
+              <button
+                class="categoryTree__item"
+                type="button"
+              >
+                Child 1-2
+              </button>
+            </div>
+          </li>
+        </ul>
+      </li>
+      <li
+        class="categoryTree__node"
+      >
+        <div
+          class="categoryTree__row"
+          style="padding-left: 0px;"
+        >
+          <span
+            aria-hidden="true"
+            class="categoryTree__toggle-spacer"
+          >
+            ▸
+          </span>
+          <button
+            class="categoryTree__item"
+            type="button"
+          >
+            Root 2
+          </button>
+        </div>
+      </li>
+    </ul>
+  </aside>
+</div>
+`;

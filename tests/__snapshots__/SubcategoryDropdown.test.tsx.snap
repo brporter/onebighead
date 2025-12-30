@@ -1,0 +1,85 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SubcategoryDropdown > snapshots > should render dropdown with subcategories 1`] = `
+<div>
+  <div
+    class="subcategoryDropdown"
+  >
+    <label
+      class="subcategoryDropdown__label"
+      for="subcategory-filter"
+    >
+      Filter by subcategory:
+    </label>
+    <select
+      class="subcategoryDropdown__select"
+      id="subcategory-filter"
+    >
+      <option
+        value=""
+      >
+        All items
+      </option>
+      <option
+        value="1"
+      >
+        Subcategory 1
+      </option>
+      <option
+        value="2"
+      >
+        Subcategory 2
+      </option>
+      <option
+        value="3"
+      >
+        Subcategory 3
+      </option>
+    </select>
+  </div>
+</div>
+`;
+
+exports[`SubcategoryDropdown > snapshots > should render nothing when subcategories is empty 1`] = `<div />`;
+
+exports[`SubcategoryDropdown > snapshots > should render nothing when subcategories is undefined 1`] = `<div />`;
+
+exports[`SubcategoryDropdown > snapshots > should render with selected subcategory 1`] = `
+<div>
+  <div
+    class="subcategoryDropdown"
+  >
+    <label
+      class="subcategoryDropdown__label"
+      for="subcategory-filter"
+    >
+      Filter by subcategory:
+    </label>
+    <select
+      class="subcategoryDropdown__select"
+      id="subcategory-filter"
+    >
+      <option
+        value=""
+      >
+        All items
+      </option>
+      <option
+        value="1"
+      >
+        Subcategory 1
+      </option>
+      <option
+        value="2"
+      >
+        Subcategory 2
+      </option>
+      <option
+        value="3"
+      >
+        Subcategory 3
+      </option>
+    </select>
+  </div>
+</div>
+`;

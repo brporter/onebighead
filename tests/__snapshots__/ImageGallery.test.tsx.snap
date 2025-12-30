@@ -1,0 +1,139 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ImageGallery > snapshots > should handle image object with undefined alt 1`] = `
+<div>
+  <section
+    aria-label="Test"
+    class="gallery"
+  >
+    <div
+      class="gallery__viewport"
+    >
+      <img
+        alt="Test"
+        class="gallery__image"
+        loading="lazy"
+        src="https://example.com/image.jpg"
+      />
+    </div>
+  </section>
+</div>
+`;
+
+exports[`ImageGallery > snapshots > should handle mixed string and object images 1`] = `
+<div>
+  <section
+    aria-label="Mixed Images"
+    class="gallery"
+  >
+    <div
+      class="gallery__viewport"
+    >
+      <img
+        alt="Mixed Images"
+        class="gallery__image"
+        loading="lazy"
+        src="https://example.com/string-image.jpg"
+      />
+    </div>
+    <div
+      class="gallery__controls"
+    >
+      <button
+        aria-controls="_r_4_"
+        class="gallery__button"
+        type="button"
+      >
+        Prev
+      </button>
+      <div
+        aria-live="polite"
+        class="gallery__status"
+        id="_r_4_"
+      >
+        1
+         / 
+        2
+      </div>
+      <button
+        aria-controls="_r_4_"
+        class="gallery__button"
+        type="button"
+      >
+        Next
+      </button>
+    </div>
+  </section>
+</div>
+`;
+
+exports[`ImageGallery > snapshots > should render multiple images with navigation controls 1`] = `
+<div>
+  <section
+    aria-label="Multi Image Gallery"
+    class="gallery"
+  >
+    <div
+      class="gallery__viewport"
+    >
+      <img
+        alt="Image 1"
+        class="gallery__image"
+        loading="lazy"
+        src="https://example.com/image1.jpg"
+      />
+    </div>
+    <div
+      class="gallery__controls"
+    >
+      <button
+        aria-controls="_r_3_"
+        class="gallery__button"
+        type="button"
+      >
+        Prev
+      </button>
+      <div
+        aria-live="polite"
+        class="gallery__status"
+        id="_r_3_"
+      >
+        1
+         / 
+        2
+      </div>
+      <button
+        aria-controls="_r_3_"
+        class="gallery__button"
+        type="button"
+      >
+        Next
+      </button>
+    </div>
+  </section>
+</div>
+`;
+
+exports[`ImageGallery > snapshots > should render nothing when images array is empty 1`] = `<div />`;
+
+exports[`ImageGallery > snapshots > should render nothing when images is undefined 1`] = `<div />`;
+
+exports[`ImageGallery > snapshots > should render single image without navigation controls 1`] = `
+<div>
+  <section
+    aria-label="Test Gallery"
+    class="gallery"
+  >
+    <div
+      class="gallery__viewport"
+    >
+      <img
+        alt="Test image"
+        class="gallery__image"
+        loading="lazy"
+        src="https://example.com/image1.jpg"
+      />
+    </div>
+  </section>
+</div>
+`;

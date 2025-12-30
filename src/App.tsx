@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import './App.css';
+import './styles/App.css';
 import { useData } from './DataContext';
 import CategoryTree from './CategoryTree';
 import ItemList from './ItemList';
