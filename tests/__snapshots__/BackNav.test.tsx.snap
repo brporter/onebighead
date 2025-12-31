@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BackNav > snapshots > should match snapshot 1`] = `
+<div>
+  <nav
+    class="mobileNav"
+  >
+    <button
+      class="mobileNav__back"
+      type="button"
+    >
+      ← 
+      Back to items
+    </button>
+  </nav>
+</div>
+`;

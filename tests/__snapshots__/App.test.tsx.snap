@@ -245,7 +245,8 @@ exports[`App > snapshots > should render with category selected 1`] = `
               class="mobileNav__back"
               type="button"
             >
-              ← Categories
+              ← 
+              Categories
             </button>
           </nav>
           <div

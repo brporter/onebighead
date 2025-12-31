@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import './styles/App.css';
 import { useData } from './DataContext';
+import BackNav from './BackNav';
 import CategoryTree from './CategoryTree';
 import ItemList from './ItemList';
 import ItemDetail from './ItemDetail';
@@ -10,6 +11,7 @@ import { createEmptyItem } from './itemUtils';
 import type { Item } from './types';
 
 type MobileView = 'categories' | 'items' | 'detail';
+type ContentView = 'placeholder' | 'detail' | 'list';
 
 function App() {
   const { categories, items, addItem, updateItem, deleteItem } = useData();
@@ -59,6 +61,14 @@ function App() {
     if (!isAddingItem || selectedCategoryId == null) return null;
     return createEmptyItem(selectedCategoryId, 1);
   }, [isAddingItem, selectedCategoryId]);
+
+  const contentView: ContentView = useMemo(() => {
+    if (selectedCategoryId == null) return 'placeholder';
+    if (isAddingItem || selectedItem) return 'detail';
+    return 'list';
+  }, [selectedCategoryId, isAddingItem, selectedItem]);
+
+  const detailItem = isAddingItem ? newItemTemplate : selectedItem;
 
   function handleSelectCategory(categoryId: number) {
     setSelectedCategoryId(categoryId);
@@ -110,6 +120,53 @@ function App() {
     setMobileView('items');
   }
 
+  function renderContent() {
+    switch (contentView) {
+      case 'placeholder':
+        return (
+          <section className="placeholder">
+            <p className="placeholder__text">Select a category to browse items</p>
+          </section>
+        );
+
+      case 'detail':
+        return (
+          <article className="app__detail">
+            <BackNav label="Back to items" onClick={handleBackToItems} />
+            <ItemDetail
+              item={detailItem}
+              isNew={isAddingItem}
+              onClose={handleBackToItems}
+              onSave={handleSaveItem}
+              onDelete={isAddingItem ? undefined : handleDeleteItem}
+            />
+          </article>
+        );
+
+      case 'list':
+        return (
+          <section className="app__items">
+            <BackNav label="Categories" onClick={handleBackToCategories} />
+            {showSubcategoryDropdown && (
+              <SubcategoryDropdown
+                subcategories={directSubcategories}
+                selectedId={subcategoryFilter}
+                onChange={setSubcategoryFilter}
+              />
+            )}
+            <ItemList
+              items={filteredItems}
+              selectedId={null}
+              onSelect={handleSelectItem}
+              onAddItem={handleAddItem}
+              pageIndex={safePageIndex}
+              onPageChange={handlePageChange}
+            />
+          </section>
+        );
+    }
+  }
+
   return (
     <div className="app" data-mobile-view={mobileView}>
       <header className="app__header">
@@ -127,74 +184,7 @@ function App() {
         </nav>
 
         <main className="app__content">
-          {selectedCategoryId == null ? (
-            <section className="placeholder">
-              <p className="placeholder__text">Select a category to browse items</p>
-            </section>
-          ) : isAddingItem ? (
-            <article className="app__detail">
-              <nav className="mobileNav">
-                <button
-                  type="button"
-                  className="mobileNav__back"
-                  onClick={handleBackToItems}
-                >
-                  ← Back to items
-                </button>
-              </nav>
-              <ItemDetail
-                item={newItemTemplate}
-                isNew={true}
-                onClose={handleBackToItems}
-                onSave={handleSaveItem}
-              />
-            </article>
-          ) : selectedItem ? (
-            <article className="app__detail">
-              <nav className="mobileNav">
-                <button
-                  type="button"
-                  className="mobileNav__back"
-                  onClick={handleBackToItems}
-                >
-                  ← Back to items
-                </button>
-              </nav>
-              <ItemDetail
-                item={selectedItem}
-                onClose={handleBackToItems}
-                onSave={handleSaveItem}
-                onDelete={handleDeleteItem}
-              />
-            </article>
-          ) : (
-            <section className="app__items">
-              <nav className="mobileNav">
-                <button
-                  type="button"
-                  className="mobileNav__back"
-                  onClick={handleBackToCategories}
-                >
-                  ← Categories
-                </button>
-              </nav>
-              {showSubcategoryDropdown && (
-                <SubcategoryDropdown
-                  subcategories={directSubcategories}
-                  selectedId={subcategoryFilter}
-                  onChange={setSubcategoryFilter}
-                />
-              )}
-              <ItemList
-                items={filteredItems}
-                selectedId={null}
-                onSelect={handleSelectItem}
-                onAddItem={handleAddItem}
-                pageIndex={safePageIndex}
-                onPageChange={handlePageChange}
-              />
-            </section>
-          )}
+          {renderContent()}
         </main>
       </div>
     </div>
