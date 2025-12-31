@@ -1,0 +1,82 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PropertyRender > snapshots > should render with empty properties 1`] = `<div />`;
+
+exports[`PropertyRender > snapshots > should render with properties 1`] = `
+<div>
+  <div
+    class="detail__properties"
+  >
+    <section
+      class="detail__property-group"
+    >
+      <h3
+        class="detail__property-group-title"
+      >
+        General
+      </h3>
+      <dl
+        class="detail__property-group-list"
+      >
+        <div
+          class="detail__property-row"
+        >
+          <dt
+            class="detail__property-name"
+          >
+            Prop1
+          </dt>
+          <dd
+            class="detail__property-value"
+          >
+            Value1
+          </dd>
+        </div>
+        <div
+          class="detail__property-row"
+        >
+          <dt
+            class="detail__property-name"
+          >
+            Prop2
+          </dt>
+          <dd
+            class="detail__property-value"
+          >
+            Value2
+          </dd>
+        </div>
+      </dl>
+    </section>
+    <section
+      class="detail__property-group"
+    >
+      <h3
+        class="detail__property-group-title"
+      >
+        Technical
+      </h3>
+      <dl
+        class="detail__property-group-list"
+      >
+        <div
+          class="detail__property-row"
+        >
+          <dt
+            class="detail__property-name"
+          >
+            Prop3
+          </dt>
+          <dd
+            class="detail__property-value"
+          >
+            Value3
+          </dd>
+        </div>
+      </dl>
+    </section>
+  </div>
+</div>
+`;
+
+exports[`PropertyRender > snapshots > should render with undefined properties 1`] = `<div />`;

@@ -1,0 +1,375 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ItemEditor > snapshots > should render edit mode 1`] = `
+<div>
+  <section
+    class="detail detail--editing"
+  >
+    <form
+      class="detail__form"
+    >
+      <div
+        class="detail__header"
+      >
+        <h2
+          class="detail__title"
+        >
+          Edit: Test Item
+        </h2>
+      </div>
+      <div
+        class="detail__field"
+      >
+        <label
+          class="detail__label"
+          for="item-name"
+        >
+          Name
+        </label>
+        <input
+          class="detail__input"
+          id="item-name"
+          placeholder="Item name"
+          required=""
+          type="text"
+          value="Test Item"
+        />
+      </div>
+      <div
+        class="detail__field"
+      >
+        <label
+          class="detail__label"
+          for="item-summary"
+        >
+          Summary
+        </label>
+        <input
+          class="detail__input"
+          id="item-summary"
+          placeholder="Brief summary"
+          type="text"
+          value="Test summary"
+        />
+      </div>
+      <div
+        class="detail__field"
+      >
+        <label
+          class="detail__label"
+          for="item-description"
+        >
+          Description
+        </label>
+        <textarea
+          class="detail__textarea"
+          id="item-description"
+          placeholder="Full description"
+          rows="4"
+        >
+          Test description
+        </textarea>
+      </div>
+      <div
+        class="propertyEditor"
+      >
+        <label
+          class="propertyEditor__label"
+        >
+          Properties
+        </label>
+        <div
+          class="propertyEditor__row"
+        >
+          <input
+            class="propertyEditor__input propertyEditor__input--category"
+            placeholder="Category"
+            type="text"
+            value="General"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--name"
+            placeholder="Name"
+            type="text"
+            value="Prop1"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--value"
+            placeholder="Value"
+            type="text"
+            value="Value1"
+          />
+          <button
+            aria-label="Remove property"
+            class="propertyEditor__remove"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <div
+          class="propertyEditor__row"
+        >
+          <input
+            class="propertyEditor__input propertyEditor__input--category"
+            placeholder="Category"
+            type="text"
+            value="General"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--name"
+            placeholder="Name"
+            type="text"
+            value="Prop2"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--value"
+            placeholder="Value"
+            type="text"
+            value="Value2"
+          />
+          <button
+            aria-label="Remove property"
+            class="propertyEditor__remove"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <div
+          class="propertyEditor__row"
+        >
+          <input
+            class="propertyEditor__input propertyEditor__input--category"
+            placeholder="Category"
+            type="text"
+            value="Technical"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--name"
+            placeholder="Name"
+            type="text"
+            value="Prop3"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--value"
+            placeholder="Value"
+            type="text"
+            value="Value3"
+          />
+          <button
+            aria-label="Remove property"
+            class="propertyEditor__remove"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <button
+          class="propertyEditor__add"
+          type="button"
+        >
+          + Add Property
+        </button>
+      </div>
+      <div
+        class="imageEditor"
+      >
+        <label
+          class="imageEditor__label"
+        >
+          Images
+        </label>
+        <div
+          class="imageEditor__row"
+        >
+          <input
+            class="imageEditor__input imageEditor__input--url"
+            placeholder="Image URL"
+            type="url"
+            value="https://example.com/image1.jpg"
+          />
+          <input
+            class="imageEditor__input imageEditor__input--alt"
+            placeholder="Alt text"
+            type="text"
+            value="Image 1"
+          />
+          <button
+            aria-label="Remove image"
+            class="imageEditor__remove"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <div
+          class="imageEditor__row"
+        >
+          <input
+            class="imageEditor__input imageEditor__input--url"
+            placeholder="Image URL"
+            type="url"
+            value="https://example.com/image2.jpg"
+          />
+          <input
+            class="imageEditor__input imageEditor__input--alt"
+            placeholder="Alt text"
+            type="text"
+            value="Image 2"
+          />
+          <button
+            aria-label="Remove image"
+            class="imageEditor__remove"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <button
+          class="imageEditor__add"
+          type="button"
+        >
+          + Add Image
+        </button>
+      </div>
+      <div
+        class="detail__actions"
+      >
+        <button
+          class="detail__btn detail__btn--primary"
+          type="button"
+        >
+          Save Changes
+        </button>
+        <button
+          class="detail__btn detail__btn--secondary"
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+`;
+
+exports[`ItemEditor > snapshots > should render new item mode 1`] = `
+<div>
+  <section
+    class="detail detail--editing"
+  >
+    <form
+      class="detail__form"
+    >
+      <div
+        class="detail__header"
+      >
+        <h2
+          class="detail__title"
+        >
+          Add New Item
+        </h2>
+      </div>
+      <div
+        class="detail__field"
+      >
+        <label
+          class="detail__label"
+          for="item-name"
+        >
+          Name
+        </label>
+        <input
+          class="detail__input"
+          id="item-name"
+          placeholder="Item name"
+          required=""
+          type="text"
+          value=""
+        />
+      </div>
+      <div
+        class="detail__field"
+      >
+        <label
+          class="detail__label"
+          for="item-summary"
+        >
+          Summary
+        </label>
+        <input
+          class="detail__input"
+          id="item-summary"
+          placeholder="Brief summary"
+          type="text"
+          value=""
+        />
+      </div>
+      <div
+        class="detail__field"
+      >
+        <label
+          class="detail__label"
+          for="item-description"
+        >
+          Description
+        </label>
+        <textarea
+          class="detail__textarea"
+          id="item-description"
+          placeholder="Full description"
+          rows="4"
+        />
+      </div>
+      <div
+        class="propertyEditor"
+      >
+        <label
+          class="propertyEditor__label"
+        >
+          Properties
+        </label>
+        <button
+          class="propertyEditor__add"
+          type="button"
+        >
+          + Add Property
+        </button>
+      </div>
+      <div
+        class="imageEditor"
+      >
+        <label
+          class="imageEditor__label"
+        >
+          Images
+        </label>
+        <button
+          class="imageEditor__add"
+          type="button"
+        >
+          + Add Image
+        </button>
+      </div>
+      <div
+        class="detail__actions"
+      >
+        <button
+          class="detail__btn detail__btn--primary"
+          disabled=""
+          type="button"
+        >
+          Create Item
+        </button>
+        <button
+          class="detail__btn detail__btn--secondary"
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+`;

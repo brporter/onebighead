@@ -4,7 +4,7 @@ exports[`App > snapshots > should render initial state 1`] = `
 <div>
   <div
     class="app"
-    data-mobile-view="categories"
+    data-view="categories"
   >
     <header
       class="app__header"
@@ -129,7 +129,7 @@ exports[`App > snapshots > should render with category selected 1`] = `
 <div>
   <div
     class="app"
-    data-mobile-view="items"
+    data-view="items"
   >
     <header
       class="app__header"

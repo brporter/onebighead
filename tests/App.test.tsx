@@ -375,11 +375,11 @@ describe('App', () => {
   });
 
   describe('mobile navigation', () => {
-    it('should have correct data attribute for mobile view', () => {
+    it('should have correct data attribute for view', () => {
       const { container } = render(<App />);
 
       const app = container.querySelector('.app');
-      expect(app).toHaveAttribute('data-mobile-view', 'categories');
+      expect(app).toHaveAttribute('data-view', 'categories');
     });
 
     it('should navigate back to categories from items view', async () => {
@@ -394,7 +394,7 @@ describe('App', () => {
       await user.click(backButton);
 
       const app = container.querySelector('.app');
-      expect(app).toHaveAttribute('data-mobile-view', 'categories');
+      expect(app).toHaveAttribute('data-view', 'categories');
     });
   });
 });

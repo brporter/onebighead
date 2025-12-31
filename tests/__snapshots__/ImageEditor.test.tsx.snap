@@ -1,0 +1,87 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ImageEditor > snapshots > should render with empty images 1`] = `
+<div>
+  <div
+    class="imageEditor"
+  >
+    <label
+      class="imageEditor__label"
+    >
+      Images
+    </label>
+    <button
+      class="imageEditor__add"
+      type="button"
+    >
+      + Add Image
+    </button>
+  </div>
+</div>
+`;
+
+exports[`ImageEditor > snapshots > should render with images 1`] = `
+<div>
+  <div
+    class="imageEditor"
+  >
+    <label
+      class="imageEditor__label"
+    >
+      Images
+    </label>
+    <div
+      class="imageEditor__row"
+    >
+      <input
+        class="imageEditor__input imageEditor__input--url"
+        placeholder="Image URL"
+        type="url"
+        value="https://example.com/image1.jpg"
+      />
+      <input
+        class="imageEditor__input imageEditor__input--alt"
+        placeholder="Alt text"
+        type="text"
+        value="Image 1"
+      />
+      <button
+        aria-label="Remove image"
+        class="imageEditor__remove"
+        type="button"
+      >
+        ×
+      </button>
+    </div>
+    <div
+      class="imageEditor__row"
+    >
+      <input
+        class="imageEditor__input imageEditor__input--url"
+        placeholder="Image URL"
+        type="url"
+        value="https://example.com/image2.jpg"
+      />
+      <input
+        class="imageEditor__input imageEditor__input--alt"
+        placeholder="Alt text"
+        type="text"
+        value="Image 2"
+      />
+      <button
+        aria-label="Remove image"
+        class="imageEditor__remove"
+        type="button"
+      >
+        ×
+      </button>
+    </div>
+    <button
+      class="imageEditor__add"
+      type="button"
+    >
+      + Add Image
+    </button>
+  </div>
+</div>
+`;

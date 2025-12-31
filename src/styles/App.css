@@ -91,8 +91,8 @@
 }
 
 /* Mobile view states */
-.app[data-mobile-view="items"] .app__sidebar,
-.app[data-mobile-view="detail"] .app__sidebar {
+.app[data-view="items"] .app__sidebar,
+.app[data-view="detail"] .app__sidebar {
   display: none;
 }
 
@@ -112,8 +112,8 @@
   min-width: 0;
 }
 
-.app[data-mobile-view="items"] .app__content,
-.app[data-mobile-view="detail"] .app__content {
+.app[data-view="items"] .app__content,
+.app[data-view="detail"] .app__content {
   display: block;
 }
 

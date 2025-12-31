@@ -5,12 +5,13 @@ import BackNav from './BackNav';
 import CategoryTree from './CategoryTree';
 import ItemList from './ItemList';
 import ItemDetail from './ItemDetail';
+import ItemEditor from './ItemEditor';
 import SubcategoryDropdown from './SubcategoryDropdown';
 import { getCategoryAndDescendantIds } from './categoryUtils';
 import { createEmptyItem } from './itemUtils';
 import type { Item } from './types';
 
-type MobileView = 'categories' | 'items' | 'detail';
+type View = 'categories' | 'items' | 'detail';
 type ContentView = 'placeholder' | 'detail' | 'list';
 
 function App() {
@@ -19,9 +20,10 @@ function App() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
-  const [mobileView, setMobileView] = useState<MobileView>('categories');
+  const [view, setView] = useState<View>('categories');
   const [subcategoryFilter, setSubcategoryFilter] = useState<number | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const directSubcategories = useMemo(() => {
     if (selectedCategoryId == null) return [];
@@ -75,22 +77,23 @@ function App() {
     setSelectedItemId(null);
     setPageIndex(0);
     setSubcategoryFilter(null);
-    setMobileView('items');
+    setView('items');
   }
 
   function handleSelectItem(itemId: number) {
     setSelectedItemId(itemId);
-    setMobileView('detail');
+    setView('detail');
   }
 
   function handleBackToCategories() {
-    setMobileView('categories');
+    setView('categories');
   }
 
   function handleBackToItems() {
     setSelectedItemId(null);
     setIsAddingItem(false);
-    setMobileView('items');
+    setIsEditing(false);
+    setView('items');
   }
 
   function handlePageChange(next: number) {
@@ -101,23 +104,37 @@ function App() {
   function handleAddItem() {
     setIsAddingItem(true);
     setSelectedItemId(null);
-    setMobileView('detail');
+    setView('detail');
   }
 
   function handleSaveItem(itemData: Item) {
     if (isAddingItem) {
       addItem(itemData);
       setIsAddingItem(false);
-      setMobileView('items');
+      setView('items');
     } else if (selectedItemId != null) {
       updateItem(selectedItemId, itemData);
+      setIsEditing(false);
     }
   }
 
   function handleDeleteItem(id: number) {
     deleteItem(id);
     setSelectedItemId(null);
-    setMobileView('items');
+    setView('items');
+  }
+
+  function handleEditItem() {
+    setIsEditing(true);
+  }
+
+  function handleCancelEdit() {
+    if (isAddingItem) {
+      setIsAddingItem(false);
+      setView('items');
+    } else {
+      setIsEditing(false);
+    }
   }
 
   function renderContent() {
@@ -133,13 +150,20 @@ function App() {
         return (
           <article className="app__detail">
             <BackNav label="Back to items" onClick={handleBackToItems} />
-            <ItemDetail
-              item={detailItem}
-              isNew={isAddingItem}
-              onClose={handleBackToItems}
-              onSave={handleSaveItem}
-              onDelete={isAddingItem ? undefined : handleDeleteItem}
-            />
+            {isEditing || isAddingItem ? (
+              <ItemEditor
+                item={detailItem}
+                onSave={handleSaveItem}
+                onCancel={handleCancelEdit}
+                onDelete={isAddingItem ? undefined : handleDeleteItem}
+              />
+            ) : (
+              <ItemDetail
+                item={detailItem}
+                onEdit={handleEditItem}
+                onClose={handleBackToItems}
+              />
+            )}
           </article>
         );
 
@@ -168,7 +192,7 @@ function App() {
   }
 
   return (
-    <div className="app" data-mobile-view={mobileView}>
+    <div className="app" data-view={view}>
       <header className="app__header">
         <h1>Vintage Macintosh Models</h1>
         <p className="app__subtitle">Browse categories, then view items and details.</p>

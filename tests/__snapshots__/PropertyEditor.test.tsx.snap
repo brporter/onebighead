@@ -1,0 +1,99 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PropertyEditor > snapshots > should render with empty properties 1`] = `
+<div>
+  <div
+    class="propertyEditor"
+  >
+    <label
+      class="propertyEditor__label"
+    >
+      Properties
+    </label>
+    <button
+      class="propertyEditor__add"
+      type="button"
+    >
+      + Add Property
+    </button>
+  </div>
+</div>
+`;
+
+exports[`PropertyEditor > snapshots > should render with properties 1`] = `
+<div>
+  <div
+    class="propertyEditor"
+  >
+    <label
+      class="propertyEditor__label"
+    >
+      Properties
+    </label>
+    <div
+      class="propertyEditor__row"
+    >
+      <input
+        class="propertyEditor__input propertyEditor__input--category"
+        placeholder="Category"
+        type="text"
+        value="General"
+      />
+      <input
+        class="propertyEditor__input propertyEditor__input--name"
+        placeholder="Name"
+        type="text"
+        value="Prop1"
+      />
+      <input
+        class="propertyEditor__input propertyEditor__input--value"
+        placeholder="Value"
+        type="text"
+        value="Value1"
+      />
+      <button
+        aria-label="Remove property"
+        class="propertyEditor__remove"
+        type="button"
+      >
+        ×
+      </button>
+    </div>
+    <div
+      class="propertyEditor__row"
+    >
+      <input
+        class="propertyEditor__input propertyEditor__input--category"
+        placeholder="Category"
+        type="text"
+        value="Technical"
+      />
+      <input
+        class="propertyEditor__input propertyEditor__input--name"
+        placeholder="Name"
+        type="text"
+        value="Prop2"
+      />
+      <input
+        class="propertyEditor__input propertyEditor__input--value"
+        placeholder="Value"
+        type="text"
+        value="Value2"
+      />
+      <button
+        aria-label="Remove property"
+        class="propertyEditor__remove"
+        type="button"
+      >
+        ×
+      </button>
+    </div>
+    <button
+      class="propertyEditor__add"
+      type="button"
+    >
+      + Add Property
+    </button>
+  </div>
+</div>
+`;

@@ -1,152 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ItemDetail > snapshots > should render edit mode 1`] = `
-<div>
-  <section
-    class="detail"
-  >
-    <div
-      class="detail__header"
-    >
-      <h2
-        class="detail__title"
-      >
-        Test Item
-      </h2>
-      <div
-        class="detail__headerActions"
-      >
-        <button
-          class="detail__btn detail__btn--secondary"
-          type="button"
-        >
-          Edit
-        </button>
-      </div>
-    </div>
-    <p
-      class="detail__description"
-    >
-      Test description
-    </p>
-    <section
-      aria-label="Test Item"
-      class="gallery"
-    >
-      <div
-        class="gallery__viewport"
-      >
-        <img
-          alt="Image 1"
-          class="gallery__image"
-          loading="lazy"
-          src="https://example.com/image1.jpg"
-        />
-      </div>
-      <div
-        class="gallery__controls"
-      >
-        <button
-          aria-controls="_r_1_"
-          class="gallery__button"
-          type="button"
-        >
-          Prev
-        </button>
-        <div
-          aria-live="polite"
-          class="gallery__status"
-          id="_r_1_"
-        >
-          1
-           / 
-          2
-        </div>
-        <button
-          aria-controls="_r_1_"
-          class="gallery__button"
-          type="button"
-        >
-          Next
-        </button>
-      </div>
-    </section>
-    <div
-      class="detail__properties"
-    >
-      <section
-        class="detail__property-group"
-      >
-        <h3
-          class="detail__property-group-title"
-        >
-          General
-        </h3>
-        <dl
-          class="detail__property-group-list"
-        >
-          <div
-            class="detail__property-row"
-          >
-            <dt
-              class="detail__property-name"
-            >
-              Prop1
-            </dt>
-            <dd
-              class="detail__property-value"
-            >
-              Value1
-            </dd>
-          </div>
-          <div
-            class="detail__property-row"
-          >
-            <dt
-              class="detail__property-name"
-            >
-              Prop2
-            </dt>
-            <dd
-              class="detail__property-value"
-            >
-              Value2
-            </dd>
-          </div>
-        </dl>
-      </section>
-      <section
-        class="detail__property-group"
-      >
-        <h3
-          class="detail__property-group-title"
-        >
-          Technical
-        </h3>
-        <dl
-          class="detail__property-group-list"
-        >
-          <div
-            class="detail__property-row"
-          >
-            <dt
-              class="detail__property-name"
-            >
-              Prop3
-            </dt>
-            <dd
-              class="detail__property-value"
-            >
-              Value3
-            </dd>
-          </div>
-        </dl>
-      </section>
-    </div>
-  </section>
-</div>
-`;
-
 exports[`ItemDetail > snapshots > should render empty state 1`] = `
 <div>
   <section
@@ -176,14 +29,7 @@ exports[`ItemDetail > snapshots > should render item without images 1`] = `
       </h2>
       <div
         class="detail__headerActions"
-      >
-        <button
-          class="detail__btn detail__btn--secondary"
-          type="button"
-        >
-          Edit
-        </button>
-      </div>
+      />
     </div>
     <p
       class="detail__description"
@@ -281,14 +127,7 @@ exports[`ItemDetail > snapshots > should render item without properties 1`] = `
       </h2>
       <div
         class="detail__headerActions"
-      >
-        <button
-          class="detail__btn detail__btn--secondary"
-          type="button"
-        >
-          Edit
-        </button>
-      </div>
+      />
     </div>
     <p
       class="detail__description"
@@ -313,7 +152,7 @@ exports[`ItemDetail > snapshots > should render item without properties 1`] = `
         class="gallery__controls"
       >
         <button
-          aria-controls="_r_2_"
+          aria-controls="_r_1_"
           class="gallery__button"
           type="button"
         >
@@ -322,14 +161,14 @@ exports[`ItemDetail > snapshots > should render item without properties 1`] = `
         <div
           aria-live="polite"
           class="gallery__status"
-          id="_r_2_"
+          id="_r_1_"
         >
           1
            / 
           2
         </div>
         <button
-          aria-controls="_r_2_"
+          aria-controls="_r_1_"
           class="gallery__button"
           type="button"
         >
@@ -337,126 +176,6 @@ exports[`ItemDetail > snapshots > should render item without properties 1`] = `
         </button>
       </div>
     </section>
-  </section>
-</div>
-`;
-
-exports[`ItemDetail > snapshots > should render new item mode 1`] = `
-<div>
-  <section
-    class="detail detail--editing"
-  >
-    <form
-      class="detail__form"
-    >
-      <div
-        class="detail__header"
-      >
-        <h2
-          class="detail__title"
-        >
-          Add New Item
-        </h2>
-      </div>
-      <div
-        class="detail__field"
-      >
-        <label
-          class="detail__label"
-          for="item-name"
-        >
-          Name
-        </label>
-        <input
-          class="detail__input"
-          id="item-name"
-          placeholder="Item name"
-          required=""
-          type="text"
-          value=""
-        />
-      </div>
-      <div
-        class="detail__field"
-      >
-        <label
-          class="detail__label"
-          for="item-summary"
-        >
-          Summary
-        </label>
-        <input
-          class="detail__input"
-          id="item-summary"
-          placeholder="Brief summary"
-          type="text"
-          value=""
-        />
-      </div>
-      <div
-        class="detail__field"
-      >
-        <label
-          class="detail__label"
-          for="item-description"
-        >
-          Description
-        </label>
-        <textarea
-          class="detail__textarea"
-          id="item-description"
-          placeholder="Full description"
-          rows="4"
-        />
-      </div>
-      <div
-        class="propertyEditor"
-      >
-        <label
-          class="propertyEditor__label"
-        >
-          Properties
-        </label>
-        <button
-          class="propertyEditor__add"
-          type="button"
-        >
-          + Add Property
-        </button>
-      </div>
-      <div
-        class="imageEditor"
-      >
-        <label
-          class="imageEditor__label"
-        >
-          Images
-        </label>
-        <button
-          class="imageEditor__add"
-          type="button"
-        >
-          + Add Image
-        </button>
-      </div>
-      <div
-        class="detail__actions"
-      >
-        <button
-          class="detail__btn detail__btn--primary"
-          disabled=""
-          type="button"
-        >
-          Create Item
-        </button>
-        <button
-          class="detail__btn detail__btn--secondary"
-          type="button"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
   </section>
 </div>
 `;
