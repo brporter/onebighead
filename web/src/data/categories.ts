@@ -7,7 +7,7 @@ const categories = [
   { tenantId: 1, categoryId: 4, name: 'Desktop Macintosh', description: 'Some long descriptive text about this particular category.', parentCategoryId: 1 },
   { tenantId: 1, categoryId: 5, name: 'Intel x86', description: 'Some long descriptive text about this particular category.', parentCategoryId: null },
   { tenantId: 1, categoryId: 6, name: '80386', description: 'Some long descriptive text about this particular category.', parentCategoryId: 5 },
-  { tenantId: 1, categoryId: 7, name: 'Pentium and Later', description: 'Some long descriptive text about this particular category.', parentCategoryId: 5 },
+    { tenantId: 1, categoryId: 7, name: 'Pentium and Later', description: 'Some long descriptive text about this particular category.', parentCategoryId: 5 },
 ] as const satisfies readonly Category[];
 
 export default categories;

@@ -1,7 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, act, waitFor } from '@testing-library/react';
 import { DataProvider, useData } from '../src/DataContext';
 import type { Item, Category, Collection, Tenant } from '../src/types';
+
+const mockCategories: Category[] = [
+  { tenantId: 1, categoryId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null },
+  { tenantId: 1, categoryId: 2, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1 },
+];
 
 // Test component to access context
 function TestConsumer({
@@ -15,8 +20,19 @@ function TestConsumer({
 }
 
 describe('DataContext', () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => mockCategories,
+    } as Response);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('DataProvider', () => {
-    it('should provide initial categories', () => {
+    it('should fetch categories from API', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -25,11 +41,16 @@ describe('DataContext', () => {
         </DataProvider>
       );
 
-      expect(contextData).not.toBeNull();
-      expect(contextData!.categories.length).toBeGreaterThan(0);
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
+
+      expect(globalThis.fetch).toHaveBeenCalledWith('/api/categories');
+      expect(contextData!.categories).toEqual(mockCategories);
+      expect(contextData!.categoriesError).toBeNull();
     });
 
-    it('should provide initial items', () => {
+    it('should set categoriesLoading to true initially', () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -37,11 +58,69 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      // Initially loading should be true (before fetch completes)
+      expect(contextData!.categoriesLoading).toBe(true);
+    });
+
+    it('should set categoriesError on fetch failure', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        statusText: 'Internal Server Error',
+      } as Response);
+
+      let contextData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { contextData = data; }} />
+        </DataProvider>
+      );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
+
+      expect(contextData!.categoriesError).toBe('Failed to fetch categories: Internal Server Error');
+      expect(contextData!.categories).toEqual([]);
+    });
+
+    it('should set categoriesError on network error', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
+
+      let contextData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { contextData = data; }} />
+        </DataProvider>
+      );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
+
+      expect(contextData!.categoriesError).toBe('Network error');
+      expect(contextData!.categories).toEqual([]);
+    });
+
+    it('should provide initial items', async () => {
+      let contextData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { contextData = data; }} />
+        </DataProvider>
+      );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       expect(contextData!.items.length).toBeGreaterThan(0);
     });
 
-    it('should provide initial collections', () => {
+    it('should provide initial collections', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -49,11 +128,15 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       expect(contextData!.collections.length).toBeGreaterThan(0);
     });
 
-    it('should provide initial tenants', () => {
+    it('should provide initial tenants', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -61,13 +144,17 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       expect(contextData!.tenants.length).toBeGreaterThan(0);
     });
   });
 
   describe('Item CRUD operations', () => {
-    it('should add a new item', () => {
+    it('should add a new item', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -75,6 +162,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const initialLength = contextData!.items.length;
 
@@ -97,7 +188,7 @@ describe('DataContext', () => {
       expect(contextData!.items.find(i => i.name === 'New Test Item')).toBeDefined();
     });
 
-    it('should generate ID 1 when items array is empty', () => {
+    it('should generate ID 1 when items array is empty', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -105,6 +196,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       // First, delete all existing items
       const itemIds = contextData!.items.map(i => i.id!);
@@ -134,7 +229,7 @@ describe('DataContext', () => {
       expect(contextData!.items[0].id).toBe(1);
     });
 
-    it('should update an existing item', () => {
+    it('should update an existing item', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -142,6 +237,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const firstItem = contextData!.items[0];
       const originalName = firstItem.name;
@@ -155,7 +254,7 @@ describe('DataContext', () => {
       expect(updatedItem?.name).not.toBe(originalName);
     });
 
-    it('should delete an item', () => {
+    it('should delete an item', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -163,6 +262,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const initialLength = contextData!.items.length;
       const firstItemId = contextData!.items[0].id!;
@@ -175,7 +278,7 @@ describe('DataContext', () => {
       expect(contextData!.items.find(i => i.id === firstItemId)).toBeUndefined();
     });
 
-    it('should generate unique IDs for new items', () => {
+    it('should generate unique IDs for new items', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -183,6 +286,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const newItem1: Item = {
         id: null,
@@ -206,22 +313,22 @@ describe('DataContext', () => {
         images: [],
       };
 
-      let id1: number, id2: number;
-
       act(() => {
-        id1 = contextData!.addItem(newItem1);
+        contextData!.addItem(newItem1);
+        contextData!.addItem(newItem2);
       });
 
-      act(() => {
-        id2 = contextData!.addItem(newItem2);
-      });
+      const item1 = contextData!.items.find(i => i.name === 'Item 1');
+      const item2 = contextData!.items.find(i => i.name === 'Item 2');
 
-      expect(id1!).not.toBe(id2!);
+      expect(item1).toBeDefined();
+      expect(item2).toBeDefined();
+      expect(item1!.id).not.toBe(item2!.id);
     });
   });
 
   describe('Category CRUD operations', () => {
-    it('should add a new category', () => {
+    it('should add a new category', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -229,6 +336,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const initialLength = contextData!.categories.length;
 
@@ -247,7 +358,7 @@ describe('DataContext', () => {
       expect(contextData!.categories.find(c => c.name === 'New Category')).toBeDefined();
     });
 
-    it('should generate categoryId 1 when categories array is empty', () => {
+    it('should generate categoryId 1 when categories array is empty', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -255,6 +366,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       // Delete all categories
       const categoryIds = contextData!.categories.map(c => c.categoryId);
@@ -279,7 +394,7 @@ describe('DataContext', () => {
       expect(contextData!.categories[0].categoryId).toBe(1);
     });
 
-    it('should update an existing category', () => {
+    it('should update an existing category', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -287,6 +402,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const firstCategory = contextData!.categories[0];
 
@@ -298,7 +417,7 @@ describe('DataContext', () => {
       expect(updated?.name).toBe('Updated Category');
     });
 
-    it('should delete a category', () => {
+    it('should delete a category', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -306,6 +425,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const initialLength = contextData!.categories.length;
       const firstCategoryId = contextData!.categories[0].categoryId;
@@ -319,7 +442,7 @@ describe('DataContext', () => {
   });
 
   describe('Collection CRUD operations', () => {
-    it('should add a new collection', () => {
+    it('should add a new collection', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -327,6 +450,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const initialLength = contextData!.collections.length;
 
@@ -342,7 +469,7 @@ describe('DataContext', () => {
       expect(contextData!.collections.length).toBe(initialLength + 1);
     });
 
-    it('should generate collectionId 1 when collections array is empty', () => {
+    it('should generate collectionId 1 when collections array is empty', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -350,6 +477,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       // Delete all collections
       const collectionIds = contextData!.collections.map(c => c.collectionId);
@@ -372,7 +503,7 @@ describe('DataContext', () => {
       expect(contextData!.collections[0].collectionId).toBe(1);
     });
 
-    it('should update an existing collection', () => {
+    it('should update an existing collection', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -380,6 +511,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const firstCollection = contextData!.collections[0];
 
@@ -391,7 +526,7 @@ describe('DataContext', () => {
       expect(updated?.name).toBe('Updated Collection');
     });
 
-    it('should delete a collection', () => {
+    it('should delete a collection', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -399,6 +534,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const initialLength = contextData!.collections.length;
       const firstCollectionId = contextData!.collections[0].collectionId;
@@ -412,7 +551,7 @@ describe('DataContext', () => {
   });
 
   describe('Tenant CRUD operations', () => {
-    it('should add a new tenant', () => {
+    it('should add a new tenant', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -420,6 +559,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const initialLength = contextData!.tenants.length;
 
@@ -435,7 +578,7 @@ describe('DataContext', () => {
       expect(contextData!.tenants.length).toBe(initialLength + 1);
     });
 
-    it('should generate tenantId 1 when tenants array is empty', () => {
+    it('should generate tenantId 1 when tenants array is empty', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -443,6 +586,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       // Delete all tenants
       const tenantIds = contextData!.tenants.map(t => t.tenantId);
@@ -465,7 +612,7 @@ describe('DataContext', () => {
       expect(contextData!.tenants[0].tenantId).toBe(1);
     });
 
-    it('should update an existing tenant', () => {
+    it('should update an existing tenant', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -473,6 +620,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const firstTenant = contextData!.tenants[0];
 
@@ -484,7 +635,7 @@ describe('DataContext', () => {
       expect(updated?.name).toBe('Updated Tenant');
     });
 
-    it('should delete a tenant', () => {
+    it('should delete a tenant', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -492,6 +643,10 @@ describe('DataContext', () => {
           <TestConsumer onData={(data) => { contextData = data; }} />
         </DataProvider>
       );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
 
       const initialLength = contextData!.tenants.length;
       const firstTenantId = contextData!.tenants[0].tenantId;

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Category, CategoryNode } from './types';
+import { useData } from './DataContext';
 
 interface CategoryNodeProps {
   node: CategoryNode;
@@ -90,6 +91,7 @@ function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expa
 }
 
 function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTreeProps) {
+  const { categoriesLoading, categoriesError } = useData();
   const tree = useMemo(() => buildTree(categories), [categories]);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(() => {
     const rootIds = (categories ?? [])
@@ -105,6 +107,24 @@ function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTree
       else next.add(id);
       return next;
     });
+  }
+
+  if (categoriesError) {
+    return (
+      <aside className="categoryTree">
+        <h2 className="categoryTree__title">Categories</h2>
+        <p className="categoryTree__error" role="alert">Error loading categories: {categoriesError}</p>
+      </aside>
+    );
+  }
+
+  if (categoriesLoading) {
+    return (
+      <aside className="categoryTree">
+        <h2 className="categoryTree__title">Categories</h2>
+        <p className="categoryTree__loading">Loading categories...</p>
+      </aside>
+    );
   }
 
   return (

@@ -1,10 +1,12 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { Category, Item, Collection, Tenant } from './types';
-import { categories as initialCategories, items as initialItems, collections as initialCollections, tenants as initialTenants } from './data';
+import { items as initialItems, collections as initialCollections, tenants as initialTenants } from './data';
 
 export interface DataContextValue {
   // Data
   categories: Category[];
+  categoriesLoading: boolean;
+  categoriesError: string | null;
   items: Item[];
   collections: Collection[];
   tenants: Tenant[];
@@ -28,6 +30,8 @@ export interface DataContextValue {
 
 const defaultContextValue: DataContextValue = {
   categories: [],
+  categoriesLoading: false,
+  categoriesError: null,
   items: [],
   collections: [],
   tenants: [],
@@ -57,10 +61,32 @@ interface DataProviderProps {
 }
 
 export function DataProvider({ children }: DataProviderProps) {
-  const [categories, setCategories] = useState<Category[]>([...initialCategories]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([...initialItems] as Item[]);
   const [collections, setCollections] = useState<Collection[]>([...initialCollections]);
   const [tenants, setTenants] = useState<Tenant[]>([...initialTenants]);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        setCategoriesLoading(true);
+        setCategoriesError(null);
+        const response = await fetch('/api/categories');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch categories: ${response.statusText}`);
+        }
+        const data: Category[] = await response.json();
+        setCategories(data);
+      } catch (error) {
+        setCategoriesError(error instanceof Error ? error.message : 'Failed to fetch categories');
+      } finally {
+        setCategoriesLoading(false);
+      }
+    }
+    fetchCategories();
+  }, []);
 
   // Item CRUD operations
   const addItem = useCallback((item: Item): number => {
@@ -139,6 +165,8 @@ export function DataProvider({ children }: DataProviderProps) {
   const value: DataContextValue = {
     // Data
     categories,
+    categoriesLoading,
+    categoriesError,
     items,
     collections,
     tenants,

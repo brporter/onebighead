@@ -1,8 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CategoryTree from '../src/CategoryTree';
 import type { Category } from '../src/types';
+import * as DataContext from '../src/DataContext';
+
+// Mock the useData hook
+vi.mock('../src/DataContext', async () => {
+  const actual = await vi.importActual<typeof import('../src/DataContext')>('../src/DataContext');
+  return {
+    ...actual,
+    useData: vi.fn(),
+  };
+});
 
 describe('CategoryTree', () => {
   const mockCategories: Category[] = [
@@ -12,6 +22,30 @@ describe('CategoryTree', () => {
     { tenantId: 1, categoryId: 4, name: 'Grandchild 1-1-1', description: 'Grandchild desc', parentCategoryId: 2 },
     { tenantId: 1, categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null },
   ];
+
+  beforeEach(() => {
+    // Default mock: not loading, no error
+    vi.mocked(DataContext.useData).mockReturnValue({
+      categories: mockCategories,
+      categoriesLoading: false,
+      categoriesError: null,
+      items: [],
+      collections: [],
+      tenants: [],
+      addItem: vi.fn(() => 0),
+      updateItem: vi.fn(),
+      deleteItem: vi.fn(),
+      addCategory: vi.fn(),
+      updateCategory: vi.fn(),
+      deleteCategory: vi.fn(),
+      addCollection: vi.fn(),
+      updateCollection: vi.fn(),
+      deleteCollection: vi.fn(),
+      addTenant: vi.fn(),
+      updateTenant: vi.fn(),
+      deleteTenant: vi.fn(),
+    });
+  });
 
   describe('snapshots', () => {
     it('should render empty tree', () => {
@@ -210,6 +244,76 @@ describe('CategoryTree', () => {
       );
 
       expect(screen.getByText('Categories')).toBeInTheDocument();
+    });
+  });
+
+  describe('loading and error states', () => {
+    it('should display loading message when categories are loading', () => {
+      vi.mocked(DataContext.useData).mockReturnValue({
+        categories: [],
+        categoriesLoading: true,
+        categoriesError: null,
+        items: [],
+        collections: [],
+        tenants: [],
+        addItem: vi.fn(() => 0),
+        updateItem: vi.fn(),
+        deleteItem: vi.fn(),
+        addCategory: vi.fn(),
+        updateCategory: vi.fn(),
+        deleteCategory: vi.fn(),
+        addCollection: vi.fn(),
+        updateCollection: vi.fn(),
+        deleteCollection: vi.fn(),
+        addTenant: vi.fn(),
+        updateTenant: vi.fn(),
+        deleteTenant: vi.fn(),
+      });
+
+      render(
+        <CategoryTree
+          categories={[]}
+          selectedCategoryId={null}
+          onSelect={() => {}}
+        />
+      );
+
+      expect(screen.getByText('Loading categories...')).toBeInTheDocument();
+    });
+
+    it('should display error message when categories fail to load', () => {
+      vi.mocked(DataContext.useData).mockReturnValue({
+        categories: [],
+        categoriesLoading: false,
+        categoriesError: 'Failed to fetch categories: Internal Server Error',
+        items: [],
+        collections: [],
+        tenants: [],
+        addItem: vi.fn(() => 0),
+        updateItem: vi.fn(),
+        deleteItem: vi.fn(),
+        addCategory: vi.fn(),
+        updateCategory: vi.fn(),
+        deleteCategory: vi.fn(),
+        addCollection: vi.fn(),
+        updateCollection: vi.fn(),
+        deleteCollection: vi.fn(),
+        addTenant: vi.fn(),
+        updateTenant: vi.fn(),
+        deleteTenant: vi.fn(),
+      });
+
+      render(
+        <CategoryTree
+          categories={[]}
+          selectedCategoryId={null}
+          onSelect={() => {}}
+        />
+      );
+
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByText(/Error loading categories:/)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to fetch categories: Internal Server Error/)).toBeInTheDocument();
     });
   });
 });

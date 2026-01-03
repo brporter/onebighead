@@ -42,6 +42,8 @@ export const mockTenants: Tenant[] = [
 
 export const createMockDataContext = (overrides?: Partial<DataContextValue>): DataContextValue => ({
   categories: mockCategories,
+  categoriesLoading: false,
+  categoriesError: null,
   items: mockItems,
   collections: mockCollections,
   tenants: mockTenants,
