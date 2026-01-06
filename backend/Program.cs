@@ -1,5 +1,6 @@
 using backend.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,7 +55,35 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+// Serve static assets from wwwroot (CSS, favicon, etc.)
 app.MapStaticAssets();
+
+// Serve frontend SPA assets from wwwroot/collections at /collections path
+var collectionsPath = Path.Combine(app.Environment.WebRootPath, "collections");
+if (Directory.Exists(collectionsPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(collectionsPath),
+        RequestPath = "/collections"
+    });
+
+    // SPA fallback for /collections routes - serve index.html for client-side routing
+    app.MapFallback("/collections/{**path}", async context =>
+    {
+        var indexPath = Path.Combine(collectionsPath, "index.html");
+        if (File.Exists(indexPath))
+        {
+            context.Response.ContentType = "text/html";
+            await context.Response.SendFileAsync(indexPath);
+        }
+        else
+        {
+            context.Response.StatusCode = 404;
+        }
+    });
+}
+
 app.MapRazorPages()
    .WithStaticAssets();
 
