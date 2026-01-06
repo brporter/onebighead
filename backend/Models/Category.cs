@@ -1,4 +1,4 @@
-﻿﻿using System.ComponentModel.DataAnnotations;
+﻿﻿﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -27,5 +27,9 @@ public class Category
 
     [JsonIgnore]
     public ICollection<Category> ChildCategories { get; set; } = new List<Category>();
+
+    [JsonIgnore]
+    [ForeignKey(nameof(TenantId))]
+    public Tenant? Tenant { get; set; }
 }
 

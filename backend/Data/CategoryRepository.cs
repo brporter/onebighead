@@ -12,14 +12,17 @@ public class CategoryRepository : ICategoryRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Category>> GetAllAsync()
+    public async Task<IEnumerable<Category>> GetAllAsync(int tenantId)
     {
-        return await _context.Categories.ToListAsync();
+        return await _context.Categories
+            .Where(c => c.TenantId == tenantId)
+            .ToListAsync();
     }
 
-    public async Task<Category?> GetByIdAsync(int id)
+    public async Task<Category?> GetByIdAsync(int id, int tenantId)
     {
-        return await _context.Categories.FindAsync(id);
+        return await _context.Categories
+            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
     }
 
     public async Task<Category> CreateAsync(Category category)
@@ -29,15 +32,16 @@ public class CategoryRepository : ICategoryRepository
         return category;
     }
 
-    public async Task<Category?> UpdateAsync(int id, Category category)
+    public async Task<Category?> UpdateAsync(int id, Category category, int tenantId)
     {
-        var existingCategory = await _context.Categories.FindAsync(id);
+        var existingCategory = await _context.Categories
+            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+        
         if (existingCategory is null)
         {
             return null;
         }
 
-        existingCategory.TenantId = category.TenantId;
         existingCategory.Name = category.Name;
         existingCategory.Description = category.Description;
         existingCategory.ParentCategoryId = category.ParentCategoryId;
@@ -46,9 +50,11 @@ public class CategoryRepository : ICategoryRepository
         return existingCategory;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id, int tenantId)
     {
-        var category = await _context.Categories.FindAsync(id);
+        var category = await _context.Categories
+            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+        
         if (category is null)
         {
             return false;

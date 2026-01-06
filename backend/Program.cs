@@ -1,3 +1,4 @@
+using backend.Authentication;
 using backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -18,8 +19,19 @@ builder.Services.Configure<RouteOptions>(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Register repository
+// Register repositories
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+// Configure authentication
+builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));
+builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddSingleton<IOidcTokenValidator, OidcTokenValidator>();
+
+builder.Services.AddAuthentication(CookieJwtAuthenticationExtensions.SchemeName)
+    .AddCookieJwtAuthentication();
+
+builder.Services.AddAuthorization();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -53,6 +65,7 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Only serve static frontend assets in production (use Vite dev server in development)
@@ -63,27 +76,22 @@ if (!app.Environment.IsDevelopment())
 
     // Serve frontend SPA assets from wwwroot/collections at /collections path
     var collectionsPath = Path.Combine(app.Environment.WebRootPath, "collections");
+    Console.WriteLine($"collectionsPath: {collectionsPath}");
     if (Directory.Exists(collectionsPath))
     {
+        var fileProvider = new PhysicalFileProvider(collectionsPath);
+        
+        app.UseDefaultFiles(new DefaultFilesOptions()
+        {
+            FileProvider = fileProvider,
+            RequestPath = "/collections",
+            DefaultFileNames = { "index.html" }
+        });
+        
         app.UseStaticFiles(new StaticFileOptions
         {
-            FileProvider = new PhysicalFileProvider(collectionsPath),
+            FileProvider = fileProvider,
             RequestPath = "/collections"
-        });
-
-        // SPA fallback for /collections routes - serve index.html for client-side routing
-        app.MapFallback("/collections/{**path}", async context =>
-        {
-            var indexPath = Path.Combine(collectionsPath, "index.html");
-            if (File.Exists(indexPath))
-            {
-                context.Response.ContentType = "text/html";
-                await context.Response.SendFileAsync(indexPath);
-            }
-            else
-            {
-                context.Response.StatusCode = 404;
-            }
         });
     }
 }

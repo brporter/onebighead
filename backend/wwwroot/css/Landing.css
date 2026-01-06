@@ -470,3 +470,115 @@
   }
 }
 
+/* --------------------------------------------------------------------------
+   SSO / Federated Sign-In Styles
+   -------------------------------------------------------------------------- */
+
+.landing__sso-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.landing__sso-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.landing__sso-button:hover:not(:disabled) {
+  background: var(--color-bg);
+  border-color: var(--color-text-muted);
+}
+
+.landing__sso-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+  border-color: var(--color-primary);
+}
+
+.landing__sso-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.landing__sso-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.landing__sso-button--microsoft:hover:not(:disabled) {
+  border-color: #00a4ef;
+}
+
+.landing__sso-button--google:hover:not(:disabled) {
+  border-color: #4285F4;
+}
+
+.landing__sso-button--apple:hover:not(:disabled) {
+  border-color: var(--color-text);
+}
+
+.landing__sso-divider {
+  display: flex;
+  align-items: center;
+  margin: var(--space-lg) 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.landing__sso-divider::before,
+.landing__sso-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.landing__sso-divider span {
+  padding: 0 var(--space-md);
+}
+
+.landing__sso-info {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin-bottom: var(--space-lg);
+}
+
+/* Alert styles */
+.landing__alert {
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+  font-size: 0.9rem;
+}
+
+.landing__alert--error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  .landing__alert--error {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #f87171;
+  }
+}
+

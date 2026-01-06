@@ -23,19 +23,24 @@ public class DatabaseSeederTests : IDisposable
     }
 
     [Fact]
-    public void SeedDevelopmentData_AddsCategories_WhenDatabaseIsEmpty()
+    public void SeedDevelopmentData_AddsTenantAndCategories_WhenDatabaseIsEmpty()
     {
         // Act
         DatabaseSeeder.SeedDevelopmentData(_context);
 
         // Assert
+        Assert.Equal(1, _context.Tenants.Count());
         Assert.Equal(7, _context.Categories.Count());
     }
 
     [Fact]
     public void SeedDevelopmentData_DoesNotAddCategories_WhenDatabaseHasData()
     {
-        // Arrange
+        // Arrange - Add tenant first, then category
+        var tenant = new Tenant { Id = 1, Name = "test.local" };
+        _context.Tenants.Add(tenant);
+        _context.SaveChanges();
+        
         _context.Categories.Add(new Category { Id = 100, TenantId = 1, Name = "Existing", Description = "Existing Desc" });
         _context.SaveChanges();
 
@@ -74,6 +79,18 @@ public class DatabaseSeederTests : IDisposable
 
         // Assert
         Assert.All(_context.Categories, c => Assert.Equal(1, c.TenantId));
+    }
+
+    [Fact]
+    public void SeedDevelopmentData_CreatesDefaultTenant()
+    {
+        // Act
+        DatabaseSeeder.SeedDevelopmentData(_context);
+
+        // Assert
+        var tenant = _context.Tenants.FirstOrDefault();
+        Assert.NotNull(tenant);
+        Assert.Equal("development.local", tenant.Name);
     }
 }
 

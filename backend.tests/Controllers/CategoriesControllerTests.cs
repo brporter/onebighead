@@ -1,8 +1,10 @@
 using backend.Controllers;
 using backend.Data;
 using backend.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using System.Security.Claims;
 
 namespace backend.Tests.Controllers;
 
@@ -10,11 +12,27 @@ public class CategoriesControllerTests
 {
     private readonly Mock<ICategoryRepository> _mockRepository;
     private readonly CategoriesController _controller;
+    private const int TestTenantId = 1;
 
     public CategoriesControllerTests()
     {
         _mockRepository = new Mock<ICategoryRepository>();
         _controller = new CategoriesController(_mockRepository.Object);
+        
+        // Set up authenticated user context with tenant_id claim
+        var claims = new List<Claim>
+        {
+            new("tenant_id", TestTenantId.ToString()),
+            new(ClaimTypes.NameIdentifier, "1"),
+            new(ClaimTypes.Email, "test@example.com")
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+        
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = claimsPrincipal }
+        };
     }
 
     #region GetCategories Tests
@@ -28,7 +46,7 @@ public class CategoriesControllerTests
             new() { Id = 1, TenantId = 1, Name = "Category 1", Description = "Desc 1" },
             new() { Id = 2, TenantId = 1, Name = "Category 2", Description = "Desc 2" }
         };
-        _mockRepository.Setup(repo => repo.GetAllAsync())
+        _mockRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(categories);
 
         // Act
@@ -44,7 +62,7 @@ public class CategoriesControllerTests
     public async Task GetCategories_ReturnsOkResult_WithEmptyList_WhenNoCategories()
     {
         // Arrange
-        _mockRepository.Setup(repo => repo.GetAllAsync())
+        _mockRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Category>());
 
         // Act
@@ -65,7 +83,7 @@ public class CategoriesControllerTests
     {
         // Arrange
         var category = new Category { Id = 1, TenantId = 1, Name = "Test Category", Description = "Test Desc" };
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
             .ReturnsAsync(category);
 
         // Act
@@ -82,7 +100,7 @@ public class CategoriesControllerTests
     public async Task GetCategory_ReturnsNotFound_WhenCategoryDoesNotExist()
     {
         // Arrange
-        _mockRepository.Setup(repo => repo.GetByIdAsync(999))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -100,9 +118,9 @@ public class CategoriesControllerTests
     public async Task CreateCategory_ReturnsCreatedAtAction_WithNewCategory()
     {
         // Arrange
-        var newCategory = new Category { TenantId = 1, Name = "New Category", Description = "New Desc" };
-        var createdCategory = new Category { Id = 1, TenantId = 1, Name = "New Category", Description = "New Desc" };
-        _mockRepository.Setup(repo => repo.CreateAsync(newCategory))
+        var newCategory = new Category { Name = "New Category", Description = "New Desc" };
+        var createdCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "New Category", Description = "New Desc" };
+        _mockRepository.Setup(repo => repo.CreateAsync(It.Is<Category>(c => c.TenantId == TestTenantId)))
             .ReturnsAsync(createdCategory);
 
         // Act
@@ -117,18 +135,18 @@ public class CategoriesControllerTests
     }
 
     [Fact]
-    public async Task CreateCategory_CallsRepositoryCreate()
+    public async Task CreateCategory_SetsTenantIdFromClaims()
     {
         // Arrange
-        var newCategory = new Category { TenantId = 1, Name = "New Category", Description = "New Desc" };
+        var newCategory = new Category { Name = "New Category", Description = "New Desc" };
         _mockRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync(new Category { Id = 1, TenantId = 1, Name = "New Category", Description = "New Desc" });
+            .ReturnsAsync((Category c) => new Category { Id = 1, TenantId = c.TenantId, Name = c.Name, Description = c.Description });
 
         // Act
         await _controller.CreateCategory(newCategory);
 
         // Assert
-        _mockRepository.Verify(repo => repo.CreateAsync(newCategory), Times.Once);
+        _mockRepository.Verify(repo => repo.CreateAsync(It.Is<Category>(c => c.TenantId == TestTenantId)), Times.Once);
     }
 
     #endregion
@@ -140,7 +158,7 @@ public class CategoriesControllerTests
     {
         // Arrange
         var updatedCategory = new Category { Id = 1, TenantId = 1, Name = "Updated Category", Description = "Updated Desc" };
-        _mockRepository.Setup(repo => repo.UpdateAsync(1, updatedCategory))
+        _mockRepository.Setup(repo => repo.UpdateAsync(1, updatedCategory, TestTenantId))
             .ReturnsAsync(updatedCategory);
 
         // Act
@@ -157,7 +175,7 @@ public class CategoriesControllerTests
     {
         // Arrange
         var updatedCategory = new Category { Id = 999, TenantId = 1, Name = "Updated Category", Description = "Updated Desc" };
-        _mockRepository.Setup(repo => repo.UpdateAsync(999, updatedCategory))
+        _mockRepository.Setup(repo => repo.UpdateAsync(999, updatedCategory, TestTenantId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -175,7 +193,7 @@ public class CategoriesControllerTests
     public async Task DeleteCategory_ReturnsNoContent_WhenCategoryExists()
     {
         // Arrange
-        _mockRepository.Setup(repo => repo.DeleteAsync(1))
+        _mockRepository.Setup(repo => repo.DeleteAsync(1, TestTenantId))
             .ReturnsAsync(true);
 
         // Act
@@ -189,7 +207,7 @@ public class CategoriesControllerTests
     public async Task DeleteCategory_ReturnsNotFound_WhenCategoryDoesNotExist()
     {
         // Arrange
-        _mockRepository.Setup(repo => repo.DeleteAsync(999))
+        _mockRepository.Setup(repo => repo.DeleteAsync(999, TestTenantId))
             .ReturnsAsync(false);
 
         // Act

@@ -27,6 +27,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       },
+      '/signin': {
+        target: 'http://localhost:5148',
+        changeOrigin: true,
+        secure: false
+      },
       '/privacy': {
         target: 'http://localhost:5148',
         changeOrigin: true,

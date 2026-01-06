@@ -6,9 +6,22 @@ public static class DatabaseSeeder
 {
     public static void SeedDevelopmentData(AppDbContext context)
     {
+        // Seed default tenant first
+        if (!context.Tenants.Any())
+        {
+            var defaultTenant = new Tenant
+            {
+                Id = 1,
+                Name = "development.local",
+                CreatedAt = DateTime.UtcNow
+            };
+            context.Tenants.Add(defaultTenant);
+            context.SaveChanges();
+        }
+
         if (context.Categories.Any())
         {
-            return; // Already seeded
+            return; // Categories already seeded
         }
 
         var categories = new List<Category>
