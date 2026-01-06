@@ -1,7 +1,7 @@
-using api.Models;
+using backend.Models;
 using System.Text.Json;
 
-namespace api.Tests.Models;
+namespace backend.Tests.Models;
 
 public class CategoryTests
 {

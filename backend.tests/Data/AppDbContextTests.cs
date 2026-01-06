@@ -1,8 +1,8 @@
-using api.Data;
-using api.Models;
+using backend.Data;
+using backend.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace api.Tests.Data;
+namespace backend.Tests.Data;
 
 public class AppDbContextTests : IDisposable
 {

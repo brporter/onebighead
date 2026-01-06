@@ -1,10 +1,10 @@
-using api.Controllers;
-using api.Data;
-using api.Models;
+using backend.Controllers;
+using backend.Data;
+using backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
-namespace api.Tests.Controllers;
+namespace backend.Tests.Controllers;
 
 public class CategoriesControllerTests
 {

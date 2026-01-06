@@ -10,7 +10,7 @@
     <CollectCoverage>true</CollectCoverage>
     <CoverletOutputFormat>cobertura</CoverletOutputFormat>
     <CoverletOutput>./TestResults/</CoverletOutput>
-    <Exclude>[api]Program</Exclude>
+    <Exclude>[backend]Program</Exclude>
     <ExcludeByAttribute>GeneratedCodeAttribute</ExcludeByAttribute>
   </PropertyGroup>
 
@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\api\api.csproj" />
+    <ProjectReference Include="..\backend\backend.csproj" />
   </ItemGroup>
 
 </Project>
