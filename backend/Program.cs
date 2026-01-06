@@ -55,33 +55,37 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-// Serve static assets from wwwroot (CSS, favicon, etc.)
-app.MapStaticAssets();
-
-// Serve frontend SPA assets from wwwroot/collections at /collections path
-var collectionsPath = Path.Combine(app.Environment.WebRootPath, "collections");
-if (Directory.Exists(collectionsPath))
+// Only serve static frontend assets in production (use Vite dev server in development)
+if (!app.Environment.IsDevelopment())
 {
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(collectionsPath),
-        RequestPath = "/collections"
-    });
+    // Serve static assets from wwwroot (CSS, favicon, etc.)
+    app.MapStaticAssets();
 
-    // SPA fallback for /collections routes - serve index.html for client-side routing
-    app.MapFallback("/collections/{**path}", async context =>
+    // Serve frontend SPA assets from wwwroot/collections at /collections path
+    var collectionsPath = Path.Combine(app.Environment.WebRootPath, "collections");
+    if (Directory.Exists(collectionsPath))
     {
-        var indexPath = Path.Combine(collectionsPath, "index.html");
-        if (File.Exists(indexPath))
+        app.UseStaticFiles(new StaticFileOptions
         {
-            context.Response.ContentType = "text/html";
-            await context.Response.SendFileAsync(indexPath);
-        }
-        else
+            FileProvider = new PhysicalFileProvider(collectionsPath),
+            RequestPath = "/collections"
+        });
+
+        // SPA fallback for /collections routes - serve index.html for client-side routing
+        app.MapFallback("/collections/{**path}", async context =>
         {
-            context.Response.StatusCode = 404;
-        }
-    });
+            var indexPath = Path.Combine(collectionsPath, "index.html");
+            if (File.Exists(indexPath))
+            {
+                context.Response.ContentType = "text/html";
+                await context.Response.SendFileAsync(indexPath);
+            }
+            else
+            {
+                context.Response.StatusCode = 404;
+            }
+        });
+    }
 }
 
 app.MapRazorPages()
