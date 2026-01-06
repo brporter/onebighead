@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace web.Pages;
+namespace backend.Pages;
 
 public class AboutModel : PageModel
 {
