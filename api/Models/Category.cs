@@ -1,11 +1,31 @@
-﻿using System.Text.Json.Serialization;
+﻿﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace api.Models;
 
-public record Category(
-    [property: JsonPropertyName("categoryId")] int Id,
-    int TenantId,
-    string Name,
-    string Description,
-    int? ParentCategoryId = null);
+public class Category
+{
+    [Key]
+    [JsonPropertyName("categoryId")]
+    public int Id { get; set; }
+
+    public int TenantId { get; set; }
+
+    [Required]
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
+    public string Description { get; set; } = string.Empty;
+
+    public int? ParentCategoryId { get; set; }
+
+    [JsonIgnore]
+    [ForeignKey(nameof(ParentCategoryId))]
+    public Category? ParentCategory { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Category> ChildCategories { get; set; } = new List<Category>();
+}
 

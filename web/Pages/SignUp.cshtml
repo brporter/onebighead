@@ -1,0 +1,102 @@
+@page
+@model SignUpModel
+@{
+    ViewData["Title"] = "Sign Up";
+}
+
+<div class="landing">
+    <header class="landing__header">
+        <div class="landing__header-content">
+            <a asp-page="/Index" class="landing__logo">OneBigHead</a>
+            <nav class="landing__nav">
+                <a asp-page="/About" class="landing__nav-link">About</a>
+                <a asp-page="/Privacy" class="landing__nav-link">Privacy Policy</a>
+                <a href="/collections" class="landing__nav-link landing__nav-link--signin">Sign In</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="landing__main landing__main--centered">
+        <div class="landing__form-container">
+            <h1>Create Your Account</h1>
+            <p class="landing__form-subtitle">
+                Start organizing your collections today.
+            </p>
+
+            <form class="landing__form" method="post">
+                <div class="landing__form-group">
+                    <label for="name">Full Name</label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="Enter your name"
+                        required
+                    />
+                </div>
+
+                <div class="landing__form-group">
+                    <label for="email">Email Address</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="Enter your email"
+                        required
+                    />
+                </div>
+
+                <div class="landing__form-group">
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Create a password"
+                        required
+                        minlength="8"
+                    />
+                </div>
+
+                <div class="landing__form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        placeholder="Confirm your password"
+                        required
+                        minlength="8"
+                    />
+                </div>
+
+                <div class="landing__form-group landing__form-group--checkbox">
+                    <input type="checkbox" id="terms" name="terms" required />
+                    <label for="terms">
+                        I agree to the <a asp-page="/Privacy">Privacy Policy</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="landing__button landing__button--primary landing__button--full">
+                    Create Account
+                </button>
+            </form>
+
+            <p class="landing__form-footer">
+                Already have an account? <a href="/collections">Sign in</a>
+            </p>
+        </div>
+    </main>
+
+    <footer class="landing__footer">
+        <div class="landing__footer-content">
+            <p>&copy; 2026 OneBigHead. All rights reserved.</p>
+            <nav class="landing__footer-nav">
+                <a asp-page="/About">About</a>
+                <a asp-page="/Privacy">Privacy Policy</a>
+                <a asp-page="/SignUp">Sign Up</a>
+            </nav>
+        </div>
+    </footer>
+</div>
+

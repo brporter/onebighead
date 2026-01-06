@@ -1,4 +1,5 @@
-﻿using api.Models;
+﻿using api.Data;
+using api.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers;
@@ -7,21 +8,58 @@ namespace api.Controllers;
 [Route("[controller]")]
 public class CategoriesController : ControllerBase
 {
-    private static readonly Category[] SampleCategories =
-    [
-        new(1, 1, "Motorola 68000 Computers", "Some Description", null),
-        new(2, 1, "Compact Macintosh", "Some description", 1),
-        new(3, 1, "Apple II", "Some description", 1),
-        new(4, 1, "Peripherals", "Some description", null),
-        new(5, 1, "Monitors", "Some description", 4),
-        new(6, 1, "Printers", "Some description", 4),
-        new(7, 1, "Intel Computers", "Some description", null)
-    ];
+    private readonly ICategoryRepository _categoryRepository;
+
+    public CategoriesController(ICategoryRepository categoryRepository)
+    {
+        _categoryRepository = categoryRepository;
+    }
 
     [HttpGet]
-    public ActionResult<Category[]> GetCategories()
+    public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
     {
-        return SampleCategories;
+        var categories = await _categoryRepository.GetAllAsync();
+        return Ok(categories);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Category>> GetCategory(int id)
+    {
+        var category = await _categoryRepository.GetByIdAsync(id);
+        if (category is null)
+        {
+            return NotFound();
+        }
+        return Ok(category);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Category>> CreateCategory(Category category)
+    {
+        var created = await _categoryRepository.CreateAsync(category);
+        return CreatedAtAction(nameof(GetCategory), new { id = created.Id }, created);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Category>> UpdateCategory(int id, Category category)
+    {
+        var updated = await _categoryRepository.UpdateAsync(id, category);
+        if (updated is null)
+        {
+            return NotFound();
+        }
+        return Ok(updated);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteCategory(int id)
+    {
+        var deleted = await _categoryRepository.DeleteAsync(id);
+        if (!deleted)
+        {
+            return NotFound();
+        }
+        return NoContent();
     }
 }
 

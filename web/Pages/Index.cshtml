@@ -1,0 +1,72 @@
+﻿﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="landing">
+    <header class="landing__header">
+        <div class="landing__header-content">
+            <a asp-page="/Index" class="landing__logo">OneBigHead</a>
+            <nav class="landing__nav">
+                <a asp-page="/About" class="landing__nav-link">About</a>
+                <a asp-page="/Privacy" class="landing__nav-link">Privacy Policy</a>
+                <a href="/collections" class="landing__nav-link landing__nav-link--signin">Sign In</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="landing__main">
+        <section class="landing__hero">
+            <h1 class="landing__title">Welcome to OneBigHead</h1>
+            <p class="landing__tagline">
+                Your personal collection manager for vintage technology, rare collectibles, and cherished items.
+            </p>
+            <div class="landing__cta">
+                <a asp-page="/SignUp" class="landing__button landing__button--primary">Get Started</a>
+                <a asp-page="/About" class="landing__button landing__button--secondary">Learn More</a>
+            </div>
+        </section>
+
+        <section class="landing__features">
+            <h2 class="landing__section-title">Why Choose OneBigHead?</h2>
+            <div class="landing__features-grid">
+                <article class="landing__feature">
+                    <h3>Organize</h3>
+                    <p>Categorize your collections with our intuitive hierarchical system. Create nested categories to match your exact organizational needs.</p>
+                </article>
+                <article class="landing__feature">
+                    <h3>Document</h3>
+                    <p>Keep detailed records of each item including descriptions, images, acquisition dates, and custom properties specific to your collection type.</p>
+                </article>
+                <article class="landing__feature">
+                    <h3>Discover</h3>
+                    <p>Browse your collections with powerful filtering and search capabilities. Find exactly what you're looking for in seconds.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="landing__about-preview">
+            <h2 class="landing__section-title">Built for Collectors</h2>
+            <p>
+                Whether you collect vintage Macintosh computers, rare coins, classic vinyl records, or anything else that sparks your passion, 
+                OneBigHead provides the tools you need to manage and showcase your treasures.
+            </p>
+            <p>
+                Our platform is designed by collectors, for collectors. We understand the importance of preserving not just items, 
+                but the stories and memories that make each piece special.
+            </p>
+        </section>
+    </main>
+
+    <footer class="landing__footer">
+        <div class="landing__footer-content">
+            <p>&copy; 2026 OneBigHead. All rights reserved.</p>
+            <nav class="landing__footer-nav">
+                <a asp-page="/About">About</a>
+                <a asp-page="/Privacy">Privacy Policy</a>
+                <a asp-page="/SignUp">Sign Up</a>
+            </nav>
+        </div>
+    </footer>
+</div>
