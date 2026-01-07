@@ -84,7 +84,33 @@ public class OidcTokenValidator : IOidcTokenValidator
             var validationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidIssuer = config.Issuer,
+                // Microsoft's OpenID Connect discovery document returns a templated issuer 
+                // (e.g., "https://login.microsoftonline.com/{tenantid}/v2.0") for multi-tenant
+                // and consumer account configurations. The actual token contains the real tenant ID.
+                // We use a custom IssuerValidator to replace the {tenantid} placeholder with the
+                // tenant ID from the token's "tid" claim before comparison, matching the behavior
+                // of Microsoft.Identity.Web's built-in validation.
+                IssuerValidator = (issuer, securityToken, parameters) =>
+                {
+                    var expectedIssuer = config.Issuer;
+                    
+                    if (securityToken is JwtSecurityToken jwt)
+                    {
+                        var tid = jwt.Claims.FirstOrDefault(c => c.Type == "tid")?.Value;
+                        if (!string.IsNullOrEmpty(tid))
+                        {
+                            expectedIssuer = config.Issuer.Replace("{tenantid}", tid);
+                        }
+                    }
+
+                    if (string.Equals(issuer, expectedIssuer, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return issuer;
+                    }
+
+                    throw new SecurityTokenInvalidIssuerException(
+                        $"Issuer validation failed. Expected: '{expectedIssuer}', Actual: '{issuer}'");
+                },
                 ValidateAudience = true,
                 ValidAudience = providerSettings.ClientId,
                 ValidateLifetime = true,

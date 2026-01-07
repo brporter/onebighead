@@ -27,6 +27,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddSingleton<IOidcTokenValidator, OidcTokenValidator>();
+builder.Services.AddScoped<IOAuthService, OAuthService>();
+builder.Services.AddHttpClient();
 
 builder.Services.AddAuthentication(CookieJwtAuthenticationExtensions.SchemeName)
     .AddCookieJwtAuthentication();

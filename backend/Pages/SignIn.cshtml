@@ -95,16 +95,17 @@
 @section Scripts {
 <script>
     function signInWithProvider(provider) {
-        // In a real implementation, this would redirect to the provider's OAuth flow
-        // For now, we'll show an alert indicating the feature is coming
         const button = event.target.closest('button');
         if (button.disabled) {
             return;
         }
         
-        // Redirect to the OAuth initiation endpoint
-        // This endpoint would be implemented to start the OAuth flow
-        window.location.href = `/api/auth/login/${provider.toLowerCase()}`;
+        // Get return URL from the page model (passed via query string)
+        const returnUrl = '@Html.Raw(Model.ReturnUrl ?? "/collections")';
+        
+        // Redirect to the OAuth initiation endpoint with return URL
+        const loginUrl = `/api/auth/login/${provider.toLowerCase()}?returnUrl=${encodeURIComponent(returnUrl)}`;
+        window.location.href = loginUrl;
     }
 </script>
 }
