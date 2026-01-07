@@ -149,6 +149,34 @@ public class CategoriesControllerTests
         _mockRepository.Verify(repo => repo.CreateAsync(It.Is<Category>(c => c.TenantId == TestTenantId)), Times.Once);
     }
 
+    [Fact]
+    public async Task CreateCategory_ReturnsBadRequest_WhenNameIsReserved()
+    {
+        // Arrange
+        var newCategory = new Category { Name = "Unassigned Items", Description = "Trying to use reserved name" };
+
+        // Act
+        var result = await _controller.CreateCategory(newCategory);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateCategory_SetsIsSystemToFalse()
+    {
+        // Arrange
+        var newCategory = new Category { Name = "New Category", Description = "Desc", IsSystem = true }; // Trying to set as system
+        _mockRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
+            .ReturnsAsync((Category c) => new Category { Id = 1, TenantId = c.TenantId, Name = c.Name, Description = c.Description, IsSystem = c.IsSystem });
+
+        // Act
+        await _controller.CreateCategory(newCategory);
+
+        // Assert
+        _mockRepository.Verify(repo => repo.CreateAsync(It.Is<Category>(c => c.IsSystem == false)), Times.Once);
+    }
+
     #endregion
 
     #region UpdateCategory Tests
@@ -157,7 +185,10 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsOkResult_WhenCategoryExists()
     {
         // Arrange
-        var updatedCategory = new Category { Id = 1, TenantId = 1, Name = "Updated Category", Description = "Updated Desc" };
+        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "Original", Description = "Original Desc", IsSystem = false };
+        var updatedCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "Updated Category", Description = "Updated Desc" };
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(existingCategory);
         _mockRepository.Setup(repo => repo.UpdateAsync(1, updatedCategory, TestTenantId))
             .ReturnsAsync(updatedCategory);
 
@@ -175,7 +206,7 @@ public class CategoriesControllerTests
     {
         // Arrange
         var updatedCategory = new Category { Id = 999, TenantId = 1, Name = "Updated Category", Description = "Updated Desc" };
-        _mockRepository.Setup(repo => repo.UpdateAsync(999, updatedCategory, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -183,6 +214,39 @@ public class CategoriesControllerTests
 
         // Assert
         Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_ReturnsForbidden_WhenCategoryIsSystem()
+    {
+        // Arrange
+        var systemCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "Unassigned Items", Description = "System", IsSystem = true };
+        var updatedCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "Try to Update", Description = "Updated Desc" };
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(systemCategory);
+
+        // Act
+        var result = await _controller.UpdateCategory(1, updatedCategory);
+
+        // Assert
+        var objectResult = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal(403, objectResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_ReturnsBadRequest_WhenRenamingToReservedName()
+    {
+        // Arrange
+        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "Original", Description = "Original Desc", IsSystem = false };
+        var updatedCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "Unassigned Items", Description = "Updated Desc" };
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(existingCategory);
+
+        // Act
+        var result = await _controller.UpdateCategory(1, updatedCategory);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
     }
 
     #endregion
@@ -193,6 +257,9 @@ public class CategoriesControllerTests
     public async Task DeleteCategory_ReturnsNoContent_WhenCategoryExists()
     {
         // Arrange
+        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "To Delete", Description = "Desc", IsSystem = false };
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(existingCategory);
         _mockRepository.Setup(repo => repo.DeleteAsync(1, TestTenantId))
             .ReturnsAsync(true);
 
@@ -207,14 +274,30 @@ public class CategoriesControllerTests
     public async Task DeleteCategory_ReturnsNotFound_WhenCategoryDoesNotExist()
     {
         // Arrange
-        _mockRepository.Setup(repo => repo.DeleteAsync(999, TestTenantId))
-            .ReturnsAsync(false);
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+            .ReturnsAsync((Category?)null);
 
         // Act
         var result = await _controller.DeleteCategory(999);
 
         // Assert
         Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_ReturnsForbidden_WhenCategoryIsSystem()
+    {
+        // Arrange
+        var systemCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "Unassigned Items", Description = "System", IsSystem = true };
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(systemCategory);
+
+        // Act
+        var result = await _controller.DeleteCategory(1);
+
+        // Assert
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, objectResult.StatusCode);
     }
 
     #endregion

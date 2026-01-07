@@ -84,6 +84,7 @@ describe('types', () => {
         name: 'Test Category',
         description: 'Test description',
         parentCategoryId: null,
+        isSystem: false,
       };
 
       expect(category.categoryId).toBe(1);
@@ -97,6 +98,7 @@ describe('types', () => {
         name: 'Child Category',
         description: 'Child description',
         parentCategoryId: 1,
+        isSystem: false,
       };
 
       expect(category.parentCategoryId).toBe(1);
@@ -111,6 +113,7 @@ describe('types', () => {
         name: 'Parent',
         description: 'Parent desc',
         parentCategoryId: null,
+        isSystem: false,
         children: [
           {
             tenantId: 1,
@@ -118,6 +121,7 @@ describe('types', () => {
             name: 'Child',
             description: 'Child desc',
             parentCategoryId: 1,
+            isSystem: false,
             children: [],
           },
         ],

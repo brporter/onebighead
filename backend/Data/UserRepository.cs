@@ -50,6 +50,18 @@ public class UserRepository : IUserRepository
             _context.Tenants.Add(tenant);
             await _context.SaveChangesAsync();
 
+            // Create system categories for the new tenant
+            var unassignedCategory = new Category
+            {
+                TenantId = tenant.Id,
+                Name = "Unassigned Items",
+                Description = "Items without a category",
+                IsSystem = true,
+                ParentCategoryId = null
+            };
+            _context.Categories.Add(unassignedCategory);
+            await _context.SaveChangesAsync();
+
             // Create user associated with the new tenant
             var user = new User
             {

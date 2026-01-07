@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { Category, Item, Collection, Tenant } from './types';
-import { items as initialItems, collections as initialCollections, tenants as initialTenants } from './data';
+import { collections as initialCollections, tenants as initialTenants } from './data';
 
 export interface DataContextValue {
   // Data
@@ -8,16 +8,20 @@ export interface DataContextValue {
   categoriesLoading: boolean;
   categoriesError: string | null;
   items: Item[];
+  itemsLoading: boolean;
+  itemsError: string | null;
   collections: Collection[];
   tenants: Tenant[];
   // Item operations
-  addItem: (item: Item) => number;
-  updateItem: (id: number, updates: Partial<Item>) => void;
-  deleteItem: (id: number) => void;
+  addItem: (item: Item) => Promise<number>;
+  updateItem: (id: number, updates: Partial<Item>) => Promise<void>;
+  deleteItem: (id: number) => Promise<void>;
+  refreshItems: () => Promise<void>;
   // Category operations
-  addCategory: (category: Omit<Category, 'categoryId'>) => void;
-  updateCategory: (categoryId: number, updates: Partial<Category>) => void;
-  deleteCategory: (categoryId: number) => void;
+  addCategory: (category: Omit<Category, 'categoryId' | 'isSystem'>) => Promise<number>;
+  updateCategory: (categoryId: number, updates: Partial<Category>) => Promise<void>;
+  deleteCategory: (categoryId: number) => Promise<void>;
+  refreshCategories: () => Promise<void>;
   // Collection operations
   addCollection: (collection: Omit<Collection, 'collectionId'>) => void;
   updateCollection: (collectionId: number, updates: Partial<Collection>) => void;
@@ -33,14 +37,18 @@ const defaultContextValue: DataContextValue = {
   categoriesLoading: false,
   categoriesError: null,
   items: [],
+  itemsLoading: false,
+  itemsError: null,
   collections: [],
   tenants: [],
-  addItem: () => 0,
-  updateItem: () => {},
-  deleteItem: () => {},
-  addCategory: () => {},
-  updateCategory: () => {},
-  deleteCategory: () => {},
+  addItem: async () => 0,
+  updateItem: async () => {},
+  deleteItem: async () => {},
+  refreshItems: async () => {},
+  addCategory: async () => 0,
+  updateCategory: async () => {},
+  deleteCategory: async () => {},
+  refreshCategories: async () => {},
   addCollection: () => {},
   updateCollection: () => {},
   deleteCollection: () => {},
@@ -64,67 +72,143 @@ export function DataProvider({ children }: DataProviderProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
-  const [items, setItems] = useState<Item[]>([...initialItems] as Item[]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
+  const [itemsError, setItemsError] = useState<string | null>(null);
   const [collections, setCollections] = useState<Collection[]>([...initialCollections]);
   const [tenants, setTenants] = useState<Tenant[]>([...initialTenants]);
 
-  useEffect(() => {
-    async function fetchCategories() {
-      try {
-        setCategoriesLoading(true);
-        setCategoriesError(null);
-        const response = await fetch('/api/categories');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch categories: ${response.statusText}`);
-        }
-        const data: Category[] = await response.json();
-        setCategories(data);
-      } catch (error) {
-        setCategoriesError(error instanceof Error ? error.message : 'Failed to fetch categories');
-      } finally {
-        setCategoriesLoading(false);
+  const fetchItems = useCallback(async () => {
+    try {
+      setItemsLoading(true);
+      setItemsError(null);
+      const response = await fetch('/api/items');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch items: ${response.statusText}`);
       }
+      const data: Item[] = await response.json();
+      setItems(data);
+    } catch (error) {
+      setItemsError(error instanceof Error ? error.message : 'Failed to fetch items');
+    } finally {
+      setItemsLoading(false);
     }
-    fetchCategories();
   }, []);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      setCategoriesLoading(true);
+      setCategoriesError(null);
+      const response = await fetch('/api/categories');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch categories: ${response.statusText}`);
+      }
+      const data: Category[] = await response.json();
+      setCategories(data);
+    } catch (error) {
+      setCategoriesError(error instanceof Error ? error.message : 'Failed to fetch categories');
+    } finally {
+      setCategoriesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchItems();
+  }, [fetchCategories, fetchItems]);
 
   // Item CRUD operations
-  const addItem = useCallback((item: Item): number => {
-    let newId = 0;
-    setItems((prev) => {
-      newId = prev.length ? Math.max(...prev.map((i) => i.id ?? 0)) + 1 : 1;
-      return [...prev, { ...item, id: newId }];
+  const addItem = useCallback(async (item: Item): Promise<number> => {
+    const response = await fetch('/api/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
     });
-    return newId;
+    if (!response.ok) {
+      throw new Error(`Failed to create item: ${response.statusText}`);
+    }
+    const created: Item = await response.json();
+    setItems((prev) => [...prev, created]);
+    return created.id!;
   }, []);
 
-  const updateItem = useCallback((id: number, updates: Partial<Item>) => {
+  const updateItem = useCallback(async (id: number, updates: Partial<Item>): Promise<void> => {
+    const currentItem = items.find((i) => i.id === id);
+    if (!currentItem) return;
+    
+    const updatedItem = { ...currentItem, ...updates };
+    const response = await fetch(`/api/items/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedItem),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update item: ${response.statusText}`);
+    }
+    const result: Item = await response.json();
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+      prev.map((item) => (item.id === id ? result : item))
     );
-  }, []);
+  }, [items]);
 
-  const deleteItem = useCallback((id: number) => {
+  const deleteItem = useCallback(async (id: number): Promise<void> => {
+    const response = await fetch(`/api/items/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to delete item: ${response.statusText}`);
+    }
     setItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
   // Category CRUD operations
-  const addCategory = useCallback((category: Omit<Category, 'categoryId'>) => {
-    setCategories((prev) => {
-      const newId = prev.length ? Math.max(...prev.map((c) => c.categoryId)) + 1 : 1;
-      return [...prev, { ...category, categoryId: newId }];
+  const addCategory = useCallback(async (category: Omit<Category, 'categoryId' | 'isSystem'>): Promise<number> => {
+    const response = await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(category),
     });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Failed to create category: ${response.statusText}`);
+    }
+    const created: Category = await response.json();
+    setCategories((prev) => [...prev, created]);
+    return created.categoryId;
   }, []);
 
-  const updateCategory = useCallback((categoryId: number, updates: Partial<Category>) => {
+  const updateCategory = useCallback(async (categoryId: number, updates: Partial<Category>): Promise<void> => {
+    const currentCategory = categories.find((c) => c.categoryId === categoryId);
+    if (!currentCategory) return;
+    
+    const updatedCategory = { ...currentCategory, ...updates };
+    const response = await fetch(`/api/categories/${categoryId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedCategory),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Failed to update category: ${response.statusText}`);
+    }
+    const result: Category = await response.json();
     setCategories((prev) =>
-      prev.map((cat) => (cat.categoryId === categoryId ? { ...cat, ...updates } : cat))
+      prev.map((cat) => (cat.categoryId === categoryId ? result : cat))
     );
-  }, []);
+  }, [categories]);
 
-  const deleteCategory = useCallback((categoryId: number) => {
+  const deleteCategory = useCallback(async (categoryId: number): Promise<void> => {
+    const response = await fetch(`/api/categories/${categoryId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Failed to delete category: ${response.statusText}`);
+    }
     setCategories((prev) => prev.filter((cat) => cat.categoryId !== categoryId));
-  }, []);
+    // Refresh items since they may have been reassigned to Unassigned Items
+    await fetchItems();
+  }, [fetchItems]);
 
   // Collection CRUD operations
   const addCollection = useCallback((collection: Omit<Collection, 'collectionId'>) => {
@@ -168,16 +252,20 @@ export function DataProvider({ children }: DataProviderProps) {
     categoriesLoading,
     categoriesError,
     items,
+    itemsLoading,
+    itemsError,
     collections,
     tenants,
     // Item operations
     addItem,
     updateItem,
     deleteItem,
+    refreshItems: fetchItems,
     // Category operations
     addCategory,
     updateCategory,
     deleteCategory,
+    refreshCategories: fetchCategories,
     // Collection operations
     addCollection,
     updateCollection,

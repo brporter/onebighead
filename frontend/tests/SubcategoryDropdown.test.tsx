@@ -6,9 +6,9 @@ import type { Category } from '../src/types';
 
 describe('SubcategoryDropdown', () => {
   const mockSubcategories: Category[] = [
-    { tenantId: 1, categoryId: 1, name: 'Subcategory 1', description: 'Desc 1', parentCategoryId: null },
-    { tenantId: 1, categoryId: 2, name: 'Subcategory 2', description: 'Desc 2', parentCategoryId: null },
-    { tenantId: 1, categoryId: 3, name: 'Subcategory 3', description: 'Desc 3', parentCategoryId: null },
+    { tenantId: 1, categoryId: 1, name: 'Subcategory 1', description: 'Desc 1', parentCategoryId: null, isSystem: false },
+    { tenantId: 1, categoryId: 2, name: 'Subcategory 2', description: 'Desc 2', parentCategoryId: null, isSystem: false },
+    { tenantId: 1, categoryId: 3, name: 'Subcategory 3', description: 'Desc 3', parentCategoryId: null, isSystem: false },
   ];
 
   describe('snapshots', () => {

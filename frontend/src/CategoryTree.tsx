@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Category, CategoryNode } from './types';
 import { useData } from './DataContext';
+import CategoryEditorModal from './CategoryEditorModal';
 
 interface CategoryNodeProps {
   node: CategoryNode;
@@ -9,6 +10,7 @@ interface CategoryNodeProps {
   onSelect: (categoryId: number) => void;
   expandedIds: Set<number>;
   onToggle: (categoryId: number) => void;
+  onEdit: (category: Category) => void;
 }
 
 interface CategoryTreeProps {
@@ -39,7 +41,7 @@ function buildTree(categories: Category[]): CategoryNode[] {
   return roots;
 }
 
-function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expandedIds, onToggle }: CategoryNodeProps) {
+function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expandedIds, onToggle, onEdit }: CategoryNodeProps) {
   const isSelected = node.categoryId === selectedCategoryId;
   const hasChildren = node.children.length > 0;
   const isExpanded = expandedIds.has(node.categoryId);
@@ -64,11 +66,25 @@ function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expa
 
         <button
           type="button"
-          className={`categoryTree__item${isSelected ? ' categoryTree__item--active' : ''}`}
+          className={`categoryTree__item${isSelected ? ' categoryTree__item--active' : ''}${node.isSystem ? ' categoryTree__item--system' : ''}`}
           onClick={() => onSelect(node.categoryId)}
         >
           {node.name}
         </button>
+
+        {!node.isSystem && (
+          <button
+            type="button"
+            className="categoryTree__edit"
+            aria-label={`Edit ${node.name}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(node);
+            }}
+          >
+            ✎
+          </button>
+        )}
       </div>
 
       {hasChildren && isExpanded ? (
@@ -82,6 +98,7 @@ function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expa
               onSelect={onSelect}
               expandedIds={expandedIds}
               onToggle={onToggle}
+              onEdit={onEdit}
             />
           ))}
         </ul>
@@ -91,8 +108,22 @@ function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expa
 }
 
 function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTreeProps) {
-  const { categoriesLoading, categoriesError } = useData();
-  const tree = useMemo(() => buildTree(categories), [categories]);
+  const { categoriesLoading, categoriesError, items, refreshCategories, refreshItems } = useData();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  // Filter out system categories that have no items
+  const visibleCategories = useMemo(() => {
+    const itemCategoryIds = new Set(items.map((item) => item.categoryId).filter((id): id is number => id !== null));
+    return categories.filter((cat) => {
+      if (!cat.isSystem) return true;
+      // Show system categories only if they contain items
+      return itemCategoryIds.has(cat.categoryId);
+    });
+  }, [categories, items]);
+
+  const tree = useMemo(() => buildTree(visibleCategories), [visibleCategories]);
+  
   const [expandedIds, setExpandedIds] = useState<Set<number>>(() => {
     const rootIds = (categories ?? [])
       .filter((c) => c.parentCategoryId == null)
@@ -107,6 +138,26 @@ function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTree
       else next.add(id);
       return next;
     });
+  }
+
+  function handleEdit(category: Category) {
+    setEditingCategory(category);
+    setModalOpen(true);
+  }
+
+  function handleAddNew() {
+    setEditingCategory(null);
+    setModalOpen(true);
+  }
+
+  function handleModalClose() {
+    setModalOpen(false);
+    setEditingCategory(null);
+  }
+
+  async function handleModalSaved() {
+    await refreshCategories();
+    await refreshItems();
   }
 
   if (categoriesError) {
@@ -129,7 +180,17 @@ function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTree
 
   return (
     <aside className="categoryTree">
-      <h2 className="categoryTree__title">Categories</h2>
+      <div className="categoryTree__header">
+        <h2 className="categoryTree__title">Categories</h2>
+        <button
+          type="button"
+          className="categoryTree__add"
+          onClick={handleAddNew}
+          aria-label="Add category"
+        >
+          +
+        </button>
+      </div>
       <ul className="categoryTree__list">
         {tree.map((node) => (
           <CategoryNodeComponent
@@ -140,9 +201,17 @@ function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTree
             onSelect={onSelect}
             expandedIds={expandedIds}
             onToggle={toggle}
+            onEdit={handleEdit}
           />
         ))}
       </ul>
+
+      <CategoryEditorModal
+        category={editingCategory}
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        onSaved={handleModalSaved}
+      />
     </aside>
   );
 }

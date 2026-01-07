@@ -50,8 +50,15 @@ public class CategoriesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Category>> CreateCategory(Category category)
     {
+        // Prevent creation of categories with reserved system names
+        if (string.Equals(category.Name, "Unassigned Items", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest("The name 'Unassigned Items' is reserved for system use.");
+        }
+
         var tenantId = GetTenantId();
         category.TenantId = tenantId;
+        category.IsSystem = false; // User-created categories are never system categories
         var created = await _categoryRepository.CreateAsync(category);
         return CreatedAtAction(nameof(GetCategory), new { id = created.Id }, created);
     }
@@ -60,6 +67,24 @@ public class CategoriesController : ControllerBase
     public async Task<ActionResult<Category>> UpdateCategory(int id, Category category)
     {
         var tenantId = GetTenantId();
+        
+        // Check if attempting to modify a system category
+        var existingCategory = await _categoryRepository.GetByIdAsync(id, tenantId);
+        if (existingCategory is null)
+        {
+            return NotFound();
+        }
+        if (existingCategory.IsSystem)
+        {
+            return StatusCode(403, "System categories cannot be modified.");
+        }
+
+        // Prevent renaming to reserved system names
+        if (string.Equals(category.Name, "Unassigned Items", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest("The name 'Unassigned Items' is reserved for system use.");
+        }
+
         var updated = await _categoryRepository.UpdateAsync(id, category, tenantId);
         if (updated is null)
         {
@@ -72,6 +97,18 @@ public class CategoriesController : ControllerBase
     public async Task<IActionResult> DeleteCategory(int id)
     {
         var tenantId = GetTenantId();
+        
+        // Check if attempting to delete a system category
+        var existingCategory = await _categoryRepository.GetByIdAsync(id, tenantId);
+        if (existingCategory is null)
+        {
+            return NotFound();
+        }
+        if (existingCategory.IsSystem)
+        {
+            return StatusCode(403, "System categories cannot be deleted.");
+        }
+
         var deleted = await _categoryRepository.DeleteAsync(id, tenantId);
         if (!deleted)
         {

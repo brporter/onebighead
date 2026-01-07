@@ -26,6 +26,7 @@ export interface Category {
   name: string;
   description: string;
   parentCategoryId: number | null;
+  isSystem: boolean;
 }
 
 export interface CategoryNode extends Category {

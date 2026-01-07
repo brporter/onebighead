@@ -1,4 +1,4 @@
-﻿﻿﻿using System.ComponentModel.DataAnnotations;
+﻿﻿﻿﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -18,6 +18,8 @@ public class Category
 
     [MaxLength(1000)]
     public string Description { get; set; } = string.Empty;
+
+    public bool IsSystem { get; set; } = false;
 
     public int? ParentCategoryId { get; set; }
 

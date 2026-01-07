@@ -13,9 +13,9 @@ vi.mock('../src/DataContext', () => ({
 
 describe('App', () => {
   const mockCategories: Category[] = [
-    { tenantId: 1, categoryId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null },
-    { tenantId: 1, categoryId: 2, name: 'Child Category', description: 'Child desc', parentCategoryId: 1 },
-    { tenantId: 1, categoryId: 3, name: 'Another Child', description: 'Another child desc', parentCategoryId: 1 },
+    { tenantId: 1, categoryId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false },
+    { tenantId: 1, categoryId: 2, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false },
+    { tenantId: 1, categoryId: 3, name: 'Another Child', description: 'Another child desc', parentCategoryId: 1, isSystem: false },
   ];
 
   const mockItems: Item[] = [
@@ -43,15 +43,21 @@ describe('App', () => {
 
   const mockDataContext = {
     categories: mockCategories,
+    categoriesLoading: false,
+    categoriesError: null,
     items: mockItems,
+    itemsLoading: false,
+    itemsError: null,
     collections: [],
     tenants: [],
-    addItem: vi.fn(() => 3),
-    updateItem: vi.fn(),
-    deleteItem: vi.fn(),
-    addCategory: vi.fn(),
-    updateCategory: vi.fn(),
-    deleteCategory: vi.fn(),
+    addItem: vi.fn(async () => 3),
+    updateItem: vi.fn(async () => {}),
+    deleteItem: vi.fn(async () => {}),
+    refreshItems: vi.fn(async () => {}),
+    addCategory: vi.fn(async () => 4),
+    updateCategory: vi.fn(async () => {}),
+    deleteCategory: vi.fn(async () => {}),
+    refreshCategories: vi.fn(async () => {}),
     addCollection: vi.fn(),
     updateCollection: vi.fn(),
     deleteCollection: vi.fn(),

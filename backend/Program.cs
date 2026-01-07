@@ -21,6 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Register repositories
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Configure authentication
@@ -40,11 +41,11 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Ensure database is created and seed development data
+// Ensure database is migrated and seed development data
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.EnsureCreated();
+    context.Database.Migrate();
 
     if (app.Environment.IsDevelopment())
     {

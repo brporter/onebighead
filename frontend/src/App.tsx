@@ -107,19 +107,19 @@ function App() {
     setView('detail');
   }
 
-  function handleSaveItem(itemData: Item) {
+  async function handleSaveItem(itemData: Item) {
     if (isAddingItem) {
-      addItem(itemData);
+      await addItem(itemData);
       setIsAddingItem(false);
       setView('items');
     } else if (selectedItemId != null) {
-      updateItem(selectedItemId, itemData);
+      await updateItem(selectedItemId, itemData);
       setIsEditing(false);
     }
   }
 
-  function handleDeleteItem(id: number) {
-    deleteItem(id);
+  async function handleDeleteItem(id: number) {
+    await deleteItem(id);
     setSelectedItemId(null);
     setView('items');
   }

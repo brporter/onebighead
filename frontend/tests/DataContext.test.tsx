@@ -4,8 +4,13 @@ import { DataProvider, useData } from '../src/DataContext';
 import type { Item, Category, Collection, Tenant } from '../src/types';
 
 const mockCategories: Category[] = [
-  { tenantId: 1, categoryId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null },
-  { tenantId: 1, categoryId: 2, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1 },
+  { tenantId: 1, categoryId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false },
+  { tenantId: 1, categoryId: 2, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false },
+];
+
+const mockItems: Item[] = [
+  { id: 1, tenantId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [] },
+  { id: 2, tenantId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [] },
 ];
 
 // Test component to access context
@@ -20,11 +25,81 @@ function TestConsumer({
 }
 
 describe('DataContext', () => {
+  let mockItemIdCounter = 100;
+  let mockCategoryIdCounter = 100;
+
   beforeEach(() => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => mockCategories,
-    } as Response);
+    mockItemIdCounter = 100;
+    mockCategoryIdCounter = 100;
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url, options) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      const method = options?.method || 'GET';
+
+      if (urlStr === '/api/categories' && method === 'GET') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockCategories,
+        } as Response);
+      }
+
+      if (urlStr === '/api/categories' && method === 'POST') {
+        const body = JSON.parse(options?.body as string);
+        const newCategory = { ...body, categoryId: mockCategoryIdCounter++, isSystem: false };
+        return Promise.resolve({
+          ok: true,
+          json: async () => newCategory,
+        } as Response);
+      }
+
+      if (urlStr.match(/\/api\/categories\/\d+/) && method === 'PUT') {
+        const body = JSON.parse(options?.body as string);
+        return Promise.resolve({
+          ok: true,
+          json: async () => body,
+        } as Response);
+      }
+
+      if (urlStr.match(/\/api\/categories\/\d+/) && method === 'DELETE') {
+        return Promise.resolve({
+          ok: true,
+        } as Response);
+      }
+      
+      if (urlStr === '/api/items' && method === 'GET') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [...mockItems],
+        } as Response);
+      }
+
+      if (urlStr === '/api/items' && method === 'POST') {
+        const body = JSON.parse(options?.body as string);
+        const newItem = { ...body, id: mockItemIdCounter++ };
+        return Promise.resolve({
+          ok: true,
+          json: async () => newItem,
+        } as Response);
+      }
+
+      if (urlStr.match(/\/api\/items\/\d+/) && method === 'PUT') {
+        const body = JSON.parse(options?.body as string);
+        return Promise.resolve({
+          ok: true,
+          json: async () => body,
+        } as Response);
+      }
+
+      if (urlStr.match(/\/api\/items\/\d+/) && method === 'DELETE') {
+        return Promise.resolve({
+          ok: true,
+        } as Response);
+      }
+
+      return Promise.resolve({
+        ok: false,
+        statusText: 'Not Found',
+      } as Response);
+    });
   });
 
   afterEach(() => {
@@ -154,7 +229,7 @@ describe('DataContext', () => {
   });
 
   describe('Item CRUD operations', () => {
-    it('should add a new item', async () => {
+    it('should fetch items from API', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -164,7 +239,25 @@ describe('DataContext', () => {
       );
 
       await waitFor(() => {
-        expect(contextData!.categoriesLoading).toBe(false);
+        expect(contextData!.itemsLoading).toBe(false);
+      });
+
+      expect(globalThis.fetch).toHaveBeenCalledWith('/api/items');
+      expect(contextData!.items.length).toBe(2);
+      expect(contextData!.itemsError).toBeNull();
+    });
+
+    it('should add a new item via API', async () => {
+      let contextData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { contextData = data; }} />
+        </DataProvider>
+      );
+
+      await waitFor(() => {
+        expect(contextData!.itemsLoading).toBe(false);
       });
 
       const initialLength = contextData!.items.length;
@@ -180,15 +273,15 @@ describe('DataContext', () => {
         images: [],
       };
 
-      act(() => {
-        contextData!.addItem(newItem);
+      await act(async () => {
+        await contextData!.addItem(newItem);
       });
 
       expect(contextData!.items.length).toBe(initialLength + 1);
       expect(contextData!.items.find(i => i.name === 'New Test Item')).toBeDefined();
     });
 
-    it('should generate ID 1 when items array is empty', async () => {
+    it('should update an existing item via API', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -198,55 +291,14 @@ describe('DataContext', () => {
       );
 
       await waitFor(() => {
-        expect(contextData!.categoriesLoading).toBe(false);
-      });
-
-      // First, delete all existing items
-      const itemIds = contextData!.items.map(i => i.id!);
-      act(() => {
-        itemIds.forEach(id => contextData!.deleteItem(id));
-      });
-
-      expect(contextData!.items.length).toBe(0);
-
-      // Now add a new item - should get ID 1
-      const newItem: Item = {
-        id: null,
-        tenantId: 1,
-        categoryId: 1,
-        name: 'First Item',
-        summary: '',
-        description: '',
-        properties: [],
-        images: [],
-      };
-
-      act(() => {
-        contextData!.addItem(newItem);
-      });
-
-      // The new item should have ID 1
-      expect(contextData!.items[0].id).toBe(1);
-    });
-
-    it('should update an existing item', async () => {
-      let contextData: ReturnType<typeof useData> | null = null;
-
-      render(
-        <DataProvider>
-          <TestConsumer onData={(data) => { contextData = data; }} />
-        </DataProvider>
-      );
-
-      await waitFor(() => {
-        expect(contextData!.categoriesLoading).toBe(false);
+        expect(contextData!.itemsLoading).toBe(false);
       });
 
       const firstItem = contextData!.items[0];
       const originalName = firstItem.name;
 
-      act(() => {
-        contextData!.updateItem(firstItem.id!, { name: 'Updated Name' });
+      await act(async () => {
+        await contextData!.updateItem(firstItem.id!, { name: 'Updated Name' });
       });
 
       const updatedItem = contextData!.items.find(i => i.id === firstItem.id);
@@ -254,7 +306,7 @@ describe('DataContext', () => {
       expect(updatedItem?.name).not.toBe(originalName);
     });
 
-    it('should delete an item', async () => {
+    it('should delete an item via API', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -264,21 +316,21 @@ describe('DataContext', () => {
       );
 
       await waitFor(() => {
-        expect(contextData!.categoriesLoading).toBe(false);
+        expect(contextData!.itemsLoading).toBe(false);
       });
 
       const initialLength = contextData!.items.length;
       const firstItemId = contextData!.items[0].id!;
 
-      act(() => {
-        contextData!.deleteItem(firstItemId);
+      await act(async () => {
+        await contextData!.deleteItem(firstItemId);
       });
 
       expect(contextData!.items.length).toBe(initialLength - 1);
       expect(contextData!.items.find(i => i.id === firstItemId)).toBeUndefined();
     });
 
-    it('should generate unique IDs for new items', async () => {
+    it('should generate unique IDs for new items from server', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -288,7 +340,7 @@ describe('DataContext', () => {
       );
 
       await waitFor(() => {
-        expect(contextData!.categoriesLoading).toBe(false);
+        expect(contextData!.itemsLoading).toBe(false);
       });
 
       const newItem1: Item = {
@@ -313,9 +365,9 @@ describe('DataContext', () => {
         images: [],
       };
 
-      act(() => {
-        contextData!.addItem(newItem1);
-        contextData!.addItem(newItem2);
+      await act(async () => {
+        await contextData!.addItem(newItem1);
+        await contextData!.addItem(newItem2);
       });
 
       const item1 = contextData!.items.find(i => i.name === 'Item 1');
@@ -328,7 +380,7 @@ describe('DataContext', () => {
   });
 
   describe('Category CRUD operations', () => {
-    it('should add a new category', async () => {
+    it('should add a new category via API', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -343,58 +395,25 @@ describe('DataContext', () => {
 
       const initialLength = contextData!.categories.length;
 
-      const newCategory: Omit<Category, 'categoryId'> = {
+      const newCategory: Omit<Category, 'categoryId' | 'isSystem'> = {
         tenantId: 1,
         name: 'New Category',
         description: 'New description',
         parentCategoryId: null,
       };
 
-      act(() => {
-        contextData!.addCategory(newCategory);
+      await act(async () => {
+        await contextData!.addCategory(newCategory);
       });
 
       expect(contextData!.categories.length).toBe(initialLength + 1);
       expect(contextData!.categories.find(c => c.name === 'New Category')).toBeDefined();
+      expect(globalThis.fetch).toHaveBeenCalledWith('/api/categories', expect.objectContaining({
+        method: 'POST',
+      }));
     });
 
-    it('should generate categoryId 1 when categories array is empty', async () => {
-      let contextData: ReturnType<typeof useData> | null = null;
-
-      render(
-        <DataProvider>
-          <TestConsumer onData={(data) => { contextData = data; }} />
-        </DataProvider>
-      );
-
-      await waitFor(() => {
-        expect(contextData!.categoriesLoading).toBe(false);
-      });
-
-      // Delete all categories
-      const categoryIds = contextData!.categories.map(c => c.categoryId);
-      act(() => {
-        categoryIds.forEach(id => contextData!.deleteCategory(id));
-      });
-
-      expect(contextData!.categories.length).toBe(0);
-
-      // Add a new category - should get ID 1
-      const newCategory: Omit<Category, 'categoryId'> = {
-        tenantId: 1,
-        name: 'First Category',
-        description: 'desc',
-        parentCategoryId: null,
-      };
-
-      act(() => {
-        contextData!.addCategory(newCategory);
-      });
-
-      expect(contextData!.categories[0].categoryId).toBe(1);
-    });
-
-    it('should update an existing category', async () => {
+    it('should update an existing category via API', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -409,15 +428,18 @@ describe('DataContext', () => {
 
       const firstCategory = contextData!.categories[0];
 
-      act(() => {
-        contextData!.updateCategory(firstCategory.categoryId, { name: 'Updated Category' });
+      await act(async () => {
+        await contextData!.updateCategory(firstCategory.categoryId, { name: 'Updated Category' });
       });
 
       const updated = contextData!.categories.find(c => c.categoryId === firstCategory.categoryId);
       expect(updated?.name).toBe('Updated Category');
+      expect(globalThis.fetch).toHaveBeenCalledWith(`/api/categories/${firstCategory.categoryId}`, expect.objectContaining({
+        method: 'PUT',
+      }));
     });
 
-    it('should delete a category', async () => {
+    it('should delete a category via API', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       render(
@@ -433,11 +455,42 @@ describe('DataContext', () => {
       const initialLength = contextData!.categories.length;
       const firstCategoryId = contextData!.categories[0].categoryId;
 
-      act(() => {
-        contextData!.deleteCategory(firstCategoryId);
+      await act(async () => {
+        await contextData!.deleteCategory(firstCategoryId);
       });
 
       expect(contextData!.categories.length).toBe(initialLength - 1);
+      expect(globalThis.fetch).toHaveBeenCalledWith(`/api/categories/${firstCategoryId}`, expect.objectContaining({
+        method: 'DELETE',
+      }));
+    });
+
+    it('should refresh items after deleting a category', async () => {
+      let contextData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { contextData = data; }} />
+        </DataProvider>
+      );
+
+      await waitFor(() => {
+        expect(contextData!.categoriesLoading).toBe(false);
+      });
+
+      const firstCategoryId = contextData!.categories[0].categoryId;
+      const initialFetchCallCount = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      await act(async () => {
+        await contextData!.deleteCategory(firstCategoryId);
+      });
+
+      // Should have called items API to refresh after delete
+      const fetchCalls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls;
+      const itemsRefreshCalls = fetchCalls.slice(initialFetchCallCount).filter(
+        call => call[0] === '/api/items'
+      );
+      expect(itemsRefreshCalls.length).toBeGreaterThan(0);
     });
   });
 
@@ -687,7 +740,7 @@ describe('DataContext', () => {
       expect(contextData).toHaveProperty('deleteTenant');
     });
 
-    it('should return default context values when used without provider', () => {
+    it('should return default context values when used without provider', async () => {
       let contextData: ReturnType<typeof useData> | null = null;
 
       // Render without DataProvider - uses default context value
@@ -698,10 +751,11 @@ describe('DataContext', () => {
       expect(contextData!.collections).toEqual([]);
       expect(contextData!.tenants).toEqual([]);
 
-      // Default functions should be callable
-      expect(contextData!.addItem({} as Item)).toBe(0);
-      contextData!.updateItem(1, {});
-      contextData!.deleteItem(1);
+      // Default async functions should be callable and return promises
+      await expect(contextData!.addItem({} as Item)).resolves.toBe(0);
+      await expect(contextData!.updateItem(1, {})).resolves.toBeUndefined();
+      await expect(contextData!.deleteItem(1)).resolves.toBeUndefined();
+      await expect(contextData!.refreshItems()).resolves.toBeUndefined();
       contextData!.addCategory({} as Omit<Category, 'categoryId'>);
       contextData!.updateCategory(1, {});
       contextData!.deleteCategory(1);

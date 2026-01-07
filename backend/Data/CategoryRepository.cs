@@ -25,6 +25,12 @@ public class CategoryRepository : ICategoryRepository
             .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
     }
 
+    public async Task<Category?> GetSystemCategoryAsync(int tenantId, string name)
+    {
+        return await _context.Categories
+            .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.IsSystem && c.Name == name);
+    }
+
     public async Task<Category> CreateAsync(Category category)
     {
         _context.Categories.Add(category);
@@ -58,6 +64,35 @@ public class CategoryRepository : ICategoryRepository
         if (category is null)
         {
             return false;
+        }
+
+        // Prevent deletion of system categories
+        if (category.IsSystem)
+        {
+            return false;
+        }
+
+        // Move subcategories to the deleted category's parent (or root if no parent)
+        var subcategories = await _context.Categories
+            .Where(c => c.ParentCategoryId == id && c.TenantId == tenantId)
+            .ToListAsync();
+        
+        foreach (var subcategory in subcategories)
+        {
+            subcategory.ParentCategoryId = category.ParentCategoryId;
+        }
+
+        // Get the "Unassigned Items" system category for this tenant
+        var unassignedCategory = await GetSystemCategoryAsync(tenantId, "Unassigned Items");
+        
+        // Move items in the deleted category to "Unassigned Items"
+        var items = await _context.Items
+            .Where(i => i.CategoryId == id && i.TenantId == tenantId)
+            .ToListAsync();
+        
+        foreach (var item in items)
+        {
+            item.CategoryId = unassignedCategory?.Id;
         }
 
         _context.Categories.Remove(category);

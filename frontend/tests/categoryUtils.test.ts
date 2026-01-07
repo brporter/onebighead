@@ -4,11 +4,11 @@ import type { Category } from '../src/types';
 
 describe('getCategoryAndDescendantIds', () => {
   const categories: Category[] = [
-    { tenantId: 1, categoryId: 1, name: 'Root 1', description: 'Root 1 desc', parentCategoryId: null },
-    { tenantId: 1, categoryId: 2, name: 'Child 1-1', description: 'Child 1-1 desc', parentCategoryId: 1 },
-    { tenantId: 1, categoryId: 3, name: 'Child 1-2', description: 'Child 1-2 desc', parentCategoryId: 1 },
-    { tenantId: 1, categoryId: 4, name: 'Grandchild 1-1-1', description: 'Grandchild desc', parentCategoryId: 2 },
-    { tenantId: 1, categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null },
+    { tenantId: 1, categoryId: 1, name: 'Root 1', description: 'Root 1 desc', parentCategoryId: null, isSystem: false },
+    { tenantId: 1, categoryId: 2, name: 'Child 1-1', description: 'Child 1-1 desc', parentCategoryId: 1, isSystem: false },
+    { tenantId: 1, categoryId: 3, name: 'Child 1-2', description: 'Child 1-2 desc', parentCategoryId: 1, isSystem: false },
+    { tenantId: 1, categoryId: 4, name: 'Grandchild 1-1-1', description: 'Grandchild desc', parentCategoryId: 2, isSystem: false },
+    { tenantId: 1, categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null, isSystem: false },
   ];
 
   it('should return empty set when selectedCategoryId is null', () => {
@@ -49,7 +49,7 @@ describe('getCategoryAndDescendantIds', () => {
   it('should handle categories with null in stack gracefully', () => {
     // This tests the id == null branch in the while loop
     const categoriesWithNullParent: Category[] = [
-      { tenantId: 1, categoryId: 1, name: 'Root', description: 'desc', parentCategoryId: null },
+      { tenantId: 1, categoryId: 1, name: 'Root', description: 'desc', parentCategoryId: null, isSystem: false },
     ];
     const result = getCategoryAndDescendantIds(categoriesWithNullParent, 1);
     expect(result).toEqual(new Set([1]));

@@ -30,7 +30,7 @@ public class DatabaseSeederTests : IDisposable
 
         // Assert
         Assert.Equal(1, _context.Tenants.Count());
-        Assert.Equal(7, _context.Categories.Count());
+        Assert.Equal(8, _context.Categories.Count()); // 7 regular + 1 system category
     }
 
     [Fact]
@@ -91,6 +91,20 @@ public class DatabaseSeederTests : IDisposable
         var tenant = _context.Tenants.FirstOrDefault();
         Assert.NotNull(tenant);
         Assert.Equal("development.local", tenant.Name);
+    }
+
+    [Fact]
+    public void SeedDevelopmentData_CreatesUnassignedItemsSystemCategory()
+    {
+        // Act
+        DatabaseSeeder.SeedDevelopmentData(_context);
+
+        // Assert
+        var unassignedCategory = _context.Categories.FirstOrDefault(c => c.Name == "Unassigned Items");
+        Assert.NotNull(unassignedCategory);
+        Assert.True(unassignedCategory.IsSystem);
+        Assert.Equal(1, unassignedCategory.TenantId);
+        Assert.Null(unassignedCategory.ParentCategoryId);
     }
 }
 
