@@ -12,6 +12,7 @@ export interface ItemImage {
 export interface Item {
   id: number | null;
   tenantId: number;
+  collectionId: number;
   categoryId: number | null;
   name: string;
   summary: string;
@@ -22,6 +23,7 @@ export interface Item {
 
 export interface Category {
   tenantId: number;
+  collectionId: number;
   categoryId: number;
   name: string;
   description: string;
@@ -35,8 +37,11 @@ export interface CategoryNode extends Category {
 
 export interface Collection {
   collectionId: number;
-  name: string;
   tenantId: number;
+  name: string;
+  description: string;
+  heroImageUrl: string | null;
+  slug: string;
 }
 
 export interface Tenant {

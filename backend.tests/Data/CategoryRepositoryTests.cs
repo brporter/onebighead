@@ -10,6 +10,8 @@ public class CategoryRepositoryTests : IDisposable
     private readonly CategoryRepository _repository;
     private const int TestTenantId = 1;
     private const int OtherTenantId = 2;
+    private const int TestCollectionId = 1;
+    private const int OtherCollectionId = 2;
 
     public CategoryRepositoryTests()
     {
@@ -54,6 +56,61 @@ public class CategoryRepositoryTests : IDisposable
     {
         // Act
         var result = await _repository.GetAllAsync(TestTenantId);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    #endregion
+
+    #region GetByCollectionAsync Tests
+
+    [Fact]
+    public async Task GetByCollectionAsync_ReturnsOnlyCategoriesForCollection()
+    {
+        // Arrange
+        var categories = new List<Category>
+        {
+            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc 1" },
+            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 2", Description = "Desc 2" },
+            new() { Id = 3, TenantId = TestTenantId, CollectionId = OtherCollectionId, Name = "Category 3", Description = "Desc 3" }
+        };
+        await _context.Categories.AddRangeAsync(categories);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestTenantId);
+
+        // Assert
+        Assert.Equal(2, result.Count());
+        Assert.All(result, c => Assert.Equal(TestCollectionId, c.CollectionId));
+    }
+
+    [Fact]
+    public async Task GetByCollectionAsync_FiltersOutOtherTenants()
+    {
+        // Arrange
+        var categories = new List<Category>
+        {
+            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc 1" },
+            new() { Id = 2, TenantId = OtherTenantId, CollectionId = TestCollectionId, Name = "Category 2", Description = "Desc 2" }
+        };
+        await _context.Categories.AddRangeAsync(categories);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestTenantId);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal(TestTenantId, result.First().TenantId);
+    }
+
+    [Fact]
+    public async Task GetByCollectionAsync_ReturnsEmptyList_WhenNoCategories()
+    {
+        // Act
+        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestTenantId);
 
         // Assert
         Assert.Empty(result);
@@ -262,6 +319,7 @@ public class CategoryRepositoryTests : IDisposable
         { 
             Id = 1, 
             TenantId = TestTenantId, 
+            CollectionId = TestCollectionId,
             Name = "Unassigned Items", 
             Description = "Items without a category", 
             IsSystem = true 
@@ -270,7 +328,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetSystemCategoryAsync(TestTenantId, "Unassigned Items");
+        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestTenantId, "Unassigned Items");
 
         // Assert
         Assert.NotNull(result);
@@ -282,7 +340,7 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetSystemCategoryAsync_ReturnsNull_WhenNotExists()
     {
         // Act
-        var result = await _repository.GetSystemCategoryAsync(TestTenantId, "Unassigned Items");
+        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestTenantId, "Unassigned Items");
 
         // Assert
         Assert.Null(result);
@@ -296,6 +354,7 @@ public class CategoryRepositoryTests : IDisposable
         { 
             Id = 1, 
             TenantId = TestTenantId, 
+            CollectionId = TestCollectionId,
             Name = "Unassigned Items", 
             Description = "Not a system category", 
             IsSystem = false 
@@ -304,7 +363,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetSystemCategoryAsync(TestTenantId, "Unassigned Items");
+        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestTenantId, "Unassigned Items");
 
         // Assert
         Assert.Null(result);
@@ -318,6 +377,7 @@ public class CategoryRepositoryTests : IDisposable
         { 
             Id = 1, 
             TenantId = OtherTenantId, 
+            CollectionId = OtherCollectionId,
             Name = "Unassigned Items", 
             Description = "Items without a category", 
             IsSystem = true 
@@ -326,7 +386,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetSystemCategoryAsync(TestTenantId, "Unassigned Items");
+        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestTenantId, "Unassigned Items");
 
         // Assert
         Assert.Null(result);

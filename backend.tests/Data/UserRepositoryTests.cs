@@ -226,6 +226,64 @@ public class UserRepositoryTests : IDisposable
         Assert.Equal("newdomain.com", savedTenant.Name);
     }
 
+    [Fact]
+    public async Task CreateWithNewTenantAsync_CreatesDefaultCollection()
+    {
+        // Act
+        var result = await _repository.CreateWithNewTenantAsync(
+            "user@test.com",
+            IdentityProvider.Microsoft,
+            "ms-collection-test");
+
+        // Assert
+        var collections = await _context.Collections
+            .Where(c => c.TenantId == result.TenantId)
+            .ToListAsync();
+        
+        Assert.Single(collections);
+        Assert.Equal("My Collection", collections[0].Name);
+        Assert.Equal(result.TenantId, collections[0].TenantId);
+    }
+
+    [Fact]
+    public async Task CreateWithNewTenantAsync_CreatesUnassignedCategoryWithCollectionId()
+    {
+        // Act
+        var result = await _repository.CreateWithNewTenantAsync(
+            "user@category-test.com",
+            IdentityProvider.Google,
+            "google-category-test");
+
+        // Assert
+        var collection = await _context.Collections
+            .FirstOrDefaultAsync(c => c.TenantId == result.TenantId);
+        Assert.NotNull(collection);
+
+        var category = await _context.Categories
+            .FirstOrDefaultAsync(c => c.TenantId == result.TenantId && c.IsSystem);
+        Assert.NotNull(category);
+        Assert.Equal("Unassigned Items", category.Name);
+        Assert.Equal(collection.Id, category.CollectionId);
+    }
+
+    [Fact]
+    public async Task CreateWithNewTenantAsync_UsesWholeEmail_WhenNoAtSign()
+    {
+        // Act
+        var result = await _repository.CreateWithNewTenantAsync(
+            "localuser",
+            IdentityProvider.Apple,
+            "apple-local-test");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("localuser", result.Email);
+        
+        var tenant = await _context.Tenants.FindAsync(result.TenantId);
+        Assert.NotNull(tenant);
+        Assert.Equal("localuser", tenant.Name);
+    }
+
     #endregion
 }
 

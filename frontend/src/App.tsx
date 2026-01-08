@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './styles/App.css';
 import { useData } from './DataContext';
 import BackNav from './BackNav';
 import CategoryTree from './CategoryTree';
+import CollectionList from './CollectionList';
 import ItemList from './ItemList';
 import ItemDetail from './ItemDetail';
 import ItemEditor from './ItemEditor';
@@ -11,21 +12,81 @@ import UserButton from './UserButton';
 import Settings from './Settings';
 import { getCategoryAndDescendantIds } from './categoryUtils';
 import { createEmptyItem } from './itemUtils';
-import type { Item } from './types';
+import type { Item, Collection } from './types';
 
-type View = 'categories' | 'items' | 'detail' | 'settings';
+type View = 'loading' | 'collectionList' | 'categories' | 'items' | 'detail' | 'settings';
 type ContentView = 'placeholder' | 'detail' | 'list';
 
 function App() {
-  const { categories, items, addItem, updateItem, deleteItem, loadItemsForCategory } = useData();
+  const {
+    collections,
+    collectionsLoading,
+    loadCollections,
+    currentCollection,
+    setCurrentCollection,
+    categories,
+    loadCategoriesForCollection,
+    items,
+    addItem,
+    updateItem,
+    deleteItem,
+    loadItemsForCategory,
+  } = useData();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
-  const [view, setView] = useState<View>('categories');
+  const [view, setView] = useState<View>('loading');
   const [subcategoryFilter, setSubcategoryFilter] = useState<number | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Load collections on mount
+  useEffect(() => {
+    loadCollections();
+  }, [loadCollections]);
+
+  // Handle collection selection logic
+  useEffect(() => {
+    if (collectionsLoading) {
+      setView('loading');
+      return;
+    }
+
+    if (collections.length === 0) {
+      setView('loading');
+      return;
+    }
+
+    // If we have a current collection, stay on it
+    if (currentCollection) {
+      return;
+    }
+
+    // Auto-select if only one collection
+    if (collections.length === 1) {
+      handleSelectCollection(collections[0]);
+    } else {
+      setView('collectionList');
+    }
+  }, [collections, collectionsLoading, currentCollection]);
+
+  function handleSelectCollection(collection: Collection) {
+    setCurrentCollection(collection);
+    setSelectedCategoryId(null);
+    setSelectedItemId(null);
+    setPageIndex(0);
+    setSubcategoryFilter(null);
+    setView('categories');
+    loadCategoriesForCollection(collection.collectionId);
+  }
+
+  function handleBackToCollections() {
+    setCurrentCollection(null);
+    setSelectedCategoryId(null);
+    setSelectedItemId(null);
+    setView('collectionList');
+  }
 
   const directSubcategories = useMemo(() => {
     if (selectedCategoryId == null) return [];
@@ -62,9 +123,9 @@ function App() {
   }, [items, selectedItemId]);
 
   const newItemTemplate = useMemo(() => {
-    if (!isAddingItem || selectedCategoryId == null) return null;
-    return createEmptyItem(selectedCategoryId, 1);
-  }, [isAddingItem, selectedCategoryId]);
+    if (!isAddingItem || selectedCategoryId == null || !currentCollection) return null;
+    return createEmptyItem(selectedCategoryId, currentCollection.collectionId, currentCollection.tenantId);
+  }, [isAddingItem, selectedCategoryId, currentCollection]);
 
   const contentView: ContentView = useMemo(() => {
     if (selectedCategoryId == null) return 'placeholder';
@@ -145,14 +206,65 @@ function App() {
   }
 
   function handleCloseSettings() {
-    setView('categories');
+    if (currentCollection) {
+      setView('categories');
+    } else if (collections.length > 1) {
+      setView('collectionList');
+    } else if (collections.length === 1) {
+      handleSelectCollection(collections[0]);
+    }
+  }
+
+  // Loading state
+  if (view === 'loading') {
+    return (
+      <div className="app">
+        <div className="app__loading">Loading...</div>
+      </div>
+    );
+  }
+
+  // Collection list view (when user has multiple collections)
+  if (view === 'collectionList') {
+    return (
+      <div className="app">
+        <header className="app__header">
+          <div className="app__headerContent">
+            <div>
+              <h1>Collections</h1>
+              <p className="app__subtitle">Select a collection to view its items</p>
+            </div>
+            <UserButton onClick={handleOpenSettings} />
+          </div>
+        </header>
+        <main className="app__content app__content--full">
+          <CollectionList collections={collections} onSelect={handleSelectCollection} />
+        </main>
+      </div>
+    );
+  }
+
+  // Settings view
+  if (view === 'settings') {
+    return (
+      <div className="app">
+        <header className="app__header">
+          <div className="app__headerContent">
+            <div>
+              <h1>Settings</h1>
+              <p className="app__subtitle">Manage your collections and preferences</p>
+            </div>
+            <UserButton onClick={handleOpenSettings} />
+          </div>
+        </header>
+        <main className="app__content app__content--full">
+          <Settings onBack={handleCloseSettings} />
+        </main>
+      </div>
+    );
   }
 
   function renderContent() {
-    if (view === 'settings') {
-      return <Settings onBack={handleCloseSettings} />;
-    }
-
     switch (contentView) {
       case 'placeholder':
         return (
@@ -207,12 +319,19 @@ function App() {
     }
   }
 
+  const collectionName = currentCollection?.name ?? 'Collection';
+
   return (
     <div className="app" data-view={view}>
       <header className="app__header">
         <div className="app__headerContent">
           <div>
-            <h1>Vintage Macintosh Models</h1>
+            {collections.length > 1 && (
+              <button className="app__collectionBack" onClick={handleBackToCollections}>
+                ← All Collections
+              </button>
+            )}
+            <h1>{collectionName}</h1>
             <p className="app__subtitle">Browse categories, then view items and details.</p>
           </div>
           <UserButton onClick={handleOpenSettings} />

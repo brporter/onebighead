@@ -11,10 +11,12 @@ namespace backend.Controllers;
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryRepository _categoryRepository;
+    private readonly ICollectionRepository _collectionRepository;
 
-    public CategoriesController(ICategoryRepository categoryRepository)
+    public CategoriesController(ICategoryRepository categoryRepository, ICollectionRepository collectionRepository)
     {
         _categoryRepository = categoryRepository;
+        _collectionRepository = collectionRepository;
     }
 
     private int GetTenantId()
@@ -28,11 +30,24 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
+    public async Task<ActionResult<IEnumerable<Category>>> GetCategories([FromQuery] int? collectionId = null)
     {
         var tenantId = GetTenantId();
-        var categories = await _categoryRepository.GetAllAsync(tenantId);
-        return Ok(categories);
+        
+        if (collectionId.HasValue)
+        {
+            // Verify collection belongs to tenant
+            var collection = await _collectionRepository.GetByIdAsync(collectionId.Value, tenantId);
+            if (collection is null)
+            {
+                return NotFound("Collection not found");
+            }
+            var categories = await _categoryRepository.GetByCollectionAsync(collectionId.Value, tenantId);
+            return Ok(categories);
+        }
+        
+        var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+        return Ok(allCategories);
     }
 
     [HttpGet("{id}")]
@@ -48,23 +63,39 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Category>> CreateCategory(Category category)
+    public async Task<ActionResult<Category>> CreateCategory(CreateCategoryRequest request)
     {
         // Prevent creation of categories with reserved system names
-        if (string.Equals(category.Name, "Unassigned Items", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(request.Name, "Unassigned Items", StringComparison.OrdinalIgnoreCase))
         {
             return BadRequest("The name 'Unassigned Items' is reserved for system use.");
         }
 
         var tenantId = GetTenantId();
-        category.TenantId = tenantId;
-        category.IsSystem = false; // User-created categories are never system categories
+
+        // Verify collection belongs to tenant
+        var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, tenantId);
+        if (collection is null)
+        {
+            return BadRequest("Invalid collection");
+        }
+
+        var category = new Category
+        {
+            TenantId = tenantId,
+            CollectionId = request.CollectionId,
+            Name = request.Name,
+            Description = request.Description ?? string.Empty,
+            ParentCategoryId = request.ParentCategoryId,
+            IsSystem = false
+        };
+
         var created = await _categoryRepository.CreateAsync(category);
         return CreatedAtAction(nameof(GetCategory), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<Category>> UpdateCategory(int id, Category category)
+    public async Task<ActionResult<Category>> UpdateCategory(int id, UpdateCategoryRequest request)
     {
         var tenantId = GetTenantId();
         
@@ -80,10 +111,19 @@ public class CategoriesController : ControllerBase
         }
 
         // Prevent renaming to reserved system names
-        if (string.Equals(category.Name, "Unassigned Items", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(request.Name, "Unassigned Items", StringComparison.OrdinalIgnoreCase))
         {
             return BadRequest("The name 'Unassigned Items' is reserved for system use.");
         }
+
+        var category = new Category
+        {
+            TenantId = tenantId,
+            CollectionId = existingCategory.CollectionId,
+            Name = request.Name,
+            Description = request.Description ?? string.Empty,
+            ParentCategoryId = request.ParentCategoryId
+        };
 
         var updated = await _categoryRepository.UpdateAsync(id, category, tenantId);
         if (updated is null)
@@ -116,5 +156,20 @@ public class CategoriesController : ControllerBase
         }
         return NoContent();
     }
+}
+
+public class CreateCategoryRequest
+{
+    public int CollectionId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int? ParentCategoryId { get; set; }
+}
+
+public class UpdateCategoryRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int? ParentCategoryId { get; set; }
 }
 

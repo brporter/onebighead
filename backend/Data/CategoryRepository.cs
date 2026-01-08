@@ -19,16 +19,23 @@ public class CategoryRepository : ICategoryRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Category>> GetByCollectionAsync(int collectionId, int tenantId)
+    {
+        return await _context.Categories
+            .Where(c => c.TenantId == tenantId && c.CollectionId == collectionId)
+            .ToListAsync();
+    }
+
     public async Task<Category?> GetByIdAsync(int id, int tenantId)
     {
         return await _context.Categories
             .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
     }
 
-    public async Task<Category?> GetSystemCategoryAsync(int tenantId, string name)
+    public async Task<Category?> GetSystemCategoryAsync(int collectionId, int tenantId, string name)
     {
         return await _context.Categories
-            .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.IsSystem && c.Name == name);
+            .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.CollectionId == collectionId && c.IsSystem && c.Name == name);
     }
 
     public async Task<Category> CreateAsync(Category category)
@@ -82,8 +89,8 @@ public class CategoryRepository : ICategoryRepository
             subcategory.ParentCategoryId = category.ParentCategoryId;
         }
 
-        // Get the "Unassigned Items" system category for this tenant
-        var unassignedCategory = await GetSystemCategoryAsync(tenantId, "Unassigned Items");
+        // Get the "Unassigned Items" system category for this collection
+        var unassignedCategory = await GetSystemCategoryAsync(category.CollectionId, tenantId, "Unassigned Items");
         
         // Move items in the deleted category to "Unassigned Items"
         var items = await _context.Items

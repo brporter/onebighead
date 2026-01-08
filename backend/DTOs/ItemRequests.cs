@@ -14,6 +14,8 @@ public class CreateItemRequest
 
     public string Description { get; set; } = string.Empty;
 
+    public int CollectionId { get; set; }
+
     public int? CategoryId { get; set; }
 
     public List<ItemProperty> Properties { get; set; } = new();
@@ -25,6 +27,7 @@ public class CreateItemRequest
         return new Item
         {
             TenantId = tenantId,
+            CollectionId = CollectionId,
             CategoryId = CategoryId,
             Name = Name,
             Summary = Summary,
@@ -46,6 +49,8 @@ public class UpdateItemRequest
 
     public string Description { get; set; } = string.Empty;
 
+    public int CollectionId { get; set; }
+
     public int? CategoryId { get; set; }
 
     public List<ItemProperty> Properties { get; set; } = new();
@@ -58,6 +63,7 @@ public class UpdateItemRequest
         {
             Id = id,
             TenantId = tenantId,
+            CollectionId = CollectionId,
             CategoryId = CategoryId,
             Name = Name,
             Summary = Summary,

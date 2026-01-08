@@ -14,33 +14,52 @@ public class CategoryTests
         // Assert
         Assert.Equal(0, category.Id);
         Assert.Equal(0, category.TenantId);
+        Assert.Equal(0, category.CollectionId);
         Assert.Equal(string.Empty, category.Name);
         Assert.Equal(string.Empty, category.Description);
+        Assert.False(category.IsSystem);
         Assert.Null(category.ParentCategoryId);
         Assert.Null(category.ParentCategory);
         Assert.NotNull(category.ChildCategories);
         Assert.Empty(category.ChildCategories);
+        Assert.Null(category.Tenant);
+        Assert.Null(category.Collection);
     }
 
     [Fact]
     public void Category_PropertiesCanBeSet()
     {
-        // Arrange & Act
+        // Arrange
+        var tenant = new Tenant { Id = 2, Name = "Test Tenant" };
+        var collection = new Collection { Id = 4, Name = "Test Collection", Slug = "test" };
+        var parent = new Category { Id = 3, Name = "Parent" };
+
+        // Act
         var category = new Category
         {
             Id = 1,
             TenantId = 2,
+            CollectionId = 4,
             Name = "Test Name",
             Description = "Test Description",
-            ParentCategoryId = 3
+            IsSystem = true,
+            ParentCategoryId = 3,
+            ParentCategory = parent,
+            Tenant = tenant,
+            Collection = collection
         };
 
         // Assert
         Assert.Equal(1, category.Id);
         Assert.Equal(2, category.TenantId);
+        Assert.Equal(4, category.CollectionId);
         Assert.Equal("Test Name", category.Name);
         Assert.Equal("Test Description", category.Description);
+        Assert.True(category.IsSystem);
         Assert.Equal(3, category.ParentCategoryId);
+        Assert.Same(parent, category.ParentCategory);
+        Assert.Same(tenant, category.Tenant);
+        Assert.Same(collection, category.Collection);
     }
 
     [Fact]

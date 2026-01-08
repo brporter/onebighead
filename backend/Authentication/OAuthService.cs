@@ -28,6 +28,7 @@ public class OAuthService : IOAuthService
     private readonly AuthenticationSettings _settings;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<OAuthService> _logger;
+    private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 
     // Provider-specific authorization and token endpoints
     private static readonly Dictionary<IdentityProvider, (string AuthEndpoint, string TokenEndpoint, string Scopes)> ProviderEndpoints = new()
@@ -61,9 +62,8 @@ public class OAuthService : IOAuthService
 
     public string GenerateSecureState()
     {
-        var bytes = new byte[32];
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(bytes);
+        Span<byte> bytes = stackalloc byte[32];
+        _rng.GetBytes(bytes);
         return Convert.ToBase64String(bytes)
             .Replace("+", "-")
             .Replace("/", "_")
@@ -72,9 +72,7 @@ public class OAuthService : IOAuthService
 
     public bool ValidateState(string state, string storedState)
     {
-        return !string.IsNullOrEmpty(state) && 
-               !string.IsNullOrEmpty(storedState) && 
-               state == storedState;
+        return string.CompareOrdinal(state, storedState) == 0;
     }
 
     public string GenerateAuthorizationUrl(IdentityProvider provider, string state, string? nonce = null)

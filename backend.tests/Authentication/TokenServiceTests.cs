@@ -8,11 +8,10 @@ namespace backend.Tests.Authentication;
 public class TokenServiceTests
 {
     private readonly TokenService _tokenService;
-    private readonly AuthenticationSettings _settings;
 
     public TokenServiceTests()
     {
-        _settings = new AuthenticationSettings
+        var settings = new AuthenticationSettings
         {
             Jwt = new JwtSettings
             {
@@ -24,7 +23,7 @@ public class TokenServiceTests
             }
         };
 
-        _tokenService = new TokenService(Options.Create(_settings));
+        _tokenService = new TokenService(Options.Create(settings));
     }
 
     [Fact]

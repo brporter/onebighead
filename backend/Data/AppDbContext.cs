@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Collection> Collections => Set<Collection>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Item> Items => Set<Item>();
@@ -39,6 +40,19 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<Collection>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.HasOne(c => c.Tenant)
+                .WithMany(t => t.Collections)
+                .HasForeignKey(c => c.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(c => c.TenantId);
+            entity.HasIndex(c => new { c.TenantId, c.Slug }).IsUnique();
+        });
+
         modelBuilder.Entity<Category>(entity =>
         {
             entity.HasKey(c => c.Id);
@@ -53,7 +67,13 @@ public class AppDbContext : DbContext
                 .HasForeignKey(c => c.TenantId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasOne(c => c.Collection)
+                .WithMany(col => col.Categories)
+                .HasForeignKey(c => c.CollectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasIndex(c => c.TenantId);
+            entity.HasIndex(c => c.CollectionId);
             entity.HasIndex(c => c.ParentCategoryId);
         });
 
@@ -66,12 +86,18 @@ public class AppDbContext : DbContext
                 .HasForeignKey(i => i.TenantId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasOne(i => i.Collection)
+                .WithMany(c => c.Items)
+                .HasForeignKey(i => i.CollectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasOne(i => i.Category)
                 .WithMany()
                 .HasForeignKey(i => i.CategoryId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(i => i.TenantId);
+            entity.HasIndex(i => i.CollectionId);
             entity.HasIndex(i => i.CategoryId);
 
             // Configure JSON columns for Properties and Images

@@ -1,9 +1,10 @@
 import type { Item } from './types';
 
-export function createEmptyItem(categoryId: number | null, tenantId: number = 1): Item {
+export function createEmptyItem(categoryId: number | null, collectionId: number, tenantId: number): Item {
   return {
     id: null,
     tenantId,
+    collectionId,
     categoryId,
     name: '',
     summary: '',

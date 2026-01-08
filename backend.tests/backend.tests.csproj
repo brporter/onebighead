@@ -10,7 +10,7 @@
     <CollectCoverage>true</CollectCoverage>
     <CoverletOutputFormat>cobertura</CoverletOutputFormat>
     <CoverletOutput>./TestResults/</CoverletOutput>
-    <Exclude>[backend]Program</Exclude>
+    <Exclude>[backend]Program,[backend]backend.Migrations.*,[backend]backend.Pages.*,[backend]backend.Authentication.CookieJwtAuthentication*,[backend]backend.Authentication.OidcTokenValidator,[backend]*OpenApi*,[backend]*Regex*</Exclude>
     <ExcludeByAttribute>GeneratedCodeAttribute</ExcludeByAttribute>
   </PropertyGroup>
 

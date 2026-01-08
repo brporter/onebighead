@@ -75,7 +75,7 @@ export default defineConfig({
       provider: 'istanbul',
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/main.tsx', 'src/vite-env.d.ts', 'src/types.ts', 'src/data/index.ts'],
+      exclude: ['src/main.tsx', 'src/vite-env.d.ts', 'src/types.ts'],
       thresholds: {
         statements: 99,
         branches: 90,

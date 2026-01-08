@@ -17,6 +17,9 @@ public class Item
     [JsonPropertyName("tenantId")]
     public int TenantId { get; set; }
 
+    [JsonPropertyName("collectionId")]
+    public int CollectionId { get; set; }
+
     [JsonPropertyName("categoryId")]
     public int? CategoryId { get; set; }
 
@@ -41,6 +44,10 @@ public class Item
     [JsonIgnore]
     [ForeignKey(nameof(TenantId))]
     public Tenant? Tenant { get; set; }
+
+    [JsonIgnore]
+    [ForeignKey(nameof(CollectionId))]
+    public Collection? Collection { get; set; }
 
     [JsonIgnore]
     [ForeignKey(nameof(CategoryId))]
