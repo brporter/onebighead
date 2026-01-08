@@ -12,7 +12,7 @@ public class Item
 {
     [Key]
     [JsonPropertyName("id")]
-    public int Id { get; set; }
+    public int? Id { get; set; }
 
     [JsonPropertyName("tenantId")]
     public int TenantId { get; set; }

@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.DTOs;
 using backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -94,18 +95,19 @@ public class ItemsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Item>> CreateItem(Item item)
+    public async Task<ActionResult<Item>> CreateItem(CreateItemRequest request)
     {
         var tenantId = GetTenantId();
-        item.TenantId = tenantId;
+        var item = request.ToItem(tenantId);
         var created = await _itemRepository.CreateAsync(item);
         return CreatedAtAction(nameof(GetItem), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<Item>> UpdateItem(int id, Item item)
+    public async Task<ActionResult<Item>> UpdateItem(int id, UpdateItemRequest request)
     {
         var tenantId = GetTenantId();
+        var item = request.ToItem(id, tenantId);
         var updated = await _itemRepository.UpdateAsync(id, item, tenantId);
         if (updated is null)
         {

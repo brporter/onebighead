@@ -153,6 +153,7 @@ function App() {
             {isEditing || isAddingItem ? (
               <ItemEditor
                 item={detailItem}
+                categories={categories}
                 onSave={handleSaveItem}
                 onCancel={handleCancelEdit}
                 onDelete={isAddingItem ? undefined : handleDeleteItem}

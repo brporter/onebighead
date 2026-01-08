@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Category } from './types';
 import { useData } from './DataContext';
 
@@ -18,9 +18,35 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
   const [parentCategoryId, setParentCategoryId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   const isNew = category === null;
   const isSystem = category?.isSystem ?? false;
+
+  // Control dialog open/close
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (isOpen) {
+      dialog.showModal();
+    } else {
+      dialog.close();
+    }
+  }, [isOpen]);
+
+  // Handle native dialog close (e.g., Escape key)
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const handleClose = () => {
+      onClose();
+    };
+
+    dialog.addEventListener('close', handleClose);
+    return () => dialog.removeEventListener('close', handleClose);
+  }, [onClose]);
 
   // Reset form when modal opens or category changes
   useEffect(() => {
@@ -123,13 +149,17 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
     }
   };
 
-  if (!isOpen) return null;
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
+    if (e.target === dialogRef.current) {
+      onClose();
+    }
+  };
 
   const availableParents = getAvailableParents();
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <dialog ref={dialogRef} className="modal-dialog" onClick={handleBackdropClick}>
+      <div className="modal">
         <div className="modal__header">
           <h2 className="modal__title">
             {isSystem ? category?.name : isNew ? 'Add Category' : `Edit: ${category?.name}`}
@@ -265,7 +295,7 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
           </div>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }
 

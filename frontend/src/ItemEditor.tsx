@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import PropertyEditor from './PropertyEditor';
 import ImageEditor from './ImageEditor';
-import type { Item } from './types';
+import CategorySelector from './CategorySelector';
+import type { Item, Category } from './types';
 
 interface ItemEditorProps {
   item: Item | null;
+  categories: Category[];
   onSave: (item: Item) => void;
   onCancel: () => void;
   onDelete?: ((id: number) => void) | null;
@@ -12,6 +14,7 @@ interface ItemEditorProps {
 
 function ItemEditor({
   item,
+  categories,
   onSave,
   onCancel,
   onDelete,
@@ -88,6 +91,12 @@ function ItemEditor({
             rows={4}
           />
         </div>
+
+        <CategorySelector
+          categories={categories}
+          selectedCategoryId={formData.categoryId}
+          onChange={(categoryId) => handleFieldChange('categoryId', categoryId)}
+        />
 
         <PropertyEditor
           properties={formData.properties || []}
