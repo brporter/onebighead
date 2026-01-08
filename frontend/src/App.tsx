@@ -17,7 +17,7 @@ type View = 'categories' | 'items' | 'detail' | 'settings';
 type ContentView = 'placeholder' | 'detail' | 'list';
 
 function App() {
-  const { categories, items, addItem, updateItem, deleteItem } = useData();
+  const { categories, items, addItem, updateItem, deleteItem, loadItemsForCategory } = useData();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -80,6 +80,7 @@ function App() {
     setPageIndex(0);
     setSubcategoryFilter(null);
     setView('items');
+    loadItemsForCategory(categoryId);
   }
 
   function handleSelectItem(itemId: number) {

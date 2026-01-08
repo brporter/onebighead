@@ -1,6 +1,11 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import type { Category, Item, Collection, Tenant } from './types';
 import { collections as initialCollections, tenants as initialTenants } from './data';
+
+interface CategoryItemsCache {
+  items: Item[];
+  etag: string | null;
+}
 
 export interface DataContextValue {
   // Data
@@ -16,7 +21,7 @@ export interface DataContextValue {
   addItem: (item: Item) => Promise<number>;
   updateItem: (id: number, updates: Partial<Item>) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
-  refreshItems: () => Promise<void>;
+  loadItemsForCategory: (categoryId: number) => Promise<void>;
   // Category operations
   addCategory: (category: Omit<Category, 'categoryId' | 'isSystem'>) => Promise<number>;
   updateCategory: (categoryId: number, updates: Partial<Category>) => Promise<void>;
@@ -44,7 +49,7 @@ const defaultContextValue: DataContextValue = {
   addItem: async () => 0,
   updateItem: async () => {},
   deleteItem: async () => {},
-  refreshItems: async () => {},
+  loadItemsForCategory: async () => {},
   addCategory: async () => 0,
   updateCategory: async () => {},
   deleteCategory: async () => {},
@@ -73,27 +78,14 @@ export function DataProvider({ children }: DataProviderProps) {
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([]);
-  const [itemsLoading, setItemsLoading] = useState(true);
+  const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsError, setItemsError] = useState<string | null>(null);
   const [collections, setCollections] = useState<Collection[]>([...initialCollections]);
   const [tenants, setTenants] = useState<Tenant[]>([...initialTenants]);
-
-  const fetchItems = useCallback(async () => {
-    try {
-      setItemsLoading(true);
-      setItemsError(null);
-      const response = await fetch('/api/items');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch items: ${response.statusText}`);
-      }
-      const data: Item[] = await response.json();
-      setItems(data);
-    } catch (error) {
-      setItemsError(error instanceof Error ? error.message : 'Failed to fetch items');
-    } finally {
-      setItemsLoading(false);
-    }
-  }, []);
+  const [currentCategoryId, setCurrentCategoryId] = useState<number | null>(null);
+  
+  // Cache for items by category ID, storing items and their ETag
+  const itemsCacheRef = useRef<Map<number, CategoryItemsCache>>(new Map());
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -114,8 +106,57 @@ export function DataProvider({ children }: DataProviderProps) {
 
   useEffect(() => {
     fetchCategories();
-    fetchItems();
-  }, [fetchCategories, fetchItems]);
+  }, [fetchCategories]);
+
+  const loadItemsForCategory = useCallback(async (categoryId: number) => {
+    setCurrentCategoryId(categoryId);
+    const cache = itemsCacheRef.current.get(categoryId);
+    
+    // If we have cached items, show them immediately while we validate
+    if (cache) {
+      setItems(cache.items);
+    }
+    
+    try {
+      setItemsLoading(true);
+      setItemsError(null);
+      
+      const headers: HeadersInit = {};
+      if (cache?.etag) {
+        headers['If-None-Match'] = cache.etag;
+      }
+      
+      const response = await fetch(
+        `/api/items?categoryId=${categoryId}&includeDescendants=true`,
+        { headers }
+      );
+      
+      if (response.status === 304) {
+        // Not modified - cache is still valid
+        setItemsLoading(false);
+        return;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch items: ${response.statusText}`);
+      }
+      
+      const data: Item[] = await response.json();
+      const etag = response.headers.get('ETag');
+      
+      // Update cache
+      itemsCacheRef.current.set(categoryId, { items: data, etag });
+      
+      // Only update state if this is still the current category
+      if (categoryId === currentCategoryId || !cache) {
+        setItems(data);
+      }
+    } catch (error) {
+      setItemsError(error instanceof Error ? error.message : 'Failed to fetch items');
+    } finally {
+      setItemsLoading(false);
+    }
+  }, [currentCategoryId]);
 
   // Item CRUD operations
   const addItem = useCallback(async (item: Item): Promise<number> => {
@@ -128,6 +169,16 @@ export function DataProvider({ children }: DataProviderProps) {
       throw new Error(`Failed to create item: ${response.statusText}`);
     }
     const created: Item = await response.json();
+    
+    // Invalidate cache for the item's category
+    if (created.categoryId != null) {
+      itemsCacheRef.current.delete(created.categoryId);
+      // Also invalidate parent categories since they include descendants
+      for (const [cachedCategoryId] of itemsCacheRef.current) {
+        itemsCacheRef.current.delete(cachedCategoryId);
+      }
+    }
+    
     setItems((prev) => [...prev, created]);
     return created.id!;
   }, []);
@@ -146,6 +197,10 @@ export function DataProvider({ children }: DataProviderProps) {
       throw new Error(`Failed to update item: ${response.statusText}`);
     }
     const result: Item = await response.json();
+    
+    // Invalidate all caches since category might have changed
+    itemsCacheRef.current.clear();
+    
     setItems((prev) =>
       prev.map((item) => (item.id === id ? result : item))
     );
@@ -158,6 +213,10 @@ export function DataProvider({ children }: DataProviderProps) {
     if (!response.ok) {
       throw new Error(`Failed to delete item: ${response.statusText}`);
     }
+    
+    // Invalidate all caches
+    itemsCacheRef.current.clear();
+    
     setItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
@@ -206,9 +265,9 @@ export function DataProvider({ children }: DataProviderProps) {
       throw new Error(errorText || `Failed to delete category: ${response.statusText}`);
     }
     setCategories((prev) => prev.filter((cat) => cat.categoryId !== categoryId));
-    // Refresh items since they may have been reassigned to Unassigned Items
-    await fetchItems();
-  }, [fetchItems]);
+    // Clear items cache since items may have been reassigned
+    itemsCacheRef.current.clear();
+  }, []);
 
   // Collection CRUD operations
   const addCollection = useCallback((collection: Omit<Collection, 'collectionId'>) => {
@@ -260,7 +319,7 @@ export function DataProvider({ children }: DataProviderProps) {
     addItem,
     updateItem,
     deleteItem,
-    refreshItems: fetchItems,
+    loadItemsForCategory,
     // Category operations
     addCategory,
     updateCategory,

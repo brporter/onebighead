@@ -3,6 +3,9 @@ using backend.DTOs;
 using backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace backend.Controllers;
 
@@ -30,6 +33,13 @@ public class ItemsController : ControllerBase
         return tenantId;
     }
 
+    private static string ComputeETag(IEnumerable<Item> items)
+    {
+        var json = JsonSerializer.Serialize(items.OrderBy(i => i.Id));
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(json));
+        return $"\"{Convert.ToBase64String(hash)}\"";
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Item>>> GetItems(
         [FromQuery] int? categoryId = null,
@@ -37,24 +47,37 @@ public class ItemsController : ControllerBase
     {
         var tenantId = GetTenantId();
 
+        IEnumerable<Item> items;
         if (categoryId == null)
         {
-            var allItems = await _itemRepository.GetAllAsync(tenantId);
-            return Ok(allItems);
-        }
-
-        IEnumerable<int> categoryIds;
-        if (includeDescendants)
-        {
-            categoryIds = await GetCategoryAndDescendantIds(categoryId.Value, tenantId);
+            items = await _itemRepository.GetAllAsync(tenantId);
         }
         else
         {
-            categoryIds = new[] { categoryId.Value };
+            IEnumerable<int> categoryIds;
+            if (includeDescendants)
+            {
+                categoryIds = await GetCategoryAndDescendantIds(categoryId.Value, tenantId);
+            }
+            else
+            {
+                categoryIds = new[] { categoryId.Value };
+            }
+            items = await _itemRepository.GetByCategoryIdsAsync(categoryIds, tenantId);
         }
 
-        var items = await _itemRepository.GetByCategoryIdsAsync(categoryIds, tenantId);
-        return Ok(items);
+        var itemList = items.ToList();
+        var etag = ComputeETag(itemList);
+
+        Response.Headers.ETag = etag;
+
+        var ifNoneMatch = Request.Headers.IfNoneMatch.FirstOrDefault();
+        if (!string.IsNullOrEmpty(ifNoneMatch) && ifNoneMatch == etag)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        return Ok(itemList);
     }
 
     private async Task<IEnumerable<int>> GetCategoryAndDescendantIds(int categoryId, int tenantId)
