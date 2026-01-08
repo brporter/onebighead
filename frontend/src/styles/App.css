@@ -117,6 +117,13 @@
   margin-bottom: var(--space-xl);
 }
 
+.app__headerContent {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
 .app__header h1 {
   margin: 0 0 var(--space-xs);
   font-size: 1.5rem;
@@ -191,12 +198,14 @@
    -------------------------------------------------------------------------- */
 
 .app[data-view="items"] .app__sidebar,
-.app[data-view="detail"] .app__sidebar {
+.app[data-view="detail"] .app__sidebar,
+.app[data-view="settings"] .app__sidebar {
   display: none;
 }
 
 .app[data-view="items"] .app__content,
-.app[data-view="detail"] .app__content {
+.app[data-view="detail"] .app__content,
+.app[data-view="settings"] .app__content {
   display: block;
 }
 

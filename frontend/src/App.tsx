@@ -7,11 +7,13 @@ import ItemList from './ItemList';
 import ItemDetail from './ItemDetail';
 import ItemEditor from './ItemEditor';
 import SubcategoryDropdown from './SubcategoryDropdown';
+import UserButton from './UserButton';
+import Settings from './Settings';
 import { getCategoryAndDescendantIds } from './categoryUtils';
 import { createEmptyItem } from './itemUtils';
 import type { Item } from './types';
 
-type View = 'categories' | 'items' | 'detail';
+type View = 'categories' | 'items' | 'detail' | 'settings';
 type ContentView = 'placeholder' | 'detail' | 'list';
 
 function App() {
@@ -137,7 +139,19 @@ function App() {
     }
   }
 
+  function handleOpenSettings() {
+    setView('settings');
+  }
+
+  function handleCloseSettings() {
+    setView('categories');
+  }
+
   function renderContent() {
+    if (view === 'settings') {
+      return <Settings onBack={handleCloseSettings} />;
+    }
+
     switch (contentView) {
       case 'placeholder':
         return (
@@ -195,8 +209,13 @@ function App() {
   return (
     <div className="app" data-view={view}>
       <header className="app__header">
-        <h1>Vintage Macintosh Models</h1>
-        <p className="app__subtitle">Browse categories, then view items and details.</p>
+        <div className="app__headerContent">
+          <div>
+            <h1>Vintage Macintosh Models</h1>
+            <p className="app__subtitle">Browse categories, then view items and details.</p>
+          </div>
+          <UserButton onClick={handleOpenSettings} />
+        </div>
       </header>
 
       <div className="app__layout">

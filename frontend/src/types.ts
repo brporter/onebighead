@@ -45,3 +45,9 @@ export interface Tenant {
   owner: string;
 }
 
+export interface CurrentUser {
+  userId: number;
+  email: string;
+  tenantId: number;
+}
+

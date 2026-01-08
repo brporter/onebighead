@@ -1,13 +1,35 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, type Plugin } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+
+// Redirect /collections to /collections/ to match base URL
+function trailingSlashRedirect(): Plugin {
+  return {
+    name: 'trailing-slash-redirect',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url === '/collections') {
+          res.writeHead(301, { Location: '/collections/' });
+          res.end();
+          return;
+        }
+        next();
+      });
+    },
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), trailingSlashRedirect()],
   base: '/collections/',
   server: {
     proxy: {
       '/api': {
+        target: 'http://localhost:5148/',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/auth': {
         target: 'http://localhost:5148/',
         changeOrigin: true,
         secure: false,

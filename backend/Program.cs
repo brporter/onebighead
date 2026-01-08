@@ -71,15 +71,15 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Serve static assets from wwwroot (CSS, favicon, etc.)
+app.MapStaticAssets();
+
 // Only serve static frontend assets in production (use Vite dev server in development)
 if (!app.Environment.IsDevelopment())
 {
-    // Serve static assets from wwwroot (CSS, favicon, etc.)
-    app.MapStaticAssets();
-
     // Serve frontend SPA assets from wwwroot/collections at /collections path
     var collectionsPath = Path.Combine(app.Environment.WebRootPath, "collections");
-    Console.WriteLine($"collectionsPath: {collectionsPath}");
+
     if (Directory.Exists(collectionsPath))
     {
         var fileProvider = new PhysicalFileProvider(collectionsPath);
@@ -100,7 +100,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.MapRazorPages()
-   .WithStaticAssets();
+   .WithStaticAssets(); // Leverage immutable paths for static assets in Razor pages
 
 app.MapControllers();
 
