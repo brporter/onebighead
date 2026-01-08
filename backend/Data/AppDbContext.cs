@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Item> Items => Set<Item>();
+    public DbSet<PropertySuggestion> PropertySuggestions => Set<PropertySuggestion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -124,6 +125,24 @@ public class AppDbContext : DbContext
                     c => c == null ? 0 : JsonSerializer.Serialize(c, jsonOptions).GetHashCode(),
                     c => JsonSerializer.Deserialize<List<ItemImage>>(JsonSerializer.Serialize(c, jsonOptions), jsonOptions)!
                 ));
+        });
+
+        modelBuilder.Entity<PropertySuggestion>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+
+            entity.HasOne(p => p.Tenant)
+                .WithMany()
+                .HasForeignKey(p => p.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(p => p.Collection)
+                .WithMany()
+                .HasForeignKey(p => p.CollectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(p => new { p.CollectionId, p.Type });
+            entity.HasIndex(p => new { p.CollectionId, p.Type, p.Value }).IsUnique();
         });
     }
 }

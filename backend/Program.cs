@@ -24,6 +24,7 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICollectionRepository, CollectionRepository>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IPropertySuggestionRepository, PropertySuggestionRepository>();
 
 // Configure authentication
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));

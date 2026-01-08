@@ -108,7 +108,7 @@ function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expa
 }
 
 function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTreeProps) {
-  const { categoriesLoading, categoriesError, items, refreshCategories, refreshItems } = useData();
+  const { categoriesLoading, categoriesError, items, loadCategoriesForCollection, loadItemsForCategory, currentCollection } = useData();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -156,8 +156,13 @@ function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTree
   }
 
   async function handleModalSaved() {
-    await refreshCategories();
-    await refreshItems();
+    // Reload categories and items for current collection
+    if (currentCollection) {
+      await loadCategoriesForCollection(currentCollection.collectionId);
+      if (selectedCategoryId) {
+        await loadItemsForCategory(selectedCategoryId);
+      }
+    }
   }
 
   if (categoriesError) {

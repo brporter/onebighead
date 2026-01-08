@@ -12,7 +12,7 @@ interface CategoryEditorModalProps {
 const RESERVED_NAMES = ['unassigned items'];
 
 function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEditorModalProps) {
-  const { categories, addCategory, updateCategory, deleteCategory } = useData();
+  const { categories, currentCollection, addCategory, updateCategory, deleteCategory } = useData();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [parentCategoryId, setParentCategoryId] = useState<number | null>(null);
@@ -106,8 +106,12 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
 
     try {
       if (isNew) {
+        if (!currentCollection) {
+          setError('No collection selected');
+          return;
+        }
         await addCategory({
-          tenantId: categories[0]?.tenantId ?? 1,
+          collectionId: currentCollection.collectionId,
           name: name.trim(),
           description: description.trim(),
           parentCategoryId,

@@ -65,6 +65,7 @@ function ItemEditor({
             onChange={(e) => handleFieldChange('name', e.target.value)}
             placeholder="Item name"
             required
+            autoComplete="off"
           />
         </div>
 

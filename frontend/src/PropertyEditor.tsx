@@ -1,4 +1,5 @@
 import type { ItemProperty } from './types';
+import { useData } from './DataContext';
 
 interface PropertyEditorProps {
   properties: ItemProperty[];
@@ -6,6 +7,8 @@ interface PropertyEditorProps {
 }
 
 function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
+  const { propertyCategorySuggestions, propertyNameSuggestions } = useData();
+
   function handlePropertyChange(index: number, field: keyof ItemProperty, value: string) {
     const updated = properties.map((prop, i) =>
       i === index ? { ...prop, [field]: value } : prop
@@ -32,6 +35,7 @@ function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
             placeholder="Category"
             value={prop.category}
             onChange={(e) => handlePropertyChange(index, 'category', e.target.value)}
+            list="property-category-suggestions"
           />
           <input
             type="text"
@@ -39,6 +43,7 @@ function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
             placeholder="Name"
             value={prop.name}
             onChange={(e) => handlePropertyChange(index, 'name', e.target.value)}
+            list="property-name-suggestions"
           />
           <input
             type="text"
@@ -64,6 +69,20 @@ function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
       >
         + Add Property
       </button>
+      
+      {/* HTML5 datalist for property category suggestions */}
+      <datalist id="property-category-suggestions">
+        {propertyCategorySuggestions.map((category) => (
+          <option key={category} value={category} />
+        ))}
+      </datalist>
+      
+      {/* HTML5 datalist for property name suggestions */}
+      <datalist id="property-name-suggestions">
+        {propertyNameSuggestions.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
     </div>
   );
 }

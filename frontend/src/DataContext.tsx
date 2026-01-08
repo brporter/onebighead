@@ -6,6 +6,11 @@ interface CategoryItemsCache {
   etag: string | null;
 }
 
+interface PropertySuggestionsResponse {
+  categories: string[];
+  names: string[];
+}
+
 export interface DataContextValue {
   // Current collection
   currentCollection: Collection | null;
@@ -37,6 +42,12 @@ export interface DataContextValue {
   addItem: (item: Item) => Promise<number>;
   updateItem: (id: number, updates: Partial<Item>) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
+
+  // Property suggestions (scoped to current collection)
+  propertyCategorySuggestions: string[];
+  propertyNameSuggestions: string[];
+  loadPropertySuggestions: (collectionId: number) => Promise<void>;
+  syncPropertySuggestions: (collectionId: number) => Promise<void>;
 }
 
 const defaultContextValue: DataContextValue = {
@@ -63,6 +74,10 @@ const defaultContextValue: DataContextValue = {
   addItem: async () => 0,
   updateItem: async () => {},
   deleteItem: async () => {},
+  propertyCategorySuggestions: [],
+  propertyNameSuggestions: [],
+  loadPropertySuggestions: async () => {},
+  syncPropertySuggestions: async () => {},
 };
 
 const DataContext = createContext<DataContextValue>(defaultContextValue);
@@ -93,6 +108,44 @@ export function DataProvider({ children }: DataProviderProps) {
   const [currentCategoryId, setCurrentCategoryId] = useState<number | null>(null);
   
   const itemsCacheRef = useRef<Map<number, CategoryItemsCache>>(new Map());
+  
+  // Property suggestions state (fetched from backend API)
+  const [propertyCategorySuggestions, setPropertyCategorySuggestions] = useState<string[]>([]);
+  const [propertyNameSuggestions, setPropertyNameSuggestions] = useState<string[]>([]);
+
+  // Load property suggestions from API
+  const loadPropertySuggestions = useCallback(async (collectionId: number) => {
+    try {
+      const response = await fetch(`/api/collections/${collectionId}/property-suggestions`);
+      if (!response.ok) {
+        console.error('Failed to load property suggestions:', response.statusText);
+        return;
+      }
+      const data: PropertySuggestionsResponse = await response.json();
+      setPropertyCategorySuggestions(data.categories.sort());
+      setPropertyNameSuggestions(data.names.sort());
+    } catch (error) {
+      console.error('Failed to load property suggestions:', error);
+    }
+  }, []);
+
+  // Sync property suggestions (recalculates based on current items)
+  const syncPropertySuggestions = useCallback(async (collectionId: number) => {
+    try {
+      const response = await fetch(`/api/collections/${collectionId}/property-suggestions/sync`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        console.error('Failed to sync property suggestions:', response.statusText);
+        return;
+      }
+      const data: PropertySuggestionsResponse = await response.json();
+      setPropertyCategorySuggestions(data.categories.sort());
+      setPropertyNameSuggestions(data.names.sort());
+    } catch (error) {
+      console.error('Failed to sync property suggestions:', error);
+    }
+  }, []);
 
   // Collection operations
   const loadCollections = useCallback(async () => {
@@ -275,8 +328,10 @@ export function DataProvider({ children }: DataProviderProps) {
     const created: Item = await response.json();
     itemsCacheRef.current.clear();
     setItems((prev) => [...prev, created]);
+    // Sync property suggestions to include new property names/categories
+    syncPropertySuggestions(created.collectionId);
     return created.id!;
-  }, []);
+  }, [syncPropertySuggestions]);
 
   const updateItem = useCallback(async (id: number, updates: Partial<Item>): Promise<void> => {
     const currentItem = items.find((i) => i.id === id);
@@ -296,9 +351,12 @@ export function DataProvider({ children }: DataProviderProps) {
     setItems((prev) =>
       prev.map((item) => (item.id === id ? result : item))
     );
-  }, [items]);
+    // Sync property suggestions to reflect property changes
+    syncPropertySuggestions(result.collectionId);
+  }, [items, syncPropertySuggestions]);
 
   const deleteItem = useCallback(async (id: number): Promise<void> => {
+    const itemToDelete = items.find((i) => i.id === id);
     const response = await fetch(`/api/items/${id}`, {
       method: 'DELETE',
     });
@@ -307,7 +365,11 @@ export function DataProvider({ children }: DataProviderProps) {
     }
     itemsCacheRef.current.clear();
     setItems((prev) => prev.filter((item) => item.id !== id));
-  }, []);
+    // Sync property suggestions to remove unused ones
+    if (itemToDelete) {
+      syncPropertySuggestions(itemToDelete.collectionId);
+    }
+  }, [items, syncPropertySuggestions]);
 
   const value: DataContextValue = {
     currentCollection,
@@ -333,6 +395,10 @@ export function DataProvider({ children }: DataProviderProps) {
     addItem,
     updateItem,
     deleteItem,
+    propertyCategorySuggestions,
+    propertyNameSuggestions,
+    loadPropertySuggestions,
+    syncPropertySuggestions,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

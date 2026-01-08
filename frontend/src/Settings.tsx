@@ -1,20 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './styles/Settings.css';
-import BackNav from './BackNav';
 import { useData } from './DataContext';
 import type { Collection } from './types';
 
 interface SettingsProps {
-  onBack: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-function Settings({ onBack }: SettingsProps) {
+function Settings({ isOpen, onClose }: SettingsProps) {
   const { collections, addCollection, updateCollection, deleteCollection, loadCollections } = useData();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '' });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsAdding(false);
+      setEditingId(null);
+      setError(null);
+    }
+  }, [isOpen]);
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const handleAddClick = () => {
     setFormData({ name: '', description: '', heroImageUrl: '' });
@@ -89,110 +123,121 @@ function Settings({ onBack }: SettingsProps) {
 
   const isEditing = isAdding || editingId !== null;
 
+  function handleBackdropClick(e: React.MouseEvent) {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  }
+
   return (
-    <div className="settings">
-      <BackNav label="Back" onClick={onBack} />
-      <div className="settings__content">
-        <h2 className="settings__title">Settings</h2>
-        
-        <section className="settings__section">
-          <div className="settings__sectionHeader">
-            <h3 className="settings__sectionTitle">Collections</h3>
-            {!isEditing && (
-              <button className="settings__addButton" onClick={handleAddClick}>
-                + New Collection
-              </button>
+    <div className="settings-modal" onClick={handleBackdropClick}>
+      <div className="settings-modal__container">
+        <div className="settings-modal__header">
+          <h2 className="settings-modal__title">Settings</h2>
+          <button className="settings-modal__close" onClick={onClose} aria-label="Close settings">
+            ×
+          </button>
+        </div>
+        <div className="settings-modal__body">
+          <section className="settings__section">
+            <div className="settings__sectionHeader">
+              <h3 className="settings__sectionTitle">Collections</h3>
+              {!isEditing && (
+                <button className="settings__addButton" onClick={handleAddClick}>
+                  + New Collection
+                </button>
+              )}
+            </div>
+
+            {error && <div className="settings__error">{error}</div>}
+
+            {isEditing && (
+              <form className="settings__form" onSubmit={handleSubmit}>
+                <div className="settings__field">
+                  <label className="settings__label">
+                    Name <span className="settings__required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="settings__input"
+                    value={formData.name}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="My Collection"
+                    autoFocus
+                  />
+                </div>
+                <div className="settings__field">
+                  <label className="settings__label">Description</label>
+                  <textarea
+                    className="settings__textarea"
+                    value={formData.description}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                    placeholder="A brief description of this collection"
+                    rows={3}
+                  />
+                </div>
+                <div className="settings__field">
+                  <label className="settings__label">Hero Image URL</label>
+                  <input
+                    type="url"
+                    className="settings__input"
+                    value={formData.heroImageUrl}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, heroImageUrl: e.target.value }))}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <div className="settings__formActions">
+                  <button
+                    type="submit"
+                    className="settings__button settings__button--primary"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Saving...' : isAdding ? 'Create Collection' : 'Save Changes'}
+                  </button>
+                  <button
+                    type="button"
+                    className="settings__button settings__button--secondary"
+                    onClick={handleCancel}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             )}
-          </div>
 
-          {error && <div className="settings__error">{error}</div>}
-
-          {isEditing && (
-            <form className="settings__form" onSubmit={handleSubmit}>
-              <div className="settings__field">
-                <label className="settings__label">
-                  Name <span className="settings__required">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="settings__input"
-                  value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="My Collection"
-                  autoFocus
-                />
-              </div>
-              <div className="settings__field">
-                <label className="settings__label">Description</label>
-                <textarea
-                  className="settings__textarea"
-                  value={formData.description}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="A brief description of this collection"
-                  rows={3}
-                />
-              </div>
-              <div className="settings__field">
-                <label className="settings__label">Hero Image URL</label>
-                <input
-                  type="url"
-                  className="settings__input"
-                  value={formData.heroImageUrl}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, heroImageUrl: e.target.value }))}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-              <div className="settings__formActions">
-                <button
-                  type="submit"
-                  className="settings__button settings__button--primary"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Saving...' : isAdding ? 'Create Collection' : 'Save Changes'}
-                </button>
-                <button
-                  type="button"
-                  className="settings__button settings__button--secondary"
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-
-          {!isEditing && (
-            <ul className="settings__list">
-              {collections.map((collection) => (
-                <li key={collection.collectionId} className="settings__listItem">
-                  <div className="settings__listItemContent">
-                    <span className="settings__listItemName">{collection.name}</span>
-                    {collection.description && (
-                      <span className="settings__listItemDescription">{collection.description}</span>
-                    )}
-                  </div>
-                  <div className="settings__listItemActions">
-                    <button
-                      className="settings__listButton"
-                      onClick={() => handleEditClick(collection)}
-                    >
-                      Edit
-                    </button>
-                    {collections.length > 1 && (
+            {!isEditing && (
+              <ul className="settings__list">
+                {collections.map((collection) => (
+                  <li key={collection.collectionId} className="settings__listItem">
+                    <div className="settings__listItemContent">
+                      <span className="settings__listItemName">{collection.name}</span>
+                      {collection.description && (
+                        <span className="settings__listItemDescription">{collection.description}</span>
+                      )}
+                    </div>
+                    <div className="settings__listItemActions">
                       <button
-                        className="settings__listButton settings__listButton--danger"
-                        onClick={() => handleDelete(collection.collectionId)}
+                        className="settings__listButton"
+                        onClick={() => handleEditClick(collection)}
                       >
-                        Delete
+                        Edit
                       </button>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                      {collections.length > 1 && (
+                        <button
+                          className="settings__listButton settings__listButton--danger"
+                          onClick={() => handleDelete(collection.collectionId)}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );

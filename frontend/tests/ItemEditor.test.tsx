@@ -4,10 +4,19 @@ import userEvent from '@testing-library/user-event';
 import ItemEditor from '../src/ItemEditor';
 import type { Item } from '../src/types';
 
+// Mock DataContext for PropertyEditor
+vi.mock('../src/DataContext', () => ({
+  useData: () => ({
+    propertyCategorySuggestions: [],
+    propertyNameSuggestions: [],
+  }),
+}));
+
 describe('ItemEditor', () => {
   const mockItem: Item = {
     id: 1,
     tenantId: 1,
+    collectionId: 1,
     categoryId: 2,
     name: 'Test Item',
     summary: 'Test summary',
@@ -23,7 +32,13 @@ describe('ItemEditor', () => {
     ],
   };
 
+  const mockCategories = [
+    { tenantId: 1, categoryId: 1, name: 'Category 1', description: 'Desc 1', parentCategoryId: null, isSystem: false },
+    { tenantId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false },
+  ];
+
   const defaultProps = {
+    categories: mockCategories,
     onSave: vi.fn(),
     onCancel: vi.fn(),
   };
@@ -106,7 +121,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleSave = vi.fn();
 
-      render(<ItemEditor item={mockItem} onSave={handleSave} onCancel={vi.fn()} />);
+      render(<ItemEditor item={mockItem} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
 
       const nameInput = screen.getByLabelText('Name');
       await user.clear(nameInput);
@@ -123,7 +138,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleCancel = vi.fn();
 
-      render(<ItemEditor item={mockItem} onSave={vi.fn()} onCancel={handleCancel} />);
+      render(<ItemEditor item={mockItem} categories={mockCategories} onSave={vi.fn()} onCancel={handleCancel} />);
 
       await user.click(screen.getByText('Cancel'));
 
@@ -201,7 +216,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleCancel = vi.fn();
 
-      render(<ItemEditor item={null} onSave={vi.fn()} onCancel={handleCancel} />);
+      render(<ItemEditor item={null} categories={mockCategories} onSave={vi.fn()} onCancel={handleCancel} />);
 
       await user.click(screen.getByText('Cancel'));
 
@@ -212,7 +227,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleSave = vi.fn();
 
-      render(<ItemEditor item={null} onSave={handleSave} onCancel={vi.fn()} />);
+      render(<ItemEditor item={null} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
 
       await user.type(screen.getByLabelText('Name'), 'New Item');
       await user.type(screen.getByLabelText('Summary'), 'New summary');

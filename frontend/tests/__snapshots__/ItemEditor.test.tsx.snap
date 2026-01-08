@@ -27,6 +27,7 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
           Name
         </label>
         <input
+          autocomplete="off"
           class="detail__input"
           id="item-name"
           placeholder="Item name"
@@ -71,6 +72,36 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
         </textarea>
       </div>
       <div
+        class="detail__field"
+      >
+        <label
+          class="detail__label"
+          for="category-selector"
+        >
+          Category
+        </label>
+        <select
+          class="detail__input"
+          id="category-selector"
+        >
+          <option
+            value=""
+          >
+            No category
+          </option>
+          <option
+            value="1"
+          >
+            Category 1
+          </option>
+          <option
+            value="2"
+          >
+            Category 2
+          </option>
+        </select>
+      </div>
+      <div
         class="propertyEditor"
       >
         <label
@@ -83,12 +114,14 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
         >
           <input
             class="propertyEditor__input propertyEditor__input--category"
+            list="property-category-suggestions"
             placeholder="Category"
             type="text"
             value="General"
           />
           <input
             class="propertyEditor__input propertyEditor__input--name"
+            list="property-name-suggestions"
             placeholder="Name"
             type="text"
             value="Prop1"
@@ -112,12 +145,14 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
         >
           <input
             class="propertyEditor__input propertyEditor__input--category"
+            list="property-category-suggestions"
             placeholder="Category"
             type="text"
             value="General"
           />
           <input
             class="propertyEditor__input propertyEditor__input--name"
+            list="property-name-suggestions"
             placeholder="Name"
             type="text"
             value="Prop2"
@@ -141,12 +176,14 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
         >
           <input
             class="propertyEditor__input propertyEditor__input--category"
+            list="property-category-suggestions"
             placeholder="Category"
             type="text"
             value="Technical"
           />
           <input
             class="propertyEditor__input propertyEditor__input--name"
+            list="property-name-suggestions"
             placeholder="Name"
             type="text"
             value="Prop3"
@@ -171,6 +208,12 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
         >
           + Add Property
         </button>
+        <datalist
+          id="property-category-suggestions"
+        />
+        <datalist
+          id="property-name-suggestions"
+        />
       </div>
       <div
         class="imageEditor"
@@ -281,6 +324,7 @@ exports[`ItemEditor > snapshots > should render new item mode 1`] = `
           Name
         </label>
         <input
+          autocomplete="off"
           class="detail__input"
           id="item-name"
           placeholder="Item name"
@@ -323,6 +367,36 @@ exports[`ItemEditor > snapshots > should render new item mode 1`] = `
         />
       </div>
       <div
+        class="detail__field"
+      >
+        <label
+          class="detail__label"
+          for="category-selector"
+        >
+          Category
+        </label>
+        <select
+          class="detail__input"
+          id="category-selector"
+        >
+          <option
+            value=""
+          >
+            No category
+          </option>
+          <option
+            value="1"
+          >
+            Category 1
+          </option>
+          <option
+            value="2"
+          >
+            Category 2
+          </option>
+        </select>
+      </div>
+      <div
         class="propertyEditor"
       >
         <label
@@ -336,6 +410,12 @@ exports[`ItemEditor > snapshots > should render new item mode 1`] = `
         >
           + Add Property
         </button>
+        <datalist
+          id="property-category-suggestions"
+        />
+        <datalist
+          id="property-name-suggestions"
+        />
       </div>
       <div
         class="imageEditor"

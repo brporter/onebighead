@@ -1,21 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom';
 import './styles/App.css';
 import { useData } from './DataContext';
-import BackNav from './BackNav';
-import CategoryTree from './CategoryTree';
-import CollectionList from './CollectionList';
-import ItemList from './ItemList';
-import ItemDetail from './ItemDetail';
-import ItemEditor from './ItemEditor';
-import SubcategoryDropdown from './SubcategoryDropdown';
 import UserButton from './UserButton';
 import Settings from './Settings';
-import { getCategoryAndDescendantIds } from './categoryUtils';
-import { createEmptyItem } from './itemUtils';
-import type { Item, Collection } from './types';
-
-type View = 'loading' | 'collectionList' | 'categories' | 'items' | 'detail' | 'settings';
-type ContentView = 'placeholder' | 'detail' | 'list';
+import type { Collection } from './types';
 
 function App() {
   const {
@@ -23,200 +12,31 @@ function App() {
     collectionsLoading,
     loadCollections,
     currentCollection,
-    setCurrentCollection,
-    categories,
-    loadCategoriesForCollection,
-    items,
-    addItem,
-    updateItem,
-    deleteItem,
-    loadItemsForCategory,
   } = useData();
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [view, setView] = useState<View>('loading');
-  const [subcategoryFilter, setSubcategoryFilter] = useState<number | null>(null);
-  const [isAddingItem, setIsAddingItem] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Load collections on mount
   useEffect(() => {
     loadCollections();
   }, [loadCollections]);
 
-  // Handle collection selection logic
-  useEffect(() => {
-    if (collectionsLoading) {
-      setView('loading');
-      return;
-    }
-
-    if (collections.length === 0) {
-      setView('loading');
-      return;
-    }
-
-    // If we have a current collection, stay on it
-    if (currentCollection) {
-      return;
-    }
-
-    // Auto-select if only one collection
-    if (collections.length === 1) {
-      handleSelectCollection(collections[0]);
-    } else {
-      setView('collectionList');
-    }
-  }, [collections, collectionsLoading, currentCollection]);
-
-  function handleSelectCollection(collection: Collection) {
-    setCurrentCollection(collection);
-    setSelectedCategoryId(null);
-    setSelectedItemId(null);
-    setPageIndex(0);
-    setSubcategoryFilter(null);
-    setView('categories');
-    loadCategoriesForCollection(collection.collectionId);
-  }
-
   function handleBackToCollections() {
-    setCurrentCollection(null);
-    setSelectedCategoryId(null);
-    setSelectedItemId(null);
-    setView('collectionList');
-  }
-
-  const directSubcategories = useMemo(() => {
-    if (selectedCategoryId == null) return [];
-    return categories.filter((cat) => cat.parentCategoryId === selectedCategoryId);
-  }, [categories, selectedCategoryId]);
-
-  const showSubcategoryDropdown = directSubcategories.length > 0;
-
-  const eligibleCategoryIds = useMemo(() => {
-    if (selectedCategoryId == null) return new Set<number>();
-    if (subcategoryFilter != null) {
-      return getCategoryAndDescendantIds(categories, subcategoryFilter);
-    }
-    return getCategoryAndDescendantIds(categories, selectedCategoryId);
-  }, [categories, selectedCategoryId, subcategoryFilter]);
-
-  const filteredItems = useMemo(() => {
-    if (selectedCategoryId == null) return [];
-    return items.filter((item) => item.categoryId !== null && eligibleCategoryIds.has(item.categoryId));
-  }, [eligibleCategoryIds, items, selectedCategoryId]);
-
-  const totalPages = useMemo(() => {
-    const pageSize = 25;
-    return Math.max(1, Math.ceil(filteredItems.length / pageSize));
-  }, [filteredItems.length]);
-
-  const safePageIndex = useMemo(() => {
-    return Math.min(Math.max(0, pageIndex), totalPages - 1);
-  }, [pageIndex, totalPages]);
-
-  const selectedItem = useMemo(() => {
-    if (selectedItemId == null) return null;
-    return items.find((item) => item.id === selectedItemId) ?? null;
-  }, [items, selectedItemId]);
-
-  const newItemTemplate = useMemo(() => {
-    if (!isAddingItem || selectedCategoryId == null || !currentCollection) return null;
-    return createEmptyItem(selectedCategoryId, currentCollection.collectionId, currentCollection.tenantId);
-  }, [isAddingItem, selectedCategoryId, currentCollection]);
-
-  const contentView: ContentView = useMemo(() => {
-    if (selectedCategoryId == null) return 'placeholder';
-    if (isAddingItem || selectedItem) return 'detail';
-    return 'list';
-  }, [selectedCategoryId, isAddingItem, selectedItem]);
-
-  const detailItem = isAddingItem ? newItemTemplate : selectedItem;
-
-  function handleSelectCategory(categoryId: number) {
-    setSelectedCategoryId(categoryId);
-    setSelectedItemId(null);
-    setPageIndex(0);
-    setSubcategoryFilter(null);
-    setView('items');
-    loadItemsForCategory(categoryId);
-  }
-
-  function handleSelectItem(itemId: number) {
-    setSelectedItemId(itemId);
-    setView('detail');
-  }
-
-  function handleBackToCategories() {
-    setView('categories');
-  }
-
-  function handleBackToItems() {
-    setSelectedItemId(null);
-    setIsAddingItem(false);
-    setIsEditing(false);
-    setView('items');
-  }
-
-  function handlePageChange(next: number) {
-    const clamped = Math.min(Math.max(0, next), totalPages - 1);
-    setPageIndex(clamped);
-  }
-
-  function handleAddItem() {
-    setIsAddingItem(true);
-    setSelectedItemId(null);
-    setView('detail');
-  }
-
-  async function handleSaveItem(itemData: Item) {
-    if (isAddingItem) {
-      await addItem(itemData);
-      setIsAddingItem(false);
-      setView('items');
-    } else if (selectedItemId != null) {
-      await updateItem(selectedItemId, itemData);
-      setIsEditing(false);
-    }
-  }
-
-  async function handleDeleteItem(id: number) {
-    await deleteItem(id);
-    setSelectedItemId(null);
-    setView('items');
-  }
-
-  function handleEditItem() {
-    setIsEditing(true);
-  }
-
-  function handleCancelEdit() {
-    if (isAddingItem) {
-      setIsAddingItem(false);
-      setView('items');
-    } else {
-      setIsEditing(false);
-    }
+    navigate('/collections');
   }
 
   function handleOpenSettings() {
-    setView('settings');
+    setIsSettingsOpen(true);
   }
 
   function handleCloseSettings() {
-    if (currentCollection) {
-      setView('categories');
-    } else if (collections.length > 1) {
-      setView('collectionList');
-    } else if (collections.length === 1) {
-      handleSelectCollection(collections[0]);
-    }
+    setIsSettingsOpen(false);
   }
 
   // Loading state
-  if (view === 'loading') {
+  if (collectionsLoading && collections.length === 0) {
     return (
       <div className="app">
         <div className="app__loading">Loading...</div>
@@ -224,133 +44,40 @@ function App() {
     );
   }
 
-  // Collection list view (when user has multiple collections)
-  if (view === 'collectionList') {
-    return (
-      <div className="app">
-        <header className="app__header">
-          <div className="app__headerContent">
-            <div>
-              <h1>Collections</h1>
-              <p className="app__subtitle">Select a collection to view its items</p>
-            </div>
-            <UserButton onClick={handleOpenSettings} />
-          </div>
-        </header>
-        <main className="app__content app__content--full">
-          <CollectionList collections={collections} onSelect={handleSelectCollection} />
-        </main>
-      </div>
-    );
-  }
-
-  // Settings view
-  if (view === 'settings') {
-    return (
-      <div className="app">
-        <header className="app__header">
-          <div className="app__headerContent">
-            <div>
-              <h1>Settings</h1>
-              <p className="app__subtitle">Manage your collections and preferences</p>
-            </div>
-            <UserButton onClick={handleOpenSettings} />
-          </div>
-        </header>
-        <main className="app__content app__content--full">
-          <Settings onBack={handleCloseSettings} />
-        </main>
-      </div>
-    );
-  }
-
-  function renderContent() {
-    switch (contentView) {
-      case 'placeholder':
-        return (
-          <section className="placeholder">
-            <p className="placeholder__text">Select a category to browse items</p>
-          </section>
-        );
-
-      case 'detail':
-        return (
-          <article className="app__detail">
-            <BackNav label="Back to items" onClick={handleBackToItems} />
-            {isEditing || isAddingItem ? (
-              <ItemEditor
-                item={detailItem}
-                categories={categories}
-                onSave={handleSaveItem}
-                onCancel={handleCancelEdit}
-                onDelete={isAddingItem ? undefined : handleDeleteItem}
-              />
-            ) : (
-              <ItemDetail
-                item={detailItem}
-                onEdit={handleEditItem}
-                onClose={handleBackToItems}
-              />
-            )}
-          </article>
-        );
-
-      case 'list':
-        return (
-          <section className="app__items">
-            <BackNav label="Categories" onClick={handleBackToCategories} />
-            {showSubcategoryDropdown && (
-              <SubcategoryDropdown
-                subcategories={directSubcategories}
-                selectedId={subcategoryFilter}
-                onChange={setSubcategoryFilter}
-              />
-            )}
-            <ItemList
-              items={filteredItems}
-              selectedId={null}
-              onSelect={handleSelectItem}
-              onAddItem={handleAddItem}
-              pageIndex={safePageIndex}
-              onPageChange={handlePageChange}
-            />
-          </section>
-        );
-    }
-  }
-
+  // Determine header content based on route - show "Collections" when on collections list or no current collection
+  const isCollectionsList = !currentCollection && (location.pathname === '/collections' || location.pathname === '/' || location.pathname.startsWith('/collections'));
   const collectionName = currentCollection?.name ?? 'Collection';
 
   return (
-    <div className="app" data-view={view}>
+    <div className="app">
       <header className="app__header">
         <div className="app__headerContent">
           <div>
-            {collections.length > 1 && (
+            {!isCollectionsList && collections.length > 1 && (
               <button className="app__collectionBack" onClick={handleBackToCollections}>
                 ← All Collections
               </button>
             )}
-            <h1>{collectionName}</h1>
-            <p className="app__subtitle">Browse categories, then view items and details.</p>
+            <h1>{isCollectionsList ? 'Collections' : collectionName}</h1>
+            <p className="app__subtitle">
+              {isCollectionsList 
+                ? 'Select a collection to view its items' 
+                : 'Browse categories, then view items and details.'}
+            </p>
           </div>
           <UserButton onClick={handleOpenSettings} />
         </div>
       </header>
 
-      <div className="app__layout">
-        <nav className="app__sidebar" aria-label="Category navigation">
-          <CategoryTree
-            categories={categories}
-            selectedCategoryId={selectedCategoryId}
-            onSelect={handleSelectCategory}
-          />
-        </nav>
-
-        <main className="app__content">
-          {renderContent()}
+      {isCollectionsList ? (
+        <main className="app__content app__content--full">
+          <Outlet />
         </main>
-      </div>
+      ) : (
+        <Outlet />
+      )}
+
+      <Settings isOpen={isSettingsOpen} onClose={handleCloseSettings} />
     </div>
   );
 }

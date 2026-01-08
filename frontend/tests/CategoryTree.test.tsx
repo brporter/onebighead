@@ -26,28 +26,33 @@ describe('CategoryTree', () => {
   beforeEach(() => {
     // Default mock: not loading, no error
     vi.mocked(DataContext.useData).mockReturnValue({
+      currentCollection: null,
+      setCurrentCollection: vi.fn(),
+      collections: [],
+      collectionsLoading: false,
+      collectionsError: null,
+      loadCollections: vi.fn(async () => {}),
+      addCollection: vi.fn(async () => ({ collectionId: 1, tenantId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
+      updateCollection: vi.fn(async () => {}),
+      deleteCollection: vi.fn(async () => {}),
       categories: mockCategories,
       categoriesLoading: false,
       categoriesError: null,
-      items: [],
-      itemsLoading: false,
-      itemsError: null,
-      collections: [],
-      tenants: [],
-      addItem: vi.fn(async () => 0),
-      updateItem: vi.fn(async () => {}),
-      deleteItem: vi.fn(async () => {}),
-      refreshItems: vi.fn(async () => {}),
+      loadCategoriesForCollection: vi.fn(async () => {}),
       addCategory: vi.fn(async () => 6),
       updateCategory: vi.fn(async () => {}),
       deleteCategory: vi.fn(async () => {}),
-      refreshCategories: vi.fn(async () => {}),
-      addCollection: vi.fn(),
-      updateCollection: vi.fn(),
-      deleteCollection: vi.fn(),
-      addTenant: vi.fn(),
-      updateTenant: vi.fn(),
-      deleteTenant: vi.fn(),
+      items: [],
+      itemsLoading: false,
+      itemsError: null,
+      loadItemsForCategory: vi.fn(async () => {}),
+      addItem: vi.fn(async () => 0),
+      updateItem: vi.fn(async () => {}),
+      deleteItem: vi.fn(async () => {}),
+      propertyCategorySuggestions: [],
+      propertyNameSuggestions: [],
+      loadPropertySuggestions: vi.fn(async () => {}),
+      syncPropertySuggestions: vi.fn(async () => {}),
     });
   });
 
@@ -92,8 +97,9 @@ describe('CategoryTree', () => {
         />
       );
 
-      expect(screen.getByText('Root 1')).toBeInTheDocument();
-      expect(screen.getByText('Root 2')).toBeInTheDocument();
+      // Use getAllByText and check within category tree
+      expect(screen.getAllByText('Root 1').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Root 2').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should render children of expanded root categories', () => {
@@ -106,8 +112,8 @@ describe('CategoryTree', () => {
       );
 
       // Root categories are expanded by default
-      expect(screen.getByText('Child 1-1')).toBeInTheDocument();
-      expect(screen.getByText('Child 1-2')).toBeInTheDocument();
+      expect(screen.getAllByText('Child 1-1').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Child 1-2').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should call onSelect when clicking a category', async () => {
@@ -122,7 +128,10 @@ describe('CategoryTree', () => {
         />
       );
 
-      await user.click(screen.getByText('Root 1'));
+      // Click the categoryTree__item button (not other elements with same text)
+      const root1Button = screen.getAllByText('Root 1').find(el => el.classList.contains('categoryTree__item'));
+      expect(root1Button).toBeTruthy();
+      await user.click(root1Button!);
 
       expect(handleSelect).toHaveBeenCalledWith(1);
     });
@@ -139,14 +148,16 @@ describe('CategoryTree', () => {
       );
 
       // Children should be visible initially
-      expect(screen.getByText('Child 1-1')).toBeInTheDocument();
+      expect(screen.getAllByText('Child 1-1').length).toBeGreaterThanOrEqual(1);
 
       // Click collapse button for Root 1
       const collapseButton = screen.getByLabelText('Collapse Root 1');
       await user.click(collapseButton);
 
-      // Children should be hidden
-      expect(screen.queryByText('Child 1-1')).not.toBeInTheDocument();
+      // Children should be hidden from tree (may still appear in modal's parent selector)
+      const child11Elements = screen.queryAllByText('Child 1-1');
+      const treeChild = child11Elements.find(el => el.classList.contains('categoryTree__item'));
+      expect(treeChild).toBeFalsy();
     });
 
     it('should expand collapsed category when clicking toggle', async () => {
@@ -164,13 +175,19 @@ describe('CategoryTree', () => {
       const collapseButton = screen.getByLabelText('Collapse Root 1');
       await user.click(collapseButton);
 
-      expect(screen.queryByText('Child 1-1')).not.toBeInTheDocument();
+      // Verify collapsed
+      let child11Elements = screen.queryAllByText('Child 1-1');
+      let treeChild = child11Elements.find(el => el.classList.contains('categoryTree__item'));
+      expect(treeChild).toBeFalsy();
 
       // Then expand
       const expandButton = screen.getByLabelText('Expand Root 1');
       await user.click(expandButton);
 
-      expect(screen.getByText('Child 1-1')).toBeInTheDocument();
+      // Verify expanded
+      child11Elements = screen.queryAllByText('Child 1-1');
+      treeChild = child11Elements.find(el => el.classList.contains('categoryTree__item'));
+      expect(treeChild).toBeTruthy();
     });
 
     it('should show nested grandchildren when parent is expanded', async () => {
@@ -185,13 +202,17 @@ describe('CategoryTree', () => {
       );
 
       // Grandchild should not be visible (Child 1-1 is not expanded by default)
-      expect(screen.queryByText('Grandchild 1-1-1')).not.toBeInTheDocument();
+      let grandchildElements = screen.queryAllByText('Grandchild 1-1-1');
+      let treeGrandchild = grandchildElements.find(el => el.classList.contains('categoryTree__item'));
+      expect(treeGrandchild).toBeFalsy();
 
       // Expand Child 1-1
       const expandButton = screen.getByLabelText('Expand Child 1-1');
       await user.click(expandButton);
 
-      expect(screen.getByText('Grandchild 1-1-1')).toBeInTheDocument();
+      grandchildElements = screen.queryAllByText('Grandchild 1-1-1');
+      treeGrandchild = grandchildElements.find(el => el.classList.contains('categoryTree__item'));
+      expect(treeGrandchild).toBeTruthy();
     });
 
     it('should highlight selected category', () => {
@@ -203,8 +224,10 @@ describe('CategoryTree', () => {
         />
       );
 
-      const selectedButton = screen.getByText('Root 1');
-      expect(selectedButton).toHaveClass('categoryTree__item--active');
+      // Use getAllByText and find the one with the active class (there may be duplicates in modal)
+      const buttons = screen.getAllByText('Root 1');
+      const selectedButton = buttons.find(b => b.classList.contains('categoryTree__item--active'));
+      expect(selectedButton).toBeTruthy();
     });
 
     it('should handle categories with orphaned parent references', () => {
@@ -221,9 +244,9 @@ describe('CategoryTree', () => {
         />
       );
 
-      // Orphan should be treated as root
-      expect(screen.getByText('Root')).toBeInTheDocument();
-      expect(screen.getByText('Orphan')).toBeInTheDocument();
+      // Orphan should be treated as root (both should appear in tree)
+      expect(screen.getAllByText('Root').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Orphan').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should handle empty categories array for initial expanded state', () => {
@@ -254,28 +277,33 @@ describe('CategoryTree', () => {
   describe('loading and error states', () => {
     it('should display loading message when categories are loading', () => {
       vi.mocked(DataContext.useData).mockReturnValue({
+        currentCollection: null,
+        setCurrentCollection: vi.fn(),
+        collections: [],
+        collectionsLoading: false,
+        collectionsError: null,
+        loadCollections: vi.fn(async () => {}),
+        addCollection: vi.fn(async () => ({ collectionId: 1, tenantId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
+        updateCollection: vi.fn(async () => {}),
+        deleteCollection: vi.fn(async () => {}),
         categories: [],
         categoriesLoading: true,
         categoriesError: null,
-        items: [],
-        itemsLoading: false,
-        itemsError: null,
-        collections: [],
-        tenants: [],
-        addItem: vi.fn(async () => 0),
-        updateItem: vi.fn(async () => {}),
-        deleteItem: vi.fn(async () => {}),
-        refreshItems: vi.fn(async () => {}),
+        loadCategoriesForCollection: vi.fn(async () => {}),
         addCategory: vi.fn(async () => 0),
         updateCategory: vi.fn(async () => {}),
         deleteCategory: vi.fn(async () => {}),
-        refreshCategories: vi.fn(async () => {}),
-        addCollection: vi.fn(),
-        updateCollection: vi.fn(),
-        deleteCollection: vi.fn(),
-        addTenant: vi.fn(),
-        updateTenant: vi.fn(),
-        deleteTenant: vi.fn(),
+        items: [],
+        itemsLoading: false,
+        itemsError: null,
+        loadItemsForCategory: vi.fn(async () => {}),
+        addItem: vi.fn(async () => 0),
+        updateItem: vi.fn(async () => {}),
+        deleteItem: vi.fn(async () => {}),
+        propertyCategorySuggestions: [],
+        propertyNameSuggestions: [],
+        loadPropertySuggestions: vi.fn(async () => {}),
+        syncPropertySuggestions: vi.fn(async () => {}),
       });
 
       render(
@@ -291,28 +319,33 @@ describe('CategoryTree', () => {
 
     it('should display error message when categories fail to load', () => {
       vi.mocked(DataContext.useData).mockReturnValue({
+        currentCollection: null,
+        setCurrentCollection: vi.fn(),
+        collections: [],
+        collectionsLoading: false,
+        collectionsError: null,
+        loadCollections: vi.fn(async () => {}),
+        addCollection: vi.fn(async () => ({ collectionId: 1, tenantId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
+        updateCollection: vi.fn(async () => {}),
+        deleteCollection: vi.fn(async () => {}),
         categories: [],
         categoriesLoading: false,
         categoriesError: 'Failed to fetch categories: Internal Server Error',
-        items: [],
-        itemsLoading: false,
-        itemsError: null,
-        collections: [],
-        tenants: [],
-        addItem: vi.fn(async () => 0),
-        updateItem: vi.fn(async () => {}),
-        deleteItem: vi.fn(async () => {}),
-        refreshItems: vi.fn(async () => {}),
+        loadCategoriesForCollection: vi.fn(async () => {}),
         addCategory: vi.fn(async () => 0),
         updateCategory: vi.fn(async () => {}),
         deleteCategory: vi.fn(async () => {}),
-        refreshCategories: vi.fn(async () => {}),
-        addCollection: vi.fn(),
-        updateCollection: vi.fn(),
-        deleteCollection: vi.fn(),
-        addTenant: vi.fn(),
-        updateTenant: vi.fn(),
-        deleteTenant: vi.fn(),
+        items: [],
+        itemsLoading: false,
+        itemsError: null,
+        loadItemsForCategory: vi.fn(async () => {}),
+        addItem: vi.fn(async () => 0),
+        updateItem: vi.fn(async () => {}),
+        deleteItem: vi.fn(async () => {}),
+        propertyCategorySuggestions: [],
+        propertyNameSuggestions: [],
+        loadPropertySuggestions: vi.fn(async () => {}),
+        syncPropertySuggestions: vi.fn(async () => {}),
       });
 
       render(

@@ -5,14 +5,154 @@ exports[`CategoryTree > snapshots > should render empty tree 1`] = `
   <aside
     class="categoryTree"
   >
-    <h2
-      class="categoryTree__title"
+    <div
+      class="categoryTree__header"
     >
-      Categories
-    </h2>
+      <h2
+        class="categoryTree__title"
+      >
+        Categories
+      </h2>
+      <button
+        aria-label="Add category"
+        class="categoryTree__add"
+        type="button"
+      >
+        +
+      </button>
+    </div>
     <ul
       class="categoryTree__list"
     />
+    <dialog
+      class="modal-dialog"
+    >
+      <div
+        class="modal"
+      >
+        <div
+          class="modal__header"
+        >
+          <h2
+            class="modal__title"
+          >
+            Add Category
+          </h2>
+          <button
+            aria-label="Close"
+            class="modal__close"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <form
+          class="modal__body"
+        >
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-name"
+            >
+              Name 
+              <span
+                class="modal__required"
+              >
+                *
+              </span>
+            </label>
+            <input
+              class="modal__input"
+              id="category-name"
+              placeholder="Category name"
+              required=""
+              type="text"
+              value=""
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-description"
+            >
+              Description
+            </label>
+            <textarea
+              class="modal__textarea"
+              id="category-description"
+              placeholder="Optional description"
+              rows="3"
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-parent"
+            >
+              Parent Category
+            </label>
+            <select
+              class="modal__select"
+              id="category-parent"
+            >
+              <option
+                value=""
+              >
+                None (root level)
+              </option>
+              <option
+                value="1"
+              >
+                Root 1
+              </option>
+              <option
+                value="2"
+              >
+                Child 1-1
+              </option>
+              <option
+                value="3"
+              >
+                Child 1-2
+              </option>
+              <option
+                value="4"
+              >
+                Grandchild 1-1-1
+              </option>
+              <option
+                value="5"
+              >
+                Root 2
+              </option>
+            </select>
+          </div>
+          <div
+            class="modal__actions"
+          >
+            <button
+              class="detail__btn detail__btn--primary"
+              disabled=""
+              type="submit"
+            >
+              Create
+            </button>
+            <button
+              class="detail__btn detail__btn--secondary"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
   </aside>
 </div>
 `;
@@ -22,11 +162,22 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
   <aside
     class="categoryTree"
   >
-    <h2
-      class="categoryTree__title"
+    <div
+      class="categoryTree__header"
     >
-      Categories
-    </h2>
+      <h2
+        class="categoryTree__title"
+      >
+        Categories
+      </h2>
+      <button
+        aria-label="Add category"
+        class="categoryTree__add"
+        type="button"
+      >
+        +
+      </button>
+    </div>
     <ul
       class="categoryTree__list"
     >
@@ -49,6 +200,13 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
             type="button"
           >
             Root 1
+          </button>
+          <button
+            aria-label="Edit Root 1"
+            class="categoryTree__edit"
+            type="button"
+          >
+            ✎
           </button>
         </div>
         <ul
@@ -74,6 +232,13 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
               >
                 Child 1-1
               </button>
+              <button
+                aria-label="Edit Child 1-1"
+                class="categoryTree__edit"
+                type="button"
+              >
+                ✎
+              </button>
             </div>
           </li>
           <li
@@ -94,6 +259,13 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
                 type="button"
               >
                 Child 1-2
+              </button>
+              <button
+                aria-label="Edit Child 1-2"
+                class="categoryTree__edit"
+                type="button"
+              >
+                ✎
               </button>
             </div>
           </li>
@@ -118,9 +290,145 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
           >
             Root 2
           </button>
+          <button
+            aria-label="Edit Root 2"
+            class="categoryTree__edit"
+            type="button"
+          >
+            ✎
+          </button>
         </div>
       </li>
     </ul>
+    <dialog
+      class="modal-dialog"
+    >
+      <div
+        class="modal"
+      >
+        <div
+          class="modal__header"
+        >
+          <h2
+            class="modal__title"
+          >
+            Add Category
+          </h2>
+          <button
+            aria-label="Close"
+            class="modal__close"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <form
+          class="modal__body"
+        >
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-name"
+            >
+              Name 
+              <span
+                class="modal__required"
+              >
+                *
+              </span>
+            </label>
+            <input
+              class="modal__input"
+              id="category-name"
+              placeholder="Category name"
+              required=""
+              type="text"
+              value=""
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-description"
+            >
+              Description
+            </label>
+            <textarea
+              class="modal__textarea"
+              id="category-description"
+              placeholder="Optional description"
+              rows="3"
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-parent"
+            >
+              Parent Category
+            </label>
+            <select
+              class="modal__select"
+              id="category-parent"
+            >
+              <option
+                value=""
+              >
+                None (root level)
+              </option>
+              <option
+                value="1"
+              >
+                Root 1
+              </option>
+              <option
+                value="2"
+              >
+                Child 1-1
+              </option>
+              <option
+                value="3"
+              >
+                Child 1-2
+              </option>
+              <option
+                value="4"
+              >
+                Grandchild 1-1-1
+              </option>
+              <option
+                value="5"
+              >
+                Root 2
+              </option>
+            </select>
+          </div>
+          <div
+            class="modal__actions"
+          >
+            <button
+              class="detail__btn detail__btn--primary"
+              disabled=""
+              type="submit"
+            >
+              Create
+            </button>
+            <button
+              class="detail__btn detail__btn--secondary"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
   </aside>
 </div>
 `;
@@ -130,11 +438,22 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
   <aside
     class="categoryTree"
   >
-    <h2
-      class="categoryTree__title"
+    <div
+      class="categoryTree__header"
     >
-      Categories
-    </h2>
+      <h2
+        class="categoryTree__title"
+      >
+        Categories
+      </h2>
+      <button
+        aria-label="Add category"
+        class="categoryTree__add"
+        type="button"
+      >
+        +
+      </button>
+    </div>
     <ul
       class="categoryTree__list"
     >
@@ -157,6 +476,13 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
             type="button"
           >
             Root 1
+          </button>
+          <button
+            aria-label="Edit Root 1"
+            class="categoryTree__edit"
+            type="button"
+          >
+            ✎
           </button>
         </div>
         <ul
@@ -182,6 +508,13 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
               >
                 Child 1-1
               </button>
+              <button
+                aria-label="Edit Child 1-1"
+                class="categoryTree__edit"
+                type="button"
+              >
+                ✎
+              </button>
             </div>
           </li>
           <li
@@ -202,6 +535,13 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
                 type="button"
               >
                 Child 1-2
+              </button>
+              <button
+                aria-label="Edit Child 1-2"
+                class="categoryTree__edit"
+                type="button"
+              >
+                ✎
               </button>
             </div>
           </li>
@@ -226,9 +566,145 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
           >
             Root 2
           </button>
+          <button
+            aria-label="Edit Root 2"
+            class="categoryTree__edit"
+            type="button"
+          >
+            ✎
+          </button>
         </div>
       </li>
     </ul>
+    <dialog
+      class="modal-dialog"
+    >
+      <div
+        class="modal"
+      >
+        <div
+          class="modal__header"
+        >
+          <h2
+            class="modal__title"
+          >
+            Add Category
+          </h2>
+          <button
+            aria-label="Close"
+            class="modal__close"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <form
+          class="modal__body"
+        >
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-name"
+            >
+              Name 
+              <span
+                class="modal__required"
+              >
+                *
+              </span>
+            </label>
+            <input
+              class="modal__input"
+              id="category-name"
+              placeholder="Category name"
+              required=""
+              type="text"
+              value=""
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-description"
+            >
+              Description
+            </label>
+            <textarea
+              class="modal__textarea"
+              id="category-description"
+              placeholder="Optional description"
+              rows="3"
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-parent"
+            >
+              Parent Category
+            </label>
+            <select
+              class="modal__select"
+              id="category-parent"
+            >
+              <option
+                value=""
+              >
+                None (root level)
+              </option>
+              <option
+                value="1"
+              >
+                Root 1
+              </option>
+              <option
+                value="2"
+              >
+                Child 1-1
+              </option>
+              <option
+                value="3"
+              >
+                Child 1-2
+              </option>
+              <option
+                value="4"
+              >
+                Grandchild 1-1-1
+              </option>
+              <option
+                value="5"
+              >
+                Root 2
+              </option>
+            </select>
+          </div>
+          <div
+            class="modal__actions"
+          >
+            <button
+              class="detail__btn detail__btn--primary"
+              disabled=""
+              type="submit"
+            >
+              Create
+            </button>
+            <button
+              class="detail__btn detail__btn--secondary"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
   </aside>
 </div>
 `;

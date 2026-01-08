@@ -16,6 +16,12 @@ exports[`PropertyEditor > snapshots > should render with empty properties 1`] = 
     >
       + Add Property
     </button>
+    <datalist
+      id="property-category-suggestions"
+    />
+    <datalist
+      id="property-name-suggestions"
+    />
   </div>
 </div>
 `;
@@ -35,12 +41,14 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
     >
       <input
         class="propertyEditor__input propertyEditor__input--category"
+        list="property-category-suggestions"
         placeholder="Category"
         type="text"
         value="General"
       />
       <input
         class="propertyEditor__input propertyEditor__input--name"
+        list="property-name-suggestions"
         placeholder="Name"
         type="text"
         value="Prop1"
@@ -64,12 +72,14 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
     >
       <input
         class="propertyEditor__input propertyEditor__input--category"
+        list="property-category-suggestions"
         placeholder="Category"
         type="text"
         value="Technical"
       />
       <input
         class="propertyEditor__input propertyEditor__input--name"
+        list="property-name-suggestions"
         placeholder="Name"
         type="text"
         value="Prop2"
@@ -94,6 +104,12 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
     >
       + Add Property
     </button>
+    <datalist
+      id="property-category-suggestions"
+    />
+    <datalist
+      id="property-name-suggestions"
+    />
   </div>
 </div>
 `;
