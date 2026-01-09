@@ -451,5 +451,90 @@ describe('DataContext', () => {
       expect(capturedData!.propertyCategorySuggestions).toEqual([]);
       expect(capturedData!.propertyNameSuggestions).toEqual([]);
     });
+
+    it('should add local category suggestion', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.addLocalCategorySuggestion('NewCategory');
+      });
+
+      expect(capturedData!.propertyCategorySuggestions).toContain('NewCategory');
+    });
+
+    it('should add local name suggestion', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.addLocalNameSuggestion('NewName');
+      });
+
+      expect(capturedData!.propertyNameSuggestions).toContain('NewName');
+    });
+
+    it('should not add duplicate local category suggestion', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.addLocalCategorySuggestion('TestCategory');
+        capturedData!.addLocalCategorySuggestion('TestCategory');
+      });
+
+      const count = capturedData!.propertyCategorySuggestions.filter(c => c === 'TestCategory').length;
+      expect(count).toBe(1);
+    });
+
+    it('should not add empty local suggestion', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.addLocalCategorySuggestion('');
+        capturedData!.addLocalCategorySuggestion('   ');
+      });
+
+      expect(capturedData!.propertyCategorySuggestions).toHaveLength(0);
+    });
+
+    it('should sort local suggestions alphabetically', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.addLocalCategorySuggestion('Zebra');
+        capturedData!.addLocalCategorySuggestion('Apple');
+        capturedData!.addLocalCategorySuggestion('Mango');
+      });
+
+      expect(capturedData!.propertyCategorySuggestions).toEqual(['Apple', 'Mango', 'Zebra']);
+    });
   });
 });

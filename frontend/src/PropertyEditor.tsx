@@ -7,13 +7,32 @@ interface PropertyEditorProps {
 }
 
 function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
-  const { propertyCategorySuggestions, propertyNameSuggestions } = useData();
+  const { 
+    propertyCategorySuggestions, 
+    propertyNameSuggestions,
+    addLocalCategorySuggestion,
+    addLocalNameSuggestion,
+  } = useData();
 
   function handlePropertyChange(index: number, field: keyof ItemProperty, value: string) {
     const updated = properties.map((prop, i) =>
       i === index ? { ...prop, [field]: value } : prop
     );
     onChange(updated);
+  }
+
+  function handleCategoryBlur(index: number) {
+    const value = properties[index]?.category;
+    if (value?.trim()) {
+      addLocalCategorySuggestion(value);
+    }
+  }
+
+  function handleNameBlur(index: number) {
+    const value = properties[index]?.name;
+    if (value?.trim()) {
+      addLocalNameSuggestion(value);
+    }
   }
 
   function handleAddProperty() {
@@ -35,6 +54,7 @@ function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
             placeholder="Category"
             value={prop.category}
             onChange={(e) => handlePropertyChange(index, 'category', e.target.value)}
+            onBlur={() => handleCategoryBlur(index)}
             list="property-category-suggestions"
           />
           <input
@@ -43,6 +63,7 @@ function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
             placeholder="Name"
             value={prop.name}
             onChange={(e) => handlePropertyChange(index, 'name', e.target.value)}
+            onBlur={() => handleNameBlur(index)}
             list="property-name-suggestions"
           />
           <input

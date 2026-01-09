@@ -39,6 +39,7 @@ export interface DataContextValue {
   itemsLoading: boolean;
   itemsError: string | null;
   loadItemsForCategory: (categoryId: number) => Promise<void>;
+  loadItemById: (itemId: number) => Promise<Item | null>;
   addItem: (item: Item) => Promise<number>;
   updateItem: (id: number, updates: Partial<Item>) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
@@ -48,6 +49,8 @@ export interface DataContextValue {
   propertyNameSuggestions: string[];
   loadPropertySuggestions: (collectionId: number) => Promise<void>;
   syncPropertySuggestions: (collectionId: number) => Promise<void>;
+  addLocalCategorySuggestion: (category: string) => void;
+  addLocalNameSuggestion: (name: string) => void;
 }
 
 const defaultContextValue: DataContextValue = {
@@ -71,6 +74,7 @@ const defaultContextValue: DataContextValue = {
   itemsLoading: false,
   itemsError: null,
   loadItemsForCategory: async () => {},
+  loadItemById: async () => null,
   addItem: async () => 0,
   updateItem: async () => {},
   deleteItem: async () => {},
@@ -78,6 +82,8 @@ const defaultContextValue: DataContextValue = {
   propertyNameSuggestions: [],
   loadPropertySuggestions: async () => {},
   syncPropertySuggestions: async () => {},
+  addLocalCategorySuggestion: () => {},
+  addLocalNameSuggestion: () => {},
 };
 
 const DataContext = createContext<DataContextValue>(defaultContextValue);
@@ -144,6 +150,26 @@ export function DataProvider({ children }: DataProviderProps) {
       setPropertyNameSuggestions(data.names.sort());
     } catch (error) {
       console.error('Failed to sync property suggestions:', error);
+    }
+  }, []);
+
+  // Add a local category suggestion (not persisted until item is saved)
+  const addLocalCategorySuggestion = useCallback((category: string) => {
+    if (category.trim()) {
+      setPropertyCategorySuggestions((prev) => {
+        if (prev.includes(category)) return prev;
+        return [...prev, category].sort();
+      });
+    }
+  }, []);
+
+  // Add a local name suggestion (not persisted until item is saved)
+  const addLocalNameSuggestion = useCallback((name: string) => {
+    if (name.trim()) {
+      setPropertyNameSuggestions((prev) => {
+        if (prev.includes(name)) return prev;
+        return [...prev, name].sort();
+      });
     }
   }, []);
 
@@ -316,6 +342,29 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, [currentCategoryId]);
 
+  // Load a single item by ID (for deep linking)
+  const loadItemById = useCallback(async (itemId: number): Promise<Item | null> => {
+    try {
+      const response = await fetch(`/api/items/${itemId}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`Failed to fetch item: ${response.statusText}`);
+      }
+      const item: Item = await response.json();
+      // Add item to items array if not already present
+      setItems((prev) => {
+        const exists = prev.some((i) => i.id === item.id);
+        return exists ? prev : [...prev, item];
+      });
+      return item;
+    } catch (error) {
+      console.error('Failed to load item by ID:', error);
+      return null;
+    }
+  }, []);
+
   const addItem = useCallback(async (item: Item): Promise<number> => {
     const response = await fetch('/api/items', {
       method: 'POST',
@@ -392,6 +441,7 @@ export function DataProvider({ children }: DataProviderProps) {
     itemsLoading,
     itemsError,
     loadItemsForCategory,
+    loadItemById,
     addItem,
     updateItem,
     deleteItem,
@@ -399,6 +449,8 @@ export function DataProvider({ children }: DataProviderProps) {
     propertyNameSuggestions,
     loadPropertySuggestions,
     syncPropertySuggestions,
+    addLocalCategorySuggestion,
+    addLocalNameSuggestion,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

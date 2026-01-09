@@ -1,0 +1,188 @@
+using backend.Data;
+using backend.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.IO.Compression;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace backend.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class ExportController : ControllerBase
+{
+    private readonly ICollectionRepository _collectionRepository;
+    private readonly ICategoryRepository _categoryRepository;
+    private readonly IItemRepository _itemRepository;
+
+    public ExportController(
+        ICollectionRepository collectionRepository,
+        ICategoryRepository categoryRepository,
+        IItemRepository itemRepository)
+    {
+        _collectionRepository = collectionRepository;
+        _categoryRepository = categoryRepository;
+        _itemRepository = itemRepository;
+    }
+
+    private int GetTenantId()
+    {
+        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
+        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
+        {
+            throw new UnauthorizedAccessException("Tenant ID not found in token");
+        }
+        return tenantId;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportData()
+    {
+        var tenantId = GetTenantId();
+
+        var collections = await _collectionRepository.GetAllAsync(tenantId);
+        var categories = await _categoryRepository.GetAllAsync(tenantId);
+        var items = await _itemRepository.GetAllAsync(tenantId);
+
+        var exportData = new ExportData
+        {
+            ExportedAt = DateTime.UtcNow,
+            Collections = collections.Select(c => new CollectionExport
+            {
+                CollectionId = c.Id,
+                Name = c.Name,
+                Description = c.Description,
+                HeroImageUrl = c.HeroImageUrl,
+                Slug = c.Slug,
+                CreatedAt = c.CreatedAt
+            }).ToList(),
+            Categories = categories.Select(c => new CategoryExport
+            {
+                CategoryId = c.Id,
+                CollectionId = c.CollectionId,
+                Name = c.Name,
+                Description = c.Description,
+                IsSystem = c.IsSystem,
+                ParentCategoryId = c.ParentCategoryId
+            }).ToList(),
+            Items = items.Select(i => new ItemExport
+            {
+                Id = i.Id,
+                CollectionId = i.CollectionId,
+                CategoryId = i.CategoryId,
+                Name = i.Name,
+                Summary = i.Summary,
+                Description = i.Description,
+                Properties = i.Properties,
+                Images = i.Images
+            }).ToList()
+        };
+
+        var jsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        var json = JsonSerializer.Serialize(exportData, jsonOptions);
+
+        var memoryStream = new MemoryStream();
+        using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            var entry = archive.CreateEntry("export.json", CompressionLevel.Optimal);
+            using var entryStream = entry.Open();
+            using var writer = new StreamWriter(entryStream);
+            await writer.WriteAsync(json);
+        }
+
+        memoryStream.Position = 0;
+
+        var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd-HHmmss");
+        return File(memoryStream, "application/zip", $"onebighead-export-{timestamp}.zip");
+    }
+}
+
+public class ExportData
+{
+    [JsonPropertyName("exportedAt")]
+    public DateTime ExportedAt { get; set; }
+
+    [JsonPropertyName("collections")]
+    public List<CollectionExport> Collections { get; set; } = new();
+
+    [JsonPropertyName("categories")]
+    public List<CategoryExport> Categories { get; set; } = new();
+
+    [JsonPropertyName("items")]
+    public List<ItemExport> Items { get; set; } = new();
+}
+
+public class CollectionExport
+{
+    [JsonPropertyName("collectionId")]
+    public int CollectionId { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("heroImageUrl")]
+    public string? HeroImageUrl { get; set; }
+
+    [JsonPropertyName("slug")]
+    public string Slug { get; set; } = string.Empty;
+
+    [JsonPropertyName("createdAt")]
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CategoryExport
+{
+    [JsonPropertyName("categoryId")]
+    public int CategoryId { get; set; }
+
+    [JsonPropertyName("collectionId")]
+    public int CollectionId { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("isSystem")]
+    public bool IsSystem { get; set; }
+
+    [JsonPropertyName("parentCategoryId")]
+    public int? ParentCategoryId { get; set; }
+}
+
+public class ItemExport
+{
+    [JsonPropertyName("id")]
+    public int? Id { get; set; }
+
+    [JsonPropertyName("collectionId")]
+    public int CollectionId { get; set; }
+
+    [JsonPropertyName("categoryId")]
+    public int? CategoryId { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("summary")]
+    public string Summary { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("properties")]
+    public List<ItemProperty> Properties { get; set; } = new();
+
+    [JsonPropertyName("images")]
+    public List<ItemImage> Images { get; set; } = new();
+}

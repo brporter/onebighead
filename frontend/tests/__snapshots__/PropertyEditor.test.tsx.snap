@@ -18,10 +18,24 @@ exports[`PropertyEditor > snapshots > should render with empty properties 1`] = 
     </button>
     <datalist
       id="property-category-suggestions"
-    />
+    >
+      <option
+        value="General"
+      />
+      <option
+        value="Technical"
+      />
+    </datalist>
     <datalist
       id="property-name-suggestions"
-    />
+    >
+      <option
+        value="Color"
+      />
+      <option
+        value="Size"
+      />
+    </datalist>
   </div>
 </div>
 `;
@@ -106,10 +120,24 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
     </button>
     <datalist
       id="property-category-suggestions"
-    />
+    >
+      <option
+        value="General"
+      />
+      <option
+        value="Technical"
+      />
+    </datalist>
     <datalist
       id="property-name-suggestions"
-    />
+    >
+      <option
+        value="Color"
+      />
+      <option
+        value="Size"
+      />
+    </datalist>
   </div>
 </div>
 `;

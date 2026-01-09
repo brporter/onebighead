@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from './App';
+import RequireAuth from './RequireAuth';
 import CollectionView from './views/CollectionView';
 import CategoryView from './views/CategoryView';
 import ItemView from './views/ItemView';
@@ -7,7 +8,11 @@ import ItemView from './views/ItemView';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <App />,
+    element: (
+      <RequireAuth>
+        <App />
+      </RequireAuth>
+    ),
     children: [
       {
         index: true,

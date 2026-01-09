@@ -59,3 +59,55 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## Database Migrations
+
+### Development
+
+In development, migrations run automatically on application startup. The SQLite database (`development.db`) is created and migrated automatically.
+
+To create a new migration after modifying models:
+
+```bash
+cd backend
+dotnet ef migrations add <MigrationName>
+```
+
+### Production (SQL Azure)
+
+Production uses SQL Azure and migrations must be applied separately using SQL scripts. **Do not run migrations automatically in production.**
+
+#### Generating Migration Scripts
+
+Generate an idempotent SQL script that can be safely run multiple times:
+
+```bash
+cd backend
+dotnet ef migrations script --idempotent -o ../publish/migrate.sql
+```
+
+To generate a script for specific migrations (e.g., from a baseline):
+
+```bash
+dotnet ef migrations script <FromMigration> <ToMigration> --idempotent -o ../publish/migrate.sql
+```
+
+#### Applying Migrations to SQL Azure
+
+Using Azure AD authentication:
+
+```bash
+sqlcmd -S <your-server>.database.windows.net -d onebighead -G -i ../publish/migrate.sql
+```
+
+Using SQL authentication:
+
+```bash
+sqlcmd -S <your-server>.database.windows.net -d onebighead -U <username> -P <password> -i ../publish/migrate.sql
+```
+
+From Azure Cloud Shell or CI/CD with Managed Identity:
+
+```bash
+sqlcmd -S <your-server>.database.windows.net -d onebighead --authentication-method=ActiveDirectoryManagedIdentity -i migrate.sql
+```

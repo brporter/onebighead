@@ -23,6 +23,7 @@ function ItemView() {
     loadCategoriesForCollection,
     items,
     loadItemsForCategory,
+    loadItemById,
     addItem,
     updateItem,
     deleteItem,
@@ -31,6 +32,7 @@ function ItemView() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [deepLinkedItem, setDeepLinkedItem] = useState<Item | null>(null);
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const isNewItem = itemId === 'new';
@@ -66,22 +68,41 @@ function ItemView() {
     }
   }, [categoryIdNum, currentCollection, loadItemsForCategory]);
 
-  // For existing items, we need to find the item and load its category's items
+  // For existing items, fetch the item directly if we don't have it (deep linking)
   useEffect(() => {
-    if (itemIdNum && currentCollection && categories.length > 0) {
-      // If we already have the item, get its category
-      const item = items.find(i => i.id === itemIdNum);
-      if (item && item.categoryId) {
-        loadItemsForCategory(item.categoryId);
+    async function fetchItemForDeepLink() {
+      if (itemIdNum && currentCollection && categories.length > 0) {
+        // Check if we already have the item
+        const existingItem = items.find(i => i.id === itemIdNum);
+        if (existingItem) {
+          setDeepLinkedItem(null); // Clear deep linked item, use from items array
+          if (existingItem.categoryId) {
+            loadItemsForCategory(existingItem.categoryId);
+          }
+          setIsLoading(false);
+        } else {
+          // Fetch the item directly for deep linking
+          const item = await loadItemById(itemIdNum);
+          if (item) {
+            setDeepLinkedItem(item);
+            if (item.categoryId) {
+              loadItemsForCategory(item.categoryId);
+            }
+          }
+          setIsLoading(false);
+        }
+      } else if (!itemIdNum) {
+        setIsLoading(false);
       }
     }
-    setIsLoading(false);
-  }, [itemIdNum, currentCollection, categories.length, items, loadItemsForCategory]);
+    fetchItemForDeepLink();
+  }, [itemIdNum, currentCollection, categories.length, items, loadItemsForCategory, loadItemById]);
 
   const selectedItem = useMemo(() => {
     if (itemIdNum == null) return null;
-    return items.find((item) => item.id === itemIdNum) ?? null;
-  }, [items, itemIdNum]);
+    // First check items array, then fall back to deep linked item
+    return items.find((item) => item.id === itemIdNum) ?? deepLinkedItem;
+  }, [items, itemIdNum, deepLinkedItem]);
 
   const newItemTemplate = useMemo(() => {
     if (!isNewItem || categoryIdNum == null || !currentCollection) return null;
@@ -136,11 +157,6 @@ function ItemView() {
 
   if (!currentCollection) {
     return <div className="app__loading">Collection not found</div>;
-  }
-
-  // For existing items that haven't loaded yet
-  if (!isNewItem && !selectedItem && items.length === 0) {
-    return <div className="app__loading">Loading item...</div>;
   }
 
   if (!isNewItem && !selectedItem) {

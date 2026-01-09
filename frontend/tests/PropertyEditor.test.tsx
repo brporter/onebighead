@@ -1,14 +1,30 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import PropertyEditor from '../src/PropertyEditor';
 import type { ItemProperty } from '../src/types';
+
+const mockAddLocalCategorySuggestion = vi.fn();
+const mockAddLocalNameSuggestion = vi.fn();
+
+vi.mock('../src/DataContext', () => ({
+  useData: () => ({
+    propertyCategorySuggestions: ['General', 'Technical'],
+    propertyNameSuggestions: ['Color', 'Size'],
+    addLocalCategorySuggestion: mockAddLocalCategorySuggestion,
+    addLocalNameSuggestion: mockAddLocalNameSuggestion,
+  }),
+}));
 
 describe('PropertyEditor', () => {
   const mockProperties: ItemProperty[] = [
     { category: 'General', name: 'Prop1', value: 'Value1' },
     { category: 'Technical', name: 'Prop2', value: 'Value2' },
   ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('snapshots', () => {
     it('should render with properties', () => {
@@ -114,6 +130,54 @@ describe('PropertyEditor', () => {
       await user.type(valueInputs[0], 'New Value');
 
       expect(handleChange).toHaveBeenCalled();
+    });
+  });
+
+  describe('local suggestions', () => {
+    it('should call addLocalCategorySuggestion on blur with non-empty value', async () => {
+      const user = userEvent.setup();
+      
+      // Use a property that already has a category value
+      render(<PropertyEditor properties={[{ category: 'ExistingCategory', name: '', value: '' }]} onChange={() => {}} />);
+
+      const categoryInputs = screen.getAllByPlaceholderText('Category');
+      // Focus the field (it already has a value)
+      await user.click(categoryInputs[0]);
+      // Blur by tabbing away
+      await user.tab();
+      
+      // Should be called with the existing value
+      expect(mockAddLocalCategorySuggestion).toHaveBeenCalledWith('ExistingCategory');
+    });
+
+    it('should call addLocalNameSuggestion on blur with non-empty value', async () => {
+      const user = userEvent.setup();
+      
+      // Use a property that already has a name value
+      render(<PropertyEditor properties={[{ category: '', name: 'ExistingName', value: '' }]} onChange={() => {}} />);
+
+      const nameInputs = screen.getAllByPlaceholderText('Name');
+      // Focus the field (it already has a value)
+      await user.click(nameInputs[0]);
+      // Blur by tabbing away
+      await user.tab();
+      
+      // Should be called with the existing value
+      expect(mockAddLocalNameSuggestion).toHaveBeenCalledWith('ExistingName');
+    });
+
+    it('should not call addLocalCategorySuggestion on blur for empty value', async () => {
+      const user = userEvent.setup();
+
+      render(<PropertyEditor properties={[{ category: '', name: '', value: '' }]} onChange={() => {}} />);
+
+      const categoryInputs = screen.getAllByPlaceholderText('Category');
+      // Focus and blur the empty field
+      await user.click(categoryInputs[0]);
+      await user.tab();
+
+      // Should not be called for empty string
+      expect(mockAddLocalCategorySuggestion).not.toHaveBeenCalled();
     });
   });
 });

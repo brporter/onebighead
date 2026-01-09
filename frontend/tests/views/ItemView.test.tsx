@@ -62,6 +62,7 @@ describe('ItemView', () => {
     loadCategoriesForCollection: vi.fn(),
     items: mockItems,
     loadItemsForCategory: vi.fn(),
+    loadItemById: vi.fn(async () => null),
     addItem: vi.fn(async () => 2),
     updateItem: vi.fn(async () => {}),
     deleteItem: vi.fn(async () => {}),
@@ -69,6 +70,8 @@ describe('ItemView', () => {
     syncPropertySuggestions: vi.fn(),
     propertyCategorySuggestions: [],
     propertyNameSuggestions: [],
+    addLocalCategorySuggestion: vi.fn(),
+    addLocalNameSuggestion: vi.fn(),
   };
 
   beforeEach(() => {
@@ -105,16 +108,19 @@ describe('ItemView', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/collections/1/categories/1');
     });
 
-    it('should show item not found when item does not exist', () => {
-      // Provide items array with other items but not the requested one
+    it('should show item not found when item does not exist', async () => {
+      // Provide items array with other items but not the requested one, and loadItemById returns null
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({
         ...mockDataContext,
         items: [{ ...mockItems[0], id: 100 }], // Different ID
+        loadItemById: vi.fn(async () => null), // Item not found
       });
 
       renderWithRouter('/collections/1/items/999');
 
-      expect(screen.getByText('Item not found')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Item not found')).toBeInTheDocument();
+      });
     });
   });
 
@@ -263,15 +269,19 @@ describe('ItemView', () => {
       expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
-    it('should show collection not found when no current collection', () => {
+    it('should show collection not found when no current collection', async () => {
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({
         ...mockDataContext,
         currentCollection: null,
+        collections: [{ ...mockCollections[0], collectionId: 999 }], // Different collection ID
       });
 
       renderWithRouter('/collections/1/items/1');
 
-      expect(screen.getByText('Collection not found')).toBeInTheDocument();
+      // When collection is not found, it redirects to /collections
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/collections', { replace: true });
+      });
     });
   });
 });

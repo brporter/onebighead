@@ -93,6 +93,8 @@ describe('App with Router', () => {
     syncPropertySuggestions: vi.fn(),
     propertyCategorySuggestions: [],
     propertyNameSuggestions: [],
+    addLocalCategorySuggestion: vi.fn(),
+    addLocalNameSuggestion: vi.fn(),
   };
 
   beforeEach(() => {

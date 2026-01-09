@@ -15,9 +15,15 @@ builder.Services.Configure<RouteOptions>(options =>
     options.LowercaseUrls = true;
 });
 
-// Configure EF Core with SQLite
+// Configure EF Core with SQLite (development) or SQL Server (production)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (builder.Environment.IsDevelopment())
+        options.UseSqlite(connectionString);
+    else
+        options.UseSqlServer(connectionString);
+});
 
 // Register repositories
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -43,16 +49,14 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Ensure database is migrated and seed development data
-using (var scope = app.Services.CreateScope())
+// In development: run migrations and seed data automatically
+// In production: migrations should be applied separately via SQL scripts
+if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     context.Database.Migrate();
-
-    if (app.Environment.IsDevelopment())
-    {
-        DatabaseSeeder.SeedDevelopmentData(context);
-    }
+    DatabaseSeeder.SeedDevelopmentData(context);
 }
 
 // Configure the HTTP request pipeline.

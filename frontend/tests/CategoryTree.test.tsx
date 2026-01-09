@@ -53,6 +53,8 @@ describe('CategoryTree', () => {
       propertyNameSuggestions: [],
       loadPropertySuggestions: vi.fn(async () => {}),
       syncPropertySuggestions: vi.fn(async () => {}),
+      addLocalCategorySuggestion: vi.fn(),
+      addLocalNameSuggestion: vi.fn(),
     });
   });
 
@@ -304,6 +306,8 @@ describe('CategoryTree', () => {
         propertyNameSuggestions: [],
         loadPropertySuggestions: vi.fn(async () => {}),
         syncPropertySuggestions: vi.fn(async () => {}),
+        addLocalCategorySuggestion: vi.fn(),
+        addLocalNameSuggestion: vi.fn(),
       });
 
       render(
@@ -346,6 +350,8 @@ describe('CategoryTree', () => {
         propertyNameSuggestions: [],
         loadPropertySuggestions: vi.fn(async () => {}),
         syncPropertySuggestions: vi.fn(async () => {}),
+        addLocalCategorySuggestion: vi.fn(),
+        addLocalNameSuggestion: vi.fn(),
       });
 
       render(

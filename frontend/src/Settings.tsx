@@ -15,6 +15,8 @@ function Settings({ isOpen, onClose }: SettingsProps) {
   const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '' });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -22,8 +24,47 @@ function Settings({ isOpen, onClose }: SettingsProps) {
       setIsAdding(false);
       setEditingId(null);
       setError(null);
+      setExportError(null);
     }
   }, [isOpen]);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      const response = await fetch('/api/export', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export data');
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'export.zip';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename=(.+)/);
+        if (match) {
+          filename = match[1].replace(/"/g, '');
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Failed to export data');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Handle escape key to close modal
   useEffect(() => {
@@ -236,6 +277,23 @@ function Settings({ isOpen, onClose }: SettingsProps) {
                 ))}
               </ul>
             )}
+          </section>
+
+          <section className="settings__section">
+            <div className="settings__sectionHeader">
+              <h3 className="settings__sectionTitle">Data Export</h3>
+            </div>
+            <p className="settings__sectionDescription">
+              Download all your collections, categories, and items as a ZIP file.
+            </p>
+            {exportError && <div className="settings__error">{exportError}</div>}
+            <button
+              className="settings__button settings__button--primary"
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              {isExporting ? 'Exporting...' : 'Export Data'}
+            </button>
           </section>
         </div>
       </div>

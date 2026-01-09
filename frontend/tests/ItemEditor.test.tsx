@@ -9,6 +9,8 @@ vi.mock('../src/DataContext', () => ({
   useData: () => ({
     propertyCategorySuggestions: [],
     propertyNameSuggestions: [],
+    addLocalCategorySuggestion: vi.fn(),
+    addLocalNameSuggestion: vi.fn(),
   }),
 }));
 
