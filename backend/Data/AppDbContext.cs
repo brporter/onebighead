@@ -58,15 +58,17 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(c => c.Id);
 
+            // Self-referencing FK must use Restrict/NoAction on SQL Server to avoid cycles
             entity.HasOne(c => c.ParentCategory)
                 .WithMany(c => c.ChildCategories)
                 .HasForeignKey(c => c.ParentCategoryId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
+            // Use Restrict to avoid multiple cascade paths in SQL Server
             entity.HasOne(c => c.Tenant)
                 .WithMany(t => t.Categories)
                 .HasForeignKey(c => c.TenantId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(c => c.Collection)
                 .WithMany(col => col.Categories)
@@ -82,15 +84,18 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(i => i.Id);
 
+            // Use Restrict to avoid multiple cascade paths in SQL Server
             entity.HasOne(i => i.Tenant)
                 .WithMany()
                 .HasForeignKey(i => i.TenantId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
+            // Use Restrict to avoid multiple cascade paths in SQL Server
+            // (Collections → Categories → Items via SetNull creates a second path)
             entity.HasOne(i => i.Collection)
                 .WithMany(c => c.Items)
                 .HasForeignKey(i => i.CollectionId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(i => i.Category)
                 .WithMany()
@@ -131,10 +136,11 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(p => p.Id);
 
+            // Use Restrict to avoid multiple cascade paths in SQL Server
             entity.HasOne(p => p.Tenant)
                 .WithMany()
                 .HasForeignKey(p => p.TenantId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(p => p.Collection)
                 .WithMany()

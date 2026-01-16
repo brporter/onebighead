@@ -2,10 +2,60 @@
 
 This guide provides step-by-step instructions for deploying the OneBigHead application to Azure Container Apps.
 
+## Quick Start (Automated Deployment)
+
+The `deploy.sh` script automates the entire deployment process including infrastructure creation, managed identity configuration, and database migration:
+
+```bash
+./deploy.sh \
+  --name onebighead \
+  --location eastus \
+  --jwt-key "your-jwt-signing-key-at-least-32-chars"
+```
+
+This script:
+- Creates all Azure resources (Resource Group, ACR, SQL Azure, Container Apps)
+- Configures managed identity for ACR pull access
+- Configures managed identity for SQL Azure authentication
+- Runs database migrations automatically
+- Deploys the application
+
+### Script Options
+
+| Option | Description |
+|--------|-------------|
+| `-n, --name` | Base name for Azure resources (required) |
+| `-l, --location` | Azure region (required, e.g., eastus) |
+| `-j, --jwt-key` | JWT signing key (required, min 32 chars) |
+| `-u, --sql-user` | SQL admin username (default: sqladmin) |
+| `-p, --sql-password` | SQL admin password (auto-generated if not set) |
+| `--skip-infra` | Skip infrastructure creation (for redeployments) |
+| `--skip-build` | Skip application build |
+| `--skip-migration` | Skip database migration |
+
+### Redeployment
+
+For subsequent deployments after infrastructure exists:
+
+```bash
+./deploy.sh \
+  --name onebighead \
+  --location eastus \
+  --jwt-key "your-jwt-signing-key" \
+  --skip-infra
+```
+
+---
+
+## Manual Deployment
+
+If you prefer manual deployment or need more control, follow the steps below.
+
 ## Prerequisites
 
 - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) installed and authenticated
 - [Docker](https://docs.docker.com/get-docker/) installed
+- [sqlcmd](https://docs.microsoft.com/en-us/sql/tools/sqlcmd-utility) installed (for migrations)
 - An Azure subscription
 - Application built and ready for containerization
 
