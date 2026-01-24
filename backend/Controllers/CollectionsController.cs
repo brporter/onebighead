@@ -176,7 +176,6 @@ public partial class CollectionsController : ControllerBase
     public async Task<ActionResult<IEnumerable<ItemTemplateResponse>>> GetCollectionTemplates(int id)
     {
         var tenantId = GetTenantId();
-        var userId = GetUserId();
 
         var collection = await _collectionRepository.GetByIdAsync(id, tenantId);
         if (collection is null)
