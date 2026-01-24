@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useData } from './DataContext';
 import type { ItemTemplate, ItemTemplateProperty } from './types';
 
 interface ItemTemplateEditorProps {
   onClose: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
-function ItemTemplateEditor({ onClose }: ItemTemplateEditorProps) {
+function ItemTemplateEditor({ onClose, onDirtyChange }: ItemTemplateEditorProps) {
   const {
     itemTemplates,
     itemTemplatesLoading,
@@ -24,9 +25,31 @@ function ItemTemplateEditor({ onClose }: ItemTemplateEditorProps) {
     description: '',
     properties: [] as { category: string; name: string }[],
   });
+  const [originalFormData, setOriginalFormData] = useState({
+    name: '',
+    description: '',
+    properties: [] as { category: string; name: string }[],
+  });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filter, setFilter] = useState<'all' | 'shared' | 'tenant'>('all');
+
+  const hasUnsavedChanges = useCallback(() => {
+    if (!isAdding && editingTemplate === null) return false;
+    if (formData.name !== originalFormData.name) return true;
+    if (formData.description !== originalFormData.description) return true;
+    if (formData.properties.length !== originalFormData.properties.length) return true;
+    for (let i = 0; i < formData.properties.length; i++) {
+      if (formData.properties[i].category !== originalFormData.properties[i]?.category) return true;
+      if (formData.properties[i].name !== originalFormData.properties[i]?.name) return true;
+    }
+    return false;
+  }, [isAdding, editingTemplate, formData, originalFormData]);
+
+  // Notify parent of dirty state changes
+  useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges());
+  }, [hasUnsavedChanges, onDirtyChange]);
 
   useEffect(() => {
     const filterValue = filter === 'all' ? undefined : filter;
@@ -34,18 +57,22 @@ function ItemTemplateEditor({ onClose }: ItemTemplateEditorProps) {
   }, [filter, loadItemTemplates]);
 
   const handleAddClick = () => {
-    setFormData({ name: '', description: '', properties: [] });
+    const initial = { name: '', description: '', properties: [] as { category: string; name: string }[] };
+    setFormData(initial);
+    setOriginalFormData(initial);
     setIsAdding(true);
     setEditingTemplate(null);
     setError(null);
   };
 
   const handleEditClick = (template: ItemTemplate) => {
-    setFormData({
+    const initial = {
       name: template.name,
       description: template.description,
       properties: template.properties.map((p) => ({ category: p.category, name: p.name })),
-    });
+    };
+    setFormData(initial);
+    setOriginalFormData(JSON.parse(JSON.stringify(initial)));
     setEditingTemplate(template);
     setIsAdding(false);
     setError(null);

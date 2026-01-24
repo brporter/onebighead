@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ResizableBox } from 'react-resizable';
+import 'react-resizable/css/styles.css';
 import './styles/Settings.css';
 import { useData } from './DataContext';
 import ItemTemplateEditor from './ItemTemplateEditor';
@@ -13,12 +15,36 @@ function Settings({ isOpen, onClose }: SettingsProps) {
   const { collections, addCollection, updateCollection, deleteCollection, loadCollections } = useData();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [size, setSize] = useState({ width: 600, height: 500 });
+  const [isResizing, setIsResizing] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '' });
+  const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '' });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [templateEditorDirty, setTemplateEditorDirty] = useState(false);
+
+  const hasUnsavedChanges = useCallback(() => {
+    if (showTemplateEditor && templateEditorDirty) return true;
+    if (!isAdding && editingId === null) return false;
+    return (
+      formData.name !== originalFormData.name ||
+      formData.description !== originalFormData.description ||
+      formData.heroImageUrl !== originalFormData.heroImageUrl
+    );
+  }, [showTemplateEditor, templateEditorDirty, isAdding, editingId, formData, originalFormData]);
+
+  const confirmAndClose = useCallback(() => {
+    if (hasUnsavedChanges()) {
+      if (confirm('You have unsaved changes. Discard them?')) {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  }, [hasUnsavedChanges, onClose]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -28,57 +54,21 @@ function Settings({ isOpen, onClose }: SettingsProps) {
       setError(null);
       setExportError(null);
       setShowTemplateEditor(false);
+      setTemplateEditorDirty(false);
     }
   }, [isOpen]);
-
-  const handleExport = async () => {
-    setIsExporting(true);
-    setExportError(null);
-
-    try {
-      const response = await fetch('/api/export', {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to export data');
-      }
-
-      const blob = await response.blob();
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = 'export.zip';
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename=(.+)/);
-        if (match) {
-          filename = match[1].replace(/"/g, '');
-        }
-      }
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setExportError(err instanceof Error ? err.message : 'Failed to export data');
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   // Handle escape key to close modal
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        e.preventDefault();
+        confirmAndClose();
       }
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, confirmAndClose]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -95,24 +85,33 @@ function Settings({ isOpen, onClose }: SettingsProps) {
   if (!isOpen) return null;
 
   const handleAddClick = () => {
-    setFormData({ name: '', description: '', heroImageUrl: '' });
+    const initial = { name: '', description: '', heroImageUrl: '' };
+    setFormData(initial);
+    setOriginalFormData(initial);
     setIsAdding(true);
     setEditingId(null);
     setError(null);
   };
 
   const handleEditClick = (collection: Collection) => {
-    setFormData({
+    const initial = {
       name: collection.name,
       description: collection.description || '',
       heroImageUrl: collection.heroImageUrl || '',
-    });
+    };
+    setFormData(initial);
+    setOriginalFormData(initial);
     setEditingId(collection.collectionId);
     setIsAdding(false);
     setError(null);
   };
 
   const handleCancel = () => {
+    if (hasUnsavedChanges()) {
+      if (!confirm('You have unsaved changes. Discard them?')) {
+        return;
+      }
+    }
     setIsAdding(false);
     setEditingId(null);
     setError(null);
@@ -165,27 +164,81 @@ function Settings({ isOpen, onClose }: SettingsProps) {
     }
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      const response = await fetch('/api/export', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export data');
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'export.zip';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename=(.+)/);
+        if (match) {
+          filename = match[1].replace(/"/g, '');
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Failed to export data');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const isEditing = isAdding || editingId !== null;
 
   function handleBackdropClick(e: React.MouseEvent) {
-    if (e.target === e.currentTarget) {
-      onClose();
+    if (e.target === e.currentTarget && !isResizing) {
+      confirmAndClose();
     }
   }
 
   return (
     <div className="settings-modal" onClick={handleBackdropClick}>
-      <div className="settings-modal__container">
-        <div className="settings-modal__header">
-          <h2 className="settings-modal__title">Settings</h2>
-          <button className="settings-modal__close" onClick={onClose} aria-label="Close settings">
-            ×
-          </button>
-        </div>
-        <div className="settings-modal__body">
-          {showTemplateEditor ? (
-            <ItemTemplateEditor onClose={() => setShowTemplateEditor(false)} />
-          ) : (
+      <ResizableBox
+        width={size.width}
+        height={size.height}
+        minConstraints={[320, 300]}
+        maxConstraints={[window.innerWidth * 0.9, window.innerHeight * 0.9]}
+        onResizeStart={() => setIsResizing(true)}
+        onResizeStop={(_e, { size: newSize }) => {
+          setSize({ width: newSize.width, height: newSize.height });
+          setTimeout(() => setIsResizing(false), 0);
+        }}
+        resizeHandles={['se']}
+        className="settings-modal__resizable"
+      >
+        <div className="settings-modal__container">
+          <div className="settings-modal__header">
+            <h2 className="settings-modal__title">Settings</h2>
+            <button className="settings-modal__close" onClick={confirmAndClose} aria-label="Close settings">
+              ×
+            </button>
+          </div>
+          <div className="settings-modal__body">
+            {showTemplateEditor ? (
+              <ItemTemplateEditor 
+                onClose={() => setShowTemplateEditor(false)} 
+                onDirtyChange={setTemplateEditorDirty}
+              />
+            ) : (
             <>
               <section className="settings__section">
                 <div className="settings__sectionHeader">
@@ -320,7 +373,8 @@ function Settings({ isOpen, onClose }: SettingsProps) {
             </>
           )}
         </div>
-      </div>
+        </div>
+      </ResizableBox>
     </div>
   );
 }
