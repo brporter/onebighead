@@ -5,24 +5,24 @@ namespace backend.Data;
 public interface IItemTemplateRepository
 {
     /// <summary>
-    /// Gets all templates accessible to the user (shared + personal).
+    /// Gets all templates accessible to the tenant (shared + tenant-owned).
     /// </summary>
-    Task<IEnumerable<ItemTemplate>> GetAllAccessibleAsync(int? tenantId, int? userId);
+    Task<IEnumerable<ItemTemplate>> GetAllAccessibleAsync(int tenantId);
     
     /// <summary>
-    /// Gets shared/global templates only.
+    /// Gets shared/system templates only.
     /// </summary>
     Task<IEnumerable<ItemTemplate>> GetSharedAsync();
     
     /// <summary>
-    /// Gets personal templates for a specific user.
+    /// Gets tenant-owned templates.
     /// </summary>
-    Task<IEnumerable<ItemTemplate>> GetPersonalAsync(int tenantId, int userId);
+    Task<IEnumerable<ItemTemplate>> GetTenantTemplatesAsync(int tenantId);
     
     /// <summary>
-    /// Gets a template by ID if accessible to the user.
+    /// Gets a template by ID if accessible to the tenant.
     /// </summary>
-    Task<ItemTemplate?> GetByIdAsync(int id, int? tenantId, int? userId);
+    Task<ItemTemplate?> GetByIdAsync(int id, int tenantId);
     
     /// <summary>
     /// Gets templates associated with a collection.
@@ -30,19 +30,19 @@ public interface IItemTemplateRepository
     Task<IEnumerable<ItemTemplate>> GetByCollectionAsync(int collectionId);
     
     /// <summary>
-    /// Creates a new template (personal or shared if tenantId/userId are null).
+    /// Creates a new tenant-owned template.
     /// </summary>
     Task<ItemTemplate> CreateAsync(ItemTemplate template);
     
     /// <summary>
-    /// Updates a template. Only the owner can update personal templates.
+    /// Updates a template. Only tenant-owned templates can be updated.
     /// </summary>
-    Task<ItemTemplate?> UpdateAsync(int id, ItemTemplate template, int? tenantId, int? userId);
+    Task<ItemTemplate?> UpdateAsync(int id, ItemTemplate template, int tenantId);
     
     /// <summary>
-    /// Deletes a template. Only the owner can delete personal templates.
+    /// Deletes a template. Only tenant-owned templates can be deleted.
     /// </summary>
-    Task<bool> DeleteAsync(int id, int? tenantId, int? userId);
+    Task<bool> DeleteAsync(int id, int tenantId);
     
     /// <summary>
     /// Associates a template with a collection.

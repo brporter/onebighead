@@ -26,7 +26,7 @@ function ItemTemplateEditor({ onClose }: ItemTemplateEditorProps) {
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'shared' | 'personal'>('all');
+  const [filter, setFilter] = useState<'all' | 'shared' | 'tenant'>('all');
 
   useEffect(() => {
     const filterValue = filter === 'all' ? undefined : filter;
@@ -132,7 +132,7 @@ function ItemTemplateEditor({ onClose }: ItemTemplateEditorProps) {
   };
 
   const isEditing = isAdding || editingTemplate !== null;
-  const personalTemplates = itemTemplates.filter((t) => !t.isShared);
+  const tenantTemplates = itemTemplates.filter((t) => !t.isShared);
   const sharedTemplates = itemTemplates.filter((t) => t.isShared);
 
   return (
@@ -151,10 +151,10 @@ function ItemTemplateEditor({ onClose }: ItemTemplateEditorProps) {
             <select
               className="templateEditor__filterSelect"
               value={filter}
-              onChange={(e) => setFilter(e.target.value as 'all' | 'shared' | 'personal')}
+              onChange={(e) => setFilter(e.target.value as 'all' | 'shared' | 'tenant')}
             >
               <option value="all">All Templates</option>
-              <option value="personal">My Templates</option>
+              <option value="tenant">My Templates</option>
               <option value="shared">Shared Templates</option>
             </select>
           </div>
@@ -258,11 +258,11 @@ function ItemTemplateEditor({ onClose }: ItemTemplateEditorProps) {
 
       {!isEditing && !itemTemplatesLoading && (
         <>
-          {(filter === 'all' || filter === 'personal') && personalTemplates.length > 0 && (
+          {(filter === 'all' || filter === 'tenant') && tenantTemplates.length > 0 && (
             <div className="templateEditor__section">
               <h4 className="templateEditor__sectionTitle">My Templates</h4>
               <ul className="settings__list">
-                {personalTemplates.map((template) => (
+                {tenantTemplates.map((template) => (
                   <li key={template.itemTemplateId} className="settings__listItem">
                     <div className="settings__listItemContent">
                       <span className="settings__listItemName">{template.name}</span>

@@ -25,12 +25,11 @@ public class CreateItemTemplateRequest
 
     public List<ItemTemplatePropertyDto> Properties { get; set; } = new();
 
-    public ItemTemplate ToItemTemplate(int? tenantId, int? userId)
+    public ItemTemplate ToItemTemplate(int tenantId)
     {
         var template = new ItemTemplate
         {
             TenantId = tenantId,
-            UserId = userId,
             Name = Name,
             Description = Description
         };
@@ -88,20 +87,20 @@ public class ItemTemplateResponse
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public bool IsShared { get; set; }
-    public bool IsOwner { get; set; }
+    public bool IsEditable { get; set; }
     public List<ItemTemplatePropertyResponse> Properties { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    public static ItemTemplateResponse FromItemTemplate(ItemTemplate template, int? currentUserId)
+    public static ItemTemplateResponse FromItemTemplate(ItemTemplate template, int currentTenantId)
     {
         return new ItemTemplateResponse
         {
             ItemTemplateId = template.Id,
             Name = template.Name,
             Description = template.Description,
-            IsShared = template.TenantId == null && template.UserId == null,
-            IsOwner = template.UserId == currentUserId,
+            IsShared = template.TenantId == null,
+            IsEditable = template.TenantId == currentTenantId, // Only tenant-owned templates are editable
             Properties = template.Properties
                 .OrderBy(p => p.SortOrder)
                 .Select(p => new ItemTemplatePropertyResponse

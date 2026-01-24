@@ -72,6 +72,10 @@ public class OAuthService : IOAuthService
 
     public bool ValidateState(string state, string storedState)
     {
+        if (string.IsNullOrEmpty(state) || string.IsNullOrEmpty(storedState))
+        {
+            return false;
+        }
         return string.CompareOrdinal(state, storedState) == 0;
     }
 

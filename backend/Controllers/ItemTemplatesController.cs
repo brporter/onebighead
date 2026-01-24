@@ -27,33 +27,22 @@ public class ItemTemplatesController : ControllerBase
         return tenantId;
     }
 
-    private int GetUserId()
-    {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-        {
-            throw new UnauthorizedAccessException("User ID not found in token");
-        }
-        return userId;
-    }
-
     /// <summary>
-    /// Gets all templates accessible to the current user (shared + personal).
+    /// Gets all templates accessible to the current tenant (shared + tenant-owned).
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ItemTemplateResponse>>> GetTemplates([FromQuery] string? filter = null)
     {
         var tenantId = GetTenantId();
-        var userId = GetUserId();
 
         var templates = filter switch
         {
             "shared" => await _templateRepository.GetSharedAsync(),
-            "personal" => await _templateRepository.GetPersonalAsync(tenantId, userId),
-            _ => await _templateRepository.GetAllAccessibleAsync(tenantId, userId)
+            "tenant" => await _templateRepository.GetTenantTemplatesAsync(tenantId),
+            _ => await _templateRepository.GetAllAccessibleAsync(tenantId)
         };
 
-        var response = templates.Select(t => ItemTemplateResponse.FromItemTemplate(t, userId));
+        var response = templates.Select(t => ItemTemplateResponse.FromItemTemplate(t, tenantId));
         return Ok(response);
     }
 
@@ -64,65 +53,61 @@ public class ItemTemplatesController : ControllerBase
     public async Task<ActionResult<ItemTemplateResponse>> GetTemplate(int id)
     {
         var tenantId = GetTenantId();
-        var userId = GetUserId();
 
-        var template = await _templateRepository.GetByIdAsync(id, tenantId, userId);
+        var template = await _templateRepository.GetByIdAsync(id, tenantId);
         if (template is null)
         {
             return NotFound();
         }
 
-        return Ok(ItemTemplateResponse.FromItemTemplate(template, userId));
+        return Ok(ItemTemplateResponse.FromItemTemplate(template, tenantId));
     }
 
     /// <summary>
-    /// Creates a new personal template for the current user.
+    /// Creates a new tenant-owned template.
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<ItemTemplateResponse>> CreateTemplate(CreateItemTemplateRequest request)
     {
         var tenantId = GetTenantId();
-        var userId = GetUserId();
 
-        var template = request.ToItemTemplate(tenantId, userId);
+        var template = request.ToItemTemplate(tenantId);
         var created = await _templateRepository.CreateAsync(template);
 
         return CreatedAtAction(
             nameof(GetTemplate), 
             new { id = created.Id }, 
-            ItemTemplateResponse.FromItemTemplate(created, userId));
+            ItemTemplateResponse.FromItemTemplate(created, tenantId));
     }
 
     /// <summary>
-    /// Updates an existing personal template owned by the current user.
+    /// Updates an existing tenant-owned template. Shared templates cannot be edited.
     /// </summary>
     [HttpPut("{id}")]
     public async Task<ActionResult<ItemTemplateResponse>> UpdateTemplate(int id, UpdateItemTemplateRequest request)
     {
         var tenantId = GetTenantId();
-        var userId = GetUserId();
 
         var template = request.ToItemTemplate();
-        var updated = await _templateRepository.UpdateAsync(id, template, tenantId, userId);
+        var updated = await _templateRepository.UpdateAsync(id, template, tenantId);
         
         if (updated is null)
         {
             return NotFound();
         }
 
-        return Ok(ItemTemplateResponse.FromItemTemplate(updated, userId));
+        return Ok(ItemTemplateResponse.FromItemTemplate(updated, tenantId));
     }
 
     /// <summary>
-    /// Deletes a personal template owned by the current user.
+    /// Deletes a tenant-owned template. Shared templates cannot be deleted.
     /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTemplate(int id)
     {
         var tenantId = GetTenantId();
-        var userId = GetUserId();
 
-        var deleted = await _templateRepository.DeleteAsync(id, tenantId, userId);
+        var deleted = await _templateRepository.DeleteAsync(id, tenantId);
         if (!deleted)
         {
             return NotFound();

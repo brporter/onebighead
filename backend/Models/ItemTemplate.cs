@@ -11,14 +11,10 @@ public class ItemTemplate
     public int Id { get; set; }
 
     /// <summary>
-    /// Null for shared/global templates, set for personal templates.
+    /// Null for shared/system templates (available to all tenants, read-only).
+    /// Set for tenant-owned templates (editable by tenant users).
     /// </summary>
     public int? TenantId { get; set; }
-
-    /// <summary>
-    /// Null for shared/global templates, set for personal templates.
-    /// </summary>
-    public int? UserId { get; set; }
 
     [Required]
     [MaxLength(200)]
@@ -34,10 +30,6 @@ public class ItemTemplate
     [JsonIgnore]
     [ForeignKey(nameof(TenantId))]
     public Tenant? Tenant { get; set; }
-
-    [JsonIgnore]
-    [ForeignKey(nameof(UserId))]
-    public User? User { get; set; }
 
     public ICollection<ItemTemplateProperty> Properties { get; set; } = new List<ItemTemplateProperty>();
 

@@ -185,7 +185,7 @@ public partial class CollectionsController : ControllerBase
         }
 
         var templates = await _itemTemplateRepository.GetByCollectionAsync(id);
-        var response = templates.Select(t => ItemTemplateResponse.FromItemTemplate(t, userId));
+        var response = templates.Select(t => ItemTemplateResponse.FromItemTemplate(t, tenantId));
         return Ok(response);
     }
 
@@ -196,7 +196,6 @@ public partial class CollectionsController : ControllerBase
     public async Task<IActionResult> AssociateTemplate(int id, int templateId)
     {
         var tenantId = GetTenantId();
-        var userId = GetUserId();
 
         var collection = await _collectionRepository.GetByIdAsync(id, tenantId);
         if (collection is null)
@@ -205,7 +204,7 @@ public partial class CollectionsController : ControllerBase
         }
 
         // Verify template is accessible
-        var template = await _itemTemplateRepository.GetByIdAsync(templateId, tenantId, userId);
+        var template = await _itemTemplateRepository.GetByIdAsync(templateId, tenantId);
         if (template is null)
         {
             return NotFound("Template not found");

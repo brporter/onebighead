@@ -12,13 +12,11 @@ public class ItemTemplateRepository : IItemTemplateRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<ItemTemplate>> GetAllAccessibleAsync(int? tenantId, int? userId)
+    public async Task<IEnumerable<ItemTemplate>> GetAllAccessibleAsync(int tenantId)
     {
         return await _context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
-            .Where(t => 
-                (t.TenantId == null && t.UserId == null) || // Shared templates
-                (t.TenantId == tenantId && t.UserId == userId)) // Personal templates
+            .Where(t => t.TenantId == null || t.TenantId == tenantId)
             .OrderBy(t => t.Name)
             .ToListAsync();
     }
@@ -27,28 +25,27 @@ public class ItemTemplateRepository : IItemTemplateRepository
     {
         return await _context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
-            .Where(t => t.TenantId == null && t.UserId == null)
+            .Where(t => t.TenantId == null)
             .OrderBy(t => t.Name)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<ItemTemplate>> GetPersonalAsync(int tenantId, int userId)
+    public async Task<IEnumerable<ItemTemplate>> GetTenantTemplatesAsync(int tenantId)
     {
         return await _context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
-            .Where(t => t.TenantId == tenantId && t.UserId == userId)
+            .Where(t => t.TenantId == tenantId)
             .OrderBy(t => t.Name)
             .ToListAsync();
     }
 
-    public async Task<ItemTemplate?> GetByIdAsync(int id, int? tenantId, int? userId)
+    public async Task<ItemTemplate?> GetByIdAsync(int id, int tenantId)
     {
         return await _context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
             .FirstOrDefaultAsync(t => 
                 t.Id == id &&
-                ((t.TenantId == null && t.UserId == null) || // Shared templates
-                (t.TenantId == tenantId && t.UserId == userId))); // Personal templates
+                (t.TenantId == null || t.TenantId == tenantId));
     }
 
     public async Task<IEnumerable<ItemTemplate>> GetByCollectionAsync(int collectionId)
@@ -72,14 +69,12 @@ public class ItemTemplateRepository : IItemTemplateRepository
         return template;
     }
 
-    public async Task<ItemTemplate?> UpdateAsync(int id, ItemTemplate template, int? tenantId, int? userId)
+    public async Task<ItemTemplate?> UpdateAsync(int id, ItemTemplate template, int tenantId)
     {
+        // Only tenant-owned templates can be updated (not shared/system templates)
         var existing = await _context.ItemTemplates
             .Include(t => t.Properties)
-            .FirstOrDefaultAsync(t => 
-                t.Id == id &&
-                t.TenantId == tenantId && 
-                t.UserId == userId);
+            .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
 
         if (existing is null)
         {
@@ -109,13 +104,11 @@ public class ItemTemplateRepository : IItemTemplateRepository
         return existing;
     }
 
-    public async Task<bool> DeleteAsync(int id, int? tenantId, int? userId)
+    public async Task<bool> DeleteAsync(int id, int tenantId)
     {
+        // Only tenant-owned templates can be deleted (not shared/system templates)
         var template = await _context.ItemTemplates
-            .FirstOrDefaultAsync(t => 
-                t.Id == id &&
-                t.TenantId == tenantId && 
-                t.UserId == userId);
+            .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
 
         if (template is null)
         {

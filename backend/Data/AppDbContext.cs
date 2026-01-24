@@ -161,15 +161,9 @@ public class AppDbContext : DbContext
             entity.HasOne(t => t.Tenant)
                 .WithMany()
                 .HasForeignKey(t => t.TenantId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(t => t.User)
-                .WithMany()
-                .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(t => t.TenantId);
-            entity.HasIndex(t => t.UserId);
         });
 
         modelBuilder.Entity<ItemTemplateProperty>(entity =>
