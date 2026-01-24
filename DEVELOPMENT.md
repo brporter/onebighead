@@ -4,6 +4,24 @@
 
 - .NET 10.0 SDK
 - Node.js (for frontend)
+- Docker (for local SQL Server)
+
+## Local SQL Server Setup
+
+This project uses SQL Server for all environments. For local development, use Docker:
+
+```bash
+# Start the local SQL Server instance
+docker compose up -d
+
+# Verify it's running
+docker ps --filter "name=onebighead-sqlserver"
+```
+
+The SQL Server instance will be available at `localhost:1433` with:
+- Username: `sa`
+- Password: `DevPassword123!`
+- Database: `onebighead` (created automatically on first run)
 
 ## User Secrets Configuration
 
@@ -64,7 +82,7 @@ npm run dev
 
 ### Development
 
-In development, migrations run automatically on application startup. The SQLite database (`development.db`) is created and migrated automatically.
+In Debug builds, migrations run automatically on application startup. The database is created and migrated automatically when you run the backend.
 
 To create a new migration after modifying models:
 
@@ -75,39 +93,25 @@ dotnet ef migrations add <MigrationName>
 
 ### Production (SQL Azure)
 
-Production uses SQL Azure and migrations must be applied separately using SQL scripts. **Do not run migrations automatically in production.**
+Production uses a migration bundle strategy. The bundle is a self-contained executable that applies migrations.
 
-#### Generating Migration Scripts
-
-Generate an idempotent SQL script that can be safely run multiple times:
+#### Creating a Migration Bundle
 
 ```bash
 cd backend
-dotnet ef migrations script --idempotent -o ../publish/migrate.sql
+dotnet ef migrations bundle --configuration Release --output ../publish/efbundle.exe
 ```
 
-To generate a script for specific migrations (e.g., from a baseline):
+#### Applying Migrations with the Bundle
+
+The bundle includes the connection string from appsettings, or you can override it:
 
 ```bash
-dotnet ef migrations script <FromMigration> <ToMigration> --idempotent -o ../publish/migrate.sql
+# Using embedded connection string
+./efbundle.exe
+
+# Overriding connection string
+./efbundle.exe --connection "Server=tcp:YOUR_SERVER.database.windows.net,1433;Database=onebighead;..."
 ```
 
-#### Applying Migrations to SQL Azure
-
-Using Azure AD authentication:
-
-```bash
-sqlcmd -S <your-server>.database.windows.net -d onebighead -G -i ../publish/migrate.sql
-```
-
-Using SQL authentication:
-
-```bash
-sqlcmd -S <your-server>.database.windows.net -d onebighead -U <username> -P <password> -i ../publish/migrate.sql
-```
-
-From Azure Cloud Shell or CI/CD with Managed Identity:
-
-```bash
-sqlcmd -S <your-server>.database.windows.net -d onebighead --authentication-method=ActiveDirectoryManagedIdentity -i migrate.sql
-```
+For CI/CD pipelines, the bundle can be deployed alongside the application and executed before starting the app.

@@ -5,13 +5,11 @@ namespace backend.Data;
 
 /// <summary>
 /// Design-time factory for generating migrations targeting SQL Server.
-/// Used by EF Core tools when generating migration scripts for production deployment.
+/// Used by EF Core tools when generating migrations and migration bundles.
 /// 
 /// Usage:
-///   dotnet ef migrations script --idempotent -o ../publish/migrate.sql
-/// 
-/// The factory uses SQL Server by default for design-time operations, which enables
-/// generating idempotent migration scripts for SQL Azure deployment.
+///   dotnet ef migrations add MigrationName
+///   dotnet ef migrations bundle --configuration Release --output efbundle.exe
 /// </summary>
 public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
@@ -19,9 +17,8 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
     {
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         
-        // Use SQL Server for design-time operations (migration script generation)
-        // The connection string doesn't need to be valid - it's only used to determine the provider
-        optionsBuilder.UseSqlServer("Server=.;Database=DesignTime;Trusted_Connection=True;TrustServerCertificate=True");
+        // Use local SQL Server for design-time operations
+        optionsBuilder.UseSqlServer("Server=localhost,1433;Database=onebighead;User Id=sa;Password=DevPassword123!;TrustServerCertificate=True");
         
         return new AppDbContext(optionsBuilder.Options);
     }

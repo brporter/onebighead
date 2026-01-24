@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -18,5 +17,10 @@
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.3.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.1" />
   </ItemGroup>
+
+  <!-- Migration bundle configuration for production deployments -->
+  <Target Name="BundleMigrations" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
+    <Message Importance="High" Text="To create a migration bundle for production, run: dotnet ef migrations bundle --configuration Release --output $(PublishDir)efbundle.exe" />
+  </Target>
   
 </Project>
