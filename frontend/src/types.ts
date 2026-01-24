@@ -56,3 +56,32 @@ export interface CurrentUser {
   tenantId: number;
 }
 
+export interface ItemTemplateProperty {
+  itemTemplatePropertyId?: number;
+  category: string;
+  name: string;
+}
+
+export interface ItemTemplate {
+  itemTemplateId: number;
+  name: string;
+  description: string;
+  isShared: boolean;
+  isEditable: boolean;
+  properties: ItemTemplateProperty[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateItemTemplateRequest {
+  name: string;
+  description: string;
+  properties: Omit<ItemTemplateProperty, 'itemTemplatePropertyId'>[];
+}
+
+export interface UpdateItemTemplateRequest {
+  name: string;
+  description: string;
+  properties: Omit<ItemTemplateProperty, 'itemTemplatePropertyId'>[];
+}
+

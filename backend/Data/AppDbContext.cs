@@ -17,6 +17,9 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Item> Items => Set<Item>();
     public DbSet<PropertySuggestion> PropertySuggestions => Set<PropertySuggestion>();
+    public DbSet<ItemTemplate> ItemTemplates => Set<ItemTemplate>();
+    public DbSet<ItemTemplateProperty> ItemTemplateProperties => Set<ItemTemplateProperty>();
+    public DbSet<CollectionItemTemplate> CollectionItemTemplates => Set<CollectionItemTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -149,6 +152,46 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(p => new { p.CollectionId, p.Type });
             entity.HasIndex(p => new { p.CollectionId, p.Type, p.Value }).IsUnique();
+        });
+
+        modelBuilder.Entity<ItemTemplate>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+
+            entity.HasOne(t => t.Tenant)
+                .WithMany()
+                .HasForeignKey(t => t.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(t => t.TenantId);
+        });
+
+        modelBuilder.Entity<ItemTemplateProperty>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+
+            entity.HasOne(p => p.ItemTemplate)
+                .WithMany(t => t.Properties)
+                .HasForeignKey(p => p.ItemTemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(p => p.ItemTemplateId);
+        });
+
+        modelBuilder.Entity<CollectionItemTemplate>(entity =>
+        {
+            entity.HasKey(ct => new { ct.CollectionId, ct.ItemTemplateId });
+
+            entity.HasOne(ct => ct.Collection)
+                .WithMany(c => c.CollectionItemTemplates)
+                .HasForeignKey(ct => ct.CollectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Use Restrict to avoid multiple cascade paths in SQL Server
+            entity.HasOne(ct => ct.ItemTemplate)
+                .WithMany(t => t.CollectionItemTemplates)
+                .HasForeignKey(ct => ct.ItemTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

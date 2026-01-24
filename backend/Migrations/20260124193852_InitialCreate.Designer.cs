@@ -12,7 +12,7 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260124144801_InitialCreate")]
+    [Migration("20260124193852_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -111,6 +111,21 @@ namespace backend.Migrations
                     b.ToTable("Collections");
                 });
 
+            modelBuilder.Entity("backend.Models.CollectionItemTemplate", b =>
+                {
+                    b.Property<int>("CollectionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemTemplateId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CollectionId", "ItemTemplateId");
+
+                    b.HasIndex("ItemTemplateId");
+
+                    b.ToTable("CollectionItemTemplates");
+                });
+
             modelBuilder.Entity("backend.Models.Item", b =>
                 {
                     b.Property<int>("Id")
@@ -168,6 +183,73 @@ namespace backend.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Items");
+                });
+
+            modelBuilder.Entity("backend.Models.ItemTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("itemTemplateId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("ItemTemplates");
+                });
+
+            modelBuilder.Entity("backend.Models.ItemTemplateProperty", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("itemTemplatePropertyId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("ItemTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemTemplateId");
+
+                    b.ToTable("ItemTemplateProperties");
                 });
 
             modelBuilder.Entity("backend.Models.PropertySuggestion", b =>
@@ -303,6 +385,25 @@ namespace backend.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("backend.Models.CollectionItemTemplate", b =>
+                {
+                    b.HasOne("backend.Models.Collection", "Collection")
+                        .WithMany("CollectionItemTemplates")
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Models.ItemTemplate", "ItemTemplate")
+                        .WithMany("CollectionItemTemplates")
+                        .HasForeignKey("ItemTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Collection");
+
+                    b.Navigation("ItemTemplate");
+                });
+
             modelBuilder.Entity("backend.Models.Item", b =>
                 {
                     b.HasOne("backend.Models.Category", "Category")
@@ -327,6 +428,27 @@ namespace backend.Migrations
                     b.Navigation("Collection");
 
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("backend.Models.ItemTemplate", b =>
+                {
+                    b.HasOne("backend.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("backend.Models.ItemTemplateProperty", b =>
+                {
+                    b.HasOne("backend.Models.ItemTemplate", "ItemTemplate")
+                        .WithMany("Properties")
+                        .HasForeignKey("ItemTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ItemTemplate");
                 });
 
             modelBuilder.Entity("backend.Models.PropertySuggestion", b =>
@@ -368,7 +490,16 @@ namespace backend.Migrations
                 {
                     b.Navigation("Categories");
 
+                    b.Navigation("CollectionItemTemplates");
+
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("backend.Models.ItemTemplate", b =>
+                {
+                    b.Navigation("CollectionItemTemplates");
+
+                    b.Navigation("Properties");
                 });
 
             modelBuilder.Entity("backend.Models.Tenant", b =>

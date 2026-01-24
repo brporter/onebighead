@@ -91,6 +91,25 @@ cd backend
 dotnet ef migrations add <MigrationName>
 ```
 
+### Resetting the Database
+
+To reset the local development database (drop all data and start fresh):
+
+```powershell
+# From the repository root
+./reset-database.ps1
+
+# Skip confirmation prompt
+./reset-database.ps1 -Force
+```
+
+After resetting, run the backend to recreate the database with fresh migrations:
+
+```bash
+cd backend
+dotnet run
+```
+
 ### Production (SQL Azure)
 
 Production uses a migration bundle strategy. The bundle is a self-contained executable that applies migrations.

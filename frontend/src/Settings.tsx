@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './styles/Settings.css';
 import { useData } from './DataContext';
+import ItemTemplateEditor from './ItemTemplateEditor';
 import type { Collection } from './types';
 
 interface SettingsProps {
@@ -17,6 +18,7 @@ function Settings({ isOpen, onClose }: SettingsProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -25,6 +27,7 @@ function Settings({ isOpen, onClose }: SettingsProps) {
       setEditingId(null);
       setError(null);
       setExportError(null);
+      setShowTemplateEditor(false);
     }
   }, [isOpen]);
 
@@ -180,121 +183,142 @@ function Settings({ isOpen, onClose }: SettingsProps) {
           </button>
         </div>
         <div className="settings-modal__body">
-          <section className="settings__section">
-            <div className="settings__sectionHeader">
-              <h3 className="settings__sectionTitle">Collections</h3>
-              {!isEditing && (
-                <button className="settings__addButton" onClick={handleAddClick}>
-                  + New Collection
-                </button>
-              )}
-            </div>
+          {showTemplateEditor ? (
+            <ItemTemplateEditor onClose={() => setShowTemplateEditor(false)} />
+          ) : (
+            <>
+              <section className="settings__section">
+                <div className="settings__sectionHeader">
+                  <h3 className="settings__sectionTitle">Collections</h3>
+                  {!isEditing && (
+                    <button className="settings__addButton" onClick={handleAddClick}>
+                      + New Collection
+                    </button>
+                  )}
+                </div>
 
-            {error && <div className="settings__error">{error}</div>}
+                {error && <div className="settings__error">{error}</div>}
 
-            {isEditing && (
-              <form className="settings__form" onSubmit={handleSubmit}>
-                <div className="settings__field">
-                  <label className="settings__label">
-                    Name <span className="settings__required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="settings__input"
-                    value={formData.name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="My Collection"
-                    autoFocus
-                  />
-                </div>
-                <div className="settings__field">
-                  <label className="settings__label">Description</label>
-                  <textarea
-                    className="settings__textarea"
-                    value={formData.description}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                    placeholder="A brief description of this collection"
-                    rows={3}
-                  />
-                </div>
-                <div className="settings__field">
-                  <label className="settings__label">Hero Image URL</label>
-                  <input
-                    type="url"
-                    className="settings__input"
-                    value={formData.heroImageUrl}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, heroImageUrl: e.target.value }))}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-                <div className="settings__formActions">
-                  <button
-                    type="submit"
-                    className="settings__button settings__button--primary"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : isAdding ? 'Create Collection' : 'Save Changes'}
-                  </button>
-                  <button
-                    type="button"
-                    className="settings__button settings__button--secondary"
-                    onClick={handleCancel}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {!isEditing && (
-              <ul className="settings__list">
-                {collections.map((collection) => (
-                  <li key={collection.collectionId} className="settings__listItem">
-                    <div className="settings__listItemContent">
-                      <span className="settings__listItemName">{collection.name}</span>
-                      {collection.description && (
-                        <span className="settings__listItemDescription">{collection.description}</span>
-                      )}
+                {isEditing && (
+                  <form className="settings__form" onSubmit={handleSubmit}>
+                    <div className="settings__field">
+                      <label className="settings__label">
+                        Name <span className="settings__required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="settings__input"
+                        value={formData.name}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="My Collection"
+                        autoFocus
+                      />
                     </div>
-                    <div className="settings__listItemActions">
+                    <div className="settings__field">
+                      <label className="settings__label">Description</label>
+                      <textarea
+                        className="settings__textarea"
+                        value={formData.description}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                        placeholder="A brief description of this collection"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="settings__field">
+                      <label className="settings__label">Hero Image URL</label>
+                      <input
+                        type="url"
+                        className="settings__input"
+                        value={formData.heroImageUrl}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, heroImageUrl: e.target.value }))}
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+                    <div className="settings__formActions">
                       <button
-                        className="settings__listButton"
-                        onClick={() => handleEditClick(collection)}
+                        type="submit"
+                        className="settings__button settings__button--primary"
+                        disabled={isSubmitting}
                       >
-                        Edit
+                        {isSubmitting ? 'Saving...' : isAdding ? 'Create Collection' : 'Save Changes'}
                       </button>
-                      {collections.length > 1 && (
-                        <button
-                          className="settings__listButton settings__listButton--danger"
-                          onClick={() => handleDelete(collection.collectionId)}
-                        >
-                          Delete
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="settings__button settings__button--secondary"
+                        onClick={handleCancel}
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </button>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+                  </form>
+                )}
 
-          <section className="settings__section">
-            <div className="settings__sectionHeader">
-              <h3 className="settings__sectionTitle">Data Export</h3>
-            </div>
-            <p className="settings__sectionDescription">
-              Download all your collections, categories, and items as a ZIP file.
-            </p>
-            {exportError && <div className="settings__error">{exportError}</div>}
-            <button
-              className="settings__button settings__button--primary"
-              onClick={handleExport}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Exporting...' : 'Export Data'}
-            </button>
-          </section>
+                {!isEditing && (
+                  <ul className="settings__list">
+                    {collections.map((collection) => (
+                      <li key={collection.collectionId} className="settings__listItem">
+                        <div className="settings__listItemContent">
+                          <span className="settings__listItemName">{collection.name}</span>
+                          {collection.description && (
+                            <span className="settings__listItemDescription">{collection.description}</span>
+                          )}
+                        </div>
+                        <div className="settings__listItemActions">
+                          <button
+                            className="settings__listButton"
+                            onClick={() => handleEditClick(collection)}
+                          >
+                            Edit
+                          </button>
+                          {collections.length > 1 && (
+                            <button
+                              className="settings__listButton settings__listButton--danger"
+                              onClick={() => handleDelete(collection.collectionId)}
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section className="settings__section">
+                <div className="settings__sectionHeader">
+                  <h3 className="settings__sectionTitle">Item Templates</h3>
+                </div>
+                <p className="settings__sectionDescription">
+                  Create reusable property templates for your items.
+                </p>
+                <button
+                  className="settings__button settings__button--secondary"
+                  onClick={() => setShowTemplateEditor(true)}
+                >
+                  Manage Templates
+                </button>
+              </section>
+
+              <section className="settings__section">
+                <div className="settings__sectionHeader">
+                  <h3 className="settings__sectionTitle">Data Export</h3>
+                </div>
+                <p className="settings__sectionDescription">
+                  Download all your collections, categories, and items as a ZIP file.
+                </p>
+                {exportError && <div className="settings__error">{exportError}</div>}
+                <button
+                  className="settings__button settings__button--primary"
+                  onClick={handleExport}
+                  disabled={isExporting}
+                >
+                  {isExporting ? 'Exporting...' : 'Export Data'}
+                </button>
+              </section>
+            </>
+          )}
         </div>
       </div>
     </div>
