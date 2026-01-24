@@ -32,7 +32,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange }: ItemTemplateEditorProps)
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'shared' | 'tenant'>('all');
+  const [filter, setFilter] = useState<'all' | 'system' | 'tenant'>('all');
 
   const hasUnsavedChanges = useCallback(() => {
     if (!isAdding && editingTemplate === null) return false;
@@ -159,8 +159,8 @@ function ItemTemplateEditor({ onClose, onDirtyChange }: ItemTemplateEditorProps)
   };
 
   const isEditing = isAdding || editingTemplate !== null;
-  const tenantTemplates = itemTemplates.filter((t) => !t.isShared);
-  const sharedTemplates = itemTemplates.filter((t) => t.isShared);
+  const tenantTemplates = itemTemplates.filter((t) => !t.isSystem);
+  const systemTemplates = itemTemplates.filter((t) => t.isSystem);
 
   return (
     <div className="templateEditor">
@@ -178,11 +178,11 @@ function ItemTemplateEditor({ onClose, onDirtyChange }: ItemTemplateEditorProps)
             <select
               className="templateEditor__filterSelect"
               value={filter}
-              onChange={(e) => setFilter(e.target.value as 'all' | 'shared' | 'tenant')}
+              onChange={(e) => setFilter(e.target.value as 'all' | 'system' | 'tenant')}
             >
               <option value="all">All Templates</option>
               <option value="tenant">My Templates</option>
-              <option value="shared">Shared Templates</option>
+              <option value="system">System Templates</option>
             </select>
           </div>
           <button className="settings__addButton" onClick={handleAddClick}>
@@ -318,11 +318,11 @@ function ItemTemplateEditor({ onClose, onDirtyChange }: ItemTemplateEditorProps)
             </div>
           )}
 
-          {(filter === 'all' || filter === 'shared') && sharedTemplates.length > 0 && (
+          {(filter === 'all' || filter === 'system') && systemTemplates.length > 0 && (
             <div className="templateEditor__section">
-              <h4 className="templateEditor__sectionTitle">Shared Templates</h4>
+              <h4 className="templateEditor__sectionTitle">System Templates</h4>
               <ul className="settings__list">
-                {sharedTemplates.map((template) => (
+                {systemTemplates.map((template) => (
                   <li key={template.itemTemplateId} className="settings__listItem">
                     <div className="settings__listItemContent">
                       <span className="settings__listItemName">{template.name}</span>
@@ -332,7 +332,14 @@ function ItemTemplateEditor({ onClose, onDirtyChange }: ItemTemplateEditorProps)
                       </span>
                     </div>
                     <div className="settings__listItemActions">
-                      <span className="templateEditor__sharedBadge">Shared</span>
+                      <button
+                        className="settings__listButton"
+                        onClick={() => handleEditClick(template)}
+                        title="Edit creates a copy in your templates"
+                      >
+                        Customize
+                      </button>
+                      <span className="templateEditor__systemBadge">System</span>
                     </div>
                   </li>
                 ))}

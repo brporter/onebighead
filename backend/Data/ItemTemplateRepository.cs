@@ -14,18 +14,32 @@ public class ItemTemplateRepository : IItemTemplateRepository
 
     public async Task<IEnumerable<ItemTemplate>> GetAllAccessibleAsync(int tenantId)
     {
+        // Get tenant template names to filter out overridden system templates
+        var tenantTemplateNames = await _context.ItemTemplates
+            .Where(t => t.TenantId == tenantId)
+            .Select(t => t.Name)
+            .ToListAsync();
+
         return await _context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
-            .Where(t => t.TenantId == null || t.TenantId == tenantId)
+            .Where(t => 
+                t.TenantId == tenantId || 
+                (t.TenantId == null && !tenantTemplateNames.Contains(t.Name)))
             .OrderBy(t => t.Name)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<ItemTemplate>> GetSharedAsync()
+    public async Task<IEnumerable<ItemTemplate>> GetSystemTemplatesAsync(int tenantId)
     {
+        // Get tenant template names to filter out overridden system templates
+        var tenantTemplateNames = await _context.ItemTemplates
+            .Where(t => t.TenantId == tenantId)
+            .Select(t => t.Name)
+            .ToListAsync();
+
         return await _context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
-            .Where(t => t.TenantId == null)
+            .Where(t => t.TenantId == null && !tenantTemplateNames.Contains(t.Name))
             .OrderBy(t => t.Name)
             .ToListAsync();
     }
@@ -71,7 +85,7 @@ public class ItemTemplateRepository : IItemTemplateRepository
 
     public async Task<ItemTemplate?> UpdateAsync(int id, ItemTemplate template, int tenantId)
     {
-        // Only tenant-owned templates can be updated (not shared/system templates)
+        // Only tenant-owned templates can be updated directly
         var existing = await _context.ItemTemplates
             .Include(t => t.Properties)
             .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
@@ -104,9 +118,46 @@ public class ItemTemplateRepository : IItemTemplateRepository
         return existing;
     }
 
+    public async Task<ItemTemplate> CopySystemTemplateAsync(int systemTemplateId, int tenantId, ItemTemplate updates)
+    {
+        var systemTemplate = await _context.ItemTemplates
+            .Include(t => t.Properties)
+            .FirstOrDefaultAsync(t => t.Id == systemTemplateId && t.TenantId == null);
+
+        if (systemTemplate is null)
+        {
+            throw new InvalidOperationException("System template not found");
+        }
+
+        // Create a new tenant-owned template as a copy
+        var newTemplate = new ItemTemplate
+        {
+            TenantId = tenantId,
+            Name = updates.Name,
+            Description = updates.Description,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        var sortOrder = 0;
+        foreach (var prop in updates.Properties)
+        {
+            newTemplate.Properties.Add(new ItemTemplateProperty
+            {
+                Category = prop.Category,
+                Name = prop.Name,
+                SortOrder = sortOrder++
+            });
+        }
+
+        _context.ItemTemplates.Add(newTemplate);
+        await _context.SaveChangesAsync();
+        return newTemplate;
+    }
+
     public async Task<bool> DeleteAsync(int id, int tenantId)
     {
-        // Only tenant-owned templates can be deleted (not shared/system templates)
+        // Only tenant-owned templates can be deleted
         var template = await _context.ItemTemplates
             .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
 

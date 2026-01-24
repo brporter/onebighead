@@ -86,21 +86,19 @@ public class ItemTemplateResponse
     public int ItemTemplateId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public bool IsShared { get; set; }
-    public bool IsEditable { get; set; }
+    public bool IsSystem { get; set; }
     public List<ItemTemplatePropertyResponse> Properties { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    public static ItemTemplateResponse FromItemTemplate(ItemTemplate template, int currentTenantId)
+    public static ItemTemplateResponse FromItemTemplate(ItemTemplate template)
     {
         return new ItemTemplateResponse
         {
             ItemTemplateId = template.Id,
             Name = template.Name,
             Description = template.Description,
-            IsShared = template.TenantId == null,
-            IsEditable = template.TenantId == currentTenantId, // Only tenant-owned templates are editable
+            IsSystem = template.TenantId == null,
             Properties = template.Properties
                 .OrderBy(p => p.SortOrder)
                 .Select(p => new ItemTemplatePropertyResponse
