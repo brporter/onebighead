@@ -28,7 +28,8 @@ public class ItemTemplatesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all templates accessible to the current tenant (shared + tenant-owned).
+    /// Gets all templates accessible to the current tenant (system + tenant-owned).
+    /// System templates are hidden if a tenant template with the same name exists.
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ItemTemplateResponse>>> GetTemplates([FromQuery] string? filter = null)
@@ -37,12 +38,12 @@ public class ItemTemplatesController : ControllerBase
 
         var templates = filter switch
         {
-            "shared" => await _templateRepository.GetSharedAsync(),
+            "system" => await _templateRepository.GetSystemTemplatesAsync(tenantId),
             "tenant" => await _templateRepository.GetTenantTemplatesAsync(tenantId),
             _ => await _templateRepository.GetAllAccessibleAsync(tenantId)
         };
 
-        var response = templates.Select(t => ItemTemplateResponse.FromItemTemplate(t, tenantId));
+        var response = templates.Select(ItemTemplateResponse.FromItemTemplate);
         return Ok(response);
     }
 
@@ -60,7 +61,7 @@ public class ItemTemplatesController : ControllerBase
             return NotFound();
         }
 
-        return Ok(ItemTemplateResponse.FromItemTemplate(template, tenantId));
+        return Ok(ItemTemplateResponse.FromItemTemplate(template));
     }
 
     /// <summary>
@@ -77,30 +78,45 @@ public class ItemTemplatesController : ControllerBase
         return CreatedAtAction(
             nameof(GetTemplate), 
             new { id = created.Id }, 
-            ItemTemplateResponse.FromItemTemplate(created, tenantId));
+            ItemTemplateResponse.FromItemTemplate(created));
     }
 
     /// <summary>
-    /// Updates an existing tenant-owned template. Shared templates cannot be edited.
+    /// Updates a template. For system templates, creates a tenant copy (copy-on-edit).
     /// </summary>
     [HttpPut("{id}")]
     public async Task<ActionResult<ItemTemplateResponse>> UpdateTemplate(int id, UpdateItemTemplateRequest request)
     {
         var tenantId = GetTenantId();
 
+        // First check if template exists and is accessible
+        var existing = await _templateRepository.GetByIdAsync(id, tenantId);
+        if (existing is null)
+        {
+            return NotFound();
+        }
+
         var template = request.ToItemTemplate();
+
+        // If it's a system template, copy it to tenant's library instead of editing
+        if (existing.TenantId == null)
+        {
+            var copied = await _templateRepository.CopySystemTemplateAsync(id, tenantId, template);
+            return Ok(ItemTemplateResponse.FromItemTemplate(copied));
+        }
+
+        // Otherwise, update the tenant-owned template directly
         var updated = await _templateRepository.UpdateAsync(id, template, tenantId);
-        
         if (updated is null)
         {
             return NotFound();
         }
 
-        return Ok(ItemTemplateResponse.FromItemTemplate(updated, tenantId));
+        return Ok(ItemTemplateResponse.FromItemTemplate(updated));
     }
 
     /// <summary>
-    /// Deletes a tenant-owned template. Shared templates cannot be deleted.
+    /// Deletes a tenant-owned template. System templates cannot be deleted.
     /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTemplate(int id)

@@ -5,14 +5,15 @@ namespace backend.Data;
 public interface IItemTemplateRepository
 {
     /// <summary>
-    /// Gets all templates accessible to the tenant (shared + tenant-owned).
+    /// Gets all templates accessible to the tenant (system + tenant-owned).
+    /// System templates are excluded if a tenant template with the same name exists.
     /// </summary>
     Task<IEnumerable<ItemTemplate>> GetAllAccessibleAsync(int tenantId);
     
     /// <summary>
-    /// Gets shared/system templates only.
+    /// Gets system templates only (excludes those overridden by tenant templates).
     /// </summary>
-    Task<IEnumerable<ItemTemplate>> GetSharedAsync();
+    Task<IEnumerable<ItemTemplate>> GetSystemTemplatesAsync(int tenantId);
     
     /// <summary>
     /// Gets tenant-owned templates.
@@ -35,9 +36,14 @@ public interface IItemTemplateRepository
     Task<ItemTemplate> CreateAsync(ItemTemplate template);
     
     /// <summary>
-    /// Updates a template. Only tenant-owned templates can be updated.
+    /// Updates a template. Only tenant-owned templates can be updated directly.
     /// </summary>
     Task<ItemTemplate?> UpdateAsync(int id, ItemTemplate template, int tenantId);
+    
+    /// <summary>
+    /// Copies a system template to the tenant's library.
+    /// </summary>
+    Task<ItemTemplate> CopySystemTemplateAsync(int systemTemplateId, int tenantId, ItemTemplate updates);
     
     /// <summary>
     /// Deletes a template. Only tenant-owned templates can be deleted.

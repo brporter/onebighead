@@ -184,7 +184,7 @@ public partial class CollectionsController : ControllerBase
         }
 
         var templates = await _itemTemplateRepository.GetByCollectionAsync(id);
-        var response = templates.Select(t => ItemTemplateResponse.FromItemTemplate(t, tenantId));
+        var response = templates.Select(ItemTemplateResponse.FromItemTemplate);
         return Ok(response);
     }
 

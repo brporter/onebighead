@@ -15,7 +15,7 @@ function Settings({ isOpen, onClose }: SettingsProps) {
   const { collections, addCollection, updateCollection, deleteCollection, loadCollections } = useData();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [size, setSize] = useState({ width: 600, height: 500 });
+  const [size, setSize] = useState({ width: 700, height: 600 });
   const [isResizing, setIsResizing] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '' });
   const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '' });

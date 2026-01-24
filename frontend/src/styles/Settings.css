@@ -470,7 +470,8 @@
   font-size: 0.9rem;
 }
 
-.templateEditor__sharedBadge {
+.templateEditor__sharedBadge,
+.templateEditor__systemBadge {
   padding: var(--space-xs) var(--space-sm);
   background: var(--color-surface-alt);
   border-radius: var(--radius-sm);

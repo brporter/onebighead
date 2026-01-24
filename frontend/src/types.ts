@@ -66,8 +66,7 @@ export interface ItemTemplate {
   itemTemplateId: number;
   name: string;
   description: string;
-  isShared: boolean;
-  isEditable: boolean;
+  isSystem: boolean;
   properties: ItemTemplateProperty[];
   createdAt: string;
   updatedAt: string;
