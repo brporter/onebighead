@@ -12,18 +12,25 @@ public class CollectionsControllerTests
 {
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
+    private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
     private readonly CollectionsController _controller;
     private const int TestTenantId = 1;
+    private const int TestUserId = 1;
 
     public CollectionsControllerTests()
     {
         _mockCollectionRepository = new Mock<ICollectionRepository>();
         _mockCategoryRepository = new Mock<ICategoryRepository>();
-        _controller = new CollectionsController(_mockCollectionRepository.Object, _mockCategoryRepository.Object);
+        _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
+        _controller = new CollectionsController(
+            _mockCollectionRepository.Object, 
+            _mockCategoryRepository.Object,
+            _mockItemTemplateRepository.Object);
 
         var claims = new List<Claim>
         {
             new("tenant_id", TestTenantId.ToString()),
+            new("sub", TestUserId.ToString()),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")
         };

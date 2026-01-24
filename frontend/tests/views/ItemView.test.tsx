@@ -72,6 +72,17 @@ describe('ItemView', () => {
     propertyNameSuggestions: [],
     addLocalCategorySuggestion: vi.fn(),
     addLocalNameSuggestion: vi.fn(),
+    // Item templates
+    itemTemplates: [],
+    itemTemplatesLoading: false,
+    itemTemplatesError: null,
+    loadItemTemplates: vi.fn(async () => {}),
+    loadCollectionTemplates: vi.fn(async () => []),
+    createItemTemplate: vi.fn(async () => ({ itemTemplateId: 1, name: 'Test', description: '', isShared: false, isOwner: true, properties: [], createdAt: '', updatedAt: '' })),
+    updateItemTemplate: vi.fn(async () => ({ itemTemplateId: 1, name: 'Test', description: '', isShared: false, isOwner: true, properties: [], createdAt: '', updatedAt: '' })),
+    deleteItemTemplate: vi.fn(async () => {}),
+    associateTemplateWithCollection: vi.fn(async () => {}),
+    disassociateTemplateFromCollection: vi.fn(async () => {}),
   };
 
   beforeEach(() => {
@@ -187,16 +198,43 @@ describe('ItemView', () => {
   });
 
   describe('creating new item', () => {
-    it('should show editor for new item', () => {
+    it('should show template selector first for new item', async () => {
       renderWithRouter('/collections/1/items/new?categoryId=1');
 
-      expect(screen.getByText('Add New Item')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Choose a Template')).toBeInTheDocument();
+      });
+    });
+
+    it('should show editor after selecting start from scratch', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1/items/new?categoryId=1');
+
+      await waitFor(() => {
+        expect(screen.getByText('Start from scratch')).toBeInTheDocument();
+      });
+      
+      await user.click(screen.getByText('Start from scratch'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Add New Item')).toBeInTheDocument();
+      });
     });
 
     it('should call addItem when creating', async () => {
       const user = userEvent.setup();
       renderWithRouter('/collections/1/items/new?categoryId=1');
 
+      // First dismiss template selector
+      await waitFor(() => {
+        expect(screen.getByText('Start from scratch')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Start from scratch'));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Name')).toBeInTheDocument();
+      });
+      
       await user.type(screen.getByLabelText('Name'), 'New Item');
       await user.click(screen.getByText('Create Item'));
 
@@ -207,6 +245,16 @@ describe('ItemView', () => {
       const user = userEvent.setup();
       renderWithRouter('/collections/1/items/new?categoryId=1');
 
+      // First dismiss template selector
+      await waitFor(() => {
+        expect(screen.getByText('Start from scratch')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Start from scratch'));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Name')).toBeInTheDocument();
+      });
+      
       await user.type(screen.getByLabelText('Name'), 'New Item');
       await user.click(screen.getByText('Create Item'));
 
@@ -218,6 +266,16 @@ describe('ItemView', () => {
     it('should navigate back when cancelling new item', async () => {
       const user = userEvent.setup();
       renderWithRouter('/collections/1/items/new?categoryId=1');
+
+      // First dismiss template selector
+      await waitFor(() => {
+        expect(screen.getByText('Start from scratch')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Start from scratch'));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Name')).toBeInTheDocument();
+      });
 
       // Find the Cancel button in the editor form
       const cancelButton = screen.getByRole('button', { name: 'Cancel' });

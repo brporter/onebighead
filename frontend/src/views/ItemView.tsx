@@ -5,8 +5,9 @@ import ItemDetail from '../ItemDetail';
 import ItemEditor from '../ItemEditor';
 import BackNav from '../BackNav';
 import CategoryTree from '../CategoryTree';
+import TemplateSelector from '../TemplateSelector';
 import { createEmptyItem } from '../itemUtils';
-import type { Item } from '../types';
+import type { Item, ItemProperty } from '../types';
 
 function ItemView() {
   const { collectionId, itemId } = useParams<{ collectionId: string; itemId: string }>();
@@ -33,6 +34,8 @@ function ItemView() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [deepLinkedItem, setDeepLinkedItem] = useState<Item | null>(null);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [selectedTemplateProperties, setSelectedTemplateProperties] = useState<ItemProperty[] | null>(null);
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const isNewItem = itemId === 'new';
@@ -98,6 +101,13 @@ function ItemView() {
     fetchItemForDeepLink();
   }, [itemIdNum, currentCollection, categories.length, items, loadItemsForCategory, loadItemById]);
 
+  // Show template selector for new items
+  useEffect(() => {
+    if (isNewItem && currentCollection && selectedTemplateProperties === null) {
+      setShowTemplateSelector(true);
+    }
+  }, [isNewItem, currentCollection, selectedTemplateProperties]);
+
   const selectedItem = useMemo(() => {
     if (itemIdNum == null) return null;
     // First check items array, then fall back to deep linked item
@@ -106,8 +116,13 @@ function ItemView() {
 
   const newItemTemplate = useMemo(() => {
     if (!isNewItem || categoryIdNum == null || !currentCollection) return null;
-    return createEmptyItem(categoryIdNum, currentCollection.collectionId, currentCollection.tenantId);
-  }, [isNewItem, categoryIdNum, currentCollection]);
+    const emptyItem = createEmptyItem(categoryIdNum, currentCollection.collectionId, currentCollection.tenantId);
+    // Apply selected template properties if available
+    if (selectedTemplateProperties && selectedTemplateProperties.length > 0) {
+      emptyItem.properties = selectedTemplateProperties;
+    }
+    return emptyItem;
+  }, [isNewItem, categoryIdNum, currentCollection, selectedTemplateProperties]);
 
   const detailItem = isNewItem ? newItemTemplate : selectedItem;
 
@@ -118,6 +133,16 @@ function ItemView() {
     } else {
       navigate(`/collections/${collectionIdNum}`);
     }
+  }
+
+  function handleTemplateSelected(properties: ItemProperty[]) {
+    setSelectedTemplateProperties(properties);
+    setShowTemplateSelector(false);
+  }
+
+  function handleTemplateSelectorClose() {
+    // If user closes without selecting, go back to items list
+    handleBackToItems();
   }
 
   function handleEditItem() {
@@ -163,6 +188,23 @@ function ItemView() {
     return <div className="app__loading">Item not found</div>;
   }
 
+  // For new items, show template selector first
+  if (isNewItem && showTemplateSelector && collectionIdNum) {
+    return (
+      <TemplateSelector
+        collectionId={collectionIdNum}
+        isOpen={true}
+        onClose={handleTemplateSelectorClose}
+        onSelect={handleTemplateSelected}
+      />
+    );
+  }
+
+  // For new items, wait until template is selected (or skipped)
+  if (isNewItem && selectedTemplateProperties === null) {
+    return <div className="app__loading">Loading...</div>;
+  }
+
   return (
     <div className="app__layout">
       <nav className="app__sidebar" aria-label="Category navigation">
@@ -182,6 +224,7 @@ function ItemView() {
               onSave={handleSaveItem}
               onCancel={handleCancelEdit}
               onDelete={isNewItem ? undefined : handleDeleteItem}
+              initialProperties={isNewItem ? (selectedTemplateProperties ?? undefined) : undefined}
             />
           ) : (
             <ItemDetail

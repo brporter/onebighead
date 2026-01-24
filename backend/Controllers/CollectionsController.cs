@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.DTOs;
 using backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +14,16 @@ public partial class CollectionsController : ControllerBase
 {
     private readonly ICollectionRepository _collectionRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly IItemTemplateRepository _itemTemplateRepository;
 
-    public CollectionsController(ICollectionRepository collectionRepository, ICategoryRepository categoryRepository)
+    public CollectionsController(
+        ICollectionRepository collectionRepository, 
+        ICategoryRepository categoryRepository,
+        IItemTemplateRepository itemTemplateRepository)
     {
         _collectionRepository = collectionRepository;
         _categoryRepository = categoryRepository;
+        _itemTemplateRepository = itemTemplateRepository;
     }
 
     private int GetTenantId()
@@ -28,6 +34,16 @@ public partial class CollectionsController : ControllerBase
             throw new UnauthorizedAccessException("Tenant ID not found in token");
         }
         return tenantId;
+    }
+
+    private int GetUserId()
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+        {
+            throw new UnauthorizedAccessException("User ID not found in token");
+        }
+        return userId;
     }
 
     [HttpGet]
@@ -150,6 +166,75 @@ public partial class CollectionsController : ControllerBase
         {
             return NotFound();
         }
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Gets item templates associated with a collection.
+    /// </summary>
+    [HttpGet("{id}/templates")]
+    public async Task<ActionResult<IEnumerable<ItemTemplateResponse>>> GetCollectionTemplates(int id)
+    {
+        var tenantId = GetTenantId();
+        var userId = GetUserId();
+
+        var collection = await _collectionRepository.GetByIdAsync(id, tenantId);
+        if (collection is null)
+        {
+            return NotFound();
+        }
+
+        var templates = await _itemTemplateRepository.GetByCollectionAsync(id);
+        var response = templates.Select(t => ItemTemplateResponse.FromItemTemplate(t, userId));
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Associates an item template with a collection.
+    /// </summary>
+    [HttpPost("{id}/templates/{templateId}")]
+    public async Task<IActionResult> AssociateTemplate(int id, int templateId)
+    {
+        var tenantId = GetTenantId();
+        var userId = GetUserId();
+
+        var collection = await _collectionRepository.GetByIdAsync(id, tenantId);
+        if (collection is null)
+        {
+            return NotFound("Collection not found");
+        }
+
+        // Verify template is accessible
+        var template = await _itemTemplateRepository.GetByIdAsync(templateId, tenantId, userId);
+        if (template is null)
+        {
+            return NotFound("Template not found");
+        }
+
+        await _itemTemplateRepository.AssociateWithCollectionAsync(templateId, id);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Removes an item template association from a collection.
+    /// </summary>
+    [HttpDelete("{id}/templates/{templateId}")]
+    public async Task<IActionResult> DisassociateTemplate(int id, int templateId)
+    {
+        var tenantId = GetTenantId();
+
+        var collection = await _collectionRepository.GetByIdAsync(id, tenantId);
+        if (collection is null)
+        {
+            return NotFound("Collection not found");
+        }
+
+        var removed = await _itemTemplateRepository.DisassociateFromCollectionAsync(templateId, id);
+        if (!removed)
+        {
+            return NotFound("Template association not found");
+        }
+
         return NoContent();
     }
 

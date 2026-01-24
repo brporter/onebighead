@@ -303,3 +303,154 @@
 .settings__listButton--danger:hover {
   background: var(--color-danger-bg);
 }
+
+/* Template Editor */
+.templateEditor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.templateEditor__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.templateEditor__back {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.templateEditor__back:hover {
+  color: var(--color-primary-hover);
+}
+
+.templateEditor__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.templateEditor__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.templateEditor__filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.templateEditor__filterLabel {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.templateEditor__filterSelect {
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.templateEditor__section {
+  margin-top: var(--space-md);
+}
+
+.templateEditor__sectionTitle {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.templateEditor__properties {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.templateEditor__propertyRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.templateEditor__categoryInput,
+.templateEditor__nameInput {
+  min-width: 0;
+}
+
+.templateEditor__removeButton {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.templateEditor__removeButton:hover {
+  background: var(--color-danger-bg-hover);
+}
+
+.templateEditor__addPropertyButton {
+  align-self: flex-start;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px dashed var(--color-text-muted);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.templateEditor__addPropertyButton:hover {
+  border-color: var(--color-text-secondary);
+  color: var(--color-text-secondary);
+}
+
+.templateEditor__loading,
+.templateEditor__empty {
+  padding: var(--space-lg);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.templateEditor__sharedBadge {
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

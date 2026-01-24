@@ -2,7 +2,7 @@ import { useState } from 'react';
 import PropertyEditor from './PropertyEditor';
 import ImageEditor from './ImageEditor';
 import CategorySelector from './CategorySelector';
-import type { Item, Category } from './types';
+import type { Item, Category, ItemProperty } from './types';
 
 interface ItemEditorProps {
   item: Item | null;
@@ -10,6 +10,7 @@ interface ItemEditorProps {
   onSave: (item: Item) => void;
   onCancel: () => void;
   onDelete?: ((id: number) => void) | null;
+  initialProperties?: ItemProperty[];
 }
 
 function ItemEditor({
@@ -18,15 +19,17 @@ function ItemEditor({
   onSave,
   onCancel,
   onDelete,
+  initialProperties,
 }: ItemEditorProps) {
   const [formData, setFormData] = useState<Item>(() => item ?? {
     id: null,
     tenantId: 1,
+    collectionId: 0,
     categoryId: null,
     name: '',
     summary: '',
     description: '',
-    properties: [],
+    properties: initialProperties ?? [],
     images: [],
   });
 

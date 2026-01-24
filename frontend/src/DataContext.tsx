@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
-import type { Category, Item, Collection } from './types';
+import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest } from './types';
 
 interface CategoryItemsCache {
   items: Item[];
@@ -51,6 +51,18 @@ export interface DataContextValue {
   syncPropertySuggestions: (collectionId: number) => Promise<void>;
   addLocalCategorySuggestion: (category: string) => void;
   addLocalNameSuggestion: (name: string) => void;
+
+  // Item templates
+  itemTemplates: ItemTemplate[];
+  itemTemplatesLoading: boolean;
+  itemTemplatesError: string | null;
+  loadItemTemplates: (filter?: 'shared' | 'personal') => Promise<void>;
+  loadCollectionTemplates: (collectionId: number) => Promise<ItemTemplate[]>;
+  createItemTemplate: (request: CreateItemTemplateRequest) => Promise<ItemTemplate>;
+  updateItemTemplate: (id: number, request: UpdateItemTemplateRequest) => Promise<ItemTemplate>;
+  deleteItemTemplate: (id: number) => Promise<void>;
+  associateTemplateWithCollection: (collectionId: number, templateId: number) => Promise<void>;
+  disassociateTemplateFromCollection: (collectionId: number, templateId: number) => Promise<void>;
 }
 
 const defaultContextValue: DataContextValue = {
@@ -84,6 +96,16 @@ const defaultContextValue: DataContextValue = {
   syncPropertySuggestions: async () => {},
   addLocalCategorySuggestion: () => {},
   addLocalNameSuggestion: () => {},
+  itemTemplates: [],
+  itemTemplatesLoading: false,
+  itemTemplatesError: null,
+  loadItemTemplates: async () => {},
+  loadCollectionTemplates: async () => [],
+  createItemTemplate: async () => ({ itemTemplateId: 0, name: '', description: '', isShared: false, isOwner: true, properties: [], createdAt: '', updatedAt: '' }),
+  updateItemTemplate: async () => ({ itemTemplateId: 0, name: '', description: '', isShared: false, isOwner: true, properties: [], createdAt: '', updatedAt: '' }),
+  deleteItemTemplate: async () => {},
+  associateTemplateWithCollection: async () => {},
+  disassociateTemplateFromCollection: async () => {},
 };
 
 const DataContext = createContext<DataContextValue>(defaultContextValue);
@@ -118,6 +140,11 @@ export function DataProvider({ children }: DataProviderProps) {
   // Property suggestions state (fetched from backend API)
   const [propertyCategorySuggestions, setPropertyCategorySuggestions] = useState<string[]>([]);
   const [propertyNameSuggestions, setPropertyNameSuggestions] = useState<string[]>([]);
+
+  // Item templates state
+  const [itemTemplates, setItemTemplates] = useState<ItemTemplate[]>([]);
+  const [itemTemplatesLoading, setItemTemplatesLoading] = useState(false);
+  const [itemTemplatesError, setItemTemplatesError] = useState<string | null>(null);
 
   // Load property suggestions from API
   const loadPropertySuggestions = useCallback(async (collectionId: number) => {
@@ -420,6 +447,91 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, [items, syncPropertySuggestions]);
 
+  // Item template operations
+  const loadItemTemplates = useCallback(async (filter?: 'shared' | 'personal') => {
+    try {
+      setItemTemplatesLoading(true);
+      setItemTemplatesError(null);
+      const url = filter ? `/api/itemtemplates?filter=${filter}` : '/api/itemtemplates';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch item templates: ${response.statusText}`);
+      }
+      const data: ItemTemplate[] = await response.json();
+      setItemTemplates(data);
+    } catch (error) {
+      setItemTemplatesError(error instanceof Error ? error.message : 'Failed to fetch item templates');
+    } finally {
+      setItemTemplatesLoading(false);
+    }
+  }, []);
+
+  const loadCollectionTemplates = useCallback(async (collectionId: number): Promise<ItemTemplate[]> => {
+    const response = await fetch(`/api/collections/${collectionId}/templates`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch collection templates: ${response.statusText}`);
+    }
+    return await response.json();
+  }, []);
+
+  const createItemTemplate = useCallback(async (request: CreateItemTemplateRequest): Promise<ItemTemplate> => {
+    const response = await fetch('/api/itemtemplates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to create item template: ${response.statusText}`);
+    }
+    const created: ItemTemplate = await response.json();
+    setItemTemplates((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+    return created;
+  }, []);
+
+  const updateItemTemplate = useCallback(async (id: number, request: UpdateItemTemplateRequest): Promise<ItemTemplate> => {
+    const response = await fetch(`/api/itemtemplates/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update item template: ${response.statusText}`);
+    }
+    const updated: ItemTemplate = await response.json();
+    setItemTemplates((prev) =>
+      prev.map((t) => (t.itemTemplateId === id ? updated : t)).sort((a, b) => a.name.localeCompare(b.name))
+    );
+    return updated;
+  }, []);
+
+  const deleteItemTemplate = useCallback(async (id: number): Promise<void> => {
+    const response = await fetch(`/api/itemtemplates/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to delete item template: ${response.statusText}`);
+    }
+    setItemTemplates((prev) => prev.filter((t) => t.itemTemplateId !== id));
+  }, []);
+
+  const associateTemplateWithCollection = useCallback(async (collectionId: number, templateId: number): Promise<void> => {
+    const response = await fetch(`/api/collections/${collectionId}/templates/${templateId}`, {
+      method: 'POST',
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to associate template: ${response.statusText}`);
+    }
+  }, []);
+
+  const disassociateTemplateFromCollection = useCallback(async (collectionId: number, templateId: number): Promise<void> => {
+    const response = await fetch(`/api/collections/${collectionId}/templates/${templateId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to disassociate template: ${response.statusText}`);
+    }
+  }, []);
+
   const value: DataContextValue = {
     currentCollection,
     setCurrentCollection,
@@ -451,6 +563,16 @@ export function DataProvider({ children }: DataProviderProps) {
     syncPropertySuggestions,
     addLocalCategorySuggestion,
     addLocalNameSuggestion,
+    itemTemplates,
+    itemTemplatesLoading,
+    itemTemplatesError,
+    loadItemTemplates,
+    loadCollectionTemplates,
+    createItemTemplate,
+    updateItemTemplate,
+    deleteItemTemplate,
+    associateTemplateWithCollection,
+    disassociateTemplateFromCollection,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

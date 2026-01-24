@@ -137,6 +137,36 @@ namespace backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ItemTemplates",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<int>(type: "int", nullable: true),
+                    UserId = table.Column<int>(type: "int", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ItemTemplates", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ItemTemplates_Tenants_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "Tenants",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ItemTemplates_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Items",
                 columns: table => new
                 {
@@ -174,6 +204,52 @@ namespace backend.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "CollectionItemTemplates",
+                columns: table => new
+                {
+                    CollectionId = table.Column<int>(type: "int", nullable: false),
+                    ItemTemplateId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CollectionItemTemplates", x => new { x.CollectionId, x.ItemTemplateId });
+                    table.ForeignKey(
+                        name: "FK_CollectionItemTemplates_Collections_CollectionId",
+                        column: x => x.CollectionId,
+                        principalTable: "Collections",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CollectionItemTemplates_ItemTemplates_ItemTemplateId",
+                        column: x => x.ItemTemplateId,
+                        principalTable: "ItemTemplates",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ItemTemplateProperties",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ItemTemplateId = table.Column<int>(type: "int", nullable: false),
+                    Category = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ItemTemplateProperties", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ItemTemplateProperties_ItemTemplates_ItemTemplateId",
+                        column: x => x.ItemTemplateId,
+                        principalTable: "ItemTemplates",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_CollectionId",
                 table: "Categories",
@@ -188,6 +264,11 @@ namespace backend.Migrations
                 name: "IX_Categories_TenantId",
                 table: "Categories",
                 column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CollectionItemTemplates_ItemTemplateId",
+                table: "CollectionItemTemplates",
+                column: "ItemTemplateId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Collections_TenantId",
@@ -214,6 +295,21 @@ namespace backend.Migrations
                 name: "IX_Items_TenantId",
                 table: "Items",
                 column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ItemTemplateProperties_ItemTemplateId",
+                table: "ItemTemplateProperties",
+                column: "ItemTemplateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ItemTemplates_TenantId",
+                table: "ItemTemplates",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ItemTemplates_UserId",
+                table: "ItemTemplates",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PropertySuggestions_CollectionId_Type",
@@ -257,19 +353,28 @@ namespace backend.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "CollectionItemTemplates");
+
+            migrationBuilder.DropTable(
                 name: "Items");
+
+            migrationBuilder.DropTable(
+                name: "ItemTemplateProperties");
 
             migrationBuilder.DropTable(
                 name: "PropertySuggestions");
 
             migrationBuilder.DropTable(
-                name: "Users");
-
-            migrationBuilder.DropTable(
                 name: "Categories");
 
             migrationBuilder.DropTable(
+                name: "ItemTemplates");
+
+            migrationBuilder.DropTable(
                 name: "Collections");
+
+            migrationBuilder.DropTable(
+                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Tenants");

@@ -48,8 +48,18 @@ function App() {
   const isCollectionsList = !currentCollection && (location.pathname === '/collections' || location.pathname === '/' || location.pathname.startsWith('/collections'));
   const collectionName = currentCollection?.name ?? 'Collection';
 
+  // Determine mobile view state based on route
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  let mobileView: 'categories' | 'items' | 'detail' | 'settings' | undefined;
+  if (pathParts.includes('items')) {
+    mobileView = 'detail';
+  } else if (pathParts.includes('categories') && pathParts.length >= 4) {
+    // /collections/:id/categories/:categoryId - show items
+    mobileView = 'items';
+  }
+
   return (
-    <div className="app">
+    <div className="app" data-view={mobileView}>
       <header className="app__header">
         <div className="app__headerContent">
           <div>
