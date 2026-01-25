@@ -217,7 +217,9 @@ describe('ImageEditor', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        json: async () => ({ error: 'File type not allowed' }),
+        status: 400,
+        statusText: 'Bad Request',
+        text: async () => JSON.stringify({ error: 'File type not allowed' }),
       });
 
       renderWithProvider(<ImageEditor images={[]} onChange={handleChange} />);

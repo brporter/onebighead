@@ -3,6 +3,7 @@ import { ResizableBox } from 'react-resizable';
 import 'react-resizable/css/styles.css';
 import './styles/Settings.css';
 import { useData } from './DataContext';
+import { exportApi } from './api';
 import ItemTemplateEditor from './ItemTemplateEditor';
 import VisibilityToggle from './VisibilityToggle';
 import type { Collection } from './types';
@@ -174,23 +175,7 @@ function Settings({ isOpen, onClose }: SettingsProps) {
     setExportError(null);
 
     try {
-      const response = await fetch('/api/export', {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to export data');
-      }
-
-      const blob = await response.blob();
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = 'export.zip';
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename=(.+)/);
-        if (match) {
-          filename = match[1].replace(/"/g, '');
-        }
-      }
+      const { blob, filename } = await exportApi.downloadExport();
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

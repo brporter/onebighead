@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from './UserContext';
+import { adminApi } from './api';
 import type { TenantSummary, UserSummary, ItemTemplate, CreateItemTemplateRequest } from './types';
 import './styles/SystemAdmin.css';
 
@@ -35,9 +36,7 @@ function SystemAdmin() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/admin/tenants', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to load tenants');
-      const data = await response.json();
+      const data = await adminApi.getTenants();
       setTenants(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tenants');
@@ -50,10 +49,7 @@ function SystemAdmin() {
     setLoading(true);
     setError(null);
     try {
-      const url = email ? `/api/admin/users?email=${encodeURIComponent(email)}` : '/api/admin/users';
-      const response = await fetch(url, { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to load users');
-      const data = await response.json();
+      const data = await adminApi.getUsers(email);
       setUsers(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load users');
@@ -66,9 +62,7 @@ function SystemAdmin() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/admin/templates', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to load templates');
-      const data = await response.json();
+      const data = await adminApi.getSystemTemplates();
       setTemplates(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load templates');
@@ -89,11 +83,7 @@ function SystemAdmin() {
       return;
     }
     try {
-      const response = await fetch(`/api/admin/tenants/${tenantId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to delete tenant');
+      await adminApi.deleteTenant(tenantId);
       setTenants(tenants.filter(t => t.tenantId !== tenantId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete tenant');
@@ -105,11 +95,7 @@ function SystemAdmin() {
       return;
     }
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to delete user');
+      await adminApi.deleteUser(userId);
       setUsers(users.filter(u => u.userId !== userId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete user');
@@ -118,14 +104,7 @@ function SystemAdmin() {
 
   const handleToggleAdmin = async (userId: number, currentStatus: boolean) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/admin`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ isSystemAdministrator: !currentStatus }),
-      });
-      if (!response.ok) throw new Error('Failed to update admin status');
-      const updatedUser = await response.json();
+      const updatedUser = await adminApi.setAdminStatus(userId, !currentStatus);
       setUsers(users.map(u => u.userId === userId ? updatedUser : u));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update admin status');
@@ -195,19 +174,11 @@ function SystemAdmin() {
           .map(p => ({ category: p.category.trim(), name: p.name.trim() })),
       };
 
-      const url = editingTemplate
-        ? `/api/admin/templates/${editingTemplate.itemTemplateId}`
-        : '/api/admin/templates';
-      const method = editingTemplate ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(request),
-      });
-
-      if (!response.ok) throw new Error('Failed to save template');
+      if (editingTemplate) {
+        await adminApi.updateSystemTemplate(editingTemplate.itemTemplateId, request);
+      } else {
+        await adminApi.createSystemTemplate(request);
+      }
 
       await loadTemplates();
       setIsAddingTemplate(false);
@@ -222,11 +193,7 @@ function SystemAdmin() {
       return;
     }
     try {
-      const response = await fetch(`/api/admin/templates/${templateId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to delete template');
+      await adminApi.deleteSystemTemplate(templateId);
       setTemplates(templates.filter(t => t.itemTemplateId !== templateId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete template');

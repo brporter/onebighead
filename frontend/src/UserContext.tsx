@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { CurrentUser } from './types';
+import { authApi } from './api';
 
 interface UserContextValue {
   user: CurrentUser | null;
@@ -35,15 +36,8 @@ export function UserProvider({ children }: UserProviderProps) {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/auth/me');
-      if (response.ok) {
-        const data: CurrentUser = await response.json();
-        setUser(data);
-      } else if (response.status === 401) {
-        setUser(null);
-      } else {
-        throw new Error('Failed to fetch user');
-      }
+      const data = await authApi.getCurrentUser();
+      setUser(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch user');
       setUser(null);
@@ -54,7 +48,7 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      await authApi.logout();
       setUser(null);
     } catch (err) {
       console.error('Logout failed:', err);
