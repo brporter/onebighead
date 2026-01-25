@@ -4,6 +4,7 @@ import 'react-resizable/css/styles.css';
 import './styles/Settings.css';
 import { useData } from './DataContext';
 import ItemTemplateEditor from './ItemTemplateEditor';
+import VisibilityToggle from './VisibilityToggle';
 import type { Collection } from './types';
 
 interface SettingsProps {
@@ -17,8 +18,8 @@ function Settings({ isOpen, onClose }: SettingsProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [size, setSize] = useState({ width: 700, height: 600 });
   const [isResizing, setIsResizing] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '' });
-  const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '', isPublic: false });
+  const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '', isPublic: false });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -32,7 +33,8 @@ function Settings({ isOpen, onClose }: SettingsProps) {
     return (
       formData.name !== originalFormData.name ||
       formData.description !== originalFormData.description ||
-      formData.heroImageUrl !== originalFormData.heroImageUrl
+      formData.heroImageUrl !== originalFormData.heroImageUrl ||
+      formData.isPublic !== originalFormData.isPublic
     );
   }, [showTemplateEditor, templateEditorDirty, isAdding, editingId, formData, originalFormData]);
 
@@ -85,7 +87,7 @@ function Settings({ isOpen, onClose }: SettingsProps) {
   if (!isOpen) return null;
 
   const handleAddClick = () => {
-    const initial = { name: '', description: '', heroImageUrl: '' };
+    const initial = { name: '', description: '', heroImageUrl: '', isPublic: false };
     setFormData(initial);
     setOriginalFormData(initial);
     setIsAdding(true);
@@ -98,6 +100,7 @@ function Settings({ isOpen, onClose }: SettingsProps) {
       name: collection.name,
       description: collection.description || '',
       heroImageUrl: collection.heroImageUrl || '',
+      isPublic: collection.isPublic ?? false,
     };
     setFormData(initial);
     setOriginalFormData(initial);
@@ -132,13 +135,15 @@ function Settings({ isOpen, onClose }: SettingsProps) {
         await addCollection(
           formData.name.trim(),
           formData.description.trim() || undefined,
-          formData.heroImageUrl.trim() || undefined
+          formData.heroImageUrl.trim() || undefined,
+          formData.isPublic
         );
       } else if (editingId !== null) {
         await updateCollection(editingId, {
           name: formData.name.trim(),
           description: formData.description.trim() || undefined,
           heroImageUrl: formData.heroImageUrl.trim() || undefined,
+          isPublic: formData.isPublic,
         });
       }
       setIsAdding(false);
@@ -285,6 +290,16 @@ function Settings({ isOpen, onClose }: SettingsProps) {
                         value={formData.heroImageUrl}
                         onChange={(e) => setFormData((prev) => ({ ...prev, heroImageUrl: e.target.value }))}
                         placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+                    <div className="settings__field">
+                      <VisibilityToggle
+                        isPublicOverride={formData.isPublic}
+                        effectiveIsPublic={formData.isPublic}
+                        parentIsPublic={true}
+                        onChange={(value) => setFormData((prev) => ({ ...prev, isPublic: value === true }))}
+                        label="Collection Visibility"
+                        isCollection={true}
                       />
                     </div>
                     <div className="settings__formActions">

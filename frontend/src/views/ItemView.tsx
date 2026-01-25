@@ -221,6 +221,7 @@ function ItemView() {
             <ItemEditor
               item={detailItem}
               categories={categories}
+              collection={currentCollection}
               onSave={handleSaveItem}
               onCancel={handleCancelEdit}
               onDelete={isNewItem ? undefined : handleDeleteItem}

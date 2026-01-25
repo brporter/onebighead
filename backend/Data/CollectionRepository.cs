@@ -32,6 +32,12 @@ public class CollectionRepository : ICollectionRepository
             .FirstOrDefaultAsync(c => c.Slug == slug && c.TenantId == tenantId);
     }
 
+    public async Task<Collection?> GetByTenantIdAsync(int tenantId)
+    {
+        return await _context.Collections
+            .FirstOrDefaultAsync(c => c.TenantId == tenantId);
+    }
+
     public async Task<Collection> CreateAsync(Collection collection)
     {
         _context.Collections.Add(collection);
@@ -53,6 +59,7 @@ public class CollectionRepository : ICollectionRepository
         existingCollection.Description = collection.Description;
         existingCollection.HeroImageUrl = collection.HeroImageUrl;
         existingCollection.Slug = collection.Slug;
+        existingCollection.IsPublic = collection.IsPublic;
 
         await _context.SaveChangesAsync();
         return existingCollection;

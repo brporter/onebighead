@@ -2,6 +2,7 @@ using backend.Controllers;
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
+using backend.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -13,6 +14,8 @@ public class ItemsControllerTests
 {
     private readonly Mock<IItemRepository> _mockItemRepository;
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
+    private readonly Mock<ICollectionRepository> _mockCollectionRepository;
+    private readonly Mock<IVisibilityService> _mockVisibilityService;
     private readonly ItemsController _controller;
     private const int TestTenantId = 1;
     private const int TestCollectionId = 1;
@@ -22,7 +25,13 @@ public class ItemsControllerTests
     {
         _mockItemRepository = new Mock<IItemRepository>();
         _mockCategoryRepository = new Mock<ICategoryRepository>();
-        _controller = new ItemsController(_mockItemRepository.Object, _mockCategoryRepository.Object);
+        _mockCollectionRepository = new Mock<ICollectionRepository>();
+        _mockVisibilityService = new Mock<IVisibilityService>();
+        _controller = new ItemsController(
+            _mockItemRepository.Object, 
+            _mockCategoryRepository.Object,
+            _mockCollectionRepository.Object,
+            _mockVisibilityService.Object);
 
         var claims = new List<Claim>
         {
@@ -215,7 +224,13 @@ public class ItemsControllerTests
             Description = "Description",
             CategoryId = TestCategoryId
         };
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
 
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(TestCategoryId, TestTenantId))
+            .ReturnsAsync(category);
         _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
             .ReturnsAsync(createdItem);
 
@@ -255,7 +270,13 @@ public class ItemsControllerTests
             Description = "Updated Description",
             CategoryId = TestCategoryId
         };
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
 
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(TestCategoryId, TestTenantId))
+            .ReturnsAsync(category);
         _mockItemRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Item>(), TestTenantId))
             .ReturnsAsync(updatedItem);
 
@@ -277,6 +298,10 @@ public class ItemsControllerTests
             Name = "Updated Item",
             CollectionId = TestCollectionId
         };
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
         _mockItemRepository.Setup(repo => repo.UpdateAsync(999, It.IsAny<Item>(), TestTenantId))
             .ReturnsAsync((Item?)null);
 
@@ -317,6 +342,99 @@ public class ItemsControllerTests
 
         // Assert
         Assert.IsType<NotFoundResult>(result);
+    }
+
+    #endregion
+
+    #region Security Tests
+
+    [Fact]
+    public async Task CreateItem_ReturnsBadRequest_WhenCollectionNotOwnedByTenant()
+    {
+        // Arrange - Collection returns null (not found for tenant)
+        var request = new CreateItemRequest
+        {
+            Name = "New Item",
+            CollectionId = 999  // Collection that doesn't belong to tenant
+        };
+
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+            .ReturnsAsync((Collection?)null);
+
+        // Act
+        var result = await _controller.CreateItem(request);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateItem_ReturnsBadRequest_WhenCategoryNotOwnedByTenant()
+    {
+        // Arrange - Collection is valid but Category is not
+        var request = new CreateItemRequest
+        {
+            Name = "New Item",
+            CollectionId = TestCollectionId,
+            CategoryId = 999  // Category that doesn't belong to tenant
+        };
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+            .ReturnsAsync((Category?)null);
+
+        // Act
+        var result = await _controller.CreateItem(request);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateItem_ReturnsBadRequest_WhenCategoryBelongsToDifferentCollection()
+    {
+        // Arrange - Category exists but belongs to different collection
+        var request = new CreateItemRequest
+        {
+            Name = "New Item",
+            CollectionId = TestCollectionId,
+            CategoryId = TestCategoryId
+        };
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = 999, Name = "Test Category" }; // Different CollectionId
+
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(TestCategoryId, TestTenantId))
+            .ReturnsAsync(category);
+
+        // Act
+        var result = await _controller.CreateItem(request);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task UpdateItem_ReturnsBadRequest_WhenCollectionNotOwnedByTenant()
+    {
+        // Arrange
+        var request = new UpdateItemRequest
+        {
+            Name = "Updated Item",
+            CollectionId = 999  // Collection that doesn't belong to tenant
+        };
+
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+            .ReturnsAsync((Collection?)null);
+
+        // Act
+        var result = await _controller.UpdateItem(1, request);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
     }
 
     #endregion

@@ -56,6 +56,7 @@ public class ItemRepository : IItemRepository
         existingItem.CategoryId = item.CategoryId;
         existingItem.Properties = item.Properties;
         existingItem.Images = item.Images;
+        existingItem.IsPublicOverride = item.IsPublicOverride;
 
         await _context.SaveChangesAsync();
         return existingItem;

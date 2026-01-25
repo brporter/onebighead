@@ -1,6 +1,7 @@
 using backend.Controllers;
 using backend.Data;
 using backend.Models;
+using backend.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -12,6 +13,7 @@ public class CategoriesControllerTests
 {
     private readonly Mock<ICategoryRepository> _mockRepository;
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
+    private readonly Mock<IVisibilityService> _mockVisibilityService;
     private readonly CategoriesController _controller;
     private const int TestTenantId = 1;
     private const int TestCollectionId = 1;
@@ -20,7 +22,11 @@ public class CategoriesControllerTests
     {
         _mockRepository = new Mock<ICategoryRepository>();
         _mockCollectionRepository = new Mock<ICollectionRepository>();
-        _controller = new CategoriesController(_mockRepository.Object, _mockCollectionRepository.Object);
+        _mockVisibilityService = new Mock<IVisibilityService>();
+        _controller = new CategoriesController(
+            _mockRepository.Object, 
+            _mockCollectionRepository.Object,
+            _mockVisibilityService.Object);
         
         // Set up authenticated user context with tenant_id claim
         var claims = new List<Claim>
@@ -402,6 +408,106 @@ public class CategoriesControllerTests
 
         // Assert
         Assert.IsType<NotFoundResult>(result);
+    }
+
+    #endregion
+
+    #region Security Tests
+
+    [Fact]
+    public async Task CreateCategory_ReturnsBadRequest_WhenParentCategoryNotOwnedByTenant()
+    {
+        // Arrange
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var request = new CreateCategoryRequest
+        {
+            Name = "New Category",
+            CollectionId = TestCollectionId,
+            ParentCategoryId = 999  // Parent that doesn't belong to tenant
+        };
+
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+            .ReturnsAsync((Category?)null);
+
+        // Act
+        var result = await _controller.CreateCategory(request);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateCategory_ReturnsBadRequest_WhenParentCategoryBelongsToDifferentCollection()
+    {
+        // Arrange
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var parentCategory = new Category { Id = 99, TenantId = TestTenantId, CollectionId = 999, Name = "Parent in different collection" }; // Different collection
+        var request = new CreateCategoryRequest
+        {
+            Name = "New Category",
+            CollectionId = TestCollectionId,
+            ParentCategoryId = 99
+        };
+
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockRepository.Setup(repo => repo.GetByIdAsync(99, TestTenantId))
+            .ReturnsAsync(parentCategory);
+
+        // Act
+        var result = await _controller.CreateCategory(request);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_ReturnsBadRequest_WhenParentCategoryNotOwnedByTenant()
+    {
+        // Arrange
+        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Existing", IsSystem = false };
+        var request = new UpdateCategoryRequest
+        {
+            Name = "Updated",
+            ParentCategoryId = 999  // Parent that doesn't belong to tenant
+        };
+
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(existingCategory);
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+            .ReturnsAsync((Category?)null);
+
+        // Act
+        var result = await _controller.UpdateCategory(1, request);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_ReturnsBadRequest_WhenParentCategoryBelongsToDifferentCollection()
+    {
+        // Arrange
+        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Existing", IsSystem = false };
+        var parentCategory = new Category { Id = 99, TenantId = TestTenantId, CollectionId = 999, Name = "Parent in different collection" }; // Different collection
+        var request = new UpdateCategoryRequest
+        {
+            Name = "Updated",
+            ParentCategoryId = 99
+        };
+
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(existingCategory);
+        _mockRepository.Setup(repo => repo.GetByIdAsync(99, TestTenantId))
+            .ReturnsAsync(parentCategory);
+
+        // Act
+        var result = await _controller.UpdateCategory(1, request);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
     }
 
     #endregion

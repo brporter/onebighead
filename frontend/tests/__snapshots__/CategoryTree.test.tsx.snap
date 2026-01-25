@@ -134,6 +134,62 @@ exports[`CategoryTree > snapshots > should render empty tree 1`] = `
             </select>
           </div>
           <div
+            class="modal__field"
+          >
+            <div
+              class="visibility-toggle"
+            >
+              <label
+                class="visibility-label"
+              >
+                Visibility
+              </label>
+              <div
+                class="visibility-options"
+              >
+                <button
+                  class="visibility-option selected"
+                  title="Inherit from parent (Private)"
+                  type="button"
+                >
+                  Inherit (
+                  Private
+                  )
+                </button>
+                <button
+                  class="visibility-option "
+                  disabled=""
+                  title="Mark as public"
+                  type="button"
+                >
+                  Public
+                </button>
+                <button
+                  class="visibility-option "
+                  title="Mark as private"
+                  type="button"
+                >
+                  Private
+                </button>
+              </div>
+              <div
+                class="visibility-note"
+              >
+                Parent is private; cannot override to public
+              </div>
+              <div
+                class="visibility-effective"
+              >
+                Effective: 
+                <span
+                  class="private"
+                >
+                  Private
+                </span>
+              </div>
+            </div>
+          </div>
+          <div
             class="modal__actions"
           >
             <button
@@ -410,6 +466,62 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
             </select>
           </div>
           <div
+            class="modal__field"
+          >
+            <div
+              class="visibility-toggle"
+            >
+              <label
+                class="visibility-label"
+              >
+                Visibility
+              </label>
+              <div
+                class="visibility-options"
+              >
+                <button
+                  class="visibility-option selected"
+                  title="Inherit from parent (Private)"
+                  type="button"
+                >
+                  Inherit (
+                  Private
+                  )
+                </button>
+                <button
+                  class="visibility-option "
+                  disabled=""
+                  title="Mark as public"
+                  type="button"
+                >
+                  Public
+                </button>
+                <button
+                  class="visibility-option "
+                  title="Mark as private"
+                  type="button"
+                >
+                  Private
+                </button>
+              </div>
+              <div
+                class="visibility-note"
+              >
+                Parent is private; cannot override to public
+              </div>
+              <div
+                class="visibility-effective"
+              >
+                Effective: 
+                <span
+                  class="private"
+                >
+                  Private
+                </span>
+              </div>
+            </div>
+          </div>
+          <div
             class="modal__actions"
           >
             <button
@@ -684,6 +796,62 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
                 Root 2
               </option>
             </select>
+          </div>
+          <div
+            class="modal__field"
+          >
+            <div
+              class="visibility-toggle"
+            >
+              <label
+                class="visibility-label"
+              >
+                Visibility
+              </label>
+              <div
+                class="visibility-options"
+              >
+                <button
+                  class="visibility-option selected"
+                  title="Inherit from parent (Private)"
+                  type="button"
+                >
+                  Inherit (
+                  Private
+                  )
+                </button>
+                <button
+                  class="visibility-option "
+                  disabled=""
+                  title="Mark as public"
+                  type="button"
+                >
+                  Public
+                </button>
+                <button
+                  class="visibility-option "
+                  title="Mark as private"
+                  type="button"
+                >
+                  Private
+                </button>
+              </div>
+              <div
+                class="visibility-note"
+              >
+                Parent is private; cannot override to public
+              </div>
+              <div
+                class="visibility-effective"
+              >
+                Effective: 
+                <span
+                  class="private"
+                >
+                  Private
+                </span>
+              </div>
+            </div>
           </div>
           <div
             class="modal__actions"

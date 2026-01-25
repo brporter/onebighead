@@ -1,5 +1,6 @@
 ﻿﻿using backend.Data;
 using backend.Models;
+using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +13,16 @@ public class CategoriesController : ControllerBase
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICollectionRepository _collectionRepository;
+    private readonly IVisibilityService _visibilityService;
 
-    public CategoriesController(ICategoryRepository categoryRepository, ICollectionRepository collectionRepository)
+    public CategoriesController(
+        ICategoryRepository categoryRepository, 
+        ICollectionRepository collectionRepository,
+        IVisibilityService visibilityService)
     {
         _categoryRepository = categoryRepository;
         _collectionRepository = collectionRepository;
+        _visibilityService = visibilityService;
     }
 
     private int GetTenantId()
@@ -34,20 +40,34 @@ public class CategoriesController : ControllerBase
     {
         var tenantId = GetTenantId();
         
+        List<Category> categoryList;
+        Collection? collection;
+        
         if (collectionId.HasValue)
         {
             // Verify collection belongs to tenant
-            var collection = await _collectionRepository.GetByIdAsync(collectionId.Value, tenantId);
+            collection = await _collectionRepository.GetByIdAsync(collectionId.Value, tenantId);
             if (collection is null)
             {
                 return NotFound("Collection not found");
             }
             var categories = await _categoryRepository.GetByCollectionAsync(collectionId.Value, tenantId);
-            return Ok(categories);
+            categoryList = categories.ToList();
+        }
+        else
+        {
+            collection = await _collectionRepository.GetByTenantIdAsync(tenantId);
+            var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+            categoryList = allCategories.ToList();
         }
         
-        var allCategories = await _categoryRepository.GetAllAsync(tenantId);
-        return Ok(allCategories);
+        // Compute effective visibility
+        if (collection != null)
+        {
+            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+        }
+        
+        return Ok(categoryList);
     }
 
     [HttpGet("{id}")]
@@ -59,6 +79,23 @@ public class CategoriesController : ControllerBase
         {
             return NotFound();
         }
+        
+        // Compute effective visibility
+        var collection = await _collectionRepository.GetByTenantIdAsync(tenantId);
+        if (collection != null)
+        {
+            var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+            var categoryList = allCategories.ToList();
+            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+            
+            // Find the category in the computed list to get the effective visibility
+            var computed = categoryList.FirstOrDefault(c => c.Id == id);
+            if (computed != null)
+            {
+                category.EffectiveIsPublic = computed.EffectiveIsPublic;
+            }
+        }
+        
         return Ok(category);
     }
 
@@ -80,6 +117,16 @@ public class CategoriesController : ControllerBase
             return BadRequest("Invalid collection");
         }
 
+        // Validate ParentCategoryId belongs to tenant and same collection
+        if (request.ParentCategoryId.HasValue)
+        {
+            var parentCategory = await _categoryRepository.GetByIdAsync(request.ParentCategoryId.Value, tenantId);
+            if (parentCategory is null || parentCategory.CollectionId != request.CollectionId)
+            {
+                return BadRequest("Invalid parent category");
+            }
+        }
+
         var category = new Category
         {
             TenantId = tenantId,
@@ -87,7 +134,8 @@ public class CategoriesController : ControllerBase
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             ParentCategoryId = request.ParentCategoryId,
-            IsSystem = false
+            IsSystem = false,
+            IsPublicOverride = request.IsPublicOverride
         };
 
         var created = await _categoryRepository.CreateAsync(category);
@@ -116,13 +164,24 @@ public class CategoriesController : ControllerBase
             return BadRequest("The name 'Unassigned Items' is reserved for system use.");
         }
 
+        // Validate ParentCategoryId belongs to tenant and same collection
+        if (request.ParentCategoryId.HasValue)
+        {
+            var parentCategory = await _categoryRepository.GetByIdAsync(request.ParentCategoryId.Value, tenantId);
+            if (parentCategory is null || parentCategory.CollectionId != existingCategory.CollectionId)
+            {
+                return BadRequest("Invalid parent category");
+            }
+        }
+
         var category = new Category
         {
             TenantId = tenantId,
             CollectionId = existingCategory.CollectionId,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
-            ParentCategoryId = request.ParentCategoryId
+            ParentCategoryId = request.ParentCategoryId,
+            IsPublicOverride = request.IsPublicOverride
         };
 
         var updated = await _categoryRepository.UpdateAsync(id, category, tenantId);
@@ -164,6 +223,7 @@ public class CreateCategoryRequest
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
+    public bool? IsPublicOverride { get; set; }
 }
 
 public class UpdateCategoryRequest
@@ -171,5 +231,6 @@ public class UpdateCategoryRequest
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
+    public bool? IsPublicOverride { get; set; }
 }
 

@@ -1432,4 +1432,73 @@
   color: var(--color-text-secondary);
 }
 
+/* --------------------------------------------------------------------------
+   Visibility Toggle
+   -------------------------------------------------------------------------- */
+
+.visibility-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.visibility-label {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.visibility-options {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.visibility-option {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.visibility-option:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.visibility-option.selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.visibility-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.visibility-note {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.visibility-effective {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.visibility-effective .public {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.visibility-effective .private {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
 

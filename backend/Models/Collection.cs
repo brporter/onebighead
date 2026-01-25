@@ -26,6 +26,9 @@ public class Collection
     [MaxLength(100)]
     public string Slug { get; set; } = string.Empty;
 
+    [JsonPropertyName("isPublic")]
+    public bool IsPublic { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     [JsonIgnore]

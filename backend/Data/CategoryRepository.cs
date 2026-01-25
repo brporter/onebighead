@@ -58,6 +58,7 @@ public class CategoryRepository : ICategoryRepository
         existingCategory.Name = category.Name;
         existingCategory.Description = category.Description;
         existingCategory.ParentCategoryId = category.ParentCategoryId;
+        existingCategory.IsPublicOverride = category.IsPublicOverride;
 
         await _context.SaveChangesAsync();
         return existingCategory;
