@@ -63,14 +63,43 @@ dotnet user-secrets set "Authentication:Providers:Apple:ClientSecret" "<your-app
 
 ## Running the Application
 
-### Backend
+### Quick Start (Recommended)
+
+Use the development startup script to launch everything:
+
+**Windows (PowerShell):**
+```powershell
+./dev-start.ps1              # Start everything
+./dev-start.ps1 -ResetDatabase   # Reset database first
+./dev-start.ps1 -SkipTests       # Skip tests for faster startup
+./dev-start.ps1 -Help            # Show all options
+```
+
+**macOS/Linux (Bash):**
+```bash
+./dev-start.sh               # Start everything
+./dev-start.sh --reset-database  # Reset database first
+./dev-start.sh --skip-tests      # Skip tests for faster startup
+./dev-start.sh --help            # Show all options
+```
+
+The script will:
+1. Start SQL Server Docker container if not running
+2. Optionally reset the database
+3. Run backend tests and build
+4. Start the backend (displays PID for easy management)
+5. Start the Vite frontend dev server
+
+### Manual Startup
+
+#### Backend
 
 ```bash
 cd backend
 dotnet run
 ```
 
-### Frontend
+#### Frontend
 
 ```bash
 cd frontend
@@ -95,12 +124,16 @@ dotnet ef migrations add <MigrationName>
 
 To reset the local development database (drop all data and start fresh):
 
+**Windows (PowerShell):**
 ```powershell
-# From the repository root
-./reset-database.ps1
+./reset-database.ps1          # With confirmation prompt
+./reset-database.ps1 -Force   # Skip confirmation
+```
 
-# Skip confirmation prompt
-./reset-database.ps1 -Force
+**macOS/Linux (Bash):**
+```bash
+./reset-database.sh           # With confirmation prompt
+./reset-database.sh --force   # Skip confirmation
 ```
 
 After resetting, run the backend to recreate the database with fresh migrations:
