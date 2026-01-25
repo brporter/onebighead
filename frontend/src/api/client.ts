@@ -28,7 +28,7 @@ interface ApiClientConfig {
   onUnauthorized?: () => void;
 }
 
-class ApiClient {
+export class ApiClient {
   private config: ApiClientConfig;
   private abortControllers: Map<string, AbortController> = new Map();
 
