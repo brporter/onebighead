@@ -45,8 +45,7 @@ public class DatabaseImageProvider : IImageProvider
         if (image == null)
             return null;
 
-        var stream = new MemoryStream(image.Data);
-        return new RetrievedImage(stream, image.ContentType, image.FileName);
+        return new RetrievedImage(image.Data, image.ContentType, image.FileName);
     }
 
     public async Task DeleteAsync(Guid key)

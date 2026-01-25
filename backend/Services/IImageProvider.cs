@@ -2,7 +2,7 @@ namespace backend.Services;
 
 public record StoredImageInfo(Guid Key, string Url);
 
-public record RetrievedImage(Stream Data, string ContentType, string FileName);
+public record RetrievedImage(byte[] Data, string ContentType, string FileName);
 
 public interface IImageProvider
 {
