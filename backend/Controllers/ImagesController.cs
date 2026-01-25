@@ -7,7 +7,7 @@ namespace backend.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ImagesController : ControllerBase
+public class ImagesController : ApiControllerBase
 {
     private readonly IImageProvider _imageProvider;
     
@@ -25,16 +25,6 @@ public class ImagesController : ControllerBase
     public ImagesController(IImageProvider imageProvider)
     {
         _imageProvider = imageProvider;
-    }
-
-    private int? TryGetTenantId()
-    {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
-        {
-            return null;
-        }
-        return tenantId;
     }
 
     private static bool VerifyFileSignature(byte[] fileData, string contentType)

@@ -11,7 +11,7 @@ namespace backend.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ExportController : ControllerBase
+public class ExportController : ApiControllerBase
 {
     private readonly ICollectionRepository _collectionRepository;
     private readonly ICategoryRepository _categoryRepository;
@@ -25,16 +25,6 @@ public class ExportController : ControllerBase
         _collectionRepository = collectionRepository;
         _categoryRepository = categoryRepository;
         _itemRepository = itemRepository;
-    }
-
-    private int GetTenantId()
-    {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
-        {
-            throw new UnauthorizedAccessException("Tenant ID not found in token");
-        }
-        return tenantId;
     }
 
     [HttpGet]

@@ -2,18 +2,16 @@ using backend.Data;
 using backend.DTOs;
 using backend.Models;
 using backend.Services;
+using backend.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 
 namespace backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ItemsController : ControllerBase
+public class ItemsController : ApiControllerBase
 {
     private readonly IItemRepository _itemRepository;
     private readonly ICategoryRepository _categoryRepository;
@@ -30,23 +28,6 @@ public class ItemsController : ControllerBase
         _categoryRepository = categoryRepository;
         _collectionRepository = collectionRepository;
         _visibilityService = visibilityService;
-    }
-
-    private int GetTenantId()
-    {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
-        {
-            throw new UnauthorizedAccessException("Tenant ID not found in token");
-        }
-        return tenantId;
-    }
-
-    private static string ComputeETag(IEnumerable<Item> items)
-    {
-        var json = JsonSerializer.Serialize(items.OrderBy(i => i.Id));
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(json));
-        return $"\"{Convert.ToBase64String(hash)}\"";
     }
 
     [HttpGet]
@@ -87,7 +68,7 @@ public class ItemsController : ControllerBase
             _visibilityService.ComputeEffectiveVisibility(itemList, collection, categoryList);
         }
         
-        var etag = ComputeETag(itemList);
+        var etag = ETagHelper.ComputeETag(itemList, i => i.Id);
 
         Response.Headers.ETag = etag;
 
