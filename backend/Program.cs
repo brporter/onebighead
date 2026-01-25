@@ -1,5 +1,6 @@
 using backend.Authentication;
 using backend.Data;
+using backend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 
@@ -27,6 +28,9 @@ builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPropertySuggestionRepository, PropertySuggestionRepository>();
 builder.Services.AddScoped<IItemTemplateRepository, ItemTemplateRepository>();
+
+// Register image provider
+builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
 
 // Configure authentication
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));

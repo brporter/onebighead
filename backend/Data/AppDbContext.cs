@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<ItemTemplate> ItemTemplates => Set<ItemTemplate>();
     public DbSet<ItemTemplateProperty> ItemTemplateProperties => Set<ItemTemplateProperty>();
     public DbSet<CollectionItemTemplate> CollectionItemTemplates => Set<CollectionItemTemplate>();
+    public DbSet<StoredImage> StoredImages => Set<StoredImage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -192,6 +193,18 @@ public class AppDbContext : DbContext
                 .WithMany(t => t.CollectionItemTemplates)
                 .HasForeignKey(ct => ct.ItemTemplateId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<StoredImage>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+
+            entity.HasOne(s => s.Tenant)
+                .WithMany()
+                .HasForeignKey(s => s.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(s => s.TenantId);
         });
     }
 }
