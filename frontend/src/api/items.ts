@@ -34,19 +34,15 @@ export const itemsApi = {
       headers['If-None-Match'] = options.etag;
     }
 
-    const response = await fetch(`/api${endpoint}`, { headers });
+    const response = await api.get<Response>(endpoint, { headers, skipJsonParse: true });
     
-    if (response.status === 304) {
+    // Handle 304 Not Modified - ApiClient returns undefined for 304
+    if (!response) {
       return { items: [], etag: null, notModified: true };
-    }
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch items: ${response.statusText}`);
     }
 
     const items: Item[] = await response.json();
     const etag = response.headers.get('ETag');
-
     return { items, etag, notModified: false };
   },
 

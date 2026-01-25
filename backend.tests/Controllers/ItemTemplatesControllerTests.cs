@@ -159,7 +159,7 @@ public class ItemTemplatesControllerTests
         var result = await _controller.GetTemplates(filter: "invalid");
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.IsType<OkObjectResult>(result.Result);
         _mockTemplateRepository.Verify(repo => repo.GetAllAccessibleAsync(TestTenantId), Times.Once);
     }
 

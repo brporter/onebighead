@@ -15,8 +15,9 @@ public class VisibilityService : IVisibilityService
     public void ComputeEffectiveVisibility(Category category, Collection collection, IEnumerable<Category> allCategories)
     {
         // Build lookup for O(1) parent access
+        // Materialize to list first to avoid multiple enumeration if input is a lazy IEnumerable
         var categoryLookup = allCategories as IDictionary<int, Category> 
-            ?? allCategories.ToDictionary(c => c.Id);
+            ?? (allCategories as IList<Category> ?? allCategories.ToList()).ToDictionary(c => c.Id);
         ComputeEffectiveVisibilityInternal(category, collection, categoryLookup);
     }
 

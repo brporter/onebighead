@@ -102,6 +102,11 @@ export class ApiClient {
         this.abortControllers.delete(requestKey);
       }
 
+      // Handle 304 Not Modified (return undefined, caller should handle)
+      if (response.status === 304) {
+        return undefined as T;
+      }
+
       if (!response.ok) {
         // Handle 401 Unauthorized
         if (response.status === 401 && this.config.onUnauthorized) {
@@ -127,11 +132,6 @@ export class ApiClient {
         }
 
         throw new ApiError(errorMessage, response.status, response.statusText, errorData);
-      }
-
-      // Handle 304 Not Modified (return undefined, caller should handle)
-      if (response.status === 304) {
-        return undefined as T;
       }
 
       // Handle 204 No Content

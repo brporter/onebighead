@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
 import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest } from './types';
-import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi } from './api';
+import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, ApiError } from './api';
 
 interface CategoryItemsCache {
   items: Item[];
@@ -303,7 +303,11 @@ export function DataProvider({ children }: DataProviderProps) {
       });
       return item;
     } catch (error) {
-      console.error('Failed to load item by ID:', error);
+      if (error instanceof ApiError) {
+        console.error(`Failed to load item ${itemId}: ${error.message} (status: ${error.status})`);
+      } else {
+        console.error('Failed to load item by ID:', error);
+      }
       return null;
     }
   }, []);

@@ -364,8 +364,8 @@ describe('ApiClient', () => {
           json: async () => ({ data: 'second' }),
         });
 
-      // Start first request
-      const promise1 = client.get('/data', {}, 'shared-key');
+      // Start first request (intentionally not awaited - will be aborted)
+      void client.get('/data', {}, 'shared-key');
 
       // Start second request with same key - should abort first
       const promise2 = client.get('/data', {}, 'shared-key');
