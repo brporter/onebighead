@@ -1,14 +1,10 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
 import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest } from './types';
+import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, ApiError } from './api';
 
 interface CategoryItemsCache {
   items: Item[];
   etag: string | null;
-}
-
-interface PropertySuggestionsResponse {
-  categories: string[];
-  names: string[];
 }
 
 export interface DataContextValue {
@@ -153,12 +149,7 @@ export function DataProvider({ children }: DataProviderProps) {
   // Load property suggestions from API
   const loadPropertySuggestions = useCallback(async (collectionId: number) => {
     try {
-      const response = await fetch(`/api/collections/${collectionId}/property-suggestions`);
-      if (!response.ok) {
-        console.error('Failed to load property suggestions:', response.statusText);
-        return;
-      }
-      const data: PropertySuggestionsResponse = await response.json();
+      const data = await suggestionsApi.get(collectionId);
       setPropertyCategorySuggestions(data.categories.sort());
       setPropertyNameSuggestions(data.names.sort());
     } catch (error) {
@@ -169,14 +160,7 @@ export function DataProvider({ children }: DataProviderProps) {
   // Sync property suggestions (recalculates based on current items)
   const syncPropertySuggestions = useCallback(async (collectionId: number) => {
     try {
-      const response = await fetch(`/api/collections/${collectionId}/property-suggestions/sync`, {
-        method: 'POST',
-      });
-      if (!response.ok) {
-        console.error('Failed to sync property suggestions:', response.statusText);
-        return;
-      }
-      const data: PropertySuggestionsResponse = await response.json();
+      const data = await suggestionsApi.sync(collectionId);
       setPropertyCategorySuggestions(data.categories.sort());
       setPropertyNameSuggestions(data.names.sort());
     } catch (error) {
@@ -209,11 +193,7 @@ export function DataProvider({ children }: DataProviderProps) {
     try {
       setCollectionsLoading(true);
       setCollectionsError(null);
-      const response = await fetch('/api/collections');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch collections: ${response.statusText}`);
-      }
-      const data: Collection[] = await response.json();
+      const data = await collectionsApi.getAll();
       setCollections(data);
     } catch (error) {
       setCollectionsError(error instanceof Error ? error.message : 'Failed to fetch collections');
@@ -223,29 +203,13 @@ export function DataProvider({ children }: DataProviderProps) {
   }, []);
 
   const addCollection = useCallback(async (name: string, description?: string, heroImageUrl?: string, isPublic?: boolean): Promise<Collection> => {
-    const response = await fetch('/api/collections', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, heroImageUrl, isPublic: isPublic ?? false }),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to create collection: ${response.statusText}`);
-    }
-    const created: Collection = await response.json();
+    const created = await collectionsApi.create({ name, description, heroImageUrl, isPublic });
     setCollections((prev) => [...prev, created]);
     return created;
   }, []);
 
   const updateCollection = useCallback(async (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string; isPublic?: boolean }): Promise<void> => {
-    const response = await fetch(`/api/collections/${collectionId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to update collection: ${response.statusText}`);
-    }
-    const result: Collection = await response.json();
+    const result = await collectionsApi.update(collectionId, updates);
     setCollections((prev) =>
       prev.map((col) => (col.collectionId === collectionId ? result : col))
     );
@@ -255,13 +219,7 @@ export function DataProvider({ children }: DataProviderProps) {
   }, [currentCollection]);
 
   const deleteCollection = useCallback(async (collectionId: number): Promise<void> => {
-    const response = await fetch(`/api/collections/${collectionId}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `Failed to delete collection: ${response.statusText}`);
-    }
+    await collectionsApi.delete(collectionId);
     setCollections((prev) => prev.filter((col) => col.collectionId !== collectionId));
   }, []);
 
@@ -270,11 +228,7 @@ export function DataProvider({ children }: DataProviderProps) {
     try {
       setCategoriesLoading(true);
       setCategoriesError(null);
-      const response = await fetch(`/api/categories?collectionId=${collectionId}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch categories: ${response.statusText}`);
-      }
-      const data: Category[] = await response.json();
+      const data = await categoriesApi.getAll(collectionId);
       setCategories(data);
     } catch (error) {
       setCategoriesError(error instanceof Error ? error.message : 'Failed to fetch categories');
@@ -284,44 +238,20 @@ export function DataProvider({ children }: DataProviderProps) {
   }, []);
 
   const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }): Promise<number> => {
-    const response = await fetch('/api/categories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(category),
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `Failed to create category: ${response.statusText}`);
-    }
-    const created: Category = await response.json();
+    const created = await categoriesApi.create(category);
     setCategories((prev) => [...prev, created]);
     return created.categoryId;
   }, []);
 
   const updateCategory = useCallback(async (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }): Promise<void> => {
-    const response = await fetch(`/api/categories/${categoryId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `Failed to update category: ${response.statusText}`);
-    }
-    const result: Category = await response.json();
+    const result = await categoriesApi.update(categoryId, updates);
     setCategories((prev) =>
       prev.map((cat) => (cat.categoryId === categoryId ? result : cat))
     );
   }, []);
 
   const deleteCategory = useCallback(async (categoryId: number): Promise<void> => {
-    const response = await fetch(`/api/categories/${categoryId}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `Failed to delete category: ${response.statusText}`);
-    }
+    await categoriesApi.delete(categoryId);
     setCategories((prev) => prev.filter((cat) => cat.categoryId !== categoryId));
     itemsCacheRef.current.clear();
   }, []);
@@ -339,32 +269,21 @@ export function DataProvider({ children }: DataProviderProps) {
       setItemsLoading(true);
       setItemsError(null);
       
-      const headers: HeadersInit = {};
-      if (cache?.etag) {
-        headers['If-None-Match'] = cache.etag;
-      }
+      const result = await itemsApi.getAll({
+        categoryId,
+        includeDescendants: true,
+        etag: cache?.etag ?? undefined,
+      });
       
-      const response = await fetch(
-        `/api/items?categoryId=${categoryId}&includeDescendants=true`,
-        { headers }
-      );
-      
-      if (response.status === 304) {
+      if (result.notModified) {
         setItemsLoading(false);
         return;
       }
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch items: ${response.statusText}`);
-      }
-      
-      const data: Item[] = await response.json();
-      const etag = response.headers.get('ETag');
-      
-      itemsCacheRef.current.set(categoryId, { items: data, etag });
+      itemsCacheRef.current.set(categoryId, { items: result.items, etag: result.etag });
       
       if (categoryId === currentCategoryId || !cache) {
-        setItems(data);
+        setItems(result.items);
       }
     } catch (error) {
       setItemsError(error instanceof Error ? error.message : 'Failed to fetch items');
@@ -376,14 +295,7 @@ export function DataProvider({ children }: DataProviderProps) {
   // Load a single item by ID (for deep linking)
   const loadItemById = useCallback(async (itemId: number): Promise<Item | null> => {
     try {
-      const response = await fetch(`/api/items/${itemId}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(`Failed to fetch item: ${response.statusText}`);
-      }
-      const item: Item = await response.json();
+      const item = await itemsApi.getById(itemId);
       // Add item to items array if not already present
       setItems((prev) => {
         const exists = prev.some((i) => i.id === item.id);
@@ -391,21 +303,17 @@ export function DataProvider({ children }: DataProviderProps) {
       });
       return item;
     } catch (error) {
-      console.error('Failed to load item by ID:', error);
+      if (error instanceof ApiError) {
+        console.error(`Failed to load item ${itemId}: ${error.message} (status: ${error.status})`);
+      } else {
+        console.error('Failed to load item by ID:', error);
+      }
       return null;
     }
   }, []);
 
   const addItem = useCallback(async (item: Item): Promise<number> => {
-    const response = await fetch('/api/items', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to create item: ${response.statusText}`);
-    }
-    const created: Item = await response.json();
+    const created = await itemsApi.create(item);
     itemsCacheRef.current.clear();
     setItems((prev) => [...prev, created]);
     // Sync property suggestions to include new property names/categories
@@ -418,15 +326,7 @@ export function DataProvider({ children }: DataProviderProps) {
     if (!currentItem) return;
     
     const updatedItem = { ...currentItem, ...updates };
-    const response = await fetch(`/api/items/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedItem),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to update item: ${response.statusText}`);
-    }
-    const result: Item = await response.json();
+    const result = await itemsApi.update(id, updatedItem);
     itemsCacheRef.current.clear();
     setItems((prev) =>
       prev.map((item) => (item.id === id ? result : item))
@@ -437,12 +337,7 @@ export function DataProvider({ children }: DataProviderProps) {
 
   const deleteItem = useCallback(async (id: number): Promise<void> => {
     const itemToDelete = items.find((i) => i.id === id);
-    const response = await fetch(`/api/items/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to delete item: ${response.statusText}`);
-    }
+    await itemsApi.delete(id);
     itemsCacheRef.current.clear();
     setItems((prev) => prev.filter((item) => item.id !== id));
     // Sync property suggestions to remove unused ones
@@ -452,21 +347,7 @@ export function DataProvider({ children }: DataProviderProps) {
   }, [items, syncPropertySuggestions]);
 
   const uploadImage = useCallback(async (file: File): Promise<{ key: string; url: string }> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch('/api/images', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      const errorMessage = data?.error || `Failed to upload image: ${response.statusText}`;
-      throw new Error(errorMessage);
-    }
-
-    return await response.json();
+    return await imagesApi.upload(file);
   }, []);
 
   // Item template operations
@@ -474,12 +355,7 @@ export function DataProvider({ children }: DataProviderProps) {
     try {
       setItemTemplatesLoading(true);
       setItemTemplatesError(null);
-      const url = filter ? `/api/itemtemplates?filter=${filter}` : '/api/itemtemplates';
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch item templates: ${response.statusText}`);
-      }
-      const data: ItemTemplate[] = await response.json();
+      const data = await templatesApi.getAll(filter);
       setItemTemplates(data);
     } catch (error) {
       setItemTemplatesError(error instanceof Error ? error.message : 'Failed to fetch item templates');
@@ -489,37 +365,17 @@ export function DataProvider({ children }: DataProviderProps) {
   }, []);
 
   const loadCollectionTemplates = useCallback(async (collectionId: number): Promise<ItemTemplate[]> => {
-    const response = await fetch(`/api/collections/${collectionId}/templates`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch collection templates: ${response.statusText}`);
-    }
-    return await response.json();
+    return await templatesApi.getForCollection(collectionId);
   }, []);
 
   const createItemTemplate = useCallback(async (request: CreateItemTemplateRequest): Promise<ItemTemplate> => {
-    const response = await fetch('/api/itemtemplates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to create item template: ${response.statusText}`);
-    }
-    const created: ItemTemplate = await response.json();
+    const created = await templatesApi.create(request);
     setItemTemplates((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
     return created;
   }, []);
 
   const updateItemTemplate = useCallback(async (id: number, request: UpdateItemTemplateRequest): Promise<ItemTemplate> => {
-    const response = await fetch(`/api/itemtemplates/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to update item template: ${response.statusText}`);
-    }
-    const updated: ItemTemplate = await response.json();
+    const updated = await templatesApi.update(id, request);
     setItemTemplates((prev) =>
       prev.map((t) => (t.itemTemplateId === id ? updated : t)).sort((a, b) => a.name.localeCompare(b.name))
     );
@@ -527,31 +383,16 @@ export function DataProvider({ children }: DataProviderProps) {
   }, []);
 
   const deleteItemTemplate = useCallback(async (id: number): Promise<void> => {
-    const response = await fetch(`/api/itemtemplates/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to delete item template: ${response.statusText}`);
-    }
+    await templatesApi.delete(id);
     setItemTemplates((prev) => prev.filter((t) => t.itemTemplateId !== id));
   }, []);
 
   const associateTemplateWithCollection = useCallback(async (collectionId: number, templateId: number): Promise<void> => {
-    const response = await fetch(`/api/collections/${collectionId}/templates/${templateId}`, {
-      method: 'POST',
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to associate template: ${response.statusText}`);
-    }
+    await templatesApi.associateWithCollection(collectionId, templateId);
   }, []);
 
   const disassociateTemplateFromCollection = useCallback(async (collectionId: number, templateId: number): Promise<void> => {
-    const response = await fetch(`/api/collections/${collectionId}/templates/${templateId}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to disassociate template: ${response.statusText}`);
-    }
+    await templatesApi.disassociateFromCollection(collectionId, templateId);
   }, []);
 
   const value: DataContextValue = {

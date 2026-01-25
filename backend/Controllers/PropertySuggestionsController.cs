@@ -7,7 +7,7 @@ namespace backend.Controllers;
 [ApiController]
 [Route("api/collections/{collectionId}/property-suggestions")]
 [Authorize]
-public class PropertySuggestionsController : ControllerBase
+public class PropertySuggestionsController : ApiControllerBase
 {
     private readonly IPropertySuggestionRepository _suggestionRepository;
     private readonly ICollectionRepository _collectionRepository;
@@ -18,16 +18,6 @@ public class PropertySuggestionsController : ControllerBase
     {
         _suggestionRepository = suggestionRepository;
         _collectionRepository = collectionRepository;
-    }
-
-    private int GetTenantId()
-    {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
-        {
-            throw new UnauthorizedAccessException("Tenant ID not found in token");
-        }
-        return tenantId;
     }
 
     /// <summary>

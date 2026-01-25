@@ -3,6 +3,7 @@ using backend.DTOs;
 using backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 namespace backend.Controllers;
@@ -10,7 +11,7 @@ namespace backend.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public partial class CollectionsController : ControllerBase
+public partial class CollectionsController : ApiControllerBase
 {
     private readonly ICollectionRepository _collectionRepository;
     private readonly ICategoryRepository _categoryRepository;
@@ -24,26 +25,6 @@ public partial class CollectionsController : ControllerBase
         _collectionRepository = collectionRepository;
         _categoryRepository = categoryRepository;
         _itemTemplateRepository = itemTemplateRepository;
-    }
-
-    private int GetTenantId()
-    {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
-        {
-            throw new UnauthorizedAccessException("Tenant ID not found in token");
-        }
-        return tenantId;
-    }
-
-    private int GetUserId()
-    {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-        {
-            throw new UnauthorizedAccessException("User ID not found in token");
-        }
-        return userId;
     }
 
     [HttpGet]
@@ -260,16 +241,28 @@ public partial class CollectionsController : ControllerBase
 
 public class CreateCollectionRequest
 {
+    [Required]
+    [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
     public string? Description { get; set; }
+
+    [MaxLength(500)]
     public string? HeroImageUrl { get; set; }
     public bool IsPublic { get; set; } = false;
 }
 
 public class UpdateCollectionRequest
 {
+    [Required]
+    [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
     public string? Description { get; set; }
+
+    [MaxLength(500)]
     public string? HeroImageUrl { get; set; }
     public bool IsPublic { get; set; } = false;
 }

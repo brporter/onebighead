@@ -67,7 +67,7 @@ describe('DataContext', () => {
       }
 
       if (urlStr.match(/\/api\/collections\/\d+$/) && method === 'DELETE') {
-        return Promise.resolve({ ok: true } as Response);
+        return Promise.resolve({ ok: true, status: 204 } as Response);
       }
 
       // Categories
@@ -96,7 +96,7 @@ describe('DataContext', () => {
       }
 
       if (urlStr.match(/\/api\/categories\/\d+/) && method === 'DELETE') {
-        return Promise.resolve({ ok: true } as Response);
+        return Promise.resolve({ ok: true, status: 204 } as Response);
       }
 
       // Items
@@ -126,7 +126,7 @@ describe('DataContext', () => {
       }
 
       if (urlStr.match(/\/api\/items\/\d+/) && method === 'DELETE') {
-        return Promise.resolve({ ok: true } as Response);
+        return Promise.resolve({ ok: true, status: 204 } as Response);
       }
 
       // Property suggestions
@@ -603,8 +603,9 @@ describe('DataContext', () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
         return Promise.resolve({
           ok: false,
+          status: 400,
           statusText: 'Bad Request',
-          json: async () => ({ error: 'Invalid file type' }),
+          text: async () => JSON.stringify({ error: 'Invalid file type' }),
         } as Response);
       });
 
@@ -627,8 +628,9 @@ describe('DataContext', () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
         return Promise.resolve({
           ok: false,
+          status: 500,
           statusText: 'Internal Server Error',
-          json: async () => ({ error: 'File content does not match the declared file type' }),
+          text: async () => JSON.stringify({ error: 'File content does not match the declared file type' }),
         } as Response);
       });
 
@@ -651,8 +653,9 @@ describe('DataContext', () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
         return Promise.resolve({
           ok: false,
+          status: 401,
           statusText: 'Unauthorized',
-          json: async () => { throw new Error('No JSON'); },
+          text: async () => '',
         } as Response);
       });
 
@@ -666,7 +669,7 @@ describe('DataContext', () => {
 
       await expect(act(async () => {
         await capturedData!.uploadImage(file);
-      })).rejects.toThrow('Failed to upload image: Unauthorized');
+      })).rejects.toThrow('Unauthorized');
     });
   });
 });

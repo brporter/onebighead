@@ -15,6 +15,7 @@ public class CollectionRepository : ICollectionRepository
     public async Task<IEnumerable<Collection>> GetAllAsync(int tenantId)
     {
         return await _context.Collections
+            .AsNoTracking()
             .Where(c => c.TenantId == tenantId)
             .OrderBy(c => c.Name)
             .ToListAsync();
@@ -23,18 +24,21 @@ public class CollectionRepository : ICollectionRepository
     public async Task<Collection?> GetByIdAsync(int id, int tenantId)
     {
         return await _context.Collections
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
     }
 
     public async Task<Collection?> GetBySlugAsync(string slug, int tenantId)
     {
         return await _context.Collections
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Slug == slug && c.TenantId == tenantId);
     }
 
     public async Task<Collection?> GetByTenantIdAsync(int tenantId)
     {
         return await _context.Collections
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.TenantId == tenantId);
     }
 

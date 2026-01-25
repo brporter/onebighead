@@ -8,23 +8,13 @@ namespace backend.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ItemTemplatesController : ControllerBase
+public class ItemTemplatesController : ApiControllerBase
 {
     private readonly IItemTemplateRepository _templateRepository;
 
     public ItemTemplatesController(IItemTemplateRepository templateRepository)
     {
         _templateRepository = templateRepository;
-    }
-
-    private int GetTenantId()
-    {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
-        {
-            throw new UnauthorizedAccessException("Tenant ID not found in token");
-        }
-        return tenantId;
     }
 
     /// <summary>

@@ -1,15 +1,16 @@
-﻿﻿using backend.Data;
+using backend.Data;
 using backend.Models;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class CategoriesController : ControllerBase
+public class CategoriesController : ApiControllerBase
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICollectionRepository _collectionRepository;
@@ -23,16 +24,6 @@ public class CategoriesController : ControllerBase
         _categoryRepository = categoryRepository;
         _collectionRepository = collectionRepository;
         _visibilityService = visibilityService;
-    }
-
-    private int GetTenantId()
-    {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
-        {
-            throw new UnauthorizedAccessException("Tenant ID not found in token");
-        }
-        return tenantId;
     }
 
     [HttpGet]
@@ -220,7 +211,12 @@ public class CategoriesController : ControllerBase
 public class CreateCategoryRequest
 {
     public int CollectionId { get; set; }
+
+    [Required]
+    [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
     public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
     public bool? IsPublicOverride { get; set; }
@@ -228,7 +224,11 @@ public class CreateCategoryRequest
 
 public class UpdateCategoryRequest
 {
+    [Required]
+    [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
     public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
     public bool? IsPublicOverride { get; set; }
