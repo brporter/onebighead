@@ -35,6 +35,11 @@ public class TokenService : ITokenService
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 
+        if (user.IsSystemAdministrator)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "SystemAdministrator"));
+        }
+
         var credentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(

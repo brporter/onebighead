@@ -292,6 +292,7 @@ public class AuthController : ControllerBase
         var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
         var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
         var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var isAdmin = User.IsInRole("SystemAdministrator");
 
         if (string.IsNullOrEmpty(tenantIdClaim) || string.IsNullOrEmpty(userIdClaim))
         {
@@ -302,7 +303,8 @@ public class AuthController : ControllerBase
         {
             userId = int.Parse(userIdClaim),
             email = emailClaim,
-            tenantId = int.Parse(tenantIdClaim)
+            tenantId = int.Parse(tenantIdClaim),
+            isSystemAdministrator = isAdmin
         });
     }
 }

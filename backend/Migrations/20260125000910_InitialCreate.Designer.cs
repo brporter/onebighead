@@ -12,7 +12,7 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260124193852_InitialCreate")]
+    [Migration("20260125000910_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -327,6 +327,9 @@ namespace backend.Migrations
 
                     b.Property<int>("IdentityProvider")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsSystemAdministrator")
+                        .HasColumnType("bit");
 
                     b.Property<string>("ProviderSubjectId")
                         .IsRequired()
