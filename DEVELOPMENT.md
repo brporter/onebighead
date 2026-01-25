@@ -160,3 +160,69 @@ System administrators have access to `/admin` which provides:
 - **Tenant Management**: View all tenants with usage statistics (users, collections, items, images), delete tenants
 - **User Management**: Search users by email, view user details, grant/revoke admin privileges, delete users
 - **System Templates**: Create and manage system-level item templates available to all users
+
+## Frontend Architecture
+
+### API Client
+
+The frontend uses a centralized API client located in `frontend/src/api/`. This provides:
+- Type-safe API methods for all endpoints
+- Centralized error handling
+- Request cancellation support
+- Consistent authentication headers
+
+**Usage:**
+
+```typescript
+import { collectionsApi, itemsApi, ApiError } from './api';
+
+// Get all collections
+const collections = await collectionsApi.getAll();
+
+// Create an item
+const item = await itemsApi.create(newItem);
+
+// Handle errors
+try {
+  await collectionsApi.delete(id);
+} catch (error) {
+  if (error instanceof ApiError) {
+    console.error(`API Error: ${error.message} (${error.status})`);
+  }
+}
+```
+
+**Available API modules:**
+- `collectionsApi` - Collection CRUD
+- `categoriesApi` - Category CRUD
+- `itemsApi` - Item CRUD with ETag support
+- `imagesApi` - Image upload/delete
+- `templatesApi` - Item template management
+- `suggestionsApi` - Property suggestions
+- `authApi` - Authentication
+- `adminApi` - System administration
+- `exportApi` - Data export
+
+### Code Splitting
+
+Routes are lazy-loaded using `React.lazy()` and `Suspense` for better initial load performance. The main bundle is kept small while route-specific code loads on-demand.
+
+## Testing
+
+### Backend Tests
+
+```bash
+cd backend.tests
+dotnet test
+```
+
+Coverage report is generated in `backend.tests/TestResults/`.
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm run test        # Watch mode
+npm run test:run    # Single run
+npm run test:coverage  # With coverage
+```
