@@ -44,6 +44,9 @@ export interface DataContextValue {
   updateItem: (id: number, updates: Partial<Item>) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
 
+  // Image upload
+  uploadImage: (file: File) => Promise<{ key: string; url: string }>;
+
   // Property suggestions (scoped to current collection)
   propertyCategorySuggestions: string[];
   propertyNameSuggestions: string[];
@@ -90,6 +93,7 @@ const defaultContextValue: DataContextValue = {
   addItem: async () => 0,
   updateItem: async () => {},
   deleteItem: async () => {},
+  uploadImage: async () => ({ key: '', url: '' }),
   propertyCategorySuggestions: [],
   propertyNameSuggestions: [],
   loadPropertySuggestions: async () => {},
@@ -447,6 +451,24 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, [items, syncPropertySuggestions]);
 
+  const uploadImage = useCallback(async (file: File): Promise<{ key: string; url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/images', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      const errorMessage = data?.error || `Failed to upload image: ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  }, []);
+
   // Item template operations
   const loadItemTemplates = useCallback(async (filter?: 'shared' | 'personal') => {
     try {
@@ -557,6 +579,7 @@ export function DataProvider({ children }: DataProviderProps) {
     addItem,
     updateItem,
     deleteItem,
+    uploadImage,
     propertyCategorySuggestions,
     propertyNameSuggestions,
     loadPropertySuggestions,

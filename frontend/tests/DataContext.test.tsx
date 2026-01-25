@@ -144,6 +144,15 @@ describe('DataContext', () => {
         } as Response);
       }
 
+      // Image upload
+      if (urlStr === '/api/images' && method === 'POST') {
+        const key = 'test-image-key-' + Math.random().toString(36).substr(2, 9);
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ key, url: `/api/images/${key}` }),
+        } as Response);
+      }
+
       return Promise.resolve({
         ok: false,
         statusText: 'Not Found',
@@ -535,6 +544,129 @@ describe('DataContext', () => {
       });
 
       expect(capturedData!.propertyCategorySuggestions).toEqual(['Apple', 'Mango', 'Zebra']);
+    });
+  });
+
+  describe('Image upload', () => {
+    it('should upload image and return key and url', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      const file = new File(['fake image content'], 'test.jpg', { type: 'image/jpeg' });
+
+      const result = await act(async () => {
+        return capturedData!.uploadImage(file);
+      });
+
+      expect(result.key).toBeDefined();
+      expect(result.url).toContain('/api/images/');
+    });
+
+    it('should send file as FormData', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+      let capturedBody: FormData | null = null;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, options) => {
+        if (options?.body instanceof FormData) {
+          capturedBody = options.body;
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ key: 'test-key', url: '/api/images/test-key' }),
+        } as Response);
+      });
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
+
+      await act(async () => {
+        await capturedData!.uploadImage(file);
+      });
+
+      expect(capturedBody).toBeInstanceOf(FormData);
+      expect(capturedBody!.get('file')).toBe(file);
+    });
+
+    it('should throw error on upload failure', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+        return Promise.resolve({
+          ok: false,
+          statusText: 'Bad Request',
+          json: async () => ({ error: 'Invalid file type' }),
+        } as Response);
+      });
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      const file = new File(['content'], 'test.txt', { type: 'text/plain' });
+
+      await expect(act(async () => {
+        await capturedData!.uploadImage(file);
+      })).rejects.toThrow('Invalid file type');
+    });
+
+    it('should handle server error message', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+        return Promise.resolve({
+          ok: false,
+          statusText: 'Internal Server Error',
+          json: async () => ({ error: 'File content does not match the declared file type' }),
+        } as Response);
+      });
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      const file = new File(['content'], 'fake.jpg', { type: 'image/jpeg' });
+
+      await expect(act(async () => {
+        await capturedData!.uploadImage(file);
+      })).rejects.toThrow('File content does not match the declared file type');
+    });
+
+    it('should fallback to status text when no error in response', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+        return Promise.resolve({
+          ok: false,
+          statusText: 'Unauthorized',
+          json: async () => { throw new Error('No JSON'); },
+        } as Response);
+      });
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
+
+      await expect(act(async () => {
+        await capturedData!.uploadImage(file);
+      })).rejects.toThrow('Failed to upload image: Unauthorized');
     });
   });
 });

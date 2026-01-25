@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemEditor from '../src/ItemEditor';
 import type { Item } from '../src/types';
 
-// Mock DataContext for PropertyEditor
+// Mock DataContext for PropertyEditor and ImageEditor
 vi.mock('../src/DataContext', () => ({
   useData: () => ({
     propertyCategorySuggestions: [],
     propertyNameSuggestions: [],
     addLocalCategorySuggestion: vi.fn(),
     addLocalNameSuggestion: vi.fn(),
+    uploadImage: vi.fn().mockResolvedValue({ key: 'test-key', url: '/api/images/test-key' }),
   }),
 }));
 
@@ -322,21 +323,27 @@ describe('ItemEditor', () => {
     it('should display existing images', () => {
       render(<ItemEditor item={mockItem} {...defaultProps} />);
 
-      const urlInputs = screen.getAllByPlaceholderText('Image URL');
-      expect(urlInputs.length).toBe(2);
+      // With file upload, images are shown as img elements not URL inputs
+      const images = screen.getAllByRole('img');
+      expect(images.length).toBe(2);
     });
 
-    it('should add new image', async () => {
+    it('should add new image via file upload', async () => {
       const user = userEvent.setup();
 
       render(<ItemEditor item={mockItem} {...defaultProps} />);
 
-      const initialImageRows = screen.getAllByPlaceholderText('Image URL').length;
+      const initialImages = screen.getAllByRole('img').length;
 
-      await user.click(screen.getByText('+ Add Image'));
+      // Simulate file upload
+      const file = new File(['content'], 'new-image.jpg', { type: 'image/jpeg' });
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await user.upload(fileInput, file);
 
-      const newImageRows = screen.getAllByPlaceholderText('Image URL').length;
-      expect(newImageRows).toBe(initialImageRows + 1);
+      await waitFor(() => {
+        const newImages = screen.getAllByRole('img').length;
+        expect(newImages).toBe(initialImages + 1);
+      });
     });
 
     it('should remove image', async () => {
@@ -344,25 +351,13 @@ describe('ItemEditor', () => {
 
       render(<ItemEditor item={mockItem} {...defaultProps} />);
 
-      const initialImageRows = screen.getAllByPlaceholderText('Image URL').length;
+      const initialImages = screen.getAllByRole('img').length;
 
       const removeButtons = screen.getAllByLabelText('Remove image');
       await user.click(removeButtons[0]);
 
-      const newImageRows = screen.getAllByPlaceholderText('Image URL').length;
-      expect(newImageRows).toBe(initialImageRows - 1);
-    });
-
-    it('should update image URL field', async () => {
-      const user = userEvent.setup();
-
-      render(<ItemEditor item={mockItem} {...defaultProps} />);
-
-      const urlInputs = screen.getAllByPlaceholderText('Image URL');
-      await user.clear(urlInputs[0]);
-      await user.type(urlInputs[0], 'https://new-url.com/image.jpg');
-
-      expect(urlInputs[0]).toHaveValue('https://new-url.com/image.jpg');
+      const newImages = screen.getAllByRole('img').length;
+      expect(newImages).toBe(initialImages - 1);
     });
 
     it('should update image alt field', async () => {
@@ -375,6 +370,14 @@ describe('ItemEditor', () => {
       await user.type(altInputs[0], 'New alt text');
 
       expect(altInputs[0]).toHaveValue('New alt text');
+    });
+
+    it('should have file input for uploading images', () => {
+      render(<ItemEditor item={mockItem} {...defaultProps} />);
+
+      const fileInput = document.querySelector('input[type="file"]');
+      expect(fileInput).toBeInTheDocument();
+      expect(fileInput).toHaveAttribute('accept', 'image/jpeg,image/png,image/gif,image/webp');
     });
   });
 });

@@ -224,51 +224,67 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
           Images
         </label>
         <div
-          class="imageEditor__row"
+          class="imageEditor__grid"
         >
-          <input
-            class="imageEditor__input imageEditor__input--url"
-            placeholder="Image URL"
-            type="url"
-            value="https://example.com/image1.jpg"
-          />
-          <input
-            class="imageEditor__input imageEditor__input--alt"
-            placeholder="Alt text"
-            type="text"
-            value="Image 1"
-          />
-          <button
-            aria-label="Remove image"
-            class="imageEditor__remove"
-            type="button"
+          <div
+            class="imageEditor__item"
           >
-            ×
-          </button>
-        </div>
-        <div
-          class="imageEditor__row"
-        >
-          <input
-            class="imageEditor__input imageEditor__input--url"
-            placeholder="Image URL"
-            type="url"
-            value="https://example.com/image2.jpg"
-          />
-          <input
-            class="imageEditor__input imageEditor__input--alt"
-            placeholder="Alt text"
-            type="text"
-            value="Image 2"
-          />
-          <button
-            aria-label="Remove image"
-            class="imageEditor__remove"
-            type="button"
+            <div
+              class="imageEditor__preview"
+            >
+              <img
+                alt="Image 1"
+                class="imageEditor__image"
+                src="https://example.com/image1.jpg"
+              />
+              <button
+                aria-label="Remove image"
+                class="imageEditor__remove"
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            <input
+              class="imageEditor__input imageEditor__input--alt"
+              placeholder="Alt text"
+              type="text"
+              value="Image 1"
+            />
+          </div>
+          <div
+            class="imageEditor__item"
           >
-            ×
-          </button>
+            <div
+              class="imageEditor__preview"
+            >
+              <img
+                alt="Image 2"
+                class="imageEditor__image"
+                src="https://example.com/image2.jpg"
+              />
+              <button
+                aria-label="Remove image"
+                class="imageEditor__remove"
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            <input
+              class="imageEditor__input imageEditor__input--alt"
+              placeholder="Alt text"
+              type="text"
+              value="Image 2"
+            />
+          </div>
         </div>
+        <input
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          class="imageEditor__fileInput"
+          multiple=""
+          type="file"
+        />
         <button
           class="imageEditor__add"
           type="button"
@@ -425,6 +441,15 @@ exports[`ItemEditor > snapshots > should render new item mode 1`] = `
         >
           Images
         </label>
+        <div
+          class="imageEditor__grid"
+        />
+        <input
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          class="imageEditor__fileInput"
+          multiple=""
+          type="file"
+        />
         <button
           class="imageEditor__add"
           type="button"
