@@ -25,6 +25,13 @@ public class Category
 
     public int? ParentCategoryId { get; set; }
 
+    [JsonPropertyName("isPublicOverride")]
+    public bool? IsPublicOverride { get; set; }
+
+    [NotMapped]
+    [JsonPropertyName("effectiveIsPublic")]
+    public bool EffectiveIsPublic { get; set; }
+
     [JsonIgnore]
     [ForeignKey(nameof(ParentCategoryId))]
     public Category? ParentCategory { get; set; }

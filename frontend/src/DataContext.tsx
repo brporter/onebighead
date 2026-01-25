@@ -21,8 +21,8 @@ export interface DataContextValue {
   collectionsLoading: boolean;
   collectionsError: string | null;
   loadCollections: () => Promise<void>;
-  addCollection: (name: string, description?: string, heroImageUrl?: string) => Promise<Collection>;
-  updateCollection: (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string }) => Promise<void>;
+  addCollection: (name: string, description?: string, heroImageUrl?: string, isPublic?: boolean) => Promise<Collection>;
+  updateCollection: (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string; isPublic?: boolean }) => Promise<void>;
   deleteCollection: (collectionId: number) => Promise<void>;
   
   // Categories (scoped to current collection)
@@ -30,8 +30,8 @@ export interface DataContextValue {
   categoriesLoading: boolean;
   categoriesError: string | null;
   loadCategoriesForCollection: (collectionId: number) => Promise<void>;
-  addCategory: (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null }) => Promise<number>;
-  updateCategory: (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null }) => Promise<void>;
+  addCategory: (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }) => Promise<number>;
+  updateCategory: (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }) => Promise<void>;
   deleteCategory: (categoryId: number) => Promise<void>;
   
   // Items (scoped to current collection/category)
@@ -222,11 +222,11 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, []);
 
-  const addCollection = useCallback(async (name: string, description?: string, heroImageUrl?: string): Promise<Collection> => {
+  const addCollection = useCallback(async (name: string, description?: string, heroImageUrl?: string, isPublic?: boolean): Promise<Collection> => {
     const response = await fetch('/api/collections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, heroImageUrl }),
+      body: JSON.stringify({ name, description, heroImageUrl, isPublic: isPublic ?? false }),
     });
     if (!response.ok) {
       throw new Error(`Failed to create collection: ${response.statusText}`);
@@ -236,7 +236,7 @@ export function DataProvider({ children }: DataProviderProps) {
     return created;
   }, []);
 
-  const updateCollection = useCallback(async (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string }): Promise<void> => {
+  const updateCollection = useCallback(async (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string; isPublic?: boolean }): Promise<void> => {
     const response = await fetch(`/api/collections/${collectionId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -283,7 +283,7 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, []);
 
-  const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null }): Promise<number> => {
+  const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }): Promise<number> => {
     const response = await fetch('/api/categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -298,7 +298,7 @@ export function DataProvider({ children }: DataProviderProps) {
     return created.categoryId;
   }, []);
 
-  const updateCategory = useCallback(async (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null }): Promise<void> => {
+  const updateCategory = useCallback(async (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }): Promise<void> => {
     const response = await fetch(`/api/categories/${categoryId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

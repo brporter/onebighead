@@ -22,6 +22,8 @@ public class CreateItemRequest
 
     public List<ItemImage> Images { get; set; } = new();
 
+    public bool? IsPublicOverride { get; set; }
+
     public Item ToItem(int tenantId)
     {
         return new Item
@@ -33,7 +35,8 @@ public class CreateItemRequest
             Summary = Summary,
             Description = Description,
             Properties = Properties,
-            Images = Images
+            Images = Images,
+            IsPublicOverride = IsPublicOverride
         };
     }
 }
@@ -57,6 +60,8 @@ public class UpdateItemRequest
 
     public List<ItemImage> Images { get; set; } = new();
 
+    public bool? IsPublicOverride { get; set; }
+
     public Item ToItem(int id, int tenantId)
     {
         return new Item
@@ -69,7 +74,8 @@ public class UpdateItemRequest
             Summary = Summary,
             Description = Description,
             Properties = Properties,
-            Images = Images
+            Images = Images,
+            IsPublicOverride = IsPublicOverride
         };
     }
 }

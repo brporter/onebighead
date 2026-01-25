@@ -98,7 +98,8 @@ public partial class CollectionsController : ControllerBase
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
-            Slug = slug
+            Slug = slug,
+            IsPublic = request.IsPublic
         };
 
         var created = await _collectionRepository.CreateAsync(collection);
@@ -142,7 +143,8 @@ public partial class CollectionsController : ControllerBase
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
-            Slug = slug
+            Slug = slug,
+            IsPublic = request.IsPublic
         };
 
         var updated = await _collectionRepository.UpdateAsync(id, collection, tenantId);
@@ -261,6 +263,7 @@ public class CreateCollectionRequest
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? HeroImageUrl { get; set; }
+    public bool IsPublic { get; set; } = false;
 }
 
 public class UpdateCollectionRequest
@@ -268,4 +271,5 @@ public class UpdateCollectionRequest
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? HeroImageUrl { get; set; }
+    public bool IsPublic { get; set; } = false;
 }

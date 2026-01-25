@@ -1,6 +1,7 @@
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
+using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
@@ -16,11 +17,19 @@ public class ItemsController : ControllerBase
 {
     private readonly IItemRepository _itemRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly ICollectionRepository _collectionRepository;
+    private readonly IVisibilityService _visibilityService;
 
-    public ItemsController(IItemRepository itemRepository, ICategoryRepository categoryRepository)
+    public ItemsController(
+        IItemRepository itemRepository, 
+        ICategoryRepository categoryRepository,
+        ICollectionRepository collectionRepository,
+        IVisibilityService visibilityService)
     {
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
+        _collectionRepository = collectionRepository;
+        _visibilityService = visibilityService;
     }
 
     private int GetTenantId()
@@ -67,6 +76,17 @@ public class ItemsController : ControllerBase
         }
 
         var itemList = items.ToList();
+        
+        // Compute effective visibility
+        var collection = await _collectionRepository.GetByTenantIdAsync(tenantId);
+        if (collection != null)
+        {
+            var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+            var categoryList = allCategories.ToList();
+            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+            _visibilityService.ComputeEffectiveVisibility(itemList, collection, categoryList);
+        }
+        
         var etag = ComputeETag(itemList);
 
         Response.Headers.ETag = etag;
@@ -114,6 +134,20 @@ public class ItemsController : ControllerBase
         {
             return NotFound();
         }
+        
+        // Compute effective visibility
+        var collection = await _collectionRepository.GetByTenantIdAsync(tenantId);
+        if (collection != null)
+        {
+            var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+            var categoryList = allCategories.ToList();
+            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+            var category = item.CategoryId.HasValue 
+                ? categoryList.FirstOrDefault(c => c.Id == item.CategoryId.Value) 
+                : null;
+            _visibilityService.ComputeEffectiveVisibility(item, collection, category, categoryList);
+        }
+        
         return Ok(item);
     }
 
@@ -121,6 +155,24 @@ public class ItemsController : ControllerBase
     public async Task<ActionResult<Item>> CreateItem(CreateItemRequest request)
     {
         var tenantId = GetTenantId();
+        
+        // Validate CollectionId belongs to tenant
+        var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, tenantId);
+        if (collection is null)
+        {
+            return BadRequest("Invalid collection");
+        }
+        
+        // Validate CategoryId belongs to tenant and collection
+        if (request.CategoryId.HasValue)
+        {
+            var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, tenantId);
+            if (category is null || category.CollectionId != request.CollectionId)
+            {
+                return BadRequest("Invalid category");
+            }
+        }
+        
         var item = request.ToItem(tenantId);
         var created = await _itemRepository.CreateAsync(item);
         return CreatedAtAction(nameof(GetItem), new { id = created.Id }, created);
@@ -130,6 +182,24 @@ public class ItemsController : ControllerBase
     public async Task<ActionResult<Item>> UpdateItem(int id, UpdateItemRequest request)
     {
         var tenantId = GetTenantId();
+        
+        // Validate CollectionId belongs to tenant
+        var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, tenantId);
+        if (collection is null)
+        {
+            return BadRequest("Invalid collection");
+        }
+        
+        // Validate CategoryId belongs to tenant and collection
+        if (request.CategoryId.HasValue)
+        {
+            var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, tenantId);
+            if (category is null || category.CollectionId != request.CollectionId)
+            {
+                return BadRequest("Invalid category");
+            }
+        }
+        
         var item = request.ToItem(id, tenantId);
         var updated = await _itemRepository.UpdateAsync(id, item, tenantId);
         if (updated is null)

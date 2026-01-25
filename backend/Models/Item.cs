@@ -41,6 +41,13 @@ public class Item
     [JsonPropertyName("images")]
     public List<ItemImage> Images { get; set; } = new();
 
+    [JsonPropertyName("isPublicOverride")]
+    public bool? IsPublicOverride { get; set; }
+
+    [NotMapped]
+    [JsonPropertyName("effectiveIsPublic")]
+    public bool EffectiveIsPublic { get; set; }
+
     [JsonIgnore]
     [ForeignKey(nameof(TenantId))]
     public Tenant? Tenant { get; set; }

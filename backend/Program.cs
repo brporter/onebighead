@@ -32,6 +32,9 @@ builder.Services.AddScoped<IItemTemplateRepository, ItemTemplateRepository>();
 // Register image provider
 builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
 
+// Register visibility service
+builder.Services.AddScoped<IVisibilityService, VisibilityService>();
+
 // Configure authentication
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));
 builder.Services.AddSingleton<ITokenService, TokenService>();

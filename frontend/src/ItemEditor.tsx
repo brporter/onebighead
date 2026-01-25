@@ -2,11 +2,13 @@ import { useState } from 'react';
 import PropertyEditor from './PropertyEditor';
 import ImageEditor from './ImageEditor';
 import CategorySelector from './CategorySelector';
-import type { Item, Category, ItemProperty } from './types';
+import VisibilityToggle from './VisibilityToggle';
+import type { Item, Category, ItemProperty, Collection } from './types';
 
 interface ItemEditorProps {
   item: Item | null;
   categories: Category[];
+  collection: Collection | null;
   onSave: (item: Item) => void;
   onCancel: () => void;
   onDelete?: ((id: number) => void) | null;
@@ -16,6 +18,7 @@ interface ItemEditorProps {
 function ItemEditor({
   item,
   categories,
+  collection,
   onSave,
   onCancel,
   onDelete,
@@ -31,9 +34,19 @@ function ItemEditor({
     description: '',
     properties: initialProperties ?? [],
     images: [],
+    isPublicOverride: null,
+    effectiveIsPublic: false,
   });
 
   const isNew = formData.id === null;
+
+  // Determine if parent allows public override
+  const getParentIsPublic = (): boolean => {
+    if (!collection?.isPublic) return false;
+    if (formData.categoryId === null) return true;
+    const category = categories.find((c) => c.categoryId === formData.categoryId);
+    return category?.effectiveIsPublic ?? true;
+  };
 
   function handleFieldChange<K extends keyof Item>(field: K, value: Item[K]) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -111,6 +124,16 @@ function ItemEditor({
           images={formData.images || []}
           onChange={(imgs) => handleFieldChange('images', imgs)}
         />
+
+        <div className="detail__field">
+          <VisibilityToggle
+            isPublicOverride={formData.isPublicOverride}
+            effectiveIsPublic={formData.effectiveIsPublic}
+            parentIsPublic={getParentIsPublic()}
+            onChange={(value) => handleFieldChange('isPublicOverride', value)}
+            label="Visibility"
+          />
+        </div>
 
         <div className="detail__actions">
           <button

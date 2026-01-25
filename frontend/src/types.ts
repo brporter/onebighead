@@ -19,6 +19,8 @@ export interface Item {
   description: string;
   properties: ItemProperty[];
   images: ItemImage[];
+  isPublicOverride: boolean | null;
+  effectiveIsPublic: boolean;
 }
 
 export interface Category {
@@ -29,6 +31,8 @@ export interface Category {
   description: string;
   parentCategoryId: number | null;
   isSystem: boolean;
+  isPublicOverride: boolean | null;
+  effectiveIsPublic: boolean;
 }
 
 export interface CategoryNode extends Category {
@@ -42,6 +46,7 @@ export interface Collection {
   description: string;
   heroImageUrl: string | null;
   slug: string;
+  isPublic: boolean;
 }
 
 export interface Tenant {
