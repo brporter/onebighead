@@ -36,11 +36,11 @@ public class DatabaseImageProvider : IImageProvider
         return new StoredImageInfo(image.Id, url);
     }
 
-    public async Task<RetrievedImage?> RetrieveAsync(Guid key)
+    public async Task<RetrievedImage?> RetrieveAsync(Guid key, int tenantId)
     {
         var image = await _context.StoredImages
             .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == key);
+            .FirstOrDefaultAsync(i => i.Id == key && i.TenantId == tenantId);
 
         if (image == null)
             return null;
@@ -48,9 +48,11 @@ public class DatabaseImageProvider : IImageProvider
         return new RetrievedImage(image.Data, image.ContentType, image.FileName);
     }
 
-    public async Task DeleteAsync(Guid key)
+    public async Task DeleteAsync(Guid key, int tenantId)
     {
-        var image = await _context.StoredImages.FindAsync(key);
+        var image = await _context.StoredImages
+            .FirstOrDefaultAsync(i => i.Id == key && i.TenantId == tenantId);
+        
         if (image != null)
         {
             _context.StoredImages.Remove(image);

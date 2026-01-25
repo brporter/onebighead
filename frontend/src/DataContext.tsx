@@ -461,7 +461,9 @@ export function DataProvider({ children }: DataProviderProps) {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to upload image: ${response.statusText}`);
+      const data = await response.json().catch(() => null);
+      const errorMessage = data?.error || `Failed to upload image: ${response.statusText}`;
+      throw new Error(errorMessage);
     }
 
     return await response.json();

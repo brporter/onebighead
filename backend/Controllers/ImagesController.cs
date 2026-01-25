@@ -6,17 +6,18 @@ namespace backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ImagesController : ControllerBase
 {
     private readonly IImageProvider _imageProvider;
-    private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
+    
+    private static readonly Dictionary<string, byte[][]> FileSignatures = new()
     {
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-        "image/svg+xml"
+        { "image/jpeg", new[] { new byte[] { 0xFF, 0xD8, 0xFF } } },
+        { "image/jpg", new[] { new byte[] { 0xFF, 0xD8, 0xFF } } },
+        { "image/png", new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } } },
+        { "image/gif", new[] { new byte[] { 0x47, 0x49, 0x46, 0x38, 0x37, 0x61 }, new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 } } },
+        { "image/webp", new[] { new byte[] { 0x52, 0x49, 0x46, 0x46 } } } // RIFF header, WebP also has WEBP at offset 8
     };
 
     private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
@@ -26,50 +27,146 @@ public class ImagesController : ControllerBase
         _imageProvider = imageProvider;
     }
 
-    private int GetTenantId()
+    private int? TryGetTenantId()
     {
         var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
         if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
         {
-            throw new UnauthorizedAccessException("Tenant ID not found in token");
+            return null;
         }
         return tenantId;
     }
 
+    private static bool VerifyFileSignature(byte[] fileData, string contentType)
+    {
+        if (!FileSignatures.TryGetValue(contentType.ToLowerInvariant(), out var signatures))
+            return false;
+
+        foreach (var signature in signatures)
+        {
+            if (fileData.Length >= signature.Length)
+            {
+                var headerMatches = true;
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    if (fileData[i] != signature[i])
+                    {
+                        headerMatches = false;
+                        break;
+                    }
+                }
+                
+                if (headerMatches)
+                {
+                    // Additional check for WebP: verify WEBP marker at offset 8
+                    if (contentType.Equals("image/webp", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (fileData.Length >= 12)
+                        {
+                            var webpMarker = new byte[] { 0x57, 0x45, 0x42, 0x50 }; // "WEBP"
+                            var markerMatches = true;
+                            for (int i = 0; i < 4; i++)
+                            {
+                                if (fileData[8 + i] != webpMarker[i])
+                                {
+                                    markerMatches = false;
+                                    break;
+                                }
+                            }
+                            return markerMatches;
+                        }
+                        return false;
+                    }
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    private static string SanitizeFileName(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return "image";
+
+        // Get just the filename without any path components
+        fileName = Path.GetFileName(fileName);
+        
+        // Remove null bytes and control characters
+        fileName = new string(fileName.Where(c => c >= 32 && c != 127).ToArray());
+        
+        // Replace unsafe characters with underscores
+        var invalidChars = Path.GetInvalidFileNameChars()
+            .Concat(new[] { '/', '\\', ':', '*', '?', '"', '<', '>', '|', '\0' })
+            .ToHashSet();
+        
+        var sanitized = new string(fileName.Select(c => invalidChars.Contains(c) ? '_' : c).ToArray());
+        
+        // Remove leading/trailing dots and spaces
+        sanitized = sanitized.Trim('.', ' ');
+        
+        // Limit length
+        if (sanitized.Length > 200)
+        {
+            var extension = Path.GetExtension(sanitized);
+            var name = Path.GetFileNameWithoutExtension(sanitized);
+            var maxNameLength = 200 - extension.Length;
+            sanitized = name[..Math.Min(name.Length, maxNameLength)] + extension;
+        }
+        
+        return string.IsNullOrWhiteSpace(sanitized) ? "image" : sanitized;
+    }
+
     [HttpPost]
-    [Authorize]
     [RequestSizeLimit(MaxFileSize)]
     public async Task<ActionResult<ImageUploadResponse>> Upload(IFormFile file)
     {
+        var tenantId = TryGetTenantId();
+        if (tenantId == null)
+        {
+            return Unauthorized(new { error = "Invalid or missing tenant information" });
+        }
+
         if (file == null || file.Length == 0)
         {
-            return BadRequest("No file provided");
+            return BadRequest(new { error = "No file provided" });
         }
 
-        if (file.Length > MaxFileSize)
+        if (!FileSignatures.ContainsKey(file.ContentType.ToLowerInvariant()))
         {
-            return BadRequest($"File size exceeds the maximum allowed size of {MaxFileSize / 1024 / 1024} MB");
+            return BadRequest(new { error = $"Content type '{file.ContentType}' is not allowed. Allowed types: JPEG, PNG, GIF, WebP" });
         }
 
-        if (!AllowedContentTypes.Contains(file.ContentType))
+        // Read file into memory to verify signature
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        var fileData = memoryStream.ToArray();
+
+        if (!VerifyFileSignature(fileData, file.ContentType))
         {
-            return BadRequest($"Content type '{file.ContentType}' is not allowed. Allowed types: {string.Join(", ", AllowedContentTypes)}");
+            return BadRequest(new { error = "File content does not match the declared file type. Please upload a valid image file." });
         }
 
-        var tenantId = GetTenantId();
+        var sanitizedFileName = SanitizeFileName(file.FileName);
 
-        await using var stream = file.OpenReadStream();
-        var result = await _imageProvider.StoreAsync(tenantId, file.FileName, file.ContentType, stream);
+        using var dataStream = new MemoryStream(fileData);
+        var result = await _imageProvider.StoreAsync(tenantId.Value, sanitizedFileName, file.ContentType, dataStream);
 
         return Ok(new ImageUploadResponse(result.Key, result.Url));
     }
 
     [HttpGet("{key:guid}")]
-    [AllowAnonymous]
-    [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
+    [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any, VaryByHeader = "Authorization")]
     public async Task<IActionResult> Get(Guid key)
     {
-        var image = await _imageProvider.RetrieveAsync(key);
+        var tenantId = TryGetTenantId();
+        if (tenantId == null)
+        {
+            return Unauthorized(new { error = "Invalid or missing tenant information" });
+        }
+
+        var image = await _imageProvider.RetrieveAsync(key, tenantId.Value);
         if (image == null)
         {
             return NotFound();
@@ -79,10 +176,15 @@ public class ImagesController : ControllerBase
     }
 
     [HttpDelete("{key:guid}")]
-    [Authorize]
     public async Task<IActionResult> Delete(Guid key)
     {
-        await _imageProvider.DeleteAsync(key);
+        var tenantId = TryGetTenantId();
+        if (tenantId == null)
+        {
+            return Unauthorized(new { error = "Invalid or missing tenant information" });
+        }
+
+        await _imageProvider.DeleteAsync(key, tenantId.Value);
         return NoContent();
     }
 }

@@ -7,6 +7,6 @@ public record RetrievedImage(byte[] Data, string ContentType, string FileName);
 public interface IImageProvider
 {
     Task<StoredImageInfo> StoreAsync(int tenantId, string fileName, string contentType, Stream data);
-    Task<RetrievedImage?> RetrieveAsync(Guid key);
-    Task DeleteAsync(Guid key);
+    Task<RetrievedImage?> RetrieveAsync(Guid key, int tenantId);
+    Task DeleteAsync(Guid key, int tenantId);
 }

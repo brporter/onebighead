@@ -90,7 +90,7 @@ function ImageEditor({ images, onChange }: ImageEditorProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+        accept="image/jpeg,image/png,image/gif,image/webp"
         multiple
         className="imageEditor__fileInput"
         onChange={handleFileSelect}
