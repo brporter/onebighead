@@ -14,6 +14,14 @@ public class VisibilityService : IVisibilityService
 {
     public void ComputeEffectiveVisibility(Category category, Collection collection, IEnumerable<Category> allCategories)
     {
+        // Build lookup for O(1) parent access
+        var categoryLookup = allCategories as IDictionary<int, Category> 
+            ?? allCategories.ToDictionary(c => c.Id);
+        ComputeEffectiveVisibilityInternal(category, collection, categoryLookup);
+    }
+
+    private static void ComputeEffectiveVisibilityInternal(Category category, Collection collection, IDictionary<int, Category> categoryLookup)
+    {
         // If collection is not public, category cannot be public
         if (!collection.IsPublic)
         {
@@ -24,8 +32,7 @@ public class VisibilityService : IVisibilityService
         // If has parent category, check parent's effective visibility
         if (category.ParentCategoryId.HasValue)
         {
-            var parentCategory = allCategories.FirstOrDefault(c => c.Id == category.ParentCategoryId.Value);
-            if (parentCategory != null && !parentCategory.EffectiveIsPublic)
+            if (categoryLookup.TryGetValue(category.ParentCategoryId.Value, out var parentCategory) && !parentCategory.EffectiveIsPublic)
             {
                 // Parent is private, so child must be private (cannot override to public)
                 category.EffectiveIsPublic = false;
@@ -41,10 +48,9 @@ public class VisibilityService : IVisibilityService
         }
 
         // Inherit from parent category or collection
-        if (category.ParentCategoryId.HasValue)
+        if (category.ParentCategoryId.HasValue && categoryLookup.TryGetValue(category.ParentCategoryId.Value, out var parent))
         {
-            var parentCategory = allCategories.FirstOrDefault(c => c.Id == category.ParentCategoryId.Value);
-            category.EffectiveIsPublic = parentCategory?.EffectiveIsPublic ?? collection.IsPublic;
+            category.EffectiveIsPublic = parent.EffectiveIsPublic;
         }
         else
         {
@@ -85,6 +91,7 @@ public class VisibilityService : IVisibilityService
     public void ComputeEffectiveVisibility(IEnumerable<Category> categories, Collection collection)
     {
         var categoryList = categories.ToList();
+        var categoryLookup = categoryList.ToDictionary(c => c.Id);
         
         // Build a dependency order (parents before children)
         var processed = new HashSet<int>();
@@ -94,10 +101,9 @@ public class VisibilityService : IVisibilityService
         {
             if (processed.Contains(cat.Id)) return;
             
-            if (cat.ParentCategoryId.HasValue)
+            if (cat.ParentCategoryId.HasValue && categoryLookup.TryGetValue(cat.ParentCategoryId.Value, out var parent))
             {
-                var parent = categoryList.FirstOrDefault(c => c.Id == cat.ParentCategoryId.Value);
-                if (parent != null && !processed.Contains(parent.Id))
+                if (!processed.Contains(parent.Id))
                 {
                     ProcessCategory(parent);
                 }
@@ -112,23 +118,24 @@ public class VisibilityService : IVisibilityService
             ProcessCategory(category);
         }
         
-        // Now compute in order
+        // Now compute in order using the lookup for O(1) access
         foreach (var category in ordered)
         {
-            ComputeEffectiveVisibility(category, collection, categoryList);
+            ComputeEffectiveVisibilityInternal(category, collection, categoryLookup);
         }
     }
 
     public void ComputeEffectiveVisibility(IEnumerable<Item> items, Collection collection, IEnumerable<Category> categories)
     {
-        var categoryList = categories.ToList();
+        // Build lookup for O(1) category access
+        var categoryLookup = categories.ToDictionary(c => c.Id);
         
         foreach (var item in items)
         {
-            var category = item.CategoryId.HasValue 
-                ? categoryList.FirstOrDefault(c => c.Id == item.CategoryId.Value) 
+            var category = item.CategoryId.HasValue && categoryLookup.TryGetValue(item.CategoryId.Value, out var cat)
+                ? cat 
                 : null;
-            ComputeEffectiveVisibility(item, collection, category, categoryList);
+            ComputeEffectiveVisibility(item, collection, category, categories);
         }
     }
 }

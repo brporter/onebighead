@@ -15,6 +15,7 @@ public class ItemRepository : IItemRepository
     public async Task<IEnumerable<Item>> GetAllAsync(int tenantId)
     {
         return await _context.Items
+            .AsNoTracking()
             .Where(i => i.TenantId == tenantId)
             .ToListAsync();
     }
@@ -23,6 +24,7 @@ public class ItemRepository : IItemRepository
     {
         var categoryIdSet = categoryIds.ToHashSet();
         return await _context.Items
+            .AsNoTracking()
             .Where(i => i.TenantId == tenantId && i.CategoryId != null && categoryIdSet.Contains(i.CategoryId.Value))
             .ToListAsync();
     }
@@ -30,6 +32,7 @@ public class ItemRepository : IItemRepository
     public async Task<Item?> GetByIdAsync(int id, int tenantId)
     {
         return await _context.Items
+            .AsNoTracking()
             .FirstOrDefaultAsync(i => i.Id == id && i.TenantId == tenantId);
     }
 

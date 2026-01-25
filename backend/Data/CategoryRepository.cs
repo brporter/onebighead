@@ -15,6 +15,7 @@ public class CategoryRepository : ICategoryRepository
     public async Task<IEnumerable<Category>> GetAllAsync(int tenantId)
     {
         return await _context.Categories
+            .AsNoTracking()
             .Where(c => c.TenantId == tenantId)
             .ToListAsync();
     }
@@ -22,6 +23,7 @@ public class CategoryRepository : ICategoryRepository
     public async Task<IEnumerable<Category>> GetByCollectionAsync(int collectionId, int tenantId)
     {
         return await _context.Categories
+            .AsNoTracking()
             .Where(c => c.TenantId == tenantId && c.CollectionId == collectionId)
             .ToListAsync();
     }
@@ -29,12 +31,14 @@ public class CategoryRepository : ICategoryRepository
     public async Task<Category?> GetByIdAsync(int id, int tenantId)
     {
         return await _context.Categories
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
     }
 
     public async Task<Category?> GetSystemCategoryAsync(int collectionId, int tenantId, string name)
     {
         return await _context.Categories
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.CollectionId == collectionId && c.IsSystem && c.Name == name);
     }
 

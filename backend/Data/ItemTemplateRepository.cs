@@ -16,12 +16,14 @@ public class ItemTemplateRepository : IItemTemplateRepository
     {
         // Get tenant template names to filter out overridden system templates
         var tenantTemplateNames = await _context.ItemTemplates
+            .AsNoTracking()
             .Where(t => t.TenantId == tenantId)
             .Select(t => t.Name)
             .ToListAsync();
 
         return await _context.ItemTemplates
-            .Include(t => t.Properties.OrderBy(p => p.SortOrder))
+            .AsNoTracking()
+            .Include(t => t.Properties)
             .Where(t => 
                 t.TenantId == tenantId || 
                 (t.TenantId == null && !tenantTemplateNames.Contains(t.Name)))
@@ -33,12 +35,14 @@ public class ItemTemplateRepository : IItemTemplateRepository
     {
         // Get tenant template names to filter out overridden system templates
         var tenantTemplateNames = await _context.ItemTemplates
+            .AsNoTracking()
             .Where(t => t.TenantId == tenantId)
             .Select(t => t.Name)
             .ToListAsync();
 
         return await _context.ItemTemplates
-            .Include(t => t.Properties.OrderBy(p => p.SortOrder))
+            .AsNoTracking()
+            .Include(t => t.Properties)
             .Where(t => t.TenantId == null && !tenantTemplateNames.Contains(t.Name))
             .OrderBy(t => t.Name)
             .ToListAsync();
@@ -47,7 +51,8 @@ public class ItemTemplateRepository : IItemTemplateRepository
     public async Task<IEnumerable<ItemTemplate>> GetTenantTemplatesAsync(int tenantId)
     {
         return await _context.ItemTemplates
-            .Include(t => t.Properties.OrderBy(p => p.SortOrder))
+            .AsNoTracking()
+            .Include(t => t.Properties)
             .Where(t => t.TenantId == tenantId)
             .OrderBy(t => t.Name)
             .ToListAsync();
@@ -56,7 +61,8 @@ public class ItemTemplateRepository : IItemTemplateRepository
     public async Task<ItemTemplate?> GetByIdAsync(int id, int tenantId)
     {
         return await _context.ItemTemplates
-            .Include(t => t.Properties.OrderBy(p => p.SortOrder))
+            .AsNoTracking()
+            .Include(t => t.Properties)
             .FirstOrDefaultAsync(t => 
                 t.Id == id &&
                 (t.TenantId == null || t.TenantId == tenantId));
@@ -65,9 +71,10 @@ public class ItemTemplateRepository : IItemTemplateRepository
     public async Task<IEnumerable<ItemTemplate>> GetByCollectionAsync(int collectionId)
     {
         return await _context.CollectionItemTemplates
+            .AsNoTracking()
             .Where(ct => ct.CollectionId == collectionId)
             .Include(ct => ct.ItemTemplate)
-                .ThenInclude(t => t!.Properties.OrderBy(p => p.SortOrder))
+                .ThenInclude(t => t!.Properties)
             .Select(ct => ct.ItemTemplate!)
             .OrderBy(t => t.Name)
             .ToListAsync();
