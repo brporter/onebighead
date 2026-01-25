@@ -73,7 +73,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo -e "${RED}Unknown option: $1${NC}"
+            echo ""
             show_help
+            exit 1
             ;;
     esac
 done
@@ -125,6 +127,13 @@ fi
 # Step 3: Run backend tests and build
 echo ""
 echo -e "${YELLOW}[3/5] Building and testing backend...${NC}"
+
+echo -e "${CYAN}      Restoring packages...${NC}"
+cd "$SCRIPT_DIR/backend"
+if ! dotnet restore --verbosity minimal; then
+    echo -e "${RED}      Package restore failed!${NC}"
+    exit 1
+fi
 
 if [ "$SKIP_TESTS" = false ]; then
     echo -e "${CYAN}      Running tests...${NC}"

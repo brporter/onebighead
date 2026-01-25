@@ -91,6 +91,16 @@ if ($ResetDatabase) {
 Write-Host ""
 Write-Host "[3/5] Building and testing backend..." -ForegroundColor Yellow
 
+Write-Host "      Restoring packages..." -ForegroundColor Cyan
+Push-Location "$rootDir\backend"
+dotnet restore --verbosity minimal
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "      Package restore failed!" -ForegroundColor Red
+    Pop-Location
+    exit 1
+}
+Pop-Location
+
 if (-not $SkipTests) {
     Write-Host "      Running tests..." -ForegroundColor Cyan
     Push-Location "$rootDir\backend.tests"

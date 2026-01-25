@@ -7,7 +7,7 @@ set -e
 
 CONTAINER_NAME="onebighead-sqlserver"
 DATABASE_NAME="onebighead"
-SA_PASSWORD="DevPassword123!"
+SA_PASSWORD="${MSSQL_SA_PASSWORD:-DevPassword123!}"
 FORCE=false
 
 # Colors
@@ -33,6 +33,9 @@ Usage: ./reset-database.sh [options]
 Options:
     -f, --force    Skip confirmation prompt
     -h, --help     Show this help message
+
+Environment variables:
+    MSSQL_SA_PASSWORD    SQL Server SA password (default: DevPassword123!)
 EOF
             exit 0
             ;;
@@ -62,13 +65,22 @@ fi
 
 echo -e "${CYAN}Dropping database '$DATABASE_NAME'...${NC}"
 
-# Drop the database
-if docker exec "$CONTAINER_NAME" /opt/mssql-tools18/bin/sqlcmd \
+# Drop the database - capture output for error reporting
+set +e
+DROP_OUTPUT=$(docker exec "$CONTAINER_NAME" /opt/mssql-tools18/bin/sqlcmd \
     -S localhost -U sa -P "$SA_PASSWORD" -C \
-    -Q "IF EXISTS (SELECT name FROM sys.databases WHERE name = N'$DATABASE_NAME') BEGIN ALTER DATABASE [$DATABASE_NAME] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$DATABASE_NAME]; END" 2>/dev/null; then
+    -Q "IF EXISTS (SELECT name FROM sys.databases WHERE name = N'$DATABASE_NAME') BEGIN ALTER DATABASE [$DATABASE_NAME] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$DATABASE_NAME]; END" 2>&1)
+DROP_STATUS=$?
+set -e
+
+if [ $DROP_STATUS -eq 0 ]; then
     echo -e "${GREEN}Database dropped successfully.${NC}"
 else
     echo -e "${YELLOW}Warning: Could not drop database (it may not exist yet)${NC}"
+    if [ -n "$DROP_OUTPUT" ]; then
+        echo -e "${RED}sqlcmd output:${NC}"
+        echo "$DROP_OUTPUT"
+    fi
 fi
 
 echo ""
