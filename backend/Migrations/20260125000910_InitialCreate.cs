@@ -82,6 +82,7 @@ namespace backend.Migrations
                     Email = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
                     IdentityProvider = table.Column<int>(type: "int", nullable: false),
                     ProviderSubjectId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    IsSystemAdministrator = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>

@@ -134,3 +134,29 @@ The bundle includes the connection string from appsettings, or you can override 
 ```
 
 For CI/CD pipelines, the bundle can be deployed alongside the application and executed before starting the app.
+
+## System Administration
+
+### Bootstrapping Administrators
+
+System administrators are users with elevated privileges who can manage tenants, users, and system templates. After deployment, bootstrap initial administrators by running:
+
+```sql
+-- From backend/Scripts/bootstrap-admins.sql
+UPDATE Users 
+SET IsSystemAdministrator = 1 
+WHERE Email = 'bryan@bryanporter.com';
+```
+
+Or using sqlcmd:
+
+```bash
+sqlcmd -S localhost -U sa -P "DevPassword123!" -d onebighead -i backend/Scripts/bootstrap-admins.sql
+```
+
+### Admin Capabilities
+
+System administrators have access to `/admin` which provides:
+- **Tenant Management**: View all tenants with usage statistics (users, collections, items, images), delete tenants
+- **User Management**: Search users by email, view user details, grant/revoke admin privileges, delete users
+- **System Templates**: Create and manage system-level item templates available to all users

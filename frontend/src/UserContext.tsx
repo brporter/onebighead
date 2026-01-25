@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { CurrentUser } from './types';
 
 interface UserContextValue {
@@ -6,6 +6,7 @@ interface UserContextValue {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextValue>({
@@ -13,6 +14,7 @@ const UserContext = createContext<UserContextValue>({
   loading: true,
   error: null,
   refetch: async () => {},
+  logout: async () => {},
 });
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -50,12 +52,21 @@ export function UserProvider({ children }: UserProviderProps) {
     }
   };
 
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      setUser(null);
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchUser();
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, loading, error, refetch: fetchUser }}>
+    <UserContext.Provider value={{ user, loading, error, refetch: fetchUser, logout }}>
       {children}
     </UserContext.Provider>
   );

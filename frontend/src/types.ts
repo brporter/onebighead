@@ -54,6 +54,27 @@ export interface CurrentUser {
   userId: number;
   email: string;
   tenantId: number;
+  isSystemAdministrator: boolean;
+}
+
+export interface TenantSummary {
+  tenantId: number;
+  name: string;
+  userCount: number;
+  collectionCount: number;
+  itemCount: number;
+  imageCount: number;
+  createdAt: string;
+}
+
+export interface UserSummary {
+  userId: number;
+  email: string;
+  tenantId: number;
+  tenantName: string;
+  identityProvider: string;
+  isSystemAdministrator: boolean;
+  createdAt: string;
 }
 
 export interface ItemTemplateProperty {

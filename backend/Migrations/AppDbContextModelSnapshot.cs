@@ -325,6 +325,9 @@ namespace backend.Migrations
                     b.Property<int>("IdentityProvider")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsSystemAdministrator")
+                        .HasColumnType("bit");
+
                     b.Property<string>("ProviderSubjectId")
                         .IsRequired()
                         .HasMaxLength(255)

@@ -4,6 +4,7 @@ import RequireAuth from './RequireAuth';
 import CollectionView from './views/CollectionView';
 import CategoryView from './views/CategoryView';
 import ItemView from './views/ItemView';
+import SystemAdmin from './SystemAdmin';
 
 export const router = createBrowserRouter([
   {
@@ -35,5 +36,13 @@ export const router = createBrowserRouter([
         element: <ItemView />,
       },
     ],
+  },
+  {
+    path: '/admin',
+    element: (
+      <RequireAuth>
+        <SystemAdmin />
+      </RequireAuth>
+    ),
   },
 ]);

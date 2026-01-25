@@ -20,6 +20,8 @@ public class User
     [MaxLength(255)]
     public string ProviderSubjectId { get; set; } = string.Empty;
 
+    public bool IsSystemAdministrator { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     [ForeignKey(nameof(TenantId))]
