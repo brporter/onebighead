@@ -24,6 +24,7 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:  # Allow manual trigger from Actions tab
 
 # Prevent concurrent deployments
 concurrency:
@@ -35,14 +36,20 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-  # Only run if PR was merged (not just closed)
+  # Only run if PR was merged (not just closed) or manually triggered
   check-merge:
     runs-on: ubuntu-latest
     outputs:
       should-deploy: ${{ steps.check.outputs.merged }}
     steps:
       - id: check
-        run: echo "merged=${{ github.event.pull_request.merged }}" >> $GITHUB_OUTPUT
+        run: |
+          # For manual dispatch, always deploy. For PR events, check if merged.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "merged=true" >> $GITHUB_OUTPUT
+          else
+            echo "merged=${{ github.event.pull_request.merged }}" >> $GITHUB_OUTPUT
+          fi
 
   # Run tests before deployment
   test:
