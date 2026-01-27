@@ -1,6 +1,9 @@
 services:
   sqlserver:
-    image: mcr.microsoft.com/azure-sql-edge:latest
+    build:
+      context: ./build/sqlserver
+      dockerfile: Dockerfile
+    image: onebighead-sqlserver:latest
     container_name: onebighead-sqlserver
     environment:
       - ACCEPT_EULA=Y

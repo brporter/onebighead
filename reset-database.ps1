@@ -29,7 +29,7 @@ if (-not $Force) {
 
 Write-Host "Dropping database '$databaseName'..." -ForegroundColor Cyan
 
-$dropResult = docker exec $containerName /opt/mssql-tools18/bin/sqlcmd `
+$dropResult = docker exec $containerName sqlcmd `
     -S localhost -U sa -P $saPassword -C `
     -Q "IF EXISTS (SELECT name FROM sys.databases WHERE name = N'$databaseName') BEGIN ALTER DATABASE [$databaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$databaseName]; END" 2>&1
 

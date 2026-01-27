@@ -67,7 +67,7 @@ echo -e "${CYAN}Dropping database '$DATABASE_NAME'...${NC}"
 
 # Drop the database - capture output for error reporting
 set +e
-DROP_OUTPUT=$(docker exec "$CONTAINER_NAME" /opt/mssql-tools18/bin/sqlcmd \
+DROP_OUTPUT=$(docker exec "$CONTAINER_NAME" sqlcmd \
     -S localhost -U sa -P "$SA_PASSWORD" -C \
     -Q "IF EXISTS (SELECT name FROM sys.databases WHERE name = N'$DATABASE_NAME') BEGIN ALTER DATABASE [$DATABASE_NAME] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$DATABASE_NAME]; END" 2>&1)
 DROP_STATUS=$?
