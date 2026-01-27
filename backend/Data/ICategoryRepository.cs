@@ -11,5 +11,11 @@ public interface ICategoryRepository
     Task<Category> CreateAsync(Category category);
     Task<Category?> UpdateAsync(int id, Category category, int tenantId);
     Task<bool> DeleteAsync(int id, int tenantId);
+    
+    // Template association methods
+    Task<List<int>> GetTemplateIdsAsync(int categoryId, int tenantId);
+    Task<Dictionary<int, List<int>>> GetTemplateIdsByCategoryAsync(int collectionId, int tenantId);
+    Task SetTemplateIdsAsync(int categoryId, List<int> templateIds, int tenantId);
+    Task<List<int>> GetInheritedTemplateIdsAsync(int categoryId, int tenantId);
 }
 

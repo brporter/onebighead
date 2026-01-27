@@ -33,6 +33,7 @@ export interface Category {
   isSystem: boolean;
   isPublicOverride: boolean | null;
   effectiveIsPublic: boolean;
+  itemTemplateIds: number[];
 }
 
 export interface CategoryNode extends Category {

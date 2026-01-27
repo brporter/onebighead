@@ -26,9 +26,10 @@ export interface DataContextValue {
   categoriesLoading: boolean;
   categoriesError: string | null;
   loadCategoriesForCollection: (collectionId: number) => Promise<void>;
-  addCategory: (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }) => Promise<number>;
-  updateCategory: (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }) => Promise<void>;
+  addCategory: (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null; itemTemplateIds?: number[] }) => Promise<number>;
+  updateCategory: (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null; itemTemplateIds?: number[] }) => Promise<void>;
   deleteCategory: (categoryId: number) => Promise<void>;
+  getCategoryTemplates: (categoryId: number) => Promise<number[]>;
   
   // Items (scoped to current collection/category)
   items: Item[];
@@ -81,6 +82,7 @@ const defaultContextValue: DataContextValue = {
   addCategory: async () => 0,
   updateCategory: async () => {},
   deleteCategory: async () => {},
+  getCategoryTemplates: async () => [],
   items: [],
   itemsLoading: false,
   itemsError: null,
@@ -237,13 +239,13 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, []);
 
-  const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }): Promise<number> => {
+  const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null; itemTemplateIds?: number[] }): Promise<number> => {
     const created = await categoriesApi.create(category);
     setCategories((prev) => [...prev, created]);
     return created.categoryId;
   }, []);
 
-  const updateCategory = useCallback(async (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null }): Promise<void> => {
+  const updateCategory = useCallback(async (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; isPublicOverride?: boolean | null; itemTemplateIds?: number[] }): Promise<void> => {
     const result = await categoriesApi.update(categoryId, updates);
     setCategories((prev) =>
       prev.map((cat) => (cat.categoryId === categoryId ? result : cat))
@@ -254,6 +256,10 @@ export function DataProvider({ children }: DataProviderProps) {
     await categoriesApi.delete(categoryId);
     setCategories((prev) => prev.filter((cat) => cat.categoryId !== categoryId));
     itemsCacheRef.current.clear();
+  }, []);
+
+  const getCategoryTemplates = useCallback(async (categoryId: number): Promise<number[]> => {
+    return await categoriesApi.getTemplates(categoryId);
   }, []);
 
   // Item operations
@@ -412,6 +418,7 @@ export function DataProvider({ children }: DataProviderProps) {
     addCategory,
     updateCategory,
     deleteCategory,
+    getCategoryTemplates,
     items,
     itemsLoading,
     itemsError,

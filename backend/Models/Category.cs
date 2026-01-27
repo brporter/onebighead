@@ -46,5 +46,8 @@ public class Category
     [JsonIgnore]
     [ForeignKey(nameof(CollectionId))]
     public Collection? Collection { get; set; }
+
+    [JsonIgnore]
+    public ICollection<CategoryItemTemplate> CategoryItemTemplates { get; set; } = new List<CategoryItemTemplate>();
 }
 

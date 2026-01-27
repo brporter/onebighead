@@ -111,5 +111,119 @@ public class CategoryRepository : ICategoryRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<List<int>> GetTemplateIdsAsync(int categoryId, int tenantId)
+    {
+        // Verify category belongs to tenant
+        var category = await _context.Categories
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == categoryId && c.TenantId == tenantId);
+        
+        if (category is null)
+        {
+            return new List<int>();
+        }
+
+        return await _context.CategoryItemTemplates
+            .AsNoTracking()
+            .Where(ct => ct.CategoryId == categoryId)
+            .OrderBy(ct => ct.SortOrder)
+            .Select(ct => ct.ItemTemplateId)
+            .ToListAsync();
+    }
+
+    public async Task<Dictionary<int, List<int>>> GetTemplateIdsByCategoryAsync(int collectionId, int tenantId)
+    {
+        var categoryIds = await _context.Categories
+            .AsNoTracking()
+            .Where(c => c.CollectionId == collectionId && c.TenantId == tenantId)
+            .Select(c => c.Id)
+            .ToListAsync();
+
+        var associations = await _context.CategoryItemTemplates
+            .AsNoTracking()
+            .Where(ct => categoryIds.Contains(ct.CategoryId))
+            .OrderBy(ct => ct.SortOrder)
+            .ToListAsync();
+
+        return associations
+            .GroupBy(ct => ct.CategoryId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(ct => ct.ItemTemplateId).ToList()
+            );
+    }
+
+    public async Task SetTemplateIdsAsync(int categoryId, List<int> templateIds, int tenantId)
+    {
+        // Verify category belongs to tenant
+        var category = await _context.Categories
+            .FirstOrDefaultAsync(c => c.Id == categoryId && c.TenantId == tenantId);
+        
+        if (category is null)
+        {
+            return;
+        }
+
+        // Remove existing associations
+        var existing = await _context.CategoryItemTemplates
+            .Where(ct => ct.CategoryId == categoryId)
+            .ToListAsync();
+        _context.CategoryItemTemplates.RemoveRange(existing);
+
+        // Add new associations
+        var sortOrder = 0;
+        foreach (var templateId in templateIds)
+        {
+            _context.CategoryItemTemplates.Add(new CategoryItemTemplate
+            {
+                CategoryId = categoryId,
+                ItemTemplateId = templateId,
+                SortOrder = sortOrder++
+            });
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<int>> GetInheritedTemplateIdsAsync(int categoryId, int tenantId)
+    {
+        var result = new List<int>();
+        var seen = new HashSet<int>();
+        var currentId = (int?)categoryId;
+
+        // Walk up the parent chain collecting template IDs
+        while (currentId.HasValue)
+        {
+            var category = await _context.Categories
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == currentId.Value && c.TenantId == tenantId);
+            
+            if (category is null)
+            {
+                break;
+            }
+
+            var templateIds = await _context.CategoryItemTemplates
+                .AsNoTracking()
+                .Where(ct => ct.CategoryId == currentId.Value)
+                .OrderBy(ct => ct.SortOrder)
+                .Select(ct => ct.ItemTemplateId)
+                .ToListAsync();
+
+            // Add templates we haven't seen yet (child takes precedence)
+            foreach (var templateId in templateIds)
+            {
+                if (seen.Add(templateId))
+                {
+                    result.Add(templateId);
+                }
+            }
+
+            currentId = category.ParentCategoryId;
+        }
+
+        return result;
+    }
 }
 

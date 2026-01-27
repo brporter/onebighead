@@ -63,7 +63,7 @@ public class CategoriesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedCategories = Assert.IsAssignableFrom<IEnumerable<Category>>(okResult.Value);
+        var returnedCategories = Assert.IsAssignableFrom<IEnumerable<CategoryResponse>>(okResult.Value);
         Assert.Equal(2, returnedCategories.Count());
     }
 
@@ -79,7 +79,7 @@ public class CategoriesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedCategories = Assert.IsAssignableFrom<IEnumerable<Category>>(okResult.Value);
+        var returnedCategories = Assert.IsAssignableFrom<IEnumerable<CategoryResponse>>(okResult.Value);
         Assert.Empty(returnedCategories);
     }
 
@@ -96,13 +96,15 @@ public class CategoriesControllerTests
             .ReturnsAsync(collection);
         _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
             .ReturnsAsync(categories);
+        _mockRepository.Setup(repo => repo.GetTemplateIdsByCategoryAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(new Dictionary<int, List<int>>());
 
         // Act
         var result = await _controller.GetCategories(TestCollectionId);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedCategories = Assert.IsAssignableFrom<IEnumerable<Category>>(okResult.Value);
+        var returnedCategories = Assert.IsAssignableFrom<IEnumerable<CategoryResponse>>(okResult.Value);
         Assert.Single(returnedCategories);
     }
 
@@ -137,8 +139,8 @@ public class CategoriesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedCategory = Assert.IsType<Category>(okResult.Value);
-        Assert.Equal(1, returnedCategory.Id);
+        var returnedCategory = Assert.IsType<CategoryResponse>(okResult.Value);
+        Assert.Equal(1, returnedCategory.CategoryId);
         Assert.Equal("Test Category", returnedCategory.Name);
     }
 
@@ -180,7 +182,7 @@ public class CategoriesControllerTests
         var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result.Result);
         Assert.Equal(nameof(CategoriesController.GetCategory), createdAtActionResult.ActionName);
         Assert.Equal(1, createdAtActionResult.RouteValues?["id"]);
-        var returnedCategory = Assert.IsType<Category>(createdAtActionResult.Value);
+        var returnedCategory = Assert.IsType<CategoryResponse>(createdAtActionResult.Value);
         Assert.Equal("New Category", returnedCategory.Name);
     }
 
@@ -272,7 +274,7 @@ public class CategoriesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedCategory = Assert.IsType<Category>(okResult.Value);
+        var returnedCategory = Assert.IsType<CategoryResponse>(okResult.Value);
         Assert.Equal("Updated Category", returnedCategory.Name);
     }
 

@@ -35,4 +35,7 @@ public class ItemTemplate
 
     [JsonIgnore]
     public ICollection<CollectionItemTemplate> CollectionItemTemplates { get; set; } = new List<CollectionItemTemplate>();
+
+    [JsonIgnore]
+    public ICollection<CategoryItemTemplate> CategoryItemTemplates { get; set; } = new List<CategoryItemTemplate>();
 }

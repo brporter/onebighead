@@ -4,35 +4,51 @@ import type { ItemTemplate, ItemProperty } from './types';
 
 interface TemplateSelectorProps {
   collectionId: number;
+  categoryId?: number | null;
   isOpen: boolean;
   onClose: () => void;
   onSelect: (properties: ItemProperty[]) => void;
 }
 
-function TemplateSelector({ collectionId, isOpen, onClose, onSelect }: TemplateSelectorProps) {
-  const { loadCollectionTemplates, loadItemTemplates, itemTemplates } = useData();
+function TemplateSelector({ collectionId, categoryId, isOpen, onClose, onSelect }: TemplateSelectorProps) {
+  const { loadCollectionTemplates, loadItemTemplates, itemTemplates, getCategoryTemplates, categories } = useData();
   const [collectionTemplates, setCollectionTemplates] = useState<ItemTemplate[]>([]);
+  const [recommendedTemplateIds, setRecommendedTemplateIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'collection' | 'library'>('collection');
+  const [activeTab, setActiveTab] = useState<'recommended' | 'collection' | 'library'>('collection');
+
+  const category = categoryId ? categories.find(c => c.categoryId === categoryId) : null;
 
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      Promise.all([
+      const promises: Promise<unknown>[] = [
         loadCollectionTemplates(collectionId),
         loadItemTemplates(),
-      ]).then(([colTemplates]) => {
-        setCollectionTemplates(colTemplates);
-        // Default to library tab if no collection templates
-        if (colTemplates.length === 0) {
-          setActiveTab('library');
-        } else {
+      ];
+      
+      // Load category templates if a category is selected
+      if (categoryId) {
+        promises.push(getCategoryTemplates(categoryId));
+      }
+      
+      Promise.all(promises).then(([colTemplates, , categoryTemplateIds]) => {
+        setCollectionTemplates(colTemplates as ItemTemplate[]);
+        const catTemplates = (categoryTemplateIds as number[] | undefined) ?? [];
+        setRecommendedTemplateIds(catTemplates);
+        
+        // Set default tab based on available templates
+        if (catTemplates.length > 0) {
+          setActiveTab('recommended');
+        } else if ((colTemplates as ItemTemplate[]).length > 0) {
           setActiveTab('collection');
+        } else {
+          setActiveTab('library');
         }
         setLoading(false);
       });
     }
-  }, [isOpen, collectionId, loadCollectionTemplates, loadItemTemplates]);
+  }, [isOpen, collectionId, categoryId, loadCollectionTemplates, loadItemTemplates, getCategoryTemplates]);
 
   useEffect(() => {
     if (isOpen) {
@@ -66,7 +82,24 @@ function TemplateSelector({ collectionId, isOpen, onClose, onSelect }: TemplateS
     }
   };
 
-  const displayTemplates = activeTab === 'collection' ? collectionTemplates : itemTemplates;
+  // Get recommended templates from both collection and library templates
+  const allTemplates = [...collectionTemplates];
+  itemTemplates.forEach(t => {
+    if (!allTemplates.some(ct => ct.itemTemplateId === t.itemTemplateId)) {
+      allTemplates.push(t);
+    }
+  });
+  const recommendedTemplates = recommendedTemplateIds
+    .map(id => allTemplates.find(t => t.itemTemplateId === id))
+    .filter((t): t is ItemTemplate => t !== undefined);
+
+  const displayTemplates = activeTab === 'recommended' 
+    ? recommendedTemplates 
+    : activeTab === 'collection' 
+      ? collectionTemplates 
+      : itemTemplates;
+
+  const hasRecommended = recommendedTemplateIds.length > 0;
 
   return (
     <div className="templateSelector" onClick={handleBackdropClick}>
@@ -84,21 +117,35 @@ function TemplateSelector({ collectionId, isOpen, onClose, onSelect }: TemplateS
           ) : (
             <>
               <div className="templateSelector__tabs">
+                {hasRecommended && (
+                  <button
+                    className={`templateSelector__tab templateSelector__tab--recommended ${activeTab === 'recommended' ? 'templateSelector__tab--active' : ''}`}
+                    onClick={() => setActiveTab('recommended')}
+                  >
+                    ★ Recommended ({recommendedTemplates.length})
+                  </button>
+                )}
                 {collectionTemplates.length > 0 && (
                   <button
                     className={`templateSelector__tab ${activeTab === 'collection' ? 'templateSelector__tab--active' : ''}`}
                     onClick={() => setActiveTab('collection')}
                   >
-                    Collection Templates ({collectionTemplates.length})
+                    Collection ({collectionTemplates.length})
                   </button>
                 )}
                 <button
                   className={`templateSelector__tab ${activeTab === 'library' ? 'templateSelector__tab--active' : ''}`}
                   onClick={() => setActiveTab('library')}
                 >
-                  Template Library ({itemTemplates.length})
+                  Library ({itemTemplates.length})
                 </button>
               </div>
+
+              {activeTab === 'recommended' && category && (
+                <p className="templateSelector__hint">
+                  Templates recommended for "{category.name}"
+                </p>
+              )}
 
               <div className="templateSelector__list">
                 {displayTemplates.length > 0 ? (
@@ -110,8 +157,8 @@ function TemplateSelector({ collectionId, isOpen, onClose, onSelect }: TemplateS
                     >
                       <div className="templateSelector__itemHeader">
                         <span className="templateSelector__itemName">{template.name}</span>
-                        {template.isShared && (
-                          <span className="templateSelector__sharedBadge">Shared</span>
+                        {template.isSystem && (
+                          <span className="templateSelector__sharedBadge">System</span>
                         )}
                       </div>
                       {template.description && (
@@ -133,9 +180,11 @@ function TemplateSelector({ collectionId, isOpen, onClose, onSelect }: TemplateS
                   ))
                 ) : (
                   <p className="templateSelector__empty">
-                    {activeTab === 'collection'
-                      ? 'No templates associated with this collection.'
-                      : 'No templates available in the library.'}
+                    {activeTab === 'recommended'
+                      ? 'No recommended templates for this category.'
+                      : activeTab === 'collection'
+                        ? 'No templates associated with this collection.'
+                        : 'No templates available in the library.'}
                   </p>
                 )}
               </div>

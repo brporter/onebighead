@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<ItemTemplate> ItemTemplates => Set<ItemTemplate>();
     public DbSet<ItemTemplateProperty> ItemTemplateProperties => Set<ItemTemplateProperty>();
     public DbSet<CollectionItemTemplate> CollectionItemTemplates => Set<CollectionItemTemplate>();
+    public DbSet<CategoryItemTemplate> CategoryItemTemplates => Set<CategoryItemTemplate>();
     public DbSet<StoredImage> StoredImages => Set<StoredImage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -193,6 +194,24 @@ public class AppDbContext : DbContext
                 .WithMany(t => t.CollectionItemTemplates)
                 .HasForeignKey(ct => ct.ItemTemplateId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CategoryItemTemplate>(entity =>
+        {
+            entity.HasKey(ct => new { ct.CategoryId, ct.ItemTemplateId });
+
+            entity.HasOne(ct => ct.Category)
+                .WithMany(c => c.CategoryItemTemplates)
+                .HasForeignKey(ct => ct.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Use Restrict to avoid multiple cascade paths in SQL Server
+            entity.HasOne(ct => ct.ItemTemplate)
+                .WithMany(t => t.CategoryItemTemplates)
+                .HasForeignKey(ct => ct.ItemTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(ct => ct.CategoryId);
         });
 
         modelBuilder.Entity<StoredImage>(entity =>

@@ -10,6 +10,7 @@ export interface CreateCategoryRequest {
   description?: string;
   parentCategoryId?: number | null;
   isPublicOverride?: boolean | null;
+  itemTemplateIds?: number[];
 }
 
 export interface UpdateCategoryRequest {
@@ -17,6 +18,7 @@ export interface UpdateCategoryRequest {
   description?: string;
   parentCategoryId?: number | null;
   isPublicOverride?: boolean | null;
+  itemTemplateIds?: number[];
 }
 
 export const categoriesApi = {
@@ -41,5 +43,12 @@ export const categoriesApi = {
 
   delete(id: number): Promise<void> {
     return api.delete(`/categories/${id}`);
+  },
+
+  /**
+   * Get templates for a category including inherited templates from parent categories.
+   */
+  getTemplates(categoryId: number): Promise<number[]> {
+    return api.get<number[]>(`/categories/${categoryId}/templates`);
   },
 };
