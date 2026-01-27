@@ -118,6 +118,9 @@ app.MapRazorPages()
 
 app.MapControllers();
 
+// Simple health check endpoint for deployment verification
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
 app.Run();
 
 public partial class Program { }

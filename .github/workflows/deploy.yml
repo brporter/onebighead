@@ -212,10 +212,12 @@ jobs:
             --output none
 
       - name: Update Container App
+        env:
+          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
         run: |
           # Use custom domain if provided, otherwise use Container App URL
-          if [ -n "${{ secrets.APP_DOMAIN }}" ]; then
-            APP_URL="${{ secrets.APP_DOMAIN }}"
+          if [ -n "$APP_DOMAIN" ]; then
+            APP_URL="$APP_DOMAIN"
             echo "Using custom domain: $APP_URL"
           else
             APP_URL=$(az containerapp show \
@@ -326,29 +328,37 @@ jobs:
 
       # Verify deployment
       - name: Verify deployment
+        env:
+          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
         run: |
-          APP_URL=$(az containerapp show \
-            --name "$CONTAINER_APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --query "properties.configuration.ingress.fqdn" \
-            -o tsv)
+          # Use custom domain for health check if configured
+          if [ -n "$APP_DOMAIN" ]; then
+            HEALTH_URL="https://${APP_DOMAIN}/health"
+          else
+            APP_URL=$(az containerapp show \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --query "properties.configuration.ingress.fqdn" \
+              -o tsv)
+            HEALTH_URL="https://${APP_URL}/health"
+          fi
           
           echo "Deployment complete!"
-          echo "Application URL: https://${APP_URL}"
+          echo "Health check URL: $HEALTH_URL"
           
-          # Wait for app to be ready and verify health
-          echo "Waiting for application to be ready..."
-          for i in {1..30}; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_URL}/health" || echo "000")
+          # Brief health check - new revisions take a moment to become active
+          echo "Verifying application health..."
+          for i in {1..6}; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
             if [ "$HTTP_STATUS" = "200" ]; then
               echo "Application is healthy!"
               exit 0
             fi
-            echo "  Waiting for health check ($i/30)... Status: $HTTP_STATUS"
-            sleep 10
+            echo "  Waiting for health check ($i/6)... Status: $HTTP_STATUS"
+            sleep 5
           done
           
-          echo "::warning::Health check did not return 200 within timeout, but deployment may still be successful."
+          echo "::warning::Health check did not return 200 within 30 seconds. The app may still be starting up."
 
       - name: Output deployment summary
         run: |
