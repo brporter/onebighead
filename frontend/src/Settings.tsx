@@ -6,6 +6,7 @@ import { useData } from './DataContext';
 import { exportApi } from './api';
 import ItemTemplateEditor from './ItemTemplateEditor';
 import VisibilityToggle from './VisibilityToggle';
+import CollectionSetupWizard from './CollectionSetupWizard';
 import type { Collection } from './types';
 
 interface SettingsProps {
@@ -16,6 +17,7 @@ interface SettingsProps {
 function Settings({ isOpen, onClose }: SettingsProps) {
   const { collections, addCollection, updateCollection, deleteCollection, loadCollections } = useData();
   const [isAdding, setIsAdding] = useState(false);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [size, setSize] = useState({ width: 700, height: 600 });
   const [isResizing, setIsResizing] = useState(false);
@@ -58,6 +60,7 @@ function Settings({ isOpen, onClose }: SettingsProps) {
       setExportError(null);
       setShowTemplateEditor(false);
       setTemplateEditorDirty(false);
+      setShowSetupWizard(false);
     }
   }, [isOpen]);
 
@@ -88,12 +91,17 @@ function Settings({ isOpen, onClose }: SettingsProps) {
   if (!isOpen) return null;
 
   const handleAddClick = () => {
-    const initial = { name: '', description: '', heroImageUrl: '', isPublic: false };
-    setFormData(initial);
-    setOriginalFormData(initial);
-    setIsAdding(true);
-    setEditingId(null);
-    setError(null);
+    // Use setup wizard for new collections
+    setShowSetupWizard(true);
+  };
+
+  const handleWizardComplete = async () => {
+    setShowSetupWizard(false);
+    await loadCollections();
+  };
+
+  const handleWizardCancel = () => {
+    setShowSetupWizard(false);
   };
 
   const handleEditClick = (collection: Collection) => {
@@ -223,7 +231,13 @@ function Settings({ isOpen, onClose }: SettingsProps) {
             </button>
           </div>
           <div className="settings-modal__body">
-            {showTemplateEditor ? (
+            {showSetupWizard ? (
+              <CollectionSetupWizard
+                onComplete={handleWizardComplete}
+                onCancel={handleWizardCancel}
+                isModal={true}
+              />
+            ) : showTemplateEditor ? (
               <ItemTemplateEditor 
                 onClose={() => setShowTemplateEditor(false)} 
                 onDirtyChange={setTemplateEditorDirty}

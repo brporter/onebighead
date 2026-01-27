@@ -10,6 +10,7 @@ using System.Security.Claims;
 
 namespace backend.Tests.Controllers;
 
+[Trait("Category", "Unit")]
 public class ItemsControllerTests
 {
     private readonly Mock<IItemRepository> _mockItemRepository;

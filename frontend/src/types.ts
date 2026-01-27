@@ -111,3 +111,35 @@ export interface UpdateItemTemplateRequest {
   properties: Omit<ItemTemplateProperty, 'itemTemplatePropertyId'>[];
 }
 
+export interface ThemeCategory {
+  name: string;
+  description: string;
+  parentName: string | null;
+  sortOrder: number;
+}
+
+export interface ThemeTemplate {
+  itemTemplateId: number;
+  name: string;
+  description: string;
+  properties: ItemTemplateProperty[];
+}
+
+export interface CollectionTheme {
+  themeId: number;
+  name: string;
+  description: string;
+  iconName: string;
+  sortOrder: number;
+  templates: ThemeTemplate[];
+  categories: ThemeCategory[];
+}
+
+export interface SetupCollectionRequest {
+  name: string;
+  description?: string;
+  heroImageUrl?: string;
+  isPublic?: boolean;
+  themeId: number;
+}
+

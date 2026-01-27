@@ -11,6 +11,7 @@ using System.Security.Claims;
 
 namespace backend.Tests.Controllers;
 
+[Trait("Category", "Unit")]
 public class AuthControllerTests
 {
     private readonly Mock<IOidcTokenValidator> _mockTokenValidator;

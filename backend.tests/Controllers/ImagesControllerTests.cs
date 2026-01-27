@@ -8,6 +8,7 @@ using System.Text;
 
 namespace backend.Tests.Controllers;
 
+[Trait("Category", "Unit")]
 public class ImagesControllerTests
 {
     private readonly Mock<IImageProvider> _mockImageProvider;

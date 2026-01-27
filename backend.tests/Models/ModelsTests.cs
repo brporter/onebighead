@@ -2,6 +2,7 @@ using backend.Models;
 
 namespace backend.Tests.Models;
 
+[Trait("Category", "Unit")]
 public class ItemTests
 {
     [Fact]
@@ -70,6 +71,7 @@ public class ItemTests
     }
 }
 
+[Trait("Category", "Unit")]
 public class ItemPropertyTests
 {
     [Fact]
@@ -98,6 +100,7 @@ public class ItemPropertyTests
     }
 }
 
+[Trait("Category", "Unit")]
 public class ItemImageTests
 {
     [Fact]
@@ -125,6 +128,7 @@ public class ItemImageTests
     }
 }
 
+[Trait("Category", "Unit")]
 public class CollectionTests
 {
     [Fact]
@@ -185,6 +189,7 @@ public class CollectionTests
     }
 }
 
+[Trait("Category", "Unit")]
 public class TenantTests
 {
     [Fact]
@@ -234,6 +239,7 @@ public class TenantTests
     }
 }
 
+[Trait("Category", "Unit")]
 public class UserTests
 {
     [Fact]

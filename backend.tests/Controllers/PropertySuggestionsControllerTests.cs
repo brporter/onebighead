@@ -8,6 +8,7 @@ using System.Security.Claims;
 
 namespace backend.Tests.Controllers;
 
+[Trait("Category", "Unit")]
 public class PropertySuggestionsControllerTests
 {
     private readonly Mock<IPropertySuggestionRepository> _mockSuggestionRepository;

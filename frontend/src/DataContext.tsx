@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
-import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest } from './types';
-import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, ApiError } from './api';
+import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest, CollectionTheme, SetupCollectionRequest } from './types';
+import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi, ApiError } from './api';
 
 interface CategoryItemsCache {
   items: Item[];
@@ -18,8 +18,15 @@ export interface DataContextValue {
   collectionsError: string | null;
   loadCollections: () => Promise<void>;
   addCollection: (name: string, description?: string, heroImageUrl?: string, isPublic?: boolean) => Promise<Collection>;
+  setupCollection: (request: SetupCollectionRequest) => Promise<Collection>;
   updateCollection: (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string; isPublic?: boolean }) => Promise<void>;
   deleteCollection: (collectionId: number) => Promise<void>;
+  
+  // Collection themes
+  themes: CollectionTheme[];
+  themesLoading: boolean;
+  themesError: string | null;
+  loadThemes: () => Promise<void>;
   
   // Categories (scoped to current collection)
   categories: Category[];
@@ -72,9 +79,14 @@ const defaultContextValue: DataContextValue = {
   collectionsLoading: false,
   collectionsError: null,
   loadCollections: async () => {},
-  addCollection: async () => ({ collectionId: 0, tenantId: 0, name: '', description: '', heroImageUrl: null, slug: '' }),
+  addCollection: async () => ({ collectionId: 0, tenantId: 0, name: '', description: '', heroImageUrl: null, slug: '', isPublic: false }),
+  setupCollection: async () => ({ collectionId: 0, tenantId: 0, name: '', description: '', heroImageUrl: null, slug: '', isPublic: false }),
   updateCollection: async () => {},
   deleteCollection: async () => {},
+  themes: [],
+  themesLoading: false,
+  themesError: null,
+  loadThemes: async () => {},
   categories: [],
   categoriesLoading: false,
   categoriesError: null,
@@ -103,8 +115,8 @@ const defaultContextValue: DataContextValue = {
   itemTemplatesError: null,
   loadItemTemplates: async () => {},
   loadCollectionTemplates: async () => [],
-  createItemTemplate: async () => ({ itemTemplateId: 0, name: '', description: '', isShared: false, isOwner: true, properties: [], createdAt: '', updatedAt: '' }),
-  updateItemTemplate: async () => ({ itemTemplateId: 0, name: '', description: '', isShared: false, isOwner: true, properties: [], createdAt: '', updatedAt: '' }),
+  createItemTemplate: async () => ({ itemTemplateId: 0, name: '', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' }),
+  updateItemTemplate: async () => ({ itemTemplateId: 0, name: '', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' }),
   deleteItemTemplate: async () => {},
   associateTemplateWithCollection: async () => {},
   disassociateTemplateFromCollection: async () => {},
@@ -127,6 +139,10 @@ export function DataProvider({ children }: DataProviderProps) {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [collectionsError, setCollectionsError] = useState<string | null>(null);
+  
+  const [themes, setThemes] = useState<CollectionTheme[]>([]);
+  const [themesLoading, setThemesLoading] = useState(false);
+  const [themesError, setThemesError] = useState<string | null>(null);
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -210,6 +226,12 @@ export function DataProvider({ children }: DataProviderProps) {
     return created;
   }, []);
 
+  const setupCollection = useCallback(async (request: SetupCollectionRequest): Promise<Collection> => {
+    const created = await collectionsApi.setup(request);
+    setCollections((prev) => [...prev, created]);
+    return created;
+  }, []);
+
   const updateCollection = useCallback(async (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string; isPublic?: boolean }): Promise<void> => {
     const result = await collectionsApi.update(collectionId, updates);
     setCollections((prev) =>
@@ -223,6 +245,20 @@ export function DataProvider({ children }: DataProviderProps) {
   const deleteCollection = useCallback(async (collectionId: number): Promise<void> => {
     await collectionsApi.delete(collectionId);
     setCollections((prev) => prev.filter((col) => col.collectionId !== collectionId));
+  }, []);
+
+  // Theme operations
+  const loadThemes = useCallback(async () => {
+    try {
+      setThemesLoading(true);
+      setThemesError(null);
+      const data = await themesApi.getAll();
+      setThemes(data);
+    } catch (error) {
+      setThemesError(error instanceof Error ? error.message : 'Failed to fetch themes');
+    } finally {
+      setThemesLoading(false);
+    }
   }, []);
 
   // Category operations
@@ -409,8 +445,13 @@ export function DataProvider({ children }: DataProviderProps) {
     collectionsError,
     loadCollections,
     addCollection,
+    setupCollection,
     updateCollection,
     deleteCollection,
+    themes,
+    themesLoading,
+    themesError,
+    loadThemes,
     categories,
     categoriesLoading,
     categoriesError,

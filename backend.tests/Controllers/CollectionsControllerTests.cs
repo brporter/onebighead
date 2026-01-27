@@ -8,11 +8,13 @@ using System.Security.Claims;
 
 namespace backend.Tests.Controllers;
 
+[Trait("Category", "Unit")]
 public class CollectionsControllerTests
 {
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
     private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
+    private readonly Mock<IThemeRepository> _mockThemeRepository;
     private readonly CollectionsController _controller;
     private const int TestTenantId = 1;
     private const int TestUserId = 1;
@@ -22,10 +24,12 @@ public class CollectionsControllerTests
         _mockCollectionRepository = new Mock<ICollectionRepository>();
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
+        _mockThemeRepository = new Mock<IThemeRepository>();
         _controller = new CollectionsController(
             _mockCollectionRepository.Object, 
             _mockCategoryRepository.Object,
-            _mockItemTemplateRepository.Object);
+            _mockItemTemplateRepository.Object,
+            _mockThemeRepository.Object);
 
         var claims = new List<Claim>
         {
@@ -349,6 +353,174 @@ public class CollectionsControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Contains("Cannot delete the last collection", badRequestResult.Value?.ToString());
+    }
+
+    #endregion
+
+    #region SetupCollection Tests
+
+    [Fact]
+    public async Task SetupCollection_ReturnsBadRequest_WhenThemeNotFound()
+    {
+        // Arrange
+        var request = new SetupCollectionRequest { Name = "Test Collection", ThemeId = 999 };
+        _mockThemeRepository.Setup(repo => repo.GetByIdAsync(999))
+            .ReturnsAsync((CollectionTheme?)null);
+
+        // Act
+        var result = await _controller.SetupCollection(request);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Contains("Invalid theme", badRequestResult.Value?.ToString());
+    }
+
+    [Fact]
+    public async Task SetupCollection_CreatesCollectionWithUnassignedCategory()
+    {
+        // Arrange
+        var theme = new CollectionTheme
+        {
+            Id = 1,
+            Name = "General",
+            ThemeTemplates = new List<CollectionThemeTemplate>(),
+            ThemeCategories = new List<CollectionThemeCategory>()
+        };
+
+        var createdCollection = new Collection
+        {
+            Id = 1,
+            TenantId = TestTenantId,
+            Name = "Test Collection",
+            Slug = "test-collection"
+        };
+
+        var request = new SetupCollectionRequest { Name = "Test Collection", ThemeId = 1 };
+
+        _mockThemeRepository.Setup(repo => repo.GetByIdAsync(1))
+            .ReturnsAsync(theme);
+        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
+            .ReturnsAsync(createdCollection);
+        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
+            .ReturnsAsync((Category c) => c);
+
+        // Act
+        var result = await _controller.SetupCollection(request);
+
+        // Assert
+        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+        
+        // Verify Unassigned category was created
+        _mockCategoryRepository.Verify(
+            repo => repo.CreateAsync(It.Is<Category>(c => 
+                c.Name == "Unassigned Items" && 
+                c.IsSystem == true && 
+                c.CollectionId == 1)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetupCollection_AssociatesThemeTemplates()
+    {
+        // Arrange
+        var theme = new CollectionTheme
+        {
+            Id = 1,
+            Name = "Books",
+            ThemeTemplates = new List<CollectionThemeTemplate>
+            {
+                new() { ThemeId = 1, ItemTemplateId = 10, SortOrder = 1 },
+                new() { ThemeId = 1, ItemTemplateId = 11, SortOrder = 2 }
+            },
+            ThemeCategories = new List<CollectionThemeCategory>()
+        };
+
+        var createdCollection = new Collection
+        {
+            Id = 5,
+            TenantId = TestTenantId,
+            Name = "My Books",
+            Slug = "my-books"
+        };
+
+        var request = new SetupCollectionRequest { Name = "My Books", ThemeId = 1 };
+
+        _mockThemeRepository.Setup(repo => repo.GetByIdAsync(1))
+            .ReturnsAsync(theme);
+        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
+            .ReturnsAsync(createdCollection);
+        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
+            .ReturnsAsync((Category c) => c);
+
+        // Act
+        var result = await _controller.SetupCollection(request);
+
+        // Assert
+        _mockItemTemplateRepository.Verify(
+            repo => repo.AssociateWithCollectionAsync(10, 5),
+            Times.Once);
+        _mockItemTemplateRepository.Verify(
+            repo => repo.AssociateWithCollectionAsync(11, 5),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetupCollection_CreatesCategoriesWithParentLinkage()
+    {
+        // Arrange
+        var theme = new CollectionTheme
+        {
+            Id = 1,
+            Name = "Books",
+            ThemeTemplates = new List<CollectionThemeTemplate>(),
+            ThemeCategories = new List<CollectionThemeCategory>
+            {
+                new() { ThemeId = 1, Name = "Fiction", Description = "Fiction books", ParentName = null, SortOrder = 1 },
+                new() { ThemeId = 1, Name = "Sci-Fi", Description = "Science fiction", ParentName = "Fiction", SortOrder = 1 }
+            }
+        };
+
+        var createdCollection = new Collection
+        {
+            Id = 5,
+            TenantId = TestTenantId,
+            Name = "My Books",
+            Slug = "my-books"
+        };
+
+        var request = new SetupCollectionRequest { Name = "My Books", ThemeId = 1 };
+        var categoryIdCounter = 100;
+
+        _mockThemeRepository.Setup(repo => repo.GetByIdAsync(1))
+            .ReturnsAsync(theme);
+        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
+            .ReturnsAsync(createdCollection);
+        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
+            .ReturnsAsync((Category c) =>
+            {
+                c.Id = categoryIdCounter++;
+                return c;
+            });
+
+        // Act
+        var result = await _controller.SetupCollection(request);
+
+        // Assert
+        // Categories created: Unassigned (100), Fiction (101), Sci-Fi (102)
+        
+        // Verify root category "Fiction" was created without parent
+        _mockCategoryRepository.Verify(
+            repo => repo.CreateAsync(It.Is<Category>(c => 
+                c.Name == "Fiction" && 
+                c.ParentCategoryId == null)),
+            Times.Once);
+
+        // Verify child category "Sci-Fi" was created with Fiction as parent (ID 101)
+        _mockCategoryRepository.Verify(
+            repo => repo.CreateAsync(It.Is<Category>(c => 
+                c.Name == "Sci-Fi" && 
+                c.ParentCategoryId == 101)), // Fiction's assigned ID
+            Times.Once);
     }
 
     #endregion

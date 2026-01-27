@@ -8,6 +8,7 @@ using System.Net;
 
 namespace backend.Tests.Authentication;
 
+[Trait("Category", "Unit")]
 public class OAuthServiceTests
 {
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
