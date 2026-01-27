@@ -216,17 +216,23 @@ jobs:
           APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
         run: |
           # Use custom domain if provided, otherwise use Container App URL
+          echo "=============================================="
+          echo "Determining OAuth Base URL..."
+          echo "=============================================="
           if [ -n "$APP_DOMAIN" ]; then
             APP_URL="$APP_DOMAIN"
-            echo "Using custom domain: $APP_URL"
+            echo "✓ APP_DOMAIN secret is SET"
+            echo "✓ Using CUSTOM DOMAIN for OAuth: https://$APP_URL"
           else
+            echo "✗ APP_DOMAIN secret is NOT set"
             APP_URL=$(az containerapp show \
               --name "$CONTAINER_APP_NAME" \
               --resource-group "$RESOURCE_GROUP" \
               --query "properties.configuration.ingress.fqdn" \
               -o tsv)
-            echo "Using Container App URL: $APP_URL"
+            echo "✓ Using AUTO-DETECTED Container App URL: https://$APP_URL"
           fi
+          echo "=============================================="
           
           # Build environment variables array
           ENV_VARS=(
@@ -332,8 +338,12 @@ jobs:
           APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
         run: |
           # Use custom domain for health check if configured
+          echo "=============================================="
+          echo "Verifying deployment..."
+          echo "=============================================="
           if [ -n "$APP_DOMAIN" ]; then
             HEALTH_URL="https://${APP_DOMAIN}/health"
+            echo "✓ Using CUSTOM DOMAIN for health check"
           else
             APP_URL=$(az containerapp show \
               --name "$CONTAINER_APP_NAME" \
@@ -341,10 +351,11 @@ jobs:
               --query "properties.configuration.ingress.fqdn" \
               -o tsv)
             HEALTH_URL="https://${APP_URL}/health"
+            echo "✓ Using AUTO-DETECTED URL for health check"
           fi
           
-          echo "Deployment complete!"
           echo "Health check URL: $HEALTH_URL"
+          echo "=============================================="
           
           # Brief health check - new revisions take a moment to become active
           echo "Verifying application health..."
