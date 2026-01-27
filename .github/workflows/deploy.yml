@@ -11,9 +11,9 @@
 #   AZURE_APP_NAME           - Base name for Azure resources (e.g., "onebighead")
 #   AZURE_LOCATION           - Azure region (e.g., "eastus")
 #   JWT_SIGNING_KEY          - JWT signing key (min 32 characters)
-#   SQL_ADMIN_PASSWORD       - SQL admin password (for migrations)
 #
-# Optional GitHub Secrets (OAuth providers):
+# Optional GitHub Secrets:
+#   APP_DOMAIN               - Custom domain (e.g., "onebighead.com"). If not set, uses Container App URL.
 #   MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET
 #   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 #   APPLE_CLIENT_ID, APPLE_CLIENT_SECRET
@@ -213,12 +213,18 @@ jobs:
 
       - name: Update Container App
         run: |
-          # Get existing app URL
-          APP_URL=$(az containerapp show \
-            --name "$CONTAINER_APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --query "properties.configuration.ingress.fqdn" \
-            -o tsv)
+          # Use custom domain if provided, otherwise use Container App URL
+          if [ -n "${{ secrets.APP_DOMAIN }}" ]; then
+            APP_URL="${{ secrets.APP_DOMAIN }}"
+            echo "Using custom domain: $APP_URL"
+          else
+            APP_URL=$(az containerapp show \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --query "properties.configuration.ingress.fqdn" \
+              -o tsv)
+            echo "Using Container App URL: $APP_URL"
+          fi
           
           # Build environment variables array
           ENV_VARS=(

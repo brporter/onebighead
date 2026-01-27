@@ -140,7 +140,27 @@ Navigate to your GitHub repository:
 | `AZURE_LOCATION` | Azure region where resources are deployed | The `--location` value you used in `deploy.sh` (e.g., `eastus`) |
 | `JWT_SIGNING_KEY` | Secret key for signing JWT tokens | The `--jwt-key` value you used in `deploy.sh` (minimum 32 characters) |
 
+### Optional Secrets
+
+| Secret Name | Description | How to Obtain |
+|-------------|-------------|---------------|
+| `APP_DOMAIN` | Custom domain for OAuth redirects | Your custom domain (e.g., `onebighead.com`). If not set, uses the auto-generated Container App URL. |
+
 ### Secret Details
+
+#### `APP_DOMAIN`
+
+**Value:** Your custom domain name (without `https://`)
+
+**Example value:** `onebighead.com`
+
+If you've configured a custom domain for your Container App, set this secret to ensure OAuth redirect URIs use your custom domain instead of the auto-generated `*.azurecontainerapps.io` URL.
+
+**When to use:**
+- You have a custom domain configured in Azure Container Apps
+- Your OAuth providers (Microsoft, Google, Apple) have redirect URIs configured with your custom domain
+
+**If not set:** The pipeline will use the Container App's default URL (e.g., `myapp-app.azurecontainerapps.io`)
 
 #### `AZURE_CREDENTIALS`
 
@@ -326,6 +346,7 @@ The pipeline is already configured to use the `production` environment.
 - Verify client IDs and secrets are correct
 - Check redirect URIs are configured in each provider's console
 - Ensure the `Authentication__OAuth__BaseUrl` matches your app URL
+- **If using a custom domain:** Set the `APP_DOMAIN` secret to your domain (e.g., `onebighead.com`)
 
 ---
 
@@ -339,6 +360,12 @@ The pipeline is already configured to use the `production` environment.
 | `AZURE_APP_NAME` | `onebighead` | Your chosen app name from `deploy.sh` |
 | `AZURE_LOCATION` | `eastus` | Azure region from `deploy.sh` |
 | `JWT_SIGNING_KEY` | `MySecureJwtSigningKey32Characters!` | Same value used in `deploy.sh --jwt-key` |
+
+### Optional Secrets
+
+| Secret | Example Value | Source |
+|--------|---------------|--------|
+| `APP_DOMAIN` | `onebighead.com` | Your custom domain (if configured) |
 
 ### OAuth Secrets (Optional)
 
