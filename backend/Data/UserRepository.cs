@@ -50,29 +50,8 @@ public class UserRepository : IUserRepository
             _context.Tenants.Add(tenant);
             await _context.SaveChangesAsync();
 
-            // Create default collection for the new tenant
-            var defaultCollection = new Collection
-            {
-                TenantId = tenant.Id,
-                Name = "My Collection",
-                Description = "Default collection",
-                Slug = "my-collection"
-            };
-            _context.Collections.Add(defaultCollection);
-            await _context.SaveChangesAsync();
-
-            // Create system categories for the new tenant
-            var unassignedCategory = new Category
-            {
-                TenantId = tenant.Id,
-                CollectionId = defaultCollection.Id,
-                Name = "Unassigned Items",
-                Description = "Items without a category",
-                IsSystem = true,
-                ParentCategoryId = null
-            };
-            _context.Categories.Add(unassignedCategory);
-            await _context.SaveChangesAsync();
+            // Note: We no longer create a default collection here.
+            // New users will be directed to the setup wizard to create their first collection.
 
             // Create user associated with the new tenant
             var user = new User

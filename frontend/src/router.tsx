@@ -7,6 +7,7 @@ import RequireAuth from './RequireAuth';
 const CollectionView = lazy(() => import('./views/CollectionView'));
 const CategoryView = lazy(() => import('./views/CategoryView'));
 const ItemView = lazy(() => import('./views/ItemView'));
+const SetupView = lazy(() => import('./views/SetupView'));
 const SystemAdmin = lazy(() => import('./SystemAdmin'));
 
 // Loading fallback component
@@ -62,6 +63,16 @@ export const router = createBrowserRouter([
         ),
       },
     ],
+  },
+  {
+    path: '/setup',
+    element: (
+      <RequireAuth>
+        <Suspense fallback={<LoadingFallback />}>
+          <SetupView />
+        </Suspense>
+      </RequireAuth>
+    ),
   },
   {
     path: '/admin',

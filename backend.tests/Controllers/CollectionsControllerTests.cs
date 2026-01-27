@@ -13,6 +13,7 @@ public class CollectionsControllerTests
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
     private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
+    private readonly Mock<IThemeRepository> _mockThemeRepository;
     private readonly CollectionsController _controller;
     private const int TestTenantId = 1;
     private const int TestUserId = 1;
@@ -22,10 +23,12 @@ public class CollectionsControllerTests
         _mockCollectionRepository = new Mock<ICollectionRepository>();
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
+        _mockThemeRepository = new Mock<IThemeRepository>();
         _controller = new CollectionsController(
             _mockCollectionRepository.Object, 
             _mockCategoryRepository.Object,
-            _mockItemTemplateRepository.Object);
+            _mockItemTemplateRepository.Object,
+            _mockThemeRepository.Object);
 
         var claims = new List<Claim>
         {

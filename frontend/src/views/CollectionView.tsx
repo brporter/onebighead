@@ -16,6 +16,12 @@ function CollectionView() {
   }, [loadCollections]);
 
   useEffect(() => {
+    // Redirect to setup if user has no collections
+    if (!collectionsLoading && collections.length === 0) {
+      navigate('/setup', { replace: true });
+      return;
+    }
+    
     // Auto-navigate to single collection
     if (!collectionsLoading && collections.length === 1) {
       navigate(`/collections/${collections[0].collectionId}`, { replace: true });
@@ -27,7 +33,7 @@ function CollectionView() {
   }
 
   if (collections.length === 0) {
-    return <div className="app__loading">No collections found</div>;
+    return <div className="app__loading">Redirecting to setup...</div>;
   }
 
   return (

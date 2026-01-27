@@ -22,3 +22,4 @@ export { suggestionsApi, type PropertySuggestionsResponse } from './suggestions'
 export { authApi } from './auth';
 export { adminApi } from './admin';
 export { exportApi } from './export';
+export { themesApi } from './themes';

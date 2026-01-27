@@ -22,6 +22,9 @@ public class AppDbContext : DbContext
     public DbSet<CollectionItemTemplate> CollectionItemTemplates => Set<CollectionItemTemplate>();
     public DbSet<CategoryItemTemplate> CategoryItemTemplates => Set<CategoryItemTemplate>();
     public DbSet<StoredImage> StoredImages => Set<StoredImage>();
+    public DbSet<CollectionTheme> CollectionThemes => Set<CollectionTheme>();
+    public DbSet<CollectionThemeTemplate> CollectionThemeTemplates => Set<CollectionThemeTemplate>();
+    public DbSet<CollectionThemeCategory> CollectionThemeCategories => Set<CollectionThemeCategory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -224,6 +227,41 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(s => s.TenantId);
+        });
+
+        modelBuilder.Entity<CollectionTheme>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.HasIndex(t => t.SortOrder);
+        });
+
+        modelBuilder.Entity<CollectionThemeTemplate>(entity =>
+        {
+            entity.HasKey(tt => new { tt.ThemeId, tt.ItemTemplateId });
+
+            entity.HasOne(tt => tt.Theme)
+                .WithMany(t => t.ThemeTemplates)
+                .HasForeignKey(tt => tt.ThemeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(tt => tt.ItemTemplate)
+                .WithMany()
+                .HasForeignKey(tt => tt.ItemTemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(tt => tt.ThemeId);
+        });
+
+        modelBuilder.Entity<CollectionThemeCategory>(entity =>
+        {
+            entity.HasKey(tc => tc.Id);
+
+            entity.HasOne(tc => tc.Theme)
+                .WithMany(t => t.ThemeCategories)
+                .HasForeignKey(tc => tc.ThemeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(tc => tc.ThemeId);
         });
     }
 }

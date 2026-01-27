@@ -227,43 +227,38 @@ public class UserRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_CreatesDefaultCollection()
+    public async Task CreateWithNewTenantAsync_DoesNotCreateDefaultCollection()
     {
+        // New behavior: collections are created through setup wizard, not auto-created
         // Act
         var result = await _repository.CreateWithNewTenantAsync(
             "user@test.com",
             IdentityProvider.Microsoft,
             "ms-collection-test");
 
-        // Assert
+        // Assert - no collections should be created
         var collections = await _context.Collections
             .Where(c => c.TenantId == result.TenantId)
             .ToListAsync();
         
-        Assert.Single(collections);
-        Assert.Equal("My Collection", collections[0].Name);
-        Assert.Equal(result.TenantId, collections[0].TenantId);
+        Assert.Empty(collections);
     }
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_CreatesUnassignedCategoryWithCollectionId()
+    public async Task CreateWithNewTenantAsync_DoesNotCreateUnassignedCategory()
     {
+        // New behavior: unassigned category is created per collection during setup wizard
         // Act
         var result = await _repository.CreateWithNewTenantAsync(
             "user@category-test.com",
             IdentityProvider.Google,
             "google-category-test");
 
-        // Assert
-        var collection = await _context.Collections
-            .FirstOrDefaultAsync(c => c.TenantId == result.TenantId);
-        Assert.NotNull(collection);
-
-        var category = await _context.Categories
-            .FirstOrDefaultAsync(c => c.TenantId == result.TenantId && c.IsSystem);
-        Assert.NotNull(category);
-        Assert.Equal("Unassigned Items", category.Name);
-        Assert.Equal(collection.Id, category.CollectionId);
+        // Assert - no categories should exist
+        var categories = await _context.Categories
+            .Where(c => c.TenantId == result.TenantId)
+            .ToListAsync();
+        Assert.Empty(categories);
     }
 
     [Fact]

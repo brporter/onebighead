@@ -2,7 +2,7 @@
  * Collections API
  */
 import { api } from './client';
-import type { Collection } from '../types';
+import type { Collection, SetupCollectionRequest } from '../types';
 
 export interface CreateCollectionRequest {
   name: string;
@@ -38,6 +38,14 @@ export const collectionsApi = {
       heroImageUrl: request.heroImageUrl,
       isPublic: request.isPublic ?? false,
     });
+  },
+
+  /**
+   * Create a new collection with a theme applied.
+   * Used by the setup wizard for new users and when creating collections.
+   */
+  setup(request: SetupCollectionRequest): Promise<Collection> {
+    return api.post<Collection>('/collections/setup', request);
   },
 
   update(id: number, request: UpdateCollectionRequest): Promise<Collection> {

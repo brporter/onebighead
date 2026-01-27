@@ -28,6 +28,7 @@ builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPropertySuggestionRepository, PropertySuggestionRepository>();
 builder.Services.AddScoped<IItemTemplateRepository, ItemTemplateRepository>();
+builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
 
 // Register image provider
 builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
@@ -59,6 +60,10 @@ var app = builder.Build();
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     context.Database.Migrate();
+    
+    // Seed database with system data
+    var seeder = new DatabaseSeeder(context);
+    await seeder.SeedAsync();
 }
 #endif
 
