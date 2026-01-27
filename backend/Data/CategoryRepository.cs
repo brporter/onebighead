@@ -212,12 +212,10 @@ public class CategoryRepository : ICategoryRepository
                 .ToListAsync();
 
             // Add templates we haven't seen yet (child takes precedence)
-            foreach (var templateId in templateIds)
+            var unseenTemplateIds = templateIds.Where(templateId => seen.Add(templateId));
+            foreach (var templateId in unseenTemplateIds)
             {
-                if (seen.Add(templateId))
-                {
-                    result.Add(templateId);
-                }
+                result.Add(templateId);
             }
 
             currentId = category.ParentCategoryId;

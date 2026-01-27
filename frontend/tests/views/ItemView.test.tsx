@@ -31,11 +31,11 @@ function renderWithRouter(initialRoute: string) {
 
 describe('ItemView', () => {
   const mockCollections: Collection[] = [
-    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test' },
+    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', isPublic: true },
   ];
 
   const mockCategories: Category[] = [
-    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false },
+    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockItems: Item[] = [
@@ -49,6 +49,8 @@ describe('ItemView', () => {
       description: 'Test description',
       properties: [{ category: 'General', name: 'Color', value: 'Blue' }],
       images: [{ url: 'https://example.com/img.jpg', alt: 'Test image' }],
+      isPublicOverride: null,
+      effectiveIsPublic: true,
     },
   ];
 
@@ -83,6 +85,7 @@ describe('ItemView', () => {
     deleteItemTemplate: vi.fn(async () => {}),
     associateTemplateWithCollection: vi.fn(async () => {}),
     disassociateTemplateFromCollection: vi.fn(async () => {}),
+    getCategoryTemplates: vi.fn(async () => []),
   };
 
   beforeEach(() => {

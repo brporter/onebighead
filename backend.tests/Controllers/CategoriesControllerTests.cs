@@ -160,6 +160,86 @@ public class CategoriesControllerTests
 
     #endregion
 
+    #region GetCategoryTemplates Tests
+
+    [Fact]
+    public async Task GetCategoryTemplates_ReturnsOkResult_WithInheritedTemplateIds()
+    {
+        // Arrange
+        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category", Description = "Test Desc" };
+        var inheritedTemplateIds = new List<int> { 10, 20, 30 };
+        
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(category);
+        _mockRepository.Setup(repo => repo.GetInheritedTemplateIdsAsync(1, TestTenantId))
+            .ReturnsAsync(inheritedTemplateIds);
+
+        // Act
+        var result = await _controller.GetCategoryTemplates(1);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var returnedIds = Assert.IsAssignableFrom<IEnumerable<int>>(okResult.Value);
+        Assert.Equal(3, returnedIds.Count());
+        Assert.Contains(10, returnedIds);
+        Assert.Contains(20, returnedIds);
+        Assert.Contains(30, returnedIds);
+    }
+
+    [Fact]
+    public async Task GetCategoryTemplates_ReturnsOkResult_WithEmptyList_WhenNoTemplates()
+    {
+        // Arrange
+        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category", Description = "Test Desc" };
+        
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(category);
+        _mockRepository.Setup(repo => repo.GetInheritedTemplateIdsAsync(1, TestTenantId))
+            .ReturnsAsync(new List<int>());
+
+        // Act
+        var result = await _controller.GetCategoryTemplates(1);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var returnedIds = Assert.IsAssignableFrom<IEnumerable<int>>(okResult.Value);
+        Assert.Empty(returnedIds);
+    }
+
+    [Fact]
+    public async Task GetCategoryTemplates_ReturnsNotFound_WhenCategoryDoesNotExist()
+    {
+        // Arrange
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+            .ReturnsAsync((Category?)null);
+
+        // Act
+        var result = await _controller.GetCategoryTemplates(999);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetCategoryTemplates_CallsGetInheritedTemplateIdsAsync()
+    {
+        // Arrange
+        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category", Description = "Test Desc" };
+        
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+            .ReturnsAsync(category);
+        _mockRepository.Setup(repo => repo.GetInheritedTemplateIdsAsync(1, TestTenantId))
+            .ReturnsAsync(new List<int> { 1, 2 });
+
+        // Act
+        await _controller.GetCategoryTemplates(1);
+
+        // Assert
+        _mockRepository.Verify(repo => repo.GetInheritedTemplateIdsAsync(1, TestTenantId), Times.Once);
+    }
+
+    #endregion
+
     #region CreateCategory Tests
 
     [Fact]

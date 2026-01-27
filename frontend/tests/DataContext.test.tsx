@@ -4,17 +4,17 @@ import { DataProvider, useData } from '../src/DataContext';
 import type { Item, Category, Collection } from '../src/types';
 
 const mockCollections: Collection[] = [
-  { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test' },
+  { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', isPublic: true },
 ];
 
 const mockCategories: Category[] = [
-  { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false },
-  { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false },
+  { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
+  { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
 ];
 
 const mockItems: Item[] = [
-  { id: 1, tenantId: 1, collectionId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [] },
-  { id: 2, tenantId: 1, collectionId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [] },
+  { id: 1, tenantId: 1, collectionId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], isPublicOverride: null, effectiveIsPublic: true },
+  { id: 2, tenantId: 1, collectionId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], isPublicOverride: null, effectiveIsPublic: true },
 ];
 
 // Test component to access context
