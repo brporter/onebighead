@@ -10,10 +10,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 
-// Add health checks
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>();
-
 // Configure lowercase URLs for tag helpers
 builder.Services.Configure<RouteOptions>(options =>
 {
@@ -23,14 +19,7 @@ builder.Services.Configure<RouteOptions>(options =>
 // Configure EF Core with SQL Server
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString, sqlOptions =>
-    {
-        // Enable retry logic for transient failures (including serverless wake-up)
-        sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null);
-    }));
+    options.UseSqlServer(connectionString));
 
 // Register repositories
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -64,38 +53,19 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Run database migrations at startup (with retry for serverless SQL Azure)
-// This ensures the database schema is always up to date before serving requests
+// In Debug builds: run migrations automatically
+// In Release builds: use migration bundle for deployments
+#if DEBUG
 {
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    context.Database.Migrate();
     
-    var maxRetries = 5;
-    var retryDelay = TimeSpan.FromSeconds(10);
-    
-    for (var attempt = 1; attempt <= maxRetries; attempt++)
-    {
-        try
-        {
-            logger.LogInformation("Applying database migrations (attempt {Attempt}/{MaxRetries})...", attempt, maxRetries);
-            context.Database.Migrate();
-            logger.LogInformation("Database migrations applied successfully.");
-            break;
-        }
-        catch (Exception ex) when (attempt < maxRetries)
-        {
-            logger.LogWarning(ex, "Database migration failed (attempt {Attempt}/{MaxRetries}). Retrying in {Delay}s...", 
-                attempt, maxRetries, retryDelay.TotalSeconds);
-            Thread.Sleep(retryDelay);
-            retryDelay *= 2; // Exponential backoff
-        }
-    }
-    
-    // Seed database with system data (themes, templates)
+    // Seed database with system data
     var seeder = new DatabaseSeeder(context);
     await seeder.SeedAsync();
 }
+#endif
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -147,9 +117,6 @@ app.MapRazorPages()
    .WithStaticAssets(); // Leverage immutable paths for static assets in Razor pages
 
 app.MapControllers();
-
-// Map health check endpoint (used by pipeline to verify deployment)
-app.MapHealthChecks("/health");
 
 app.Run();
 

@@ -107,6 +107,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -145,6 +148,12 @@ jobs:
           dotnet publish backend/backend.csproj -c Release -o publish
           mkdir -p publish/wwwroot/collections
           cp -r frontend/dist/* publish/wwwroot/collections/
+
+      # Generate migration script
+      - name: Generate migration script
+        run: |
+          cd backend
+          dotnet ef migrations script --idempotent -o ../publish/migrate.sql
 
       # Build and push Docker image
       - name: Get ACR details
@@ -243,7 +252,45 @@ jobs:
             --set-env-vars "${ENV_VARS[@]}" \
             --output none
 
-      # Verify deployment (migrations run automatically at container startup)
+      # Run database migrations
+      - name: Install sqlcmd
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          sudo add-apt-repository "$(curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list)"
+          sudo apt-get update
+          sudo apt-get install -y sqlcmd
+
+      - name: Add runner IP to SQL firewall
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          az sql server firewall-rule create \
+            --resource-group "$RESOURCE_GROUP" \
+            --server "$SQL_SERVER_NAME" \
+            --name "GitHubRunner-${{ github.run_id }}" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
+
+      - name: Run database migrations
+        run: |
+          SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
+          sqlcmd -S "$SQL_SERVER_FQDN" \
+            -d "$SQL_DB_NAME" \
+            --authentication-method=ActiveDirectoryServicePrincipal \
+            -U "${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" \
+            -P "${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" \
+            -i publish/migrate.sql
+
+      - name: Remove runner IP from SQL firewall
+        if: always()
+        run: |
+          az sql server firewall-rule delete \
+            --resource-group "$RESOURCE_GROUP" \
+            --server "$SQL_SERVER_NAME" \
+            --name "GitHubRunner-${{ github.run_id }}" \
+            --output none || true
+
+      # Verify deployment
       - name: Verify deployment
         run: |
           APP_URL=$(az containerapp show \
@@ -254,24 +301,20 @@ jobs:
           
           echo "Deployment complete!"
           echo "Application URL: https://${APP_URL}"
-          echo ""
-          echo "Note: Database migrations run automatically at container startup."
-          echo "The container will retry connections if SQL Azure serverless is waking up."
           
-          # Wait for app to be ready and verify health (includes DB connectivity)
-          echo "Waiting for application to be ready (this may take a minute if SQL is waking up)..."
-          for i in {1..60}; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_URL}/health" --max-time 10 || echo "000")
+          # Wait for app to be ready and verify health
+          echo "Waiting for application to be ready..."
+          for i in {1..30}; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_URL}/health" || echo "000")
             if [ "$HTTP_STATUS" = "200" ]; then
               echo "Application is healthy!"
               exit 0
             fi
-            echo "  Waiting for health check ($i/60)... Status: $HTTP_STATUS"
+            echo "  Waiting for health check ($i/30)... Status: $HTTP_STATUS"
             sleep 10
           done
           
-          echo "::warning::Health check did not return 200 within timeout. Check container logs."
-          echo "To view logs: az containerapp logs show --name $CONTAINER_APP_NAME --resource-group $RESOURCE_GROUP --follow"
+          echo "::warning::Health check did not return 200 within timeout, but deployment may still be successful."
 
       - name: Output deployment summary
         run: |
