@@ -271,15 +271,43 @@ jobs:
             --end-ip-address "$RUNNER_IP" \
             --output none
 
+      - name: Wait for SQL Azure to be ready
+        run: |
+          SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
+          echo "Waiting for SQL Azure serverless database to be ready..."
+          echo "This may take up to 60 seconds if the database is paused."
+          
+          for i in {1..12}; do
+            echo "  Connection attempt $i/12..."
+            if sqlcmd -S "$SQL_SERVER_FQDN" \
+                -d "$SQL_DB_NAME" \
+                --authentication-method=ActiveDirectoryServicePrincipal \
+                -U "${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" \
+                -P "${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" \
+                -Q "SELECT 1" \
+                -b \
+                2>&1; then
+              echo "SQL Azure is ready!"
+              exit 0
+            fi
+            echo "  Database not ready yet, waiting 10 seconds..."
+            sleep 10
+          done
+          
+          echo "::error::SQL Azure database did not become ready within 2 minutes"
+          exit 1
+
       - name: Run database migrations
         run: |
           SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
+          echo "Applying database migrations..."
           sqlcmd -S "$SQL_SERVER_FQDN" \
             -d "$SQL_DB_NAME" \
             --authentication-method=ActiveDirectoryServicePrincipal \
             -U "${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" \
             -P "${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" \
             -i publish/migrate.sql
+          echo "Migrations applied successfully."
 
       - name: Remove runner IP from SQL firewall
         if: always()
