@@ -1,0 +1,323 @@
+# Deploy to Azure Container Apps
+# Triggered when a PR is merged to main
+#
+# Prerequisites (one-time setup before first pipeline run):
+#   1. Azure infrastructure must be provisioned using deploy.sh (without --skip-infra)
+#   2. GitHub repository secrets must be configured (see DEPLOYMENT.md)
+#   3. Azure service principal must have appropriate permissions
+#
+# Required GitHub Secrets:
+#   AZURE_CREDENTIALS        - Service principal credentials JSON
+#   AZURE_APP_NAME           - Base name for Azure resources (e.g., "onebighead")
+#   AZURE_LOCATION           - Azure region (e.g., "eastus")
+#   JWT_SIGNING_KEY          - JWT signing key (min 32 characters)
+#   SQL_ADMIN_PASSWORD       - SQL admin password (for migrations)
+#
+# Optional GitHub Secrets (OAuth providers):
+#   MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET
+#   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+#   APPLE_CLIENT_ID, APPLE_CLIENT_SECRET
+
+name: Deploy to Azure
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+# Prevent concurrent deployments
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '20'
+
+jobs:
+  # Only run if PR was merged (not just closed)
+  check-merge:
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.check.outputs.merged }}
+    steps:
+      - id: check
+        run: echo "merged=${{ github.event.pull_request.merged }}" >> $GITHUB_OUTPUT
+
+  # Run tests before deployment
+  test:
+    needs: check-merge
+    if: needs.check-merge.outputs.should-deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Restore backend dependencies
+        run: dotnet restore backend/backend.csproj
+
+      - name: Run unit tests
+        run: dotnet test backend.tests/backend.tests.csproj --filter "Category=Unit" --no-restore --verbosity normal
+
+      - name: Run integration tests
+        run: dotnet test backend.tests/backend.tests.csproj --filter "Category=Integration" --no-restore --verbosity normal
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+  # Build and deploy to Azure
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Derive resource names from APP_NAME
+      - name: Set environment variables
+        run: |
+          APP_NAME="${{ secrets.AZURE_APP_NAME }}"
+          echo "RESOURCE_GROUP=${APP_NAME}-rg" >> $GITHUB_ENV
+          echo "ACR_NAME=${APP_NAME}acr" >> $GITHUB_ENV
+          echo "SQL_DB_NAME=${APP_NAME}" >> $GITHUB_ENV
+          echo "CONTAINER_ENV_NAME=${APP_NAME}-env" >> $GITHUB_ENV
+          echo "CONTAINER_APP_NAME=${APP_NAME}-app" >> $GITHUB_ENV
+          echo "IDENTITY_NAME=${APP_NAME}-identity" >> $GITHUB_ENV
+
+      # Look up existing SQL server name from resource group
+      - name: Get SQL Server name
+        run: |
+          SQL_SERVER_NAME=$(az sql server list --resource-group "$RESOURCE_GROUP" --query "[0].name" -o tsv)
+          if [ -z "$SQL_SERVER_NAME" ]; then
+            echo "::error::No SQL server found in resource group $RESOURCE_GROUP. Run deploy.sh first to provision infrastructure."
+            exit 1
+          fi
+          echo "SQL_SERVER_NAME=$SQL_SERVER_NAME" >> $GITHUB_ENV
+
+      # Build the application
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Build backend
+        run: |
+          dotnet publish backend/backend.csproj -c Release -o publish
+          mkdir -p publish/wwwroot/collections
+          cp -r frontend/dist/* publish/wwwroot/collections/
+
+      # Generate migration script
+      - name: Generate migration script
+        run: |
+          cd backend
+          dotnet ef migrations script --idempotent -o ../publish/migrate.sql
+
+      # Build and push Docker image
+      - name: Get ACR details
+        run: |
+          ACR_LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv)
+          echo "ACR_LOGIN_SERVER=$ACR_LOGIN_SERVER" >> $GITHUB_ENV
+
+      - name: Login to ACR
+        run: az acr login --name "$ACR_NAME"
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG="${ACR_LOGIN_SERVER}/${{ secrets.AZURE_APP_NAME }}:${{ github.sha }}"
+          IMAGE_LATEST="${ACR_LOGIN_SERVER}/${{ secrets.AZURE_APP_NAME }}:latest"
+          
+          docker build --platform linux/amd64 -t "$IMAGE_TAG" -t "$IMAGE_LATEST" .
+          docker push "$IMAGE_TAG"
+          docker push "$IMAGE_LATEST"
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      # Get managed identity details
+      - name: Get managed identity details
+        run: |
+          IDENTITY_CLIENT_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RESOURCE_GROUP" --query clientId -o tsv)
+          IDENTITY_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RESOURCE_GROUP" --query id -o tsv)
+          echo "IDENTITY_CLIENT_ID=$IDENTITY_CLIENT_ID" >> $GITHUB_ENV
+          echo "IDENTITY_ID=$IDENTITY_ID" >> $GITHUB_ENV
+
+      # Build connection string
+      - name: Build connection string
+        run: |
+          SQL_CONNECTION_STRING="Server=tcp:${SQL_SERVER_NAME}.database.windows.net,1433;Database=${SQL_DB_NAME};Authentication=Active Directory Managed Identity;User Id=${IDENTITY_CLIENT_ID};Encrypt=True;TrustServerCertificate=False;"
+          echo "SQL_CONNECTION_STRING=$SQL_CONNECTION_STRING" >> $GITHUB_ENV
+
+      # Update Container App (this will automatically create a new revision and deactivate old ones)
+      - name: Update Container App
+        run: |
+          # Get existing app URL
+          APP_URL=$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)
+          
+          # Update secrets
+          SECRETS="jwt-signing-key=${{ secrets.JWT_SIGNING_KEY }}"
+          
+          if [ -n "${{ secrets.MICROSOFT_CLIENT_SECRET }}" ]; then
+            SECRETS="$SECRETS microsoft-client-secret=${{ secrets.MICROSOFT_CLIENT_SECRET }}"
+          fi
+          if [ -n "${{ secrets.GOOGLE_CLIENT_SECRET }}" ]; then
+            SECRETS="$SECRETS google-client-secret=${{ secrets.GOOGLE_CLIENT_SECRET }}"
+          fi
+          if [ -n "${{ secrets.APPLE_CLIENT_SECRET }}" ]; then
+            SECRETS="$SECRETS apple-client-secret=${{ secrets.APPLE_CLIENT_SECRET }}"
+          fi
+          
+          az containerapp secret set \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --secrets $SECRETS \
+            --output none
+          
+          # Build environment variables
+          ENV_VARS="ASPNETCORE_ENVIRONMENT=Production"
+          ENV_VARS="$ENV_VARS ConnectionStrings__DefaultConnection=$SQL_CONNECTION_STRING"
+          ENV_VARS="$ENV_VARS Authentication__Jwt__SigningKey=secretref:jwt-signing-key"
+          ENV_VARS="$ENV_VARS Authentication__OAuth__BaseUrl=https://${APP_URL}"
+          
+          if [ -n "${{ secrets.MICROSOFT_CLIENT_ID }}" ]; then
+            ENV_VARS="$ENV_VARS Authentication__Providers__Microsoft__ClientId=${{ secrets.MICROSOFT_CLIENT_ID }}"
+            ENV_VARS="$ENV_VARS Authentication__Providers__Microsoft__Enabled=true"
+            ENV_VARS="$ENV_VARS Authentication__Providers__Microsoft__ClientSecret=secretref:microsoft-client-secret"
+          fi
+          if [ -n "${{ secrets.GOOGLE_CLIENT_ID }}" ]; then
+            ENV_VARS="$ENV_VARS Authentication__Providers__Google__ClientId=${{ secrets.GOOGLE_CLIENT_ID }}"
+            ENV_VARS="$ENV_VARS Authentication__Providers__Google__Enabled=true"
+            ENV_VARS="$ENV_VARS Authentication__Providers__Google__ClientSecret=secretref:google-client-secret"
+          fi
+          if [ -n "${{ secrets.APPLE_CLIENT_ID }}" ]; then
+            ENV_VARS="$ENV_VARS Authentication__Providers__Apple__ClientId=${{ secrets.APPLE_CLIENT_ID }}"
+            ENV_VARS="$ENV_VARS Authentication__Providers__Apple__Enabled=true"
+            ENV_VARS="$ENV_VARS Authentication__Providers__Apple__ClientSecret=secretref:apple-client-secret"
+          fi
+          
+          # Update container app with new image (creates new revision, deactivates old)
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$IMAGE_TAG" \
+            --set-env-vars $ENV_VARS \
+            --output none
+
+      # Run database migrations
+      - name: Install sqlcmd
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          sudo add-apt-repository "$(curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list)"
+          sudo apt-get update
+          sudo apt-get install -y sqlcmd
+
+      - name: Add runner IP to SQL firewall
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          az sql server firewall-rule create \
+            --resource-group "$RESOURCE_GROUP" \
+            --server "$SQL_SERVER_NAME" \
+            --name "GitHubRunner-${{ github.run_id }}" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
+
+      - name: Run database migrations
+        run: |
+          SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
+          sqlcmd -S "$SQL_SERVER_FQDN" \
+            -d "$SQL_DB_NAME" \
+            --authentication-method=ActiveDirectoryServicePrincipal \
+            -U "${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" \
+            -P "${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" \
+            -i publish/migrate.sql
+
+      - name: Remove runner IP from SQL firewall
+        if: always()
+        run: |
+          az sql server firewall-rule delete \
+            --resource-group "$RESOURCE_GROUP" \
+            --server "$SQL_SERVER_NAME" \
+            --name "GitHubRunner-${{ github.run_id }}" \
+            --output none || true
+
+      # Verify deployment
+      - name: Verify deployment
+        run: |
+          APP_URL=$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)
+          
+          echo "Deployment complete!"
+          echo "Application URL: https://${APP_URL}"
+          
+          # Wait for app to be ready and verify health
+          echo "Waiting for application to be ready..."
+          for i in {1..30}; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_URL}/health" || echo "000")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "Application is healthy!"
+              exit 0
+            fi
+            echo "  Waiting for health check ($i/30)... Status: $HTTP_STATUS"
+            sleep 10
+          done
+          
+          echo "::warning::Health check did not return 200 within timeout, but deployment may still be successful."
+
+      - name: Output deployment summary
+        run: |
+          APP_URL=$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)
+          
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Application URL | https://${APP_URL} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container App | $CONTAINER_APP_NAME |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image Tag | $IMAGE_TAG |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
