@@ -562,5 +562,287 @@ public class CategoryRepositoryTests : IDisposable
     }
 
     #endregion
+
+    #region Template Association Tests
+
+    [Fact]
+    public async Task GetTemplateIdsAsync_ReturnsTemplateIds_WhenAssociationsExist()
+    {
+        // Arrange
+        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        
+        await _context.Categories.AddAsync(category);
+        await _context.ItemTemplates.AddRangeAsync(template1, template2);
+        await _context.CategoryItemTemplates.AddRangeAsync(
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 1, SortOrder = 0 },
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 2, SortOrder = 1 }
+        );
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetTemplateIdsAsync(1, TestTenantId);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Equal(new List<int> { 1, 2 }, result);
+    }
+
+    [Fact]
+    public async Task GetTemplateIdsAsync_ReturnsEmpty_WhenNoAssociations()
+    {
+        // Arrange
+        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        await _context.Categories.AddAsync(category);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetTemplateIdsAsync(1, TestTenantId);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetTemplateIdsAsync_ReturnsEmpty_WhenCategoryNotFound()
+    {
+        // Act
+        var result = await _repository.GetTemplateIdsAsync(999, TestTenantId);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetTemplateIdsAsync_RespectsOrder()
+    {
+        // Arrange
+        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        var template3 = new ItemTemplate { Id = 3, TenantId = TestTenantId, Name = "Template 3", Description = "Desc" };
+        
+        await _context.Categories.AddAsync(category);
+        await _context.ItemTemplates.AddRangeAsync(template1, template2, template3);
+        await _context.CategoryItemTemplates.AddRangeAsync(
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 3, SortOrder = 0 },
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 1, SortOrder = 1 },
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 2, SortOrder = 2 }
+        );
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetTemplateIdsAsync(1, TestTenantId);
+
+        // Assert
+        Assert.Equal(new List<int> { 3, 1, 2 }, result);
+    }
+
+    [Fact]
+    public async Task SetTemplateIdsAsync_CreatesAssociations()
+    {
+        // Arrange
+        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        
+        await _context.Categories.AddAsync(category);
+        await _context.ItemTemplates.AddRangeAsync(template1, template2);
+        await _context.SaveChangesAsync();
+
+        // Act
+        await _repository.SetTemplateIdsAsync(1, new List<int> { 1, 2 }, TestTenantId);
+
+        // Assert
+        var associations = await _context.CategoryItemTemplates.Where(ct => ct.CategoryId == 1).ToListAsync();
+        Assert.Equal(2, associations.Count);
+    }
+
+    [Fact]
+    public async Task SetTemplateIdsAsync_ReplacesExistingAssociations()
+    {
+        // Arrange
+        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        var template3 = new ItemTemplate { Id = 3, TenantId = TestTenantId, Name = "Template 3", Description = "Desc" };
+        
+        await _context.Categories.AddAsync(category);
+        await _context.ItemTemplates.AddRangeAsync(template1, template2, template3);
+        await _context.CategoryItemTemplates.AddAsync(new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 1, SortOrder = 0 });
+        await _context.SaveChangesAsync();
+
+        // Act
+        await _repository.SetTemplateIdsAsync(1, new List<int> { 2, 3 }, TestTenantId);
+
+        // Assert
+        var associations = await _context.CategoryItemTemplates.Where(ct => ct.CategoryId == 1).ToListAsync();
+        Assert.Equal(2, associations.Count);
+        Assert.DoesNotContain(associations, a => a.ItemTemplateId == 1);
+        Assert.Contains(associations, a => a.ItemTemplateId == 2);
+        Assert.Contains(associations, a => a.ItemTemplateId == 3);
+    }
+
+    [Fact]
+    public async Task SetTemplateIdsAsync_DoesNothing_WhenCategoryNotFound()
+    {
+        // Act
+        await _repository.SetTemplateIdsAsync(999, new List<int> { 1 }, TestTenantId);
+
+        // Assert
+        var associations = await _context.CategoryItemTemplates.ToListAsync();
+        Assert.Empty(associations);
+    }
+
+    [Fact]
+    public async Task GetInheritedTemplateIdsAsync_ReturnsOwnTemplates()
+    {
+        // Arrange
+        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        
+        await _context.Categories.AddAsync(category);
+        await _context.ItemTemplates.AddAsync(template);
+        await _context.CategoryItemTemplates.AddAsync(new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 1, SortOrder = 0 });
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetInheritedTemplateIdsAsync(1, TestTenantId);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Contains(1, result);
+    }
+
+    [Fact]
+    public async Task GetInheritedTemplateIdsAsync_InheritsFromParent()
+    {
+        // Arrange
+        var parentCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc" };
+        var childCategory = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 1 };
+        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        
+        await _context.Categories.AddRangeAsync(parentCategory, childCategory);
+        await _context.ItemTemplates.AddAsync(template);
+        await _context.CategoryItemTemplates.AddAsync(new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 1, SortOrder = 0 });
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetInheritedTemplateIdsAsync(2, TestTenantId);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Contains(1, result);
+    }
+
+    [Fact]
+    public async Task GetInheritedTemplateIdsAsync_CombinesChildAndParentTemplates()
+    {
+        // Arrange
+        var parentCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc" };
+        var childCategory = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 1 };
+        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        
+        await _context.Categories.AddRangeAsync(parentCategory, childCategory);
+        await _context.ItemTemplates.AddRangeAsync(template1, template2);
+        await _context.CategoryItemTemplates.AddRangeAsync(
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 1, SortOrder = 0 },
+            new CategoryItemTemplate { CategoryId = 2, ItemTemplateId = 2, SortOrder = 0 }
+        );
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetInheritedTemplateIdsAsync(2, TestTenantId);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+    }
+
+    [Fact]
+    public async Task GetInheritedTemplateIdsAsync_ChildTemplatesTakePrecedence()
+    {
+        // Arrange - same template on parent and child should only appear once
+        var parentCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc" };
+        var childCategory = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 1 };
+        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        
+        await _context.Categories.AddRangeAsync(parentCategory, childCategory);
+        await _context.ItemTemplates.AddAsync(template);
+        await _context.CategoryItemTemplates.AddRangeAsync(
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 1, SortOrder = 0 },
+            new CategoryItemTemplate { CategoryId = 2, ItemTemplateId = 1, SortOrder = 0 }
+        );
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetInheritedTemplateIdsAsync(2, TestTenantId);
+
+        // Assert
+        Assert.Single(result); // No duplicates
+        Assert.Contains(1, result);
+    }
+
+    [Fact]
+    public async Task GetInheritedTemplateIdsAsync_InheritsMultipleLevels()
+    {
+        // Arrange - grandparent -> parent -> child
+        var grandparent = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Grandparent", Description = "Desc" };
+        var parent = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc", ParentCategoryId = 1 };
+        var child = new Category { Id = 3, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 2 };
+        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        var template3 = new ItemTemplate { Id = 3, TenantId = TestTenantId, Name = "Template 3", Description = "Desc" };
+        
+        await _context.Categories.AddRangeAsync(grandparent, parent, child);
+        await _context.ItemTemplates.AddRangeAsync(template1, template2, template3);
+        await _context.CategoryItemTemplates.AddRangeAsync(
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 1, SortOrder = 0 },
+            new CategoryItemTemplate { CategoryId = 2, ItemTemplateId = 2, SortOrder = 0 },
+            new CategoryItemTemplate { CategoryId = 3, ItemTemplateId = 3, SortOrder = 0 }
+        );
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetInheritedTemplateIdsAsync(3, TestTenantId);
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
+    }
+
+    [Fact]
+    public async Task GetTemplateIdsByCategoryAsync_ReturnsAllMappings()
+    {
+        // Arrange
+        var category1 = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var category2 = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 2", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        
+        await _context.Categories.AddRangeAsync(category1, category2);
+        await _context.ItemTemplates.AddRangeAsync(template1, template2);
+        await _context.CategoryItemTemplates.AddRangeAsync(
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 1, SortOrder = 0 },
+            new CategoryItemTemplate { CategoryId = 1, ItemTemplateId = 2, SortOrder = 1 },
+            new CategoryItemTemplate { CategoryId = 2, ItemTemplateId = 2, SortOrder = 0 }
+        );
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetTemplateIdsByCategoryAsync(TestCollectionId, TestTenantId);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Equal(new List<int> { 1, 2 }, result[1]);
+        Assert.Equal(new List<int> { 2 }, result[2]);
+    }
+
+    #endregion
 }
 

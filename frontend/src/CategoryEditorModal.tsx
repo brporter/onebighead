@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Category } from './types';
 import { useData } from './DataContext';
 import VisibilityToggle from './VisibilityToggle';
+import CategoryTemplateSelector from './CategoryTemplateSelector';
 
 interface CategoryEditorModalProps {
   category: Category | null; // null = creating new category
@@ -18,6 +19,7 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
   const [description, setDescription] = useState('');
   const [parentCategoryId, setParentCategoryId] = useState<number | null>(null);
   const [isPublicOverride, setIsPublicOverride] = useState<boolean | null>(null);
+  const [itemTemplateIds, setItemTemplateIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -57,6 +59,7 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
       setDescription(category?.description ?? '');
       setParentCategoryId(category?.parentCategoryId ?? null);
       setIsPublicOverride(category?.isPublicOverride ?? null);
+      setItemTemplateIds(category?.itemTemplateIds ?? []);
       setError(null);
     }
   }, [isOpen, category]);
@@ -127,6 +130,7 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
           description: description.trim(),
           parentCategoryId,
           isPublicOverride,
+          itemTemplateIds,
         });
       } else {
         await updateCategory(category!.categoryId, {
@@ -134,6 +138,7 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
           description: description.trim(),
           parentCategoryId,
           isPublicOverride,
+          itemTemplateIds,
         });
       }
       onSaved?.();
@@ -279,6 +284,20 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
                 label="Visibility"
               />
             </div>
+
+            {currentCollection && (
+              <div className="modal__field">
+                <label className="modal__label">
+                  Recommended Templates
+                </label>
+                <CategoryTemplateSelector
+                  collectionId={currentCollection.collectionId}
+                  selectedTemplateIds={itemTemplateIds}
+                  onChange={setItemTemplateIds}
+                  disabled={isSubmitting}
+                />
+              </div>
+            )}
 
             <div className="modal__actions">
               <button

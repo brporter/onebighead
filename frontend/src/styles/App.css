@@ -1432,6 +1432,117 @@
   color: var(--color-text-secondary);
 }
 
+.templateSelector__tab--recommended {
+  color: var(--color-warning);
+}
+
+.templateSelector__tab--recommended.templateSelector__tab--active {
+  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.1));
+  color: var(--color-warning);
+}
+
+.templateSelector__hint {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.1));
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Category Template Selector (for category edit form)
+   -------------------------------------------------------------------------- */
+
+.categoryTemplateSelector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.categoryTemplateSelector__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.categoryTemplateSelector__loading,
+.categoryTemplateSelector__empty {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.categoryTemplateSelector__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+}
+
+.categoryTemplateSelector__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.categoryTemplateSelector__item:hover {
+  background: var(--color-surface-alt);
+}
+
+.categoryTemplateSelector__item--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.categoryTemplateSelector__checkbox {
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.categoryTemplateSelector__item--disabled .categoryTemplateSelector__checkbox {
+  cursor: not-allowed;
+}
+
+.categoryTemplateSelector__itemContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.categoryTemplateSelector__itemName {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.categoryTemplateSelector__systemBadge {
+  display: inline-block;
+  padding: 1px var(--space-xs);
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: var(--space-xs);
+}
+
+.categoryTemplateSelector__itemDescription {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 /* --------------------------------------------------------------------------
    Visibility Toggle
    -------------------------------------------------------------------------- */

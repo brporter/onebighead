@@ -27,12 +27,13 @@ public class CategoriesController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Category>>> GetCategories([FromQuery] int? collectionId = null)
+    public async Task<ActionResult<IEnumerable<CategoryResponse>>> GetCategories([FromQuery] int? collectionId = null)
     {
         var tenantId = GetTenantId();
         
         List<Category> categoryList;
         Collection? collection;
+        Dictionary<int, List<int>> templateIdsByCategory;
         
         if (collectionId.HasValue)
         {
@@ -44,12 +45,16 @@ public class CategoriesController : ApiControllerBase
             }
             var categories = await _categoryRepository.GetByCollectionAsync(collectionId.Value, tenantId);
             categoryList = categories.ToList();
+            templateIdsByCategory = await _categoryRepository.GetTemplateIdsByCategoryAsync(collectionId.Value, tenantId);
         }
         else
         {
             collection = await _collectionRepository.GetByTenantIdAsync(tenantId);
             var allCategories = await _categoryRepository.GetAllAsync(tenantId);
             categoryList = allCategories.ToList();
+            templateIdsByCategory = collection != null 
+                ? await _categoryRepository.GetTemplateIdsByCategoryAsync(collection.Id, tenantId)
+                : new Dictionary<int, List<int>>();
         }
         
         // Compute effective visibility
@@ -58,11 +63,16 @@ public class CategoriesController : ApiControllerBase
             _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
         }
         
-        return Ok(categoryList);
+        var response = categoryList.Select(c => CategoryResponse.FromCategory(
+            c, 
+            templateIdsByCategory.TryGetValue(c.Id, out var ids) ? ids : null
+        ));
+        
+        return Ok(response);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Category>> GetCategory(int id)
+    public async Task<ActionResult<CategoryResponse>> GetCategory(int id)
     {
         var tenantId = GetTenantId();
         var category = await _categoryRepository.GetByIdAsync(id, tenantId);
@@ -87,11 +97,29 @@ public class CategoriesController : ApiControllerBase
             }
         }
         
-        return Ok(category);
+        var templateIds = await _categoryRepository.GetTemplateIdsAsync(id, tenantId);
+        return Ok(CategoryResponse.FromCategory(category, templateIds));
+    }
+
+    /// <summary>
+    /// Gets item templates for a category, including inherited templates from parent categories.
+    /// </summary>
+    [HttpGet("{id}/templates")]
+    public async Task<ActionResult<IEnumerable<int>>> GetCategoryTemplates(int id)
+    {
+        var tenantId = GetTenantId();
+        var category = await _categoryRepository.GetByIdAsync(id, tenantId);
+        if (category is null)
+        {
+            return NotFound();
+        }
+        
+        var templateIds = await _categoryRepository.GetInheritedTemplateIdsAsync(id, tenantId);
+        return Ok(templateIds);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Category>> CreateCategory(CreateCategoryRequest request)
+    public async Task<ActionResult<CategoryResponse>> CreateCategory(CreateCategoryRequest request)
     {
         // Prevent creation of categories with reserved system names
         if (string.Equals(request.Name, "Unassigned Items", StringComparison.OrdinalIgnoreCase))
@@ -130,11 +158,19 @@ public class CategoriesController : ApiControllerBase
         };
 
         var created = await _categoryRepository.CreateAsync(category);
-        return CreatedAtAction(nameof(GetCategory), new { id = created.Id }, created);
+        
+        // Set template associations if provided
+        if (request.ItemTemplateIds != null && request.ItemTemplateIds.Count > 0)
+        {
+            await _categoryRepository.SetTemplateIdsAsync(created.Id, request.ItemTemplateIds, tenantId);
+        }
+        
+        var templateIds = await _categoryRepository.GetTemplateIdsAsync(created.Id, tenantId);
+        return CreatedAtAction(nameof(GetCategory), new { id = created.Id }, CategoryResponse.FromCategory(created, templateIds));
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<Category>> UpdateCategory(int id, UpdateCategoryRequest request)
+    public async Task<ActionResult<CategoryResponse>> UpdateCategory(int id, UpdateCategoryRequest request)
     {
         var tenantId = GetTenantId();
         
@@ -180,7 +216,15 @@ public class CategoriesController : ApiControllerBase
         {
             return NotFound();
         }
-        return Ok(updated);
+        
+        // Update template associations if provided
+        if (request.ItemTemplateIds != null)
+        {
+            await _categoryRepository.SetTemplateIdsAsync(id, request.ItemTemplateIds, tenantId);
+        }
+        
+        var templateIds = await _categoryRepository.GetTemplateIdsAsync(id, tenantId);
+        return Ok(CategoryResponse.FromCategory(updated, templateIds));
     }
 
     [HttpDelete("{id}")]
@@ -220,6 +264,7 @@ public class CreateCategoryRequest
     public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
     public bool? IsPublicOverride { get; set; }
+    public List<int>? ItemTemplateIds { get; set; }
 }
 
 public class UpdateCategoryRequest
@@ -232,5 +277,37 @@ public class UpdateCategoryRequest
     public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
     public bool? IsPublicOverride { get; set; }
+    public List<int>? ItemTemplateIds { get; set; }
+}
+
+public class CategoryResponse
+{
+    public int CategoryId { get; set; }
+    public int TenantId { get; set; }
+    public int CollectionId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public bool IsSystem { get; set; }
+    public int? ParentCategoryId { get; set; }
+    public bool? IsPublicOverride { get; set; }
+    public bool EffectiveIsPublic { get; set; }
+    public List<int> ItemTemplateIds { get; set; } = new();
+
+    public static CategoryResponse FromCategory(Category category, List<int>? templateIds = null)
+    {
+        return new CategoryResponse
+        {
+            CategoryId = category.Id,
+            TenantId = category.TenantId,
+            CollectionId = category.CollectionId,
+            Name = category.Name,
+            Description = category.Description,
+            IsSystem = category.IsSystem,
+            ParentCategoryId = category.ParentCategoryId,
+            IsPublicOverride = category.IsPublicOverride,
+            EffectiveIsPublic = category.EffectiveIsPublic,
+            ItemTemplateIds = templateIds ?? new()
+        };
+    }
 }
 

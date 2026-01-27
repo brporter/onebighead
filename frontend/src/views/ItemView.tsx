@@ -193,6 +193,7 @@ function ItemView() {
     return (
       <TemplateSelector
         collectionId={collectionIdNum}
+        categoryId={categoryIdNum}
         isOpen={true}
         onClose={handleTemplateSelectorClose}
         onSelect={handleTemplateSelected}

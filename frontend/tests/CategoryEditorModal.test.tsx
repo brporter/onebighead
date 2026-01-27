@@ -32,6 +32,7 @@ const mockCategories: Category[] = [
     isSystem: false,
     isPublicOverride: null,
     effectiveIsPublic: true,
+    itemTemplateIds: [],
   },
   {
     tenantId: 1,
@@ -43,6 +44,7 @@ const mockCategories: Category[] = [
     isSystem: false,
     isPublicOverride: null,
     effectiveIsPublic: true,
+    itemTemplateIds: [],
   },
   {
     tenantId: 1,
@@ -54,6 +56,7 @@ const mockCategories: Category[] = [
     isSystem: false,
     isPublicOverride: null,
     effectiveIsPublic: true,
+    itemTemplateIds: [],
   },
   {
     tenantId: 1,
@@ -65,6 +68,7 @@ const mockCategories: Category[] = [
     isSystem: true,
     isPublicOverride: null,
     effectiveIsPublic: true,
+    itemTemplateIds: [],
   },
 ];
 
@@ -76,7 +80,20 @@ vi.mock('../src/DataContext', () => ({
     addCategory: mockAddCategory,
     updateCategory: mockUpdateCategory,
     deleteCategory: mockDeleteCategory,
+    loadCollectionTemplates: vi.fn(async () => []),
+    loadItemTemplates: vi.fn(async () => []),
+    itemTemplates: [],
   }),
+}));
+
+// Mock CategoryTemplateSelector to simplify tests
+vi.mock('../src/CategoryTemplateSelector', () => ({
+  default: ({ selectedTemplateIds, onChange }: { selectedTemplateIds: number[]; onChange: (ids: number[]) => void }) => (
+    <div data-testid="category-template-selector">
+      Template Selector (selected: {selectedTemplateIds.length})
+      <button onClick={() => onChange([1, 2])}>Select Templates</button>
+    </div>
+  ),
 }));
 
 // Mock VisibilityToggle to simplify tests
@@ -330,6 +347,7 @@ describe('CategoryEditorModal', () => {
           description: 'New Description',
           parentCategoryId: null,
           isPublicOverride: null,
+          itemTemplateIds: [],
         });
       });
     });
@@ -406,6 +424,7 @@ describe('CategoryEditorModal', () => {
           description: 'Description 1',
           parentCategoryId: null,
           isPublicOverride: null,
+          itemTemplateIds: [],
         });
       });
     });

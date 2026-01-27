@@ -32,12 +32,12 @@ function renderWithRouter(initialRoute: string) {
 
 describe('CategoryView', () => {
   const mockCollections: Collection[] = [
-    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test' },
+    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', isPublic: true },
   ];
 
   const mockCategories: Category[] = [
-    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false },
-    { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false },
+    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
+    { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockItems: Item[] = [
@@ -51,6 +51,8 @@ describe('CategoryView', () => {
       description: 'Description 1',
       properties: [],
       images: [],
+      isPublicOverride: null,
+      effectiveIsPublic: true,
     },
     {
       id: 2,
@@ -62,6 +64,8 @@ describe('CategoryView', () => {
       description: 'Description 2',
       properties: [],
       images: [],
+      isPublicOverride: null,
+      effectiveIsPublic: true,
     },
   ];
 
@@ -76,6 +80,12 @@ describe('CategoryView', () => {
     items: mockItems,
     loadItemsForCategory: vi.fn(),
     loadPropertySuggestions: vi.fn(),
+    itemTemplates: [],
+    itemTemplatesLoading: false,
+    itemTemplatesError: null,
+    loadItemTemplates: vi.fn(async () => []),
+    loadCollectionTemplates: vi.fn(async () => []),
+    getCategoryTemplates: vi.fn(async () => []),
   };
 
   beforeEach(() => {
