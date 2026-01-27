@@ -321,3 +321,154 @@ az sql server firewall-rule create \
   --start-ip-address <container-app-ip> \
   --end-ip-address <container-app-ip>
 ```
+
+---
+
+## CI/CD Pipeline (GitHub Actions)
+
+The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automatically deploys to Azure when a PR is merged to `main`.
+
+### Pipeline Features
+
+- **Automatic deployment** on PR merge to main
+- **Test execution** (unit and integration tests) before deployment
+- **Container image build and push** to Azure Container Registry
+- **Database migrations** run automatically against SQL Azure
+- **Revision management** - new deployments create new Container App revisions, automatically deactivating old containers
+- **Health check verification** after deployment
+
+### Infrastructure Provisioning
+
+**The pipeline does NOT handle infrastructure provisioning.** Infrastructure must be created once before the first pipeline run using the manual deployment script.
+
+This is intentional because:
+1. Infrastructure changes are infrequent and require careful review
+2. SQL Server names must be globally unique (generated with random suffix)
+3. Service principal permissions need one-time setup
+4. OAuth provider configuration requires manual registration
+
+### Prerequisites (One-Time Setup)
+
+Before the pipeline can run for the first time:
+
+#### 1. Provision Azure Infrastructure
+
+Run the deployment script to create all Azure resources:
+
+```bash
+./deploy.sh \
+  --name onebighead \
+  --location eastus \
+  --jwt-key "your-jwt-signing-key-at-least-32-chars" \
+  --microsoft-client-id "<your-id>" \
+  --microsoft-client-secret "<your-secret>"
+```
+
+This creates:
+- Resource Group
+- Azure Container Registry
+- SQL Azure Server and Database
+- Container Apps Environment
+- User-assigned Managed Identity with appropriate permissions
+
+#### 2. Create Azure Service Principal
+
+Create a service principal with permissions to deploy:
+
+```bash
+# Create service principal with Contributor role on the resource group
+az ad sp create-for-rbac \
+  --name "onebighead-github-actions" \
+  --role Contributor \
+  --scopes /subscriptions/<subscription-id>/resourceGroups/onebighead-rg \
+  --sdk-auth
+```
+
+Save the JSON output - you'll need it for GitHub secrets.
+
+Additionally, grant the service principal SQL Azure admin access for migrations:
+
+```bash
+# Get the service principal object ID
+SP_OBJECT_ID=$(az ad sp show --id <clientId-from-json> --query id -o tsv)
+
+# Add as SQL Azure AD admin
+az sql server ad-admin create \
+  --resource-group onebighead-rg \
+  --server <sql-server-name> \
+  --display-name "GitHub Actions" \
+  --object-id $SP_OBJECT_ID
+```
+
+#### 3. Configure GitHub Repository Secrets
+
+In your GitHub repository, go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret Name | Description | Required |
+|-------------|-------------|----------|
+| `AZURE_CREDENTIALS` | Full JSON output from service principal creation | Yes |
+| `AZURE_APP_NAME` | Base name for Azure resources (e.g., `onebighead`) | Yes |
+| `AZURE_LOCATION` | Azure region (e.g., `eastus`) | Yes |
+| `JWT_SIGNING_KEY` | JWT signing key (min 32 characters) | Yes |
+| `SQL_ADMIN_PASSWORD` | SQL admin password (from initial deployment) | Yes |
+| `MICROSOFT_CLIENT_ID` | Microsoft OAuth client ID | If using Microsoft auth |
+| `MICROSOFT_CLIENT_SECRET` | Microsoft OAuth client secret | If using Microsoft auth |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | If using Google auth |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | If using Google auth |
+| `APPLE_CLIENT_ID` | Apple OAuth client ID | If using Apple auth |
+| `APPLE_CLIENT_SECRET` | Apple OAuth client secret | If using Apple auth |
+
+#### 4. Configure GitHub Environment (Optional but Recommended)
+
+Create a `production` environment in **Settings → Environments**:
+- Add required reviewers for deployment approval
+- Configure environment-specific secrets if needed
+- Set deployment branch restrictions to `main`
+
+### Pipeline Workflow
+
+When a PR is merged to `main`:
+
+1. **Test Job** runs unit and integration tests
+2. **Deploy Job** (requires test success):
+   - Builds frontend and backend
+   - Generates migration script
+   - Builds and pushes Docker image to ACR
+   - Updates Container App with new image (creates new revision)
+   - Runs database migrations
+   - Verifies health check
+
+### Container Revision Management
+
+Azure Container Apps automatically manages revisions:
+- Each deployment creates a new revision with the commit SHA as the image tag
+- The `az containerapp update` command activates the new revision
+- Old revisions are automatically deactivated (but retained for rollback)
+- Traffic automatically routes to the new active revision
+
+To rollback to a previous revision:
+
+```bash
+# List revisions
+az containerapp revision list \
+  --name onebighead-app \
+  --resource-group onebighead-rg \
+  --output table
+
+# Activate a specific revision
+az containerapp revision activate \
+  --name onebighead-app \
+  --resource-group onebighead-rg \
+  --revision <revision-name>
+```
+
+### Monitoring Deployments
+
+View deployment logs in GitHub Actions, or check Container App logs:
+
+```bash
+az containerapp logs show \
+  --name onebighead-app \
+  --resource-group onebighead-rg \
+  --follow
+```
