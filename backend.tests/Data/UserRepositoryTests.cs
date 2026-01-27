@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace backend.Tests.Data;
 
+[Trait("Category", "Integration")]
 public class UserRepositoryTests : IDisposable
 {
     private readonly AppDbContext _context;

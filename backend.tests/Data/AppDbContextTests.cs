@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Tests.Data;
 
+[Trait("Category", "Integration")]
 public class AppDbContextTests : IDisposable
 {
     private readonly AppDbContext _context;

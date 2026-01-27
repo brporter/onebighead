@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Tests.Services;
 
+[Trait("Category", "Integration")]
 public class DatabaseImageProviderTests : IDisposable
 {
     private readonly AppDbContext _context;

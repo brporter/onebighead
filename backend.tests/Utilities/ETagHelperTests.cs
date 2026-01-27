@@ -2,6 +2,7 @@ using backend.Utilities;
 
 namespace backend.Tests.Utilities;
 
+[Trait("Category", "Unit")]
 public class ETagHelperTests
 {
     private class TestItem

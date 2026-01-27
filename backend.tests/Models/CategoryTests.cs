@@ -3,6 +3,7 @@ using System.Text.Json;
 
 namespace backend.Tests.Models;
 
+[Trait("Category", "Unit")]
 public class CategoryTests
 {
     [Fact]

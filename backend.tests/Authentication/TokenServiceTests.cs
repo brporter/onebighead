@@ -5,6 +5,7 @@ using System.Security.Claims;
 
 namespace backend.Tests.Authentication;
 
+[Trait("Category", "Unit")]
 public class TokenServiceTests
 {
     private readonly TokenService _tokenService;

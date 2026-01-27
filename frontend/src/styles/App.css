@@ -1864,6 +1864,19 @@
   background: var(--color-border);
 }
 
+/* Modal mode - render inline within parent container */
+.setupWizard--modal {
+  position: static;
+  background: transparent;
+  padding: 0;
+  z-index: auto;
+}
+
+.setupWizard--modal .setupWizard__container {
+  box-shadow: none;
+  max-height: none;
+}
+
 /* ==========================================================================
    Theme Card
    ========================================================================== */

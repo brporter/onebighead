@@ -215,13 +215,22 @@ function CollectionSetupWizard({ onComplete, onCancel, isModal = false }: Collec
       <div className="setupWizard__container">
         <div className="setupWizard__header">
           <h1 className="setupWizard__title">{isModal ? 'New Collection' : 'Create Your Collection'}</h1>
-          {onCancel && (
+          {isModal && onCancel && (
             <button
               className="setupWizard__skipBtn"
               onClick={onCancel}
               disabled={isSubmitting}
             >
-              {isModal ? 'Cancel' : 'Skip Setup'}
+              Cancel
+            </button>
+          )}
+          {!isModal && (
+            <button
+              className="setupWizard__skipBtn"
+              onClick={handleSkip}
+              disabled={isSubmitting}
+            >
+              Skip Setup
             </button>
           )}
         </div>

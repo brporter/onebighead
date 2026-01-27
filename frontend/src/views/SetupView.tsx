@@ -9,15 +9,8 @@ function SetupView() {
     navigate(`/collections/${collectionId}`);
   };
 
-  const handleCancel = () => {
-    navigate('/collections');
-  };
-
   return (
-    <CollectionSetupWizard 
-      onComplete={handleComplete} 
-      onCancel={handleCancel}
-    />
+    <CollectionSetupWizard onComplete={handleComplete} />
   );
 }
 

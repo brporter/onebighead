@@ -10,6 +10,7 @@ using System.Text.Json;
 
 namespace backend.Tests.Controllers;
 
+[Trait("Category", "Unit")]
 public class ExportControllerTests
 {
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;

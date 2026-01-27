@@ -3,6 +3,7 @@ using backend.Services;
 
 namespace backend.Tests.Services;
 
+[Trait("Category", "Unit")]
 public class VisibilityServiceTests
 {
     private readonly VisibilityService _service;

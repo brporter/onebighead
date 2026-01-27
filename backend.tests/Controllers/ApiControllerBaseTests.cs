@@ -13,6 +13,7 @@ public class TestableApiController : ApiControllerBase
     public int TestGetUserId() => GetUserId();
 }
 
+[Trait("Category", "Unit")]
 public class ApiControllerBaseTests
 {
     private readonly TestableApiController _controller;
