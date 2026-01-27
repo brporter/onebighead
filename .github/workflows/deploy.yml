@@ -183,6 +183,27 @@ jobs:
           echo "SQL_CONNECTION_STRING=$SQL_CONNECTION_STRING" >> $GITHUB_ENV
 
       # Update Container App (this will automatically create a new revision and deactivate old ones)
+      - name: Update Container App secrets
+        run: |
+          # Build secrets array
+          SECRETS=("jwt-signing-key=${{ secrets.JWT_SIGNING_KEY }}")
+          
+          if [ -n "${{ secrets.MICROSOFT_CLIENT_SECRET }}" ]; then
+            SECRETS+=("microsoft-client-secret=${{ secrets.MICROSOFT_CLIENT_SECRET }}")
+          fi
+          if [ -n "${{ secrets.GOOGLE_CLIENT_SECRET }}" ]; then
+            SECRETS+=("google-client-secret=${{ secrets.GOOGLE_CLIENT_SECRET }}")
+          fi
+          if [ -n "${{ secrets.APPLE_CLIENT_SECRET }}" ]; then
+            SECRETS+=("apple-client-secret=${{ secrets.APPLE_CLIENT_SECRET }}")
+          fi
+          
+          az containerapp secret set \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --secrets "${SECRETS[@]}" \
+            --output none
+
       - name: Update Container App
         run: |
           # Get existing app URL
@@ -192,45 +213,28 @@ jobs:
             --query "properties.configuration.ingress.fqdn" \
             -o tsv)
           
-          # Update secrets
-          SECRETS="jwt-signing-key=${{ secrets.JWT_SIGNING_KEY }}"
-          
-          if [ -n "${{ secrets.MICROSOFT_CLIENT_SECRET }}" ]; then
-            SECRETS="$SECRETS microsoft-client-secret=${{ secrets.MICROSOFT_CLIENT_SECRET }}"
-          fi
-          if [ -n "${{ secrets.GOOGLE_CLIENT_SECRET }}" ]; then
-            SECRETS="$SECRETS google-client-secret=${{ secrets.GOOGLE_CLIENT_SECRET }}"
-          fi
-          if [ -n "${{ secrets.APPLE_CLIENT_SECRET }}" ]; then
-            SECRETS="$SECRETS apple-client-secret=${{ secrets.APPLE_CLIENT_SECRET }}"
-          fi
-          
-          az containerapp secret set \
-            --name "$CONTAINER_APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --secrets $SECRETS \
-            --output none
-          
-          # Build environment variables
-          ENV_VARS="ASPNETCORE_ENVIRONMENT=Production"
-          ENV_VARS="$ENV_VARS ConnectionStrings__DefaultConnection=$SQL_CONNECTION_STRING"
-          ENV_VARS="$ENV_VARS Authentication__Jwt__SigningKey=secretref:jwt-signing-key"
-          ENV_VARS="$ENV_VARS Authentication__OAuth__BaseUrl=https://${APP_URL}"
+          # Build environment variables array
+          ENV_VARS=(
+            "ASPNETCORE_ENVIRONMENT=Production"
+            "ConnectionStrings__DefaultConnection=$SQL_CONNECTION_STRING"
+            "Authentication__Jwt__SigningKey=secretref:jwt-signing-key"
+            "Authentication__OAuth__BaseUrl=https://${APP_URL}"
+          )
           
           if [ -n "${{ secrets.MICROSOFT_CLIENT_ID }}" ]; then
-            ENV_VARS="$ENV_VARS Authentication__Providers__Microsoft__ClientId=${{ secrets.MICROSOFT_CLIENT_ID }}"
-            ENV_VARS="$ENV_VARS Authentication__Providers__Microsoft__Enabled=true"
-            ENV_VARS="$ENV_VARS Authentication__Providers__Microsoft__ClientSecret=secretref:microsoft-client-secret"
+            ENV_VARS+=("Authentication__Providers__Microsoft__ClientId=${{ secrets.MICROSOFT_CLIENT_ID }}")
+            ENV_VARS+=("Authentication__Providers__Microsoft__Enabled=true")
+            ENV_VARS+=("Authentication__Providers__Microsoft__ClientSecret=secretref:microsoft-client-secret")
           fi
           if [ -n "${{ secrets.GOOGLE_CLIENT_ID }}" ]; then
-            ENV_VARS="$ENV_VARS Authentication__Providers__Google__ClientId=${{ secrets.GOOGLE_CLIENT_ID }}"
-            ENV_VARS="$ENV_VARS Authentication__Providers__Google__Enabled=true"
-            ENV_VARS="$ENV_VARS Authentication__Providers__Google__ClientSecret=secretref:google-client-secret"
+            ENV_VARS+=("Authentication__Providers__Google__ClientId=${{ secrets.GOOGLE_CLIENT_ID }}")
+            ENV_VARS+=("Authentication__Providers__Google__Enabled=true")
+            ENV_VARS+=("Authentication__Providers__Google__ClientSecret=secretref:google-client-secret")
           fi
           if [ -n "${{ secrets.APPLE_CLIENT_ID }}" ]; then
-            ENV_VARS="$ENV_VARS Authentication__Providers__Apple__ClientId=${{ secrets.APPLE_CLIENT_ID }}"
-            ENV_VARS="$ENV_VARS Authentication__Providers__Apple__Enabled=true"
-            ENV_VARS="$ENV_VARS Authentication__Providers__Apple__ClientSecret=secretref:apple-client-secret"
+            ENV_VARS+=("Authentication__Providers__Apple__ClientId=${{ secrets.APPLE_CLIENT_ID }}")
+            ENV_VARS+=("Authentication__Providers__Apple__Enabled=true")
+            ENV_VARS+=("Authentication__Providers__Apple__ClientSecret=secretref:apple-client-secret")
           fi
           
           # Update container app with new image (creates new revision, deactivates old)
@@ -238,7 +242,7 @@ jobs:
             --name "$CONTAINER_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
             --image "$IMAGE_TAG" \
-            --set-env-vars $ENV_VARS \
+            --set-env-vars "${ENV_VARS[@]}" \
             --output none
 
       # Run database migrations
