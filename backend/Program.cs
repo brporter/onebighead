@@ -97,30 +97,6 @@ if (!app.Environment.IsDevelopment())
     if (Directory.Exists(collectionsPath))
     {
         var fileProvider = new PhysicalFileProvider(collectionsPath);
-        var indexPath = Path.Combine(collectionsPath, "index.html");
-        
-        // SPA fallback middleware: rewrite /collections/* requests to index.html
-        // if the requested file doesn't exist (allows React Router to handle routing)
-        app.Use(async (context, next) =>
-        {
-            var path = context.Request.Path.Value ?? "";
-            if (path.StartsWith("/collections", StringComparison.OrdinalIgnoreCase))
-            {
-                // Get the file path relative to collections folder
-                var relativePath = path.Substring("/collections".Length).TrimStart('/');
-                var filePath = Path.Combine(collectionsPath, relativePath);
-                
-                // If the file doesn't exist and it's not a file request (no extension or not found),
-                // rewrite to index.html for SPA routing
-                if (!string.IsNullOrEmpty(relativePath) && 
-                    !File.Exists(filePath) && 
-                    !Directory.Exists(filePath))
-                {
-                    context.Request.Path = "/collections/index.html";
-                }
-            }
-            await next();
-        });
         
         // SPA fallback middleware: rewrite /collections/* requests to index.html
         // if the requested file doesn't exist (allows React Router to handle routing)
