@@ -42,6 +42,57 @@
           "IconName": "box"
         }
       ]
+    },
+    {
+      "name": "ItemTemplateProperties",
+      "checkColumn": "Name",
+      "identityInsert": true,
+      "rows": [
+        { "Id": 1, "ItemTemplateId": 1, "Category": "Details", "Name": "Author", "SortOrder": 1 },
+        { "Id": 2, "ItemTemplateId": 1, "Category": "Details", "Name": "Publisher", "SortOrder": 2 },
+        { "Id": 3, "ItemTemplateId": 1, "Category": "Details", "Name": "ISBN", "SortOrder": 3 },
+        { "Id": 4, "ItemTemplateId": 1, "Category": "Details", "Name": "Year Published", "SortOrder": 4 },
+        { "Id": 5, "ItemTemplateId": 1, "Category": "Details", "Name": "Genre", "SortOrder": 5 },
+        { "Id": 6, "ItemTemplateId": 1, "Category": "Physical", "Name": "Pages", "SortOrder": 6 },
+        { "Id": 7, "ItemTemplateId": 1, "Category": "Physical", "Name": "Format", "SortOrder": 7 },
+
+        { "Id": 10, "ItemTemplateId": 2, "Category": "Details", "Name": "Platform", "SortOrder": 1 },
+        { "Id": 11, "ItemTemplateId": 2, "Category": "Details", "Name": "Publisher", "SortOrder": 2 },
+        { "Id": 12, "ItemTemplateId": 2, "Category": "Details", "Name": "Developer", "SortOrder": 3 },
+        { "Id": 13, "ItemTemplateId": 2, "Category": "Details", "Name": "Release Year", "SortOrder": 4 },
+        { "Id": 14, "ItemTemplateId": 2, "Category": "Details", "Name": "Genre", "SortOrder": 5 },
+        { "Id": 15, "ItemTemplateId": 2, "Category": "Condition", "Name": "Complete In Box", "SortOrder": 6 },
+        { "Id": 16, "ItemTemplateId": 2, "Category": "Condition", "Name": "Region", "SortOrder": 7 },
+
+        { "Id": 20, "ItemTemplateId": 3, "Category": "Details", "Name": "Artist", "SortOrder": 1 },
+        { "Id": 21, "ItemTemplateId": 3, "Category": "Details", "Name": "Medium", "SortOrder": 2 },
+        { "Id": 22, "ItemTemplateId": 3, "Category": "Details", "Name": "Year Created", "SortOrder": 3 },
+        { "Id": 23, "ItemTemplateId": 3, "Category": "Details", "Name": "Style", "SortOrder": 4 },
+        { "Id": 24, "ItemTemplateId": 3, "Category": "Physical", "Name": "Dimensions", "SortOrder": 5 },
+        { "Id": 25, "ItemTemplateId": 3, "Category": "Physical", "Name": "Framed", "SortOrder": 6 },
+        { "Id": 26, "ItemTemplateId": 3, "Category": "Provenance", "Name": "Edition", "SortOrder": 7 },
+
+        { "Id": 30, "ItemTemplateId": 4, "Category": "Details", "Name": "Artist", "SortOrder": 1 },
+        { "Id": 31, "ItemTemplateId": 4, "Category": "Details", "Name": "Label", "SortOrder": 2 },
+        { "Id": 32, "ItemTemplateId": 4, "Category": "Details", "Name": "Release Year", "SortOrder": 3 },
+        { "Id": 33, "ItemTemplateId": 4, "Category": "Details", "Name": "Genre", "SortOrder": 4 },
+        { "Id": 34, "ItemTemplateId": 4, "Category": "Physical", "Name": "Format", "SortOrder": 5 },
+        { "Id": 35, "ItemTemplateId": 4, "Category": "Physical", "Name": "Track Count", "SortOrder": 6 },
+        { "Id": 36, "ItemTemplateId": 4, "Category": "Condition", "Name": "Pressing", "SortOrder": 7 },
+
+        { "Id": 40, "ItemTemplateId": 5, "Category": "Details", "Name": "Denomination", "SortOrder": 1 },
+        { "Id": 41, "ItemTemplateId": 5, "Category": "Details", "Name": "Country", "SortOrder": 2 },
+        { "Id": 42, "ItemTemplateId": 5, "Category": "Details", "Name": "Year", "SortOrder": 3 },
+        { "Id": 43, "ItemTemplateId": 5, "Category": "Details", "Name": "Mint", "SortOrder": 4 },
+        { "Id": 44, "ItemTemplateId": 5, "Category": "Physical", "Name": "Composition", "SortOrder": 5 },
+        { "Id": 45, "ItemTemplateId": 5, "Category": "Grading", "Name": "Grade", "SortOrder": 6 },
+        { "Id": 46, "ItemTemplateId": 5, "Category": "Grading", "Name": "Certified", "SortOrder": 7 },
+
+        { "Id": 50, "ItemTemplateId": 6, "Category": "Details", "Name": "Type", "SortOrder": 1 },
+        { "Id": 51, "ItemTemplateId": 6, "Category": "Details", "Name": "Brand", "SortOrder": 2 },
+        { "Id": 52, "ItemTemplateId": 6, "Category": "Details", "Name": "Year", "SortOrder": 3 },
+        { "Id": 53, "ItemTemplateId": 6, "Category": "Condition", "Name": "Condition", "SortOrder": 4 }
+      ]
     }
   ]
 }
