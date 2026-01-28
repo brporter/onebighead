@@ -98,15 +98,27 @@ if (!app.Environment.IsDevelopment())
     {
         var fileProvider = new PhysicalFileProvider(collectionsPath);
         
-        // SPA fallback: rewrite /collections/* routes (without file extensions) to index.html
-        // This allows React Router to handle client-side routing when URLs are accessed directly
+        // SPA fallback middleware: rewrite /collections/* requests to index.html
+        // if the requested file doesn't exist (allows React Router to handle routing)
         app.Use(async (context, next) =>
         {
-            var path = context.Request.Path.Value ?? "";
-            if (path.StartsWith("/collections", StringComparison.OrdinalIgnoreCase) &&
-                !Path.HasExtension(path))
+            if (context.Request.Path.StartsWithSegments("/collections", out var remaining))
             {
-                context.Request.Path = "/collections/index.html";
+                // Get the file path relative to collections folder
+                var relativePath = remaining.Value?.TrimStart('/') ?? "";
+                
+                if (!string.IsNullOrEmpty(relativePath))
+                {
+                    var filePath = Path.GetFullPath(Path.Combine(collectionsPath, relativePath));
+                    
+                    // Security: ensure the path stays within collectionsPath
+                    if (filePath.StartsWith(collectionsPath, StringComparison.OrdinalIgnoreCase) &&
+                        !File.Exists(filePath) && 
+                        !Directory.Exists(filePath))
+                    {
+                        context.Request.Path = "/collections/index.html";
+                    }
+                }
             }
             await next();
         });
@@ -133,13 +145,6 @@ app.MapControllers();
 
 // Simple health check endpoint for deployment verification
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
-
-// SPA fallback: serve index.html for any /collections/* route not matched by static files
-// This allows React Router to handle client-side routing when URLs are accessed directly
-if (!app.Environment.IsDevelopment())
-{
-    app.MapFallbackToFile("/collections/{**path}", "collections/index.html");
-}
 
 app.Run();
 
