@@ -187,7 +187,8 @@ async Task ProcessTable(SqlConnection? connection, SeedTable table, bool isDryRu
                 {
                     var existsSql = $"SELECT COUNT(*) FROM [{table.Name}] WHERE [{table.CheckColumn}] = @check";
                     using var existsCmd = new SqlCommand(existsSql, connection);
-                    existsCmd.Parameters.AddWithValue("@check", row[table.CheckColumn]?.ToString() ?? "");
+                    var checkValue = ConvertJsonElement(row[table.CheckColumn]);
+                    existsCmd.Parameters.AddWithValue("@check", checkValue ?? DBNull.Value);
                     var existsResult = await existsCmd.ExecuteScalarAsync();
                     var exists = existsResult != null && (int)existsResult > 0;
                     if (exists)
@@ -199,7 +200,7 @@ async Task ProcessTable(SqlConnection? connection, SeedTable table, bool isDryRu
                 using var cmd = new SqlCommand(insertSql, connection);
                 for (int i = 0; i < columns.Count; i++)
                 {
-                    var value = row[columns[i]];
+                    var value = ConvertJsonElement(row[columns[i]]);
                     cmd.Parameters.AddWithValue($"@p{i}", value ?? DBNull.Value);
                 }
                 await cmd.ExecuteNonQueryAsync();
@@ -221,6 +222,26 @@ async Task ProcessTable(SqlConnection? connection, SeedTable table, bool isDryRu
             await identityOffCmd.ExecuteNonQueryAsync();
         }
     }
+}
+
+// Helper to convert JsonElement to native types
+static object? ConvertJsonElement(object? value)
+{
+    if (value is System.Text.Json.JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            System.Text.Json.JsonValueKind.String => element.GetString(),
+            System.Text.Json.JsonValueKind.Number => element.TryGetInt32(out var i) ? i : 
+                                                      element.TryGetInt64(out var l) ? l : 
+                                                      element.GetDouble(),
+            System.Text.Json.JsonValueKind.True => true,
+            System.Text.Json.JsonValueKind.False => false,
+            System.Text.Json.JsonValueKind.Null => null,
+            _ => element.ToString()
+        };
+    }
+    return value;
 }
 
 // Seed file models
