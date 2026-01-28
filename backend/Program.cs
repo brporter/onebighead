@@ -98,6 +98,19 @@ if (!app.Environment.IsDevelopment())
     {
         var fileProvider = new PhysicalFileProvider(collectionsPath);
         
+        // SPA fallback: rewrite /collections/* routes (without file extensions) to index.html
+        // This allows React Router to handle client-side routing when URLs are accessed directly
+        app.Use(async (context, next) =>
+        {
+            var path = context.Request.Path.Value ?? "";
+            if (path.StartsWith("/collections", StringComparison.OrdinalIgnoreCase) &&
+                !Path.HasExtension(path))
+            {
+                context.Request.Path = "/collections/index.html";
+            }
+            await next();
+        });
+        
         app.UseDefaultFiles(new DefaultFilesOptions()
         {
             FileProvider = fileProvider,
