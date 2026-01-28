@@ -8,38 +8,32 @@
         {
           "Id": 1,
           "Name": "Book",
-          "Description": "A template for books with author, publisher, and ISBN fields",
-          "IconName": "book"
+          "Description": "A template for books with author, publisher, and ISBN fields"
         },
         {
           "Id": 2,
           "Name": "Video Game",
-          "Description": "A template for video games with platform, publisher, and genre fields",
-          "IconName": "gamepad"
+          "Description": "A template for video games with platform, publisher, and genre fields"
         },
         {
           "Id": 3,
           "Name": "Artwork",
-          "Description": "A template for artwork with artist, medium, and dimensions fields",
-          "IconName": "palette"
+          "Description": "A template for artwork with artist, medium, and dimensions fields"
         },
         {
           "Id": 4,
           "Name": "Music Album",
-          "Description": "A template for music albums with artist, label, and track count fields",
-          "IconName": "music"
+          "Description": "A template for music albums with artist, label, and track count fields"
         },
         {
           "Id": 5,
           "Name": "Coin",
-          "Description": "A template for coins with denomination, mint, and year fields",
-          "IconName": "coins"
+          "Description": "A template for coins with denomination, mint, and year fields"
         },
         {
           "Id": 6,
           "Name": "General Item",
-          "Description": "A general-purpose template for any collectible item",
-          "IconName": "box"
+          "Description": "A general-purpose template for any collectible item"
         }
       ]
     },

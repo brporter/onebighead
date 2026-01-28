@@ -151,8 +151,8 @@ jobs:
 
       - name: Build database tools
         run: |
-          dotnet publish tools/dbreset/dbreset.csproj -c Release -o publish
-          dotnet publish tools/dbseed/dbseed.csproj -c Release -o publish
+          dotnet publish tools/dbreset/dbreset.csproj -c Release -r linux-x64 -o publish
+          dotnet publish tools/dbseed/dbseed.csproj -c Release -r linux-x64 -o publish
           # Copy seed data files
           cp -r tools/dbseed/seeds publish/seeds
 
