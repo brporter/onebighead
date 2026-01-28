@@ -1,0 +1,53 @@
+{
+  "tables": [
+    {
+      "name": "CollectionThemes",
+      "checkColumn": "Name",
+      "identityInsert": true,
+      "rows": [
+        {
+          "Id": 1,
+          "Name": "Books",
+          "Description": "For book collections including novels, textbooks, comics, and more",
+          "IconName": "book",
+          "SortOrder": 1
+        },
+        {
+          "Id": 2,
+          "Name": "Video Games",
+          "Description": "For video game collections across all platforms",
+          "IconName": "gamepad",
+          "SortOrder": 2
+        },
+        {
+          "Id": 3,
+          "Name": "Art",
+          "Description": "For art collections including paintings, sculptures, and prints",
+          "IconName": "palette",
+          "SortOrder": 3
+        },
+        {
+          "Id": 4,
+          "Name": "Music",
+          "Description": "For music collections including vinyl, CDs, and memorabilia",
+          "IconName": "music",
+          "SortOrder": 4
+        },
+        {
+          "Id": 5,
+          "Name": "Coins & Currency",
+          "Description": "For numismatic collections including coins, banknotes, and tokens",
+          "IconName": "coins",
+          "SortOrder": 5
+        },
+        {
+          "Id": 6,
+          "Name": "General",
+          "Description": "A flexible theme for any type of collection",
+          "IconName": "box",
+          "SortOrder": 99
+        }
+      ]
+    }
+  ]
+}

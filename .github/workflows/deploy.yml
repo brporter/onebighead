@@ -152,6 +152,9 @@ jobs:
       - name: Build database tools
         run: |
           dotnet publish tools/dbreset/dbreset.csproj -c Release -o publish
+          dotnet publish tools/dbseed/dbseed.csproj -c Release -o publish
+          # Copy seed data files
+          cp -r tools/dbseed/seeds publish/seeds
 
       # Generate migration assets
       - name: Generate migration script and bundle
