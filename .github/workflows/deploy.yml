@@ -149,11 +149,14 @@ jobs:
           mkdir -p publish/wwwroot/collections
           cp -r frontend/dist/* publish/wwwroot/collections/
 
-      # Generate migration script
-      - name: Generate migration script
+      # Generate migration assets
+      - name: Generate migration script and bundle
         run: |
           cd backend
+          # SQL script for pipeline execution
           dotnet ef migrations script --idempotent -o ../publish/migrate.sql
+          # Self-contained bundle for manual execution from container
+          dotnet ef migrations bundle --self-contained -r linux-x64 -o ../publish/efbundle --force
 
       # Build and push Docker image
       - name: Get ACR details
