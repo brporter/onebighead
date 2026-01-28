@@ -149,6 +149,10 @@ jobs:
           mkdir -p publish/wwwroot/collections
           cp -r frontend/dist/* publish/wwwroot/collections/
 
+      - name: Build database tools
+        run: |
+          dotnet publish tools/dbreset/dbreset.csproj -c Release -o publish
+
       # Generate migration assets
       - name: Generate migration script and bundle
         run: |
