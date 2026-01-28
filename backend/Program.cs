@@ -121,6 +121,13 @@ app.MapControllers();
 // Simple health check endpoint for deployment verification
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
+// SPA fallback: serve index.html for any /collections/* route not matched by static files
+// This allows React Router to handle client-side routing when URLs are accessed directly
+if (!app.Environment.IsDevelopment())
+{
+    app.MapFallbackToFile("/collections/{**path}", "collections/index.html");
+}
+
 app.Run();
 
 public partial class Program { }
