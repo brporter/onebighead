@@ -8,32 +8,44 @@
         {
           "Id": 1,
           "Name": "Book",
-          "Description": "A template for books with author, publisher, and ISBN fields"
+          "Description": "A template for books with author, publisher, and ISBN fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
         },
         {
           "Id": 2,
           "Name": "Video Game",
-          "Description": "A template for video games with platform, publisher, and genre fields"
+          "Description": "A template for video games with platform, publisher, and genre fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
         },
         {
           "Id": 3,
           "Name": "Artwork",
-          "Description": "A template for artwork with artist, medium, and dimensions fields"
+          "Description": "A template for artwork with artist, medium, and dimensions fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
         },
         {
           "Id": 4,
           "Name": "Music Album",
-          "Description": "A template for music albums with artist, label, and track count fields"
+          "Description": "A template for music albums with artist, label, and track count fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
         },
         {
           "Id": 5,
           "Name": "Coin",
-          "Description": "A template for coins with denomination, mint, and year fields"
+          "Description": "A template for coins with denomination, mint, and year fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
         },
         {
           "Id": 6,
           "Name": "General Item",
-          "Description": "A general-purpose template for any collectible item"
+          "Description": "A general-purpose template for any collectible item",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
         }
       ]
     },
