@@ -315,11 +315,13 @@ jobs:
         run: |
           SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
           echo "Applying database migrations..."
+          # -b flag makes sqlcmd exit with non-zero code on SQL errors
           sqlcmd -S "$SQL_SERVER_FQDN" \
             -d "$SQL_DB_NAME" \
             --authentication-method=ActiveDirectoryServicePrincipal \
             -U "${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" \
             -P "${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" \
+            -b \
             -i publish/migrate.sql
           echo "Migrations applied successfully."
 
