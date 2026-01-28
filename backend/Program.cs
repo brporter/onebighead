@@ -53,22 +53,19 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Database initialization
+// In Debug builds: run migrations automatically
+// In Release builds: use migration bundle for deployments
+#if DEBUG
 {
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    
-    // In Debug builds: run migrations automatically
-    // In Release builds: use migration bundle for deployments
-    #if DEBUG
     context.Database.Migrate();
-    #endif
     
-    // Always seed system data (themes, default templates, etc.)
-    // Seeder is idempotent - only adds data if not present
+    // Seed database with system data
     var seeder = new DatabaseSeeder(context);
     await seeder.SeedAsync();
 }
+#endif
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
