@@ -122,6 +122,31 @@ if (!app.Environment.IsDevelopment())
             await next();
         });
         
+        // SPA fallback middleware: rewrite /collections/* requests to index.html
+        // if the requested file doesn't exist (allows React Router to handle routing)
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/collections", out var remaining))
+            {
+                // Get the file path relative to collections folder
+                var relativePath = remaining.Value?.TrimStart('/') ?? "";
+                
+                if (!string.IsNullOrEmpty(relativePath))
+                {
+                    var filePath = Path.GetFullPath(Path.Combine(collectionsPath, relativePath));
+                    
+                    // Security: ensure the path stays within collectionsPath
+                    if (filePath.StartsWith(collectionsPath, StringComparison.OrdinalIgnoreCase) &&
+                        !File.Exists(filePath) && 
+                        !Directory.Exists(filePath))
+                    {
+                        context.Request.Path = "/collections/index.html";
+                    }
+                }
+            }
+            await next();
+        });
+        
         app.UseDefaultFiles(new DefaultFilesOptions()
         {
             FileProvider = fileProvider,
