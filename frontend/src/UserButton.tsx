@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './styles/UserButton.css';
 
 interface UserButtonProps {
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 function UserButton({ onClick }: UserButtonProps) {
@@ -18,6 +18,14 @@ function UserButton({ onClick }: UserButtonProps) {
     navigate('/admin');
   };
 
+  const handleSettingsClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      navigate('/settings');
+    }
+  };
+
   const handleSignOut = async () => {
     await logout();
     window.location.href = '/';
@@ -30,7 +38,7 @@ function UserButton({ onClick }: UserButtonProps) {
           Admin
         </button>
       )}
-      <button className="userButton" onClick={onClick} type="button">
+      <button className="userButton" onClick={handleSettingsClick} type="button">
         {user.email}
       </button>
       <button className="userButton userButton--signout" onClick={handleSignOut} type="button">

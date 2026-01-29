@@ -4,7 +4,6 @@ import './styles/App.css';
 import { useData } from './DataContext';
 import { useUser } from './UserContext';
 import UserButton from './UserButton';
-import Settings from './Settings';
 import { SupportModal } from './SupportModal';
 import { UnreadSupportBanner } from './UnreadSupportBanner';
 
@@ -17,7 +16,6 @@ function App() {
   } = useData();
 
   const { user } = useUser();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,14 +27,6 @@ function App() {
 
   function handleBackToCollections() {
     navigate('/collections');
-  }
-
-  function handleOpenSettings() {
-    setIsSettingsOpen(true);
-  }
-
-  function handleCloseSettings() {
-    setIsSettingsOpen(false);
   }
 
   function handleOpenSupport() {
@@ -72,7 +62,7 @@ function App() {
 
   return (
     <div className="app" data-view={mobileView}>
-      <UnreadSupportBanner onOpenSettings={handleOpenSettings} />
+      <UnreadSupportBanner />
       <header className="app__header">
         <div className="app__headerContent">
           <div>
@@ -93,7 +83,7 @@ function App() {
               <span className="support-link__icon">?</span>
               Support
             </button>
-            <UserButton onClick={handleOpenSettings} />
+            <UserButton />
           </div>
         </div>
       </header>
@@ -106,7 +96,6 @@ function App() {
         <Outlet />
       )}
 
-      <Settings isOpen={isSettingsOpen} onClose={handleCloseSettings} />
       <SupportModal
         isOpen={isSupportOpen}
         onClose={handleCloseSupport}

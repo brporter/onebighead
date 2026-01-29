@@ -8,6 +8,7 @@ const CollectionView = lazy(() => import('./views/CollectionView'));
 const CategoryView = lazy(() => import('./views/CategoryView'));
 const ItemView = lazy(() => import('./views/ItemView'));
 const SetupView = lazy(() => import('./views/SetupView'));
+const SettingsView = lazy(() => import('./views/SettingsView'));
 const SystemAdmin = lazy(() => import('./SystemAdmin'));
 
 // Loading fallback component
@@ -70,6 +71,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <Suspense fallback={<LoadingFallback />}>
           <SetupView />
+        </Suspense>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/settings',
+    element: (
+      <RequireAuth>
+        <Suspense fallback={<LoadingFallback />}>
+          <SettingsView />
         </Suspense>
       </RequireAuth>
     ),

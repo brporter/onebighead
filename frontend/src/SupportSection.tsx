@@ -9,7 +9,11 @@ import {
 } from './api';
 import './styles/Support.css';
 
-export function SupportSection() {
+interface SupportSectionProps {
+  isFullPage?: boolean;
+}
+
+export function SupportSection({ isFullPage = false }: SupportSectionProps) {
   const [requests, setRequests] = useState<SupportRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

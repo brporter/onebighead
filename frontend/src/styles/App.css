@@ -1654,10 +1654,32 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.setupWizard__headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
 .setupWizard__title {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
+  color: var(--color-text);
+}
+
+.setupWizard__cancelBtn {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.setupWizard__cancelBtn:hover {
+  background: var(--color-surface-alt);
   color: var(--color-text);
 }
 
