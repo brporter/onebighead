@@ -5,6 +5,7 @@ using backend.Services;
 using backend.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace backend.Controllers;
 
@@ -34,8 +35,8 @@ public class ItemsController : ApiControllerBase
     public async Task<ActionResult<IEnumerable<Item>>> GetItems(
         [FromQuery] int? categoryId = null,
         [FromQuery] bool includeDescendants = false,
-        [FromQuery] int? skip = null,
-        [FromQuery] int? take = null)
+        [FromQuery][Range(0, int.MaxValue)] int? skip = null,
+        [FromQuery][Range(0, int.MaxValue)] int? take = null)
     {
         var tenantId = GetTenantId();
 

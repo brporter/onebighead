@@ -165,61 +165,69 @@ public partial class CollectionsController : ApiControllerBase
         }
 
         // Create categories from theme in batch
+        // Use iterative approach to handle arbitrary nesting depth
         var categoryMap = new Dictionary<string, int>(); // name -> categoryId
+        var remainingCategories = theme.ThemeCategories.OrderBy(c => c.SortOrder).ToList();
+        var maxIterations = remainingCategories.Count + 1; // Prevent infinite loops
+        var iteration = 0;
         
-        // First pass: create root categories (no parent)
-        var rootCategories = theme.ThemeCategories
-            .Where(c => c.ParentName == null)
-            .OrderBy(c => c.SortOrder)
-            .Select(tc => new Category
-            {
-                TenantId = tenantId,
-                CollectionId = created.Id,
-                Name = tc.Name,
-                Description = tc.Description,
-                ParentCategoryId = null,
-                IsSystem = false
-            })
-            .ToList();
-        
-        if (rootCategories.Count > 0)
+        while (remainingCategories.Count > 0 && iteration < maxIterations)
         {
-            var createdRoots = await _categoryRepository.CreateManyAsync(rootCategories);
-            foreach (var cat in createdRoots)
+            iteration++;
+            var categoriesToCreate = new List<(CollectionThemeCategory theme, Category entity)>();
+            var stillRemaining = new List<CollectionThemeCategory>();
+            
+            foreach (var tc in remainingCategories)
             {
-                categoryMap[cat.Name] = cat.Id;
-            }
-        }
-
-        // Second pass: create child categories
-        var childCategories = new List<Category>();
-        foreach (var tc in theme.ThemeCategories.Where(c => c.ParentName != null).OrderBy(c => c.SortOrder))
-        {
-            int? parentId = null;
-            if (categoryMap.TryGetValue(tc.ParentName!, out var id))
-            {
-                parentId = id;
-            }
-            else
-            {
-                _logger.LogWarning("Theme category '{CategoryName}' references non-existent parent '{ParentName}' - creating as root category", 
-                    tc.Name, tc.ParentName);
+                int? parentId = null;
+                
+                if (tc.ParentName == null)
+                {
+                    // Root category - can create immediately
+                }
+                else if (categoryMap.TryGetValue(tc.ParentName, out var id))
+                {
+                    // Parent exists - can create
+                    parentId = id;
+                }
+                else
+                {
+                    // Parent not yet created - defer to next iteration
+                    stillRemaining.Add(tc);
+                    continue;
+                }
+                
+                categoriesToCreate.Add((tc, new Category
+                {
+                    TenantId = tenantId,
+                    CollectionId = created.Id,
+                    Name = tc.Name,
+                    Description = tc.Description,
+                    ParentCategoryId = parentId,
+                    IsSystem = false
+                }));
             }
             
-            childCategories.Add(new Category
+            if (categoriesToCreate.Count > 0)
             {
-                TenantId = tenantId,
-                CollectionId = created.Id,
-                Name = tc.Name,
-                Description = tc.Description,
-                ParentCategoryId = parentId,
-                IsSystem = false
-            });
+                var createdCategories = await _categoryRepository.CreateManyAsync(
+                    categoriesToCreate.Select(c => c.entity));
+                
+                // Add created categories to map for next iteration
+                foreach (var cat in createdCategories)
+                {
+                    categoryMap[cat.Name] = cat.Id;
+                }
+            }
+            
+            remainingCategories = stillRemaining;
         }
         
-        if (childCategories.Count > 0)
+        // Log warning for any categories that couldn't be created (circular references or missing parents)
+        foreach (var orphan in remainingCategories)
         {
-            await _categoryRepository.CreateManyAsync(childCategories);
+            _logger.LogWarning("Theme category '{CategoryName}' could not be created - parent '{ParentName}' not found or circular reference detected", 
+                orphan.Name, orphan.ParentName);
         }
 
         return CreatedAtAction(nameof(GetCollection), new { id = created.Id }, created);

@@ -196,10 +196,20 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task<List<int>> GetInheritedTemplateIdsAsync(int categoryId, int tenantId)
     {
-        // Load all categories for tenant upfront to avoid N+1 queries
+        // First get the target category to determine its collection
+        var rootCategory = await _context.Categories
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == categoryId && c.TenantId == tenantId);
+
+        if (rootCategory is null)
+        {
+            return new List<int>();
+        }
+
+        // Load only categories for this collection to avoid loading unnecessary data
         var allCategories = await _context.Categories
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId)
+            .Where(c => c.TenantId == tenantId && c.CollectionId == rootCategory.CollectionId)
             .ToDictionaryAsync(c => c.Id);
         
         // Collect ancestor category IDs

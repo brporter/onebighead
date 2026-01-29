@@ -494,6 +494,7 @@ public class CollectionsControllerTests
 
         var request = new SetupCollectionRequest { Name = "My Books", ThemeId = 1 };
         var categoryIdCounter = 100;
+        var createdCategories = new List<Category>();
 
         _mockThemeRepository.Setup(repo => repo.GetByIdAsync(1))
             .ReturnsAsync(theme);
@@ -506,7 +507,7 @@ public class CollectionsControllerTests
                 c.Id = categoryIdCounter++;
                 return c;
             });
-        // Root categories (Fiction) get IDs starting from 101
+        // Iterative batch creation - track what gets created
         _mockCategoryRepository.Setup(repo => repo.CreateManyAsync(It.IsAny<IEnumerable<Category>>()))
             .ReturnsAsync((IEnumerable<Category> cats) =>
             {
@@ -515,6 +516,7 @@ public class CollectionsControllerTests
                 {
                     c.Id = categoryIdCounter++;
                     result.Add(c);
+                    createdCategories.Add(c);
                 }
                 return result;
             });
@@ -522,20 +524,16 @@ public class CollectionsControllerTests
         // Act
         var result = await _controller.SetupCollection(request);
 
-        // Assert - now uses batch creation
-        // First batch: root categories (Fiction) - gets ID 101
-        _mockCategoryRepository.Verify(
-            repo => repo.CreateManyAsync(It.Is<IEnumerable<Category>>(cats => 
-                cats.Count() == 1 && 
-                cats.Any(c => c.Name == "Fiction" && c.ParentCategoryId == null))),
-            Times.Once);
+        // Assert - verify categories were created with proper parent linkage
+        // Fiction should be created as root (no parent)
+        var fiction = createdCategories.FirstOrDefault(c => c.Name == "Fiction");
+        Assert.NotNull(fiction);
+        Assert.Null(fiction.ParentCategoryId);
         
-        // Second batch: child categories (Sci-Fi with parent Fiction=101)
-        _mockCategoryRepository.Verify(
-            repo => repo.CreateManyAsync(It.Is<IEnumerable<Category>>(cats => 
-                cats.Count() == 1 && 
-                cats.Any(c => c.Name == "Sci-Fi" && c.ParentCategoryId == 101))), // Fiction's assigned ID
-            Times.Once);
+        // Sci-Fi should be created with Fiction as parent
+        var sciFi = createdCategories.FirstOrDefault(c => c.Name == "Sci-Fi");
+        Assert.NotNull(sciFi);
+        Assert.Equal(fiction.Id, sciFi.ParentCategoryId);
     }
 
     #endregion
