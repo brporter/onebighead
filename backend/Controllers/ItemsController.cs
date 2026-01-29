@@ -70,7 +70,17 @@ public class ItemsController : ApiControllerBase
             _visibilityService.ComputeEffectiveVisibility(itemList, collection, categoryList);
         }
         
-        // Apply pagination if requested
+        // Compute ETag on full dataset BEFORE pagination for proper HTTP caching semantics
+        var etag = ETagHelper.ComputeETag(itemList, i => i.Id);
+        Response.Headers.ETag = etag;
+
+        var ifNoneMatch = Request.Headers.IfNoneMatch.FirstOrDefault();
+        if (!string.IsNullOrEmpty(ifNoneMatch) && ifNoneMatch == etag)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+        
+        // Apply pagination if requested (after ETag computation)
         var totalCount = itemList.Count;
         if (skip.HasValue || take.HasValue)
         {
@@ -84,16 +94,6 @@ public class ItemsController : ApiControllerBase
             {
                 itemList = itemList.Take(take.Value).ToList();
             }
-        }
-        
-        var etag = ETagHelper.ComputeETag(itemList, i => i.Id);
-
-        Response.Headers.ETag = etag;
-
-        var ifNoneMatch = Request.Headers.IfNoneMatch.FirstOrDefault();
-        if (!string.IsNullOrEmpty(ifNoneMatch) && ifNoneMatch == etag)
-        {
-            return StatusCode(StatusCodes.Status304NotModified);
         }
 
         return Ok(itemList);

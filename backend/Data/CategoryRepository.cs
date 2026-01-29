@@ -231,9 +231,12 @@ public class CategoryRepository : ICategoryRepository
         {
             if (templatesByCategory.TryGetValue(catId, out var templateIds))
             {
-                foreach (var templateId in templateIds.Where(id => seen.Add(id)))
+                foreach (var templateId in templateIds)
                 {
-                    result.Add(templateId);
+                    if (seen.Add(templateId))
+                    {
+                        result.Add(templateId);
+                    }
                 }
             }
         }

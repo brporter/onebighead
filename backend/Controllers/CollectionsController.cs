@@ -16,17 +16,20 @@ public partial class CollectionsController : ApiControllerBase
     private readonly ICategoryRepository _categoryRepository;
     private readonly IItemTemplateRepository _itemTemplateRepository;
     private readonly IThemeRepository _themeRepository;
+    private readonly ILogger<CollectionsController> _logger;
 
     public CollectionsController(
         ICollectionRepository collectionRepository, 
         ICategoryRepository categoryRepository,
         IItemTemplateRepository itemTemplateRepository,
-        IThemeRepository themeRepository)
+        IThemeRepository themeRepository,
+        ILogger<CollectionsController> logger)
     {
         _collectionRepository = collectionRepository;
         _categoryRepository = categoryRepository;
         _itemTemplateRepository = itemTemplateRepository;
         _themeRepository = themeRepository;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -189,19 +192,30 @@ public partial class CollectionsController : ApiControllerBase
         }
 
         // Second pass: create child categories
-        var childCategories = theme.ThemeCategories
-            .Where(c => c.ParentName != null)
-            .OrderBy(c => c.SortOrder)
-            .Select(tc => new Category
+        var childCategories = new List<Category>();
+        foreach (var tc in theme.ThemeCategories.Where(c => c.ParentName != null).OrderBy(c => c.SortOrder))
+        {
+            int? parentId = null;
+            if (categoryMap.TryGetValue(tc.ParentName!, out var id))
+            {
+                parentId = id;
+            }
+            else
+            {
+                _logger.LogWarning("Theme category '{CategoryName}' references non-existent parent '{ParentName}' - creating as root category", 
+                    tc.Name, tc.ParentName);
+            }
+            
+            childCategories.Add(new Category
             {
                 TenantId = tenantId,
                 CollectionId = created.Id,
                 Name = tc.Name,
                 Description = tc.Description,
-                ParentCategoryId = categoryMap.TryGetValue(tc.ParentName!, out var parentId) ? parentId : (int?)null,
+                ParentCategoryId = parentId,
                 IsSystem = false
-            })
-            .ToList();
+            });
+        }
         
         if (childCategories.Count > 0)
         {

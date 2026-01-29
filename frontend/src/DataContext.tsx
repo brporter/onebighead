@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest, CollectionTheme, SetupCollectionRequest } from './types';
 import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi, ApiError } from './api';
 
@@ -214,6 +214,15 @@ export function DataProvider({ children }: DataProviderProps) {
       }
       pendingSyncRef.current = null;
     }, 2000);
+  }, []);
+
+  // Cleanup pending sync timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (pendingSyncRef.current !== null) {
+        clearTimeout(pendingSyncRef.current);
+      }
+    };
   }, []);
 
   // Add a local category suggestion (not persisted until item is saved)

@@ -4,6 +4,7 @@ using backend.DTOs;
 using backend.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
 
@@ -16,6 +17,7 @@ public class CollectionsControllerTests
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
     private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
     private readonly Mock<IThemeRepository> _mockThemeRepository;
+    private readonly Mock<ILogger<CollectionsController>> _mockLogger;
     private readonly CollectionsController _controller;
     private const int TestTenantId = 1;
     private const int TestUserId = 1;
@@ -26,11 +28,13 @@ public class CollectionsControllerTests
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
         _mockThemeRepository = new Mock<IThemeRepository>();
+        _mockLogger = new Mock<ILogger<CollectionsController>>();
         _controller = new CollectionsController(
             _mockCollectionRepository.Object, 
             _mockCategoryRepository.Object,
             _mockItemTemplateRepository.Object,
-            _mockThemeRepository.Object);
+            _mockThemeRepository.Object,
+            _mockLogger.Object);
 
         var claims = new List<Claim>
         {
