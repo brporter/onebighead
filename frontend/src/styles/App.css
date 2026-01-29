@@ -124,6 +124,12 @@
   gap: var(--space-lg);
 }
 
+.app__headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
 .app__collectionBack {
   display: inline-block;
   margin-bottom: var(--space-sm);

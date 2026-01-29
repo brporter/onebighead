@@ -25,6 +25,8 @@ public class AppDbContext : DbContext
     public DbSet<CollectionTheme> CollectionThemes => Set<CollectionTheme>();
     public DbSet<CollectionThemeTemplate> CollectionThemeTemplates => Set<CollectionThemeTemplate>();
     public DbSet<CollectionThemeCategory> CollectionThemeCategories => Set<CollectionThemeCategory>();
+    public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
+    public DbSet<SupportReply> SupportReplies => Set<SupportReply>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -262,6 +264,40 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(tc => tc.ThemeId);
+        });
+
+        modelBuilder.Entity<SupportRequest>(entity =>
+        {
+            entity.HasKey(sr => sr.Id);
+
+            entity.HasOne(sr => sr.User)
+                .WithMany()
+                .HasForeignKey(sr => sr.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(sr => sr.UserId);
+            entity.HasIndex(sr => sr.Email);
+            entity.HasIndex(sr => sr.Status);
+            entity.HasIndex(sr => sr.CreatedAt);
+            entity.HasIndex(sr => sr.IsDeleted);
+        });
+
+        modelBuilder.Entity<SupportReply>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+
+            entity.HasOne(r => r.SupportRequest)
+                .WithMany(sr => sr.Replies)
+                .HasForeignKey(r => r.SupportRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(r => r.SupportRequestId);
+            entity.HasIndex(r => new { r.SupportRequestId, r.IsFromAdmin, r.IsRead });
         });
     }
 }

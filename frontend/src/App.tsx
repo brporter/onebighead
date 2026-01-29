@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './styles/App.css';
 import { useData } from './DataContext';
+import { useUser } from './UserContext';
 import UserButton from './UserButton';
 import Settings from './Settings';
-import type { Collection } from './types';
+import { SupportModal } from './SupportModal';
+import { UnreadSupportBanner } from './UnreadSupportBanner';
 
 function App() {
   const {
@@ -14,7 +16,9 @@ function App() {
     currentCollection,
   } = useData();
 
+  const { user } = useUser();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,6 +37,14 @@ function App() {
 
   function handleCloseSettings() {
     setIsSettingsOpen(false);
+  }
+
+  function handleOpenSupport() {
+    setIsSupportOpen(true);
+  }
+
+  function handleCloseSupport() {
+    setIsSupportOpen(false);
   }
 
   // Loading state
@@ -60,6 +72,7 @@ function App() {
 
   return (
     <div className="app" data-view={mobileView}>
+      <UnreadSupportBanner onOpenSettings={handleOpenSettings} />
       <header className="app__header">
         <div className="app__headerContent">
           <div>
@@ -75,7 +88,13 @@ function App() {
                 : 'Browse categories, then view items and details.'}
             </p>
           </div>
-          <UserButton onClick={handleOpenSettings} />
+          <div className="app__headerActions">
+            <button className="support-link" onClick={handleOpenSupport}>
+              <span className="support-link__icon">?</span>
+              Support
+            </button>
+            <UserButton onClick={handleOpenSettings} />
+          </div>
         </div>
       </header>
 
@@ -88,6 +107,11 @@ function App() {
       )}
 
       <Settings isOpen={isSettingsOpen} onClose={handleCloseSettings} />
+      <SupportModal
+        isOpen={isSupportOpen}
+        onClose={handleCloseSupport}
+        userEmail={user?.email}
+      />
     </div>
   );
 }

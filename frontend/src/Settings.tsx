@@ -7,6 +7,7 @@ import { exportApi } from './api';
 import ItemTemplateEditor from './ItemTemplateEditor';
 import VisibilityToggle from './VisibilityToggle';
 import CollectionSetupWizard from './CollectionSetupWizard';
+import { SupportSection } from './SupportSection';
 import type { Collection } from './types';
 
 interface SettingsProps {
@@ -383,6 +384,16 @@ function Settings({ isOpen, onClose }: SettingsProps) {
                 >
                   {isExporting ? 'Exporting...' : 'Export Data'}
                 </button>
+              </section>
+
+              <section className="settings__section">
+                <div className="settings__sectionHeader">
+                  <h3 className="settings__sectionTitle">Support Requests</h3>
+                </div>
+                <p className="settings__sectionDescription">
+                  View and manage your support requests.
+                </p>
+                <SupportSection />
               </section>
             </>
           )}
