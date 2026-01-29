@@ -74,20 +74,31 @@ export function SupportSection() {
         message: replyText.trim(),
       });
 
-      // Update selected request with new reply
-      setSelectedRequest((prev) =>
-        prev
-          ? { ...prev, replies: [...prev.replies, newReply], replyCount: prev.replyCount + 1 }
-          : null
-      );
+      // Backend reopens Resolved/Closed requests when user replies
+      setSelectedRequest((prev) => {
+        if (!prev) return null;
+        const nextStatus = (prev.status === 'Resolved' || prev.status === 'Closed') ? 'Open' : prev.status;
+        return {
+          ...prev,
+          status: nextStatus,
+          replies: [...prev.replies, newReply],
+          replyCount: prev.replyCount + 1,
+        };
+      });
 
       // Update list
       setRequests((prev) =>
-        prev.map((r) =>
-          r.supportRequestId === selectedRequest.supportRequestId
-            ? { ...r, replyCount: r.replyCount + 1 }
-            : r
-        )
+        prev.map((r) => {
+          if (r.supportRequestId !== selectedRequest.supportRequestId) {
+            return r;
+          }
+          const nextStatus = (r.status === 'Resolved' || r.status === 'Closed') ? 'Open' : r.status;
+          return {
+            ...r,
+            status: nextStatus,
+            replyCount: r.replyCount + 1,
+          };
+        })
       );
 
       setReplyText('');

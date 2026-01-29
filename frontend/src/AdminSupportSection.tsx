@@ -29,6 +29,7 @@ export function AdminSupportSection() {
   const loadRequests = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
       const data = await getAdminSupportRequests({
         status: statusFilter || undefined,
         includeDeleted,
@@ -71,18 +72,30 @@ export function AdminSupportSection() {
         message: replyText.trim(),
       });
 
-      setSelectedRequest((prev) =>
-        prev
-          ? { ...prev, replies: [...prev.replies, newReply], replyCount: prev.replyCount + 1 }
-          : null
-      );
+      // Backend auto-transitions Open -> InProgress when admin replies
+      setSelectedRequest((prev) => {
+        if (!prev) return null;
+        const nextStatus = prev.status === 'Open' ? 'InProgress' : prev.status;
+        return {
+          ...prev,
+          status: nextStatus,
+          replies: [...prev.replies, newReply],
+          replyCount: prev.replyCount + 1,
+        };
+      });
 
       setRequests((prev) =>
-        prev.map((r) =>
-          r.supportRequestId === selectedRequest.supportRequestId
-            ? { ...r, replyCount: r.replyCount + 1 }
-            : r
-        )
+        prev.map((r) => {
+          if (r.supportRequestId !== selectedRequest.supportRequestId) {
+            return r;
+          }
+          const nextStatus = r.status === 'Open' ? 'InProgress' : r.status;
+          return {
+            ...r,
+            status: nextStatus,
+            replyCount: r.replyCount + 1,
+          };
+        })
       );
 
       setReplyText('');
@@ -98,7 +111,12 @@ export function AdminSupportSection() {
 
     try {
       const updated = await updateSupportStatus(selectedRequest.supportRequestId, newStatus);
-      setSelectedRequest(updated);
+      // Preserve existing selectedRequest details (e.g., replies) and only update status/updatedAt
+      setSelectedRequest((prev) =>
+        prev && prev.supportRequestId === selectedRequest.supportRequestId
+          ? { ...prev, status: newStatus, updatedAt: updated.updatedAt }
+          : prev
+      );
       // Update the local list state to reflect the status change
       setRequests((prev) =>
         prev.map((r) =>

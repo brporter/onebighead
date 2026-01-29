@@ -13,11 +13,6 @@ public class EmailSettings
     public string SenderAddress { get; set; } = "noreply@onebighead.com";
 
     /// <summary>
-    /// The sender display name.
-    /// </summary>
-    public string SenderName { get; set; } = "OneBigHead Support";
-
-    /// <summary>
     /// Base URL of the application (for links in emails).
     /// </summary>
     public string AppBaseUrl { get; set; } = "https://onebighead.com";

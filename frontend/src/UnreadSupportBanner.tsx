@@ -12,14 +12,20 @@ export function UnreadSupportBanner({ onOpenSettings }: UnreadSupportBannerProps
   const [unreadCount, setUnreadCount] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
 
+  // Namespace sessionStorage key by user id to prevent cross-user issues
+  const getStorageKey = () => user ? `supportBannerDismissed_${user.userId}` : null;
+
   useEffect(() => {
     if (!user) return;
 
-    // Check if we've already shown the banner this session
-    const dismissed = sessionStorage.getItem('supportBannerDismissed');
-    if (dismissed === 'true') {
-      setIsDismissed(true);
-      return;
+    // Check if we've already shown the banner this session for this user
+    const storageKey = getStorageKey();
+    if (storageKey) {
+      const dismissed = sessionStorage.getItem(storageKey);
+      if (dismissed === 'true') {
+        setIsDismissed(true);
+        return;
+      }
     }
 
     // Fetch unread count
@@ -34,7 +40,10 @@ export function UnreadSupportBanner({ onOpenSettings }: UnreadSupportBannerProps
 
   const handleDismiss = () => {
     setIsDismissed(true);
-    sessionStorage.setItem('supportBannerDismissed', 'true');
+    const storageKey = getStorageKey();
+    if (storageKey) {
+      sessionStorage.setItem(storageKey, 'true');
+    }
   };
 
   const handleViewSupport = () => {
