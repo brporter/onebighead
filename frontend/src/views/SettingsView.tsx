@@ -5,6 +5,7 @@ import { useData } from '../DataContext';
 import { useUser } from '../UserContext';
 import { exportApi } from '../api';
 import ItemTemplateEditor from '../ItemTemplateEditor';
+import CollectionTemplateEditor from '../CollectionTemplateEditor';
 import VisibilityToggle from '../VisibilityToggle';
 import CollectionSetupWizard from '../CollectionSetupWizard';
 import { SupportSection } from '../SupportSection';
@@ -36,9 +37,12 @@ function SettingsView() {
   const [exportError, setExportError] = useState<string | null>(null);
   const [templateEditorDirty, setTemplateEditorDirty] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [editingCollectionTemplates, setEditingCollectionTemplates] = useState<Collection | null>(null);
+  const [collectionTemplateEditorDirty, setCollectionTemplateEditorDirty] = useState(false);
 
   const hasUnsavedChanges = useCallback(() => {
     if (activeSection === 'templates' && templateEditorDirty) return true;
+    if (editingCollectionTemplates && collectionTemplateEditorDirty) return true;
     if (!isAdding && editingId === null) return false;
     return (
       formData.name !== originalFormData.name ||
@@ -46,7 +50,7 @@ function SettingsView() {
       formData.heroImageUrl !== originalFormData.heroImageUrl ||
       formData.isPublic !== originalFormData.isPublic
     );
-  }, [activeSection, templateEditorDirty, isAdding, editingId, formData, originalFormData]);
+  }, [activeSection, templateEditorDirty, editingCollectionTemplates, collectionTemplateEditorDirty, isAdding, editingId, formData, originalFormData]);
 
   const confirmAndNavigate = useCallback((path: string) => {
     if (hasUnsavedChanges()) {
@@ -199,6 +203,19 @@ function SettingsView() {
       );
     }
 
+    // Show collection template editor if editing templates
+    if (editingCollectionTemplates) {
+      return (
+        <div className="settings-section">
+          <CollectionTemplateEditor
+            collection={editingCollectionTemplates}
+            onClose={() => setEditingCollectionTemplates(null)}
+            onDirtyChange={setCollectionTemplateEditorDirty}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="settings-section">
         <div className="settings-section__header">
@@ -263,6 +280,26 @@ function SettingsView() {
                 isCollection={true}
               />
             </div>
+            {editingId !== null && (
+              <div className="settings-form__field">
+                <label className="settings-form__label">Item Templates</label>
+                <p className="settings-form__hint">
+                  Configure which templates are available when creating items in this collection.
+                </p>
+                <button
+                  type="button"
+                  className="settings-form__button settings-form__button--secondary"
+                  onClick={() => {
+                    const collection = collections.find(c => c.collectionId === editingId);
+                    if (collection) {
+                      setEditingCollectionTemplates(collection);
+                    }
+                  }}
+                >
+                  Manage Templates
+                </button>
+              </div>
+            )}
             <div className="settings-form__actions">
               <button
                 type="submit"
@@ -299,6 +336,12 @@ function SettingsView() {
                   </div>
                 </div>
                 <div className="settings-collection-card__actions">
+                  <button
+                    className="settings-collection-card__button"
+                    onClick={() => setEditingCollectionTemplates(collection)}
+                  >
+                    Templates
+                  </button>
                   <button
                     className="settings-collection-card__button"
                     onClick={() => handleEditClick(collection)}
