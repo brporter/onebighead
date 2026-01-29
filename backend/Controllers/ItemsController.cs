@@ -33,7 +33,9 @@ public class ItemsController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Item>>> GetItems(
         [FromQuery] int? categoryId = null,
-        [FromQuery] bool includeDescendants = false)
+        [FromQuery] bool includeDescendants = false,
+        [FromQuery] int? skip = null,
+        [FromQuery] int? take = null)
     {
         var tenantId = GetTenantId();
 
@@ -66,6 +68,22 @@ public class ItemsController : ApiControllerBase
             var categoryList = allCategories.ToList();
             _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
             _visibilityService.ComputeEffectiveVisibility(itemList, collection, categoryList);
+        }
+        
+        // Apply pagination if requested
+        var totalCount = itemList.Count;
+        if (skip.HasValue || take.HasValue)
+        {
+            Response.Headers["X-Total-Count"] = totalCount.ToString();
+            
+            if (skip.HasValue && skip.Value > 0)
+            {
+                itemList = itemList.Skip(skip.Value).ToList();
+            }
+            if (take.HasValue && take.Value > 0)
+            {
+                itemList = itemList.Take(take.Value).ToList();
+            }
         }
         
         var etag = ETagHelper.ComputeETag(itemList, i => i.Id);

@@ -3,7 +3,6 @@ using backend.DTOs;
 using backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 namespace backend.Controllers;
@@ -150,48 +149,63 @@ public partial class CollectionsController : ApiControllerBase
         };
         await _categoryRepository.CreateAsync(unassignedCategory);
 
-        // Apply theme templates to collection
-        foreach (var themeTemplate in theme.ThemeTemplates.OrderBy(t => t.SortOrder))
+        // Apply theme templates to collection in batch
+        var templateIds = theme.ThemeTemplates
+            .Where(t => t.ItemTemplateId > 0)
+            .OrderBy(t => t.SortOrder)
+            .Select(t => t.ItemTemplateId)
+            .ToList();
+        
+        if (templateIds.Count > 0)
         {
-            if (themeTemplate.ItemTemplateId > 0)
+            await _itemTemplateRepository.AssociateMultipleWithCollectionAsync(templateIds, created.Id);
+        }
+
+        // Create categories from theme in batch
+        var categoryMap = new Dictionary<string, int>(); // name -> categoryId
+        
+        // First pass: create root categories (no parent)
+        var rootCategories = theme.ThemeCategories
+            .Where(c => c.ParentName == null)
+            .OrderBy(c => c.SortOrder)
+            .Select(tc => new Category
             {
-                await _itemTemplateRepository.AssociateWithCollectionAsync(themeTemplate.ItemTemplateId, created.Id);
+                TenantId = tenantId,
+                CollectionId = created.Id,
+                Name = tc.Name,
+                Description = tc.Description,
+                ParentCategoryId = null,
+                IsSystem = false
+            })
+            .ToList();
+        
+        if (rootCategories.Count > 0)
+        {
+            var createdRoots = await _categoryRepository.CreateManyAsync(rootCategories);
+            foreach (var cat in createdRoots)
+            {
+                categoryMap[cat.Name] = cat.Id;
             }
         }
 
-        // Create categories from theme
-        // First pass: create root categories (no parent)
-        var categoryMap = new Dictionary<string, int>(); // name -> categoryId
-        foreach (var themeCategory in theme.ThemeCategories.Where(c => c.ParentName == null).OrderBy(c => c.SortOrder))
-        {
-            var category = new Category
-            {
-                TenantId = tenantId,
-                CollectionId = created.Id,
-                Name = themeCategory.Name,
-                Description = themeCategory.Description,
-                ParentCategoryId = null,
-                IsSystem = false
-            };
-            var createdCategory = await _categoryRepository.CreateAsync(category);
-            categoryMap[themeCategory.Name] = createdCategory.Id;
-        }
-
         // Second pass: create child categories
-        foreach (var themeCategory in theme.ThemeCategories.Where(c => c.ParentName != null).OrderBy(c => c.SortOrder))
-        {
-            var parentId = categoryMap.TryGetValue(themeCategory.ParentName!, out var id) ? id : (int?)null;
-            var category = new Category
+        var childCategories = theme.ThemeCategories
+            .Where(c => c.ParentName != null)
+            .OrderBy(c => c.SortOrder)
+            .Select(tc => new Category
             {
                 TenantId = tenantId,
                 CollectionId = created.Id,
-                Name = themeCategory.Name,
-                Description = themeCategory.Description,
-                ParentCategoryId = parentId,
+                Name = tc.Name,
+                Description = tc.Description,
+                ParentCategoryId = categoryMap.TryGetValue(tc.ParentName!, out var parentId) ? parentId : (int?)null,
                 IsSystem = false
-            };
-            var createdCategory = await _categoryRepository.CreateAsync(category);
-            categoryMap[themeCategory.Name] = createdCategory.Id;
+            })
+            .ToList();
+        
+        if (childCategories.Count > 0)
+        {
+            await _categoryRepository.CreateManyAsync(childCategories);
         }
 
         return CreatedAtAction(nameof(GetCollection), new { id = created.Id }, created);
@@ -335,53 +349,4 @@ public partial class CollectionsController : ApiControllerBase
 
     [GeneratedRegex("-+")]
     private static partial Regex SlugMultipleDashRegex();
-}
-
-public class CreateCollectionRequest
-{
-    [Required]
-    [MaxLength(200)]
-    public string Name { get; set; } = string.Empty;
-
-    [MaxLength(1000)]
-    public string? Description { get; set; }
-
-    [MaxLength(500)]
-    public string? HeroImageUrl { get; set; }
-    public bool IsPublic { get; set; } = false;
-}
-
-public class UpdateCollectionRequest
-{
-    [Required]
-    [MaxLength(200)]
-    public string Name { get; set; } = string.Empty;
-
-    [MaxLength(1000)]
-    public string? Description { get; set; }
-
-    [MaxLength(500)]
-    public string? HeroImageUrl { get; set; }
-    public bool IsPublic { get; set; } = false;
-}
-
-public class SetupCollectionRequest
-{
-    [Required]
-    [MaxLength(200)]
-    public string Name { get; set; } = string.Empty;
-
-    [MaxLength(1000)]
-    public string? Description { get; set; }
-
-    [MaxLength(500)]
-    public string? HeroImageUrl { get; set; }
-    
-    public bool IsPublic { get; set; } = false;
-
-    /// <summary>
-    /// The theme ID to apply to the new collection.
-    /// </summary>
-    [Required]
-    public int ThemeId { get; set; }
 }

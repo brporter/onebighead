@@ -1,5 +1,6 @@
 using backend.Controllers;
 using backend.Data;
+using backend.DTOs;
 using backend.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -455,12 +456,11 @@ public class CollectionsControllerTests
         // Act
         var result = await _controller.SetupCollection(request);
 
-        // Assert
+        // Assert - now uses batch association
         _mockItemTemplateRepository.Verify(
-            repo => repo.AssociateWithCollectionAsync(10, 5),
-            Times.Once);
-        _mockItemTemplateRepository.Verify(
-            repo => repo.AssociateWithCollectionAsync(11, 5),
+            repo => repo.AssociateMultipleWithCollectionAsync(
+                It.Is<IEnumerable<int>>(ids => ids.Count() == 2 && ids.Contains(10) && ids.Contains(11)),
+                5),
             Times.Once);
     }
 
@@ -495,31 +495,42 @@ public class CollectionsControllerTests
             .ReturnsAsync(theme);
         _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
             .ReturnsAsync(createdCollection);
+        // Unassigned category gets ID 100
         _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
             .ReturnsAsync((Category c) =>
             {
                 c.Id = categoryIdCounter++;
                 return c;
             });
+        // Root categories (Fiction) get IDs starting from 101
+        _mockCategoryRepository.Setup(repo => repo.CreateManyAsync(It.IsAny<IEnumerable<Category>>()))
+            .ReturnsAsync((IEnumerable<Category> cats) =>
+            {
+                var result = new List<Category>();
+                foreach (var c in cats)
+                {
+                    c.Id = categoryIdCounter++;
+                    result.Add(c);
+                }
+                return result;
+            });
 
         // Act
         var result = await _controller.SetupCollection(request);
 
-        // Assert
-        // Categories created: Unassigned (100), Fiction (101), Sci-Fi (102)
-        
-        // Verify root category "Fiction" was created without parent
+        // Assert - now uses batch creation
+        // First batch: root categories (Fiction) - gets ID 101
         _mockCategoryRepository.Verify(
-            repo => repo.CreateAsync(It.Is<Category>(c => 
-                c.Name == "Fiction" && 
-                c.ParentCategoryId == null)),
+            repo => repo.CreateManyAsync(It.Is<IEnumerable<Category>>(cats => 
+                cats.Count() == 1 && 
+                cats.Any(c => c.Name == "Fiction" && c.ParentCategoryId == null))),
             Times.Once);
-
-        // Verify child category "Sci-Fi" was created with Fiction as parent (ID 101)
+        
+        // Second batch: child categories (Sci-Fi with parent Fiction=101)
         _mockCategoryRepository.Verify(
-            repo => repo.CreateAsync(It.Is<Category>(c => 
-                c.Name == "Sci-Fi" && 
-                c.ParentCategoryId == 101)), // Fiction's assigned ID
+            repo => repo.CreateManyAsync(It.Is<IEnumerable<Category>>(cats => 
+                cats.Count() == 1 && 
+                cats.Any(c => c.Name == "Sci-Fi" && c.ParentCategoryId == 101))), // Fiction's assigned ID
             Times.Once);
     }
 

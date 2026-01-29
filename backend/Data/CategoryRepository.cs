@@ -49,6 +49,14 @@ public class CategoryRepository : ICategoryRepository
         return category;
     }
 
+    public async Task<IEnumerable<Category>> CreateManyAsync(IEnumerable<Category> categories)
+    {
+        var categoryList = categories.ToList();
+        _context.Categories.AddRange(categoryList);
+        await _context.SaveChangesAsync();
+        return categoryList;
+    }
+
     public async Task<Category?> UpdateAsync(int id, Category category, int tenantId)
     {
         var existingCategory = await _context.Categories
@@ -188,37 +196,46 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task<List<int>> GetInheritedTemplateIdsAsync(int categoryId, int tenantId)
     {
+        // Load all categories for tenant upfront to avoid N+1 queries
+        var allCategories = await _context.Categories
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId)
+            .ToDictionaryAsync(c => c.Id);
+        
+        // Collect ancestor category IDs
+        var ancestorIds = new List<int>();
+        var currentId = (int?)categoryId;
+        while (currentId.HasValue && allCategories.TryGetValue(currentId.Value, out var category))
+        {
+            ancestorIds.Add(currentId.Value);
+            currentId = category.ParentCategoryId;
+        }
+        
+        // Load all template associations for ancestors in single query
+        var templateAssociations = await _context.CategoryItemTemplates
+            .AsNoTracking()
+            .Where(ct => ancestorIds.Contains(ct.CategoryId))
+            .OrderBy(ct => ct.SortOrder)
+            .ToListAsync();
+        
+        // Group by category for in-memory traversal
+        var templatesByCategory = templateAssociations
+            .GroupBy(ct => ct.CategoryId)
+            .ToDictionary(g => g.Key, g => g.Select(ct => ct.ItemTemplateId).ToList());
+        
+        // Walk the hierarchy in order (child first) and collect unique templates
         var result = new List<int>();
         var seen = new HashSet<int>();
-        var currentId = (int?)categoryId;
-
-        // Walk up the parent chain collecting template IDs
-        while (currentId.HasValue)
+        
+        foreach (var catId in ancestorIds)
         {
-            var category = await _context.Categories
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == currentId.Value && c.TenantId == tenantId);
-            
-            if (category is null)
+            if (templatesByCategory.TryGetValue(catId, out var templateIds))
             {
-                break;
+                foreach (var templateId in templateIds.Where(id => seen.Add(id)))
+                {
+                    result.Add(templateId);
+                }
             }
-
-            var templateIds = await _context.CategoryItemTemplates
-                .AsNoTracking()
-                .Where(ct => ct.CategoryId == currentId.Value)
-                .OrderBy(ct => ct.SortOrder)
-                .Select(ct => ct.ItemTemplateId)
-                .ToListAsync();
-
-            // Add templates we haven't seen yet (child takes precedence)
-            var unseenTemplateIds = templateIds.Where(templateId => seen.Add(templateId));
-            foreach (var templateId in unseenTemplateIds)
-            {
-                result.Add(templateId);
-            }
-
-            currentId = category.ParentCategoryId;
         }
 
         return result;

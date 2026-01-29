@@ -212,4 +212,27 @@ public class ItemTemplateRepository : IItemTemplateRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task AssociateMultipleWithCollectionAsync(IEnumerable<int> templateIds, int collectionId)
+    {
+        var existingTemplateIds = await _context.CollectionItemTemplates
+            .Where(ct => ct.CollectionId == collectionId)
+            .Select(ct => ct.ItemTemplateId)
+            .ToHashSetAsync();
+
+        var newAssociations = templateIds
+            .Where(id => !existingTemplateIds.Contains(id))
+            .Select(templateId => new CollectionItemTemplate
+            {
+                CollectionId = collectionId,
+                ItemTemplateId = templateId
+            })
+            .ToList();
+
+        if (newAssociations.Count > 0)
+        {
+            _context.CollectionItemTemplates.AddRange(newAssociations);
+            await _context.SaveChangesAsync();
+        }
+    }
 }
