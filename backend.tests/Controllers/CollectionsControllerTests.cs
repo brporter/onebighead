@@ -1,8 +1,10 @@
 using backend.Controllers;
 using backend.Data;
+using backend.DTOs;
 using backend.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
 
@@ -15,6 +17,7 @@ public class CollectionsControllerTests
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
     private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
     private readonly Mock<IThemeRepository> _mockThemeRepository;
+    private readonly Mock<ILogger<CollectionsController>> _mockLogger;
     private readonly CollectionsController _controller;
     private const int TestTenantId = 1;
     private const int TestUserId = 1;
@@ -25,11 +28,13 @@ public class CollectionsControllerTests
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
         _mockThemeRepository = new Mock<IThemeRepository>();
+        _mockLogger = new Mock<ILogger<CollectionsController>>();
         _controller = new CollectionsController(
             _mockCollectionRepository.Object, 
             _mockCategoryRepository.Object,
             _mockItemTemplateRepository.Object,
-            _mockThemeRepository.Object);
+            _mockThemeRepository.Object,
+            _mockLogger.Object);
 
         var claims = new List<Claim>
         {
@@ -455,12 +460,11 @@ public class CollectionsControllerTests
         // Act
         var result = await _controller.SetupCollection(request);
 
-        // Assert
+        // Assert - now uses batch association
         _mockItemTemplateRepository.Verify(
-            repo => repo.AssociateWithCollectionAsync(10, 5),
-            Times.Once);
-        _mockItemTemplateRepository.Verify(
-            repo => repo.AssociateWithCollectionAsync(11, 5),
+            repo => repo.AssociateMultipleWithCollectionAsync(
+                It.Is<IEnumerable<int>>(ids => ids.Count() == 2 && ids.Contains(10) && ids.Contains(11)),
+                5),
             Times.Once);
     }
 
@@ -490,37 +494,46 @@ public class CollectionsControllerTests
 
         var request = new SetupCollectionRequest { Name = "My Books", ThemeId = 1 };
         var categoryIdCounter = 100;
+        var createdCategories = new List<Category>();
 
         _mockThemeRepository.Setup(repo => repo.GetByIdAsync(1))
             .ReturnsAsync(theme);
         _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
             .ReturnsAsync(createdCollection);
+        // Unassigned category gets ID 100
         _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
             .ReturnsAsync((Category c) =>
             {
                 c.Id = categoryIdCounter++;
                 return c;
             });
+        // Iterative batch creation - track what gets created
+        _mockCategoryRepository.Setup(repo => repo.CreateManyAsync(It.IsAny<IEnumerable<Category>>()))
+            .ReturnsAsync((IEnumerable<Category> cats) =>
+            {
+                var result = new List<Category>();
+                foreach (var c in cats)
+                {
+                    c.Id = categoryIdCounter++;
+                    result.Add(c);
+                    createdCategories.Add(c);
+                }
+                return result;
+            });
 
         // Act
         var result = await _controller.SetupCollection(request);
 
-        // Assert
-        // Categories created: Unassigned (100), Fiction (101), Sci-Fi (102)
+        // Assert - verify categories were created with proper parent linkage
+        // Fiction should be created as root (no parent)
+        var fiction = createdCategories.FirstOrDefault(c => c.Name == "Fiction");
+        Assert.NotNull(fiction);
+        Assert.Null(fiction.ParentCategoryId);
         
-        // Verify root category "Fiction" was created without parent
-        _mockCategoryRepository.Verify(
-            repo => repo.CreateAsync(It.Is<Category>(c => 
-                c.Name == "Fiction" && 
-                c.ParentCategoryId == null)),
-            Times.Once);
-
-        // Verify child category "Sci-Fi" was created with Fiction as parent (ID 101)
-        _mockCategoryRepository.Verify(
-            repo => repo.CreateAsync(It.Is<Category>(c => 
-                c.Name == "Sci-Fi" && 
-                c.ParentCategoryId == 101)), // Fiction's assigned ID
-            Times.Once);
+        // Sci-Fi should be created with Fiction as parent
+        var sciFi = createdCategories.FirstOrDefault(c => c.Name == "Sci-Fi");
+        Assert.NotNull(sciFi);
+        Assert.Equal(fiction.Id, sciFi.ParentCategoryId);
     }
 
     #endregion

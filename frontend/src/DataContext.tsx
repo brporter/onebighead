@@ -1,10 +1,15 @@
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest, CollectionTheme, SetupCollectionRequest } from './types';
 import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi, ApiError } from './api';
 
 interface CategoryItemsCache {
   items: Item[];
   etag: string | null;
+}
+
+interface PropertySuggestionsCache {
+  categories: string[];
+  names: string[];
 }
 
 export interface DataContextValue {
@@ -154,6 +159,8 @@ export function DataProvider({ children }: DataProviderProps) {
   const [currentCategoryId, setCurrentCategoryId] = useState<number | null>(null);
   
   const itemsCacheRef = useRef<Map<number, CategoryItemsCache>>(new Map());
+  const propertySuggestionsCacheRef = useRef<Map<number, PropertySuggestionsCache>>(new Map());
+  const pendingSyncRef = useRef<number | null>(null);
   
   // Property suggestions state (fetched from backend API)
   const [propertyCategorySuggestions, setPropertyCategorySuggestions] = useState<string[]>([]);
@@ -164,26 +171,58 @@ export function DataProvider({ children }: DataProviderProps) {
   const [itemTemplatesLoading, setItemTemplatesLoading] = useState(false);
   const [itemTemplatesError, setItemTemplatesError] = useState<string | null>(null);
 
-  // Load property suggestions from API
+  // Load property suggestions from API with caching
   const loadPropertySuggestions = useCallback(async (collectionId: number) => {
+    // Check cache first
+    const cached = propertySuggestionsCacheRef.current.get(collectionId);
+    if (cached) {
+      setPropertyCategorySuggestions(cached.categories);
+      setPropertyNameSuggestions(cached.names);
+      return;
+    }
+    
     try {
       const data = await suggestionsApi.get(collectionId);
-      setPropertyCategorySuggestions(data.categories.sort());
-      setPropertyNameSuggestions(data.names.sort());
+      const categories = data.categories.sort();
+      const names = data.names.sort();
+      propertySuggestionsCacheRef.current.set(collectionId, { categories, names });
+      setPropertyCategorySuggestions(categories);
+      setPropertyNameSuggestions(names);
     } catch (error) {
       console.error('Failed to load property suggestions:', error);
     }
   }, []);
 
-  // Sync property suggestions (recalculates based on current items)
+  // Sync property suggestions with debouncing (recalculates based on current items)
   const syncPropertySuggestions = useCallback(async (collectionId: number) => {
-    try {
-      const data = await suggestionsApi.sync(collectionId);
-      setPropertyCategorySuggestions(data.categories.sort());
-      setPropertyNameSuggestions(data.names.sort());
-    } catch (error) {
-      console.error('Failed to sync property suggestions:', error);
+    // Clear any pending sync
+    if (pendingSyncRef.current !== null) {
+      clearTimeout(pendingSyncRef.current);
     }
+    
+    // Debounce: wait 2 seconds before syncing
+    pendingSyncRef.current = window.setTimeout(async () => {
+      try {
+        const data = await suggestionsApi.sync(collectionId);
+        const categories = data.categories.sort();
+        const names = data.names.sort();
+        propertySuggestionsCacheRef.current.set(collectionId, { categories, names });
+        setPropertyCategorySuggestions(categories);
+        setPropertyNameSuggestions(names);
+      } catch (error) {
+        console.error('Failed to sync property suggestions:', error);
+      }
+      pendingSyncRef.current = null;
+    }, 2000);
+  }, []);
+
+  // Cleanup pending sync timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (pendingSyncRef.current !== null) {
+        clearTimeout(pendingSyncRef.current);
+      }
+    };
   }, []);
 
   // Add a local category suggestion (not persisted until item is saved)

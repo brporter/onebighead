@@ -9,6 +9,7 @@ public interface ICategoryRepository
     Task<Category?> GetByIdAsync(int id, int tenantId);
     Task<Category?> GetSystemCategoryAsync(int collectionId, int tenantId, string name);
     Task<Category> CreateAsync(Category category);
+    Task<IEnumerable<Category>> CreateManyAsync(IEnumerable<Category> categories);
     Task<Category?> UpdateAsync(int id, Category category, int tenantId);
     Task<bool> DeleteAsync(int id, int tenantId);
     

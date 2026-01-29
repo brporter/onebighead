@@ -56,6 +56,11 @@ public interface IItemTemplateRepository
     Task<bool> AssociateWithCollectionAsync(int templateId, int collectionId);
     
     /// <summary>
+    /// Associates multiple templates with a collection in a single batch operation.
+    /// </summary>
+    Task AssociateMultipleWithCollectionAsync(IEnumerable<int> templateIds, int collectionId);
+    
+    /// <summary>
     /// Removes a template association from a collection.
     /// </summary>
     Task<bool> DisassociateFromCollectionAsync(int templateId, int collectionId);

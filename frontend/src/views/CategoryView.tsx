@@ -17,8 +17,11 @@ function CategoryView() {
     currentCollection,
     setCurrentCollection,
     categories,
+    categoriesError,
     loadCategoriesForCollection,
     items,
+    itemsLoading,
+    itemsError,
     loadItemsForCategory,
     loadPropertySuggestions,
   } = useData();
@@ -120,6 +123,20 @@ function CategoryView() {
     return <div className="app__loading">Collection not found</div>;
   }
 
+  // Show error state if categories or items failed to load
+  if (categoriesError || itemsError) {
+    return (
+      <div className="app__layout">
+        <main className="app__content">
+          <div className="app__error">
+            {categoriesError && <p>Failed to load categories: {categoriesError}</p>}
+            {itemsError && <p>Failed to load items: {itemsError}</p>}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   // Show category tree with placeholder if no category selected
   if (!categoryIdNum) {
     return (
@@ -160,14 +177,18 @@ function CategoryView() {
               onChange={setSubcategoryFilter}
             />
           )}
-          <ItemList
-            items={filteredItems}
-            selectedId={null}
-            onSelect={handleSelectItem}
-            onAddItem={handleAddItem}
-            pageIndex={safePageIndex}
-            onPageChange={handlePageChange}
-          />
+          {itemsLoading && filteredItems.length === 0 ? (
+            <div className="app__loading">Loading items...</div>
+          ) : (
+            <ItemList
+              items={filteredItems}
+              selectedId={null}
+              onSelect={handleSelectItem}
+              onAddItem={handleAddItem}
+              pageIndex={safePageIndex}
+              onPageChange={handlePageChange}
+            />
+          )}
         </section>
       </main>
     </div>

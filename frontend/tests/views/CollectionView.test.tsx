@@ -72,7 +72,7 @@ describe('CollectionView', () => {
 
     renderWithRouter();
 
-    expect(screen.getByText('No collections found')).toBeInTheDocument();
+    expect(screen.getByText('Redirecting to setup...')).toBeInTheDocument();
   });
 
   it('should render collection list', () => {
