@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from './UserContext';
 import { getUnreadSupportCount } from './api';
 import './styles/Support.css';
 
 interface UnreadSupportBannerProps {
-  onOpenSettings: () => void;
+  onOpenSettings?: () => void;
 }
 
 export function UnreadSupportBanner({ onOpenSettings }: UnreadSupportBannerProps) {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -48,7 +50,11 @@ export function UnreadSupportBanner({ onOpenSettings }: UnreadSupportBannerProps
 
   const handleViewSupport = () => {
     handleDismiss();
-    onOpenSettings();
+    if (onOpenSettings) {
+      onOpenSettings();
+    } else {
+      navigate('/settings?section=support');
+    }
   };
 
   return (
