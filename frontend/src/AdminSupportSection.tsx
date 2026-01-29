@@ -6,7 +6,6 @@ import {
   updateSupportStatus,
   adminDeleteSupportRequest,
   type SupportRequest,
-  type SupportRequestListResponse,
 } from './api';
 import './styles/Support.css';
 

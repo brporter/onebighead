@@ -6,7 +6,6 @@ import {
   deleteSupportRequest,
   markSupportRequestAsRead,
   type SupportRequest,
-  type SupportReply,
 } from './api';
 import './styles/Support.css';
 
@@ -40,8 +39,8 @@ export function SupportSection() {
       const fullRequest = await getSupportRequest(request.supportRequestId);
       setSelectedRequest(fullRequest);
 
-      // Mark as read if there are unread replies
-      if (fullRequest.unreadCount > 0) {
+      // Mark as read if there are unread replies (use list item's count, not response)
+      if (request.unreadCount > 0) {
         await markSupportRequestAsRead(request.supportRequestId);
         // Update local state
         setRequests((prev) =>
@@ -180,33 +179,31 @@ export function SupportSection() {
           </div>
         )}
 
-        {selectedRequest.status !== 'Closed' && (
-          <form className="support-detail__reply-form" onSubmit={handleSubmitReply}>
-            <textarea
-              className="support-detail__reply-textarea"
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              placeholder="Write a reply..."
-              rows={3}
-            />
-            <div className="support-detail__actions">
-              <button
-                type="button"
-                className="settings__button settings__button--secondary settings__listButton--danger"
-                onClick={() => handleDeleteRequest(selectedRequest.supportRequestId)}
-              >
-                Delete Request
-              </button>
-              <button
-                type="submit"
-                className="settings__button settings__button--primary"
-                disabled={isSubmitting || !replyText.trim()}
-              >
-                {isSubmitting ? 'Sending...' : 'Send Reply'}
-              </button>
-            </div>
-          </form>
-        )}
+        <form className="support-detail__reply-form" onSubmit={handleSubmitReply}>
+          <textarea
+            className="support-detail__reply-textarea"
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            placeholder="Write a reply..."
+            rows={3}
+          />
+          <div className="support-detail__actions">
+            <button
+              type="button"
+              className="settings__button settings__button--secondary settings__listButton--danger"
+              onClick={() => handleDeleteRequest(selectedRequest.supportRequestId)}
+            >
+              Delete Request
+            </button>
+            <button
+              type="submit"
+              className="settings__button settings__button--primary"
+              disabled={isSubmitting || !replyText.trim()}
+            >
+              {isSubmitting ? 'Sending...' : 'Send Reply'}
+            </button>
+          </div>
+        </form>
       </div>
     );
   }
@@ -228,6 +225,15 @@ export function SupportSection() {
               request.unreadCount > 0 ? 'support-request-card--unread' : ''
             }`}
             onClick={() => handleSelectRequest(request)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSelectRequest(request);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label={`Support request: ${request.subject}, ${request.status}, ${request.replyCount} replies${request.unreadCount > 0 ? `, ${request.unreadCount} unread` : ''}`}
           >
             <div className="support-request-card__header">
               <h4 className="support-request-card__subject">{request.subject}</h4>

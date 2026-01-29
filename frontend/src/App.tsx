@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './styles/App.css';
 import { useData } from './DataContext';
 import { useUser } from './UserContext';
@@ -7,7 +7,6 @@ import UserButton from './UserButton';
 import Settings from './Settings';
 import { SupportModal } from './SupportModal';
 import { UnreadSupportBanner } from './UnreadSupportBanner';
-import type { Collection } from './types';
 
 function App() {
   const {

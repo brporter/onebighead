@@ -123,9 +123,7 @@ public class SupportController : ControllerBase
             return Forbid();
         }
 
-        // Mark replies as read
-        await _supportRepository.MarkRepliesAsReadAsync(id, userId.Value);
-
+        // Note: Replies are NOT marked as read here. Use POST /mark-read endpoint explicitly.
         return Ok(SupportRequestDto.FromEntity(request, includeReplies: true));
     }
 

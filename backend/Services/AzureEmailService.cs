@@ -27,18 +27,43 @@ public class AzureEmailService : IEmailService
 
     public async Task SendSupportRequestConfirmationAsync(string toEmail, string subject, int requestId, bool isLoggedInUser)
     {
-        var htmlContent = BuildConfirmationEmail(subject, requestId, isLoggedInUser);
-        var plainTextContent = BuildConfirmationEmailPlainText(subject, requestId, isLoggedInUser);
+        var sanitizedSubject = SanitizeSubject(subject);
+        var htmlContent = BuildConfirmationEmail(sanitizedSubject, requestId, isLoggedInUser);
+        var plainTextContent = BuildConfirmationEmailPlainText(sanitizedSubject, requestId, isLoggedInUser);
 
-        await SendEmailAsync(toEmail, $"Support Request Received: {subject}", htmlContent, plainTextContent);
+        await SendEmailAsync(toEmail, $"Support Request Received: {sanitizedSubject}", htmlContent, plainTextContent);
     }
 
     public async Task SendSupportReplyNotificationAsync(string toEmail, string subject, string replyMessage, int requestId, bool isLoggedInUser)
     {
-        var htmlContent = BuildReplyNotificationEmail(subject, replyMessage, requestId, isLoggedInUser);
-        var plainTextContent = BuildReplyNotificationEmailPlainText(subject, replyMessage, requestId, isLoggedInUser);
+        var sanitizedSubject = SanitizeSubject(subject);
+        var htmlContent = BuildReplyNotificationEmail(sanitizedSubject, replyMessage, requestId, isLoggedInUser);
+        var plainTextContent = BuildReplyNotificationEmailPlainText(sanitizedSubject, replyMessage, requestId, isLoggedInUser);
 
-        await SendEmailAsync(toEmail, $"Support Update: {subject}", htmlContent, plainTextContent);
+        await SendEmailAsync(toEmail, $"Support Update: {sanitizedSubject}", htmlContent, plainTextContent);
+    }
+
+    /// <summary>
+    /// Sanitize email subject to prevent header injection attacks.
+    /// Removes CR/LF characters and enforces max length.
+    /// </summary>
+    private static string SanitizeSubject(string subject)
+    {
+        if (string.IsNullOrEmpty(subject))
+            return string.Empty;
+
+        // Remove CR/LF to prevent header injection
+        var sanitized = subject
+            .Replace("\r", "")
+            .Replace("\n", "")
+            .Trim();
+
+        // Enforce reasonable max length for email subject
+        const int maxLength = 200;
+        if (sanitized.Length > maxLength)
+            sanitized = sanitized[..maxLength];
+
+        return sanitized;
     }
 
     private async Task SendEmailAsync(string toEmail, string subject, string htmlContent, string plainTextContent)
@@ -63,7 +88,7 @@ public class AzureEmailService : IEmailService
                     new EmailAddress(toEmail)
                 }));
 
-            var operation = await _client.SendAsync(WaitUntil.Started, emailMessage);
+            var operation = await _client.SendAsync(WaitUntil.Completed, emailMessage);
             _logger.LogInformation("Email sent to {Email}, OperationId: {OperationId}", toEmail, operation.Id);
         }
         catch (Exception ex)

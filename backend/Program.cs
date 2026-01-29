@@ -3,7 +3,6 @@ using backend.Data;
 using backend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
