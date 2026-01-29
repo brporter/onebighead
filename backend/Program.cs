@@ -3,11 +3,18 @@ using backend.Data;
 using backend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services for both API controllers and Razor Pages
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddRazorPages();
 
 // Configure lowercase URLs for tag helpers
@@ -29,12 +36,17 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPropertySuggestionRepository, PropertySuggestionRepository>();
 builder.Services.AddScoped<IItemTemplateRepository, ItemTemplateRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
+builder.Services.AddScoped<ISupportRepository, SupportRepository>();
 
 // Register image provider
 builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
 
 // Register visibility service
 builder.Services.AddScoped<IVisibilityService, VisibilityService>();
+
+// Configure email service
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddScoped<IEmailService, AzureEmailService>();
 
 // Configure authentication
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));

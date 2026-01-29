@@ -17,6 +17,8 @@
 #   MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET
 #   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 #   APPLE_CLIENT_ID, APPLE_CLIENT_SECRET
+#   EMAIL_CONNECTION_STRING  - Azure Communication Services connection string (for support emails)
+#   EMAIL_SENDER_ADDRESS     - Verified sender address (e.g., "noreply@your-domain.com")
 
 name: Deploy to Azure
 
@@ -214,6 +216,9 @@ jobs:
           if [ -n "${{ secrets.APPLE_CLIENT_SECRET }}" ]; then
             SECRETS+=("apple-client-secret=${{ secrets.APPLE_CLIENT_SECRET }}")
           fi
+          if [ -n "${{ secrets.EMAIL_CONNECTION_STRING }}" ]; then
+            SECRETS+=("email-connection-string=${{ secrets.EMAIL_CONNECTION_STRING }}")
+          fi
           
           az containerapp secret set \
             --name "$CONTAINER_APP_NAME" \
@@ -266,6 +271,15 @@ jobs:
             ENV_VARS+=("Authentication__Providers__Apple__ClientId=${{ secrets.APPLE_CLIENT_ID }}")
             ENV_VARS+=("Authentication__Providers__Apple__Enabled=true")
             ENV_VARS+=("Authentication__Providers__Apple__ClientSecret=secretref:apple-client-secret")
+          fi
+          
+          # Email service configuration (for support system)
+          if [ -n "${{ secrets.EMAIL_CONNECTION_STRING }}" ]; then
+            ENV_VARS+=("Email__ConnectionString=secretref:email-connection-string")
+            ENV_VARS+=("Email__AppBaseUrl=https://${APP_URL}")
+          fi
+          if [ -n "${{ secrets.EMAIL_SENDER_ADDRESS }}" ]; then
+            ENV_VARS+=("Email__SenderAddress=${{ secrets.EMAIL_SENDER_ADDRESS }}")
           fi
           
           # Update container app with new image (creates new revision, deactivates old)

@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from './UserContext';
 import { adminApi } from './api';
+import { AdminSupportSection } from './AdminSupportSection';
 import type { TenantSummary, UserSummary, ItemTemplate, CreateItemTemplateRequest } from './types';
 import './styles/SystemAdmin.css';
 
-type AdminTab = 'tenants' | 'users' | 'templates';
+type AdminTab = 'tenants' | 'users' | 'templates' | 'support';
 
 function SystemAdmin() {
   const navigate = useNavigate();
@@ -248,6 +249,12 @@ function SystemAdmin() {
         >
           System Templates
         </button>
+        <button
+          className={`systemAdmin__tab ${activeTab === 'support' ? 'systemAdmin__tab--active' : ''}`}
+          onClick={() => setActiveTab('support')}
+        >
+          Support
+        </button>
       </nav>
 
       {error && <div className="systemAdmin__error">{error}</div>}
@@ -486,6 +493,13 @@ function SystemAdmin() {
                 </tbody>
               </table>
             )}
+          </div>
+        )}
+
+        {!loading && activeTab === 'support' && (
+          <div className="systemAdmin__section">
+            <h2 className="systemAdmin__sectionTitle">Support Requests</h2>
+            <AdminSupportSection />
           </div>
         )}
       </div>

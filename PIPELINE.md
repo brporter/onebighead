@@ -378,6 +378,21 @@ The pipeline is already configured to use the `production` environment.
 | `APPLE_CLIENT_ID` | `com.yourcompany.yourapp.signin` | Apple Developer Portal → Services ID Identifier |
 | `APPLE_CLIENT_SECRET` | `eyJhbGciOiJFUzI1NiIsImtpZCI6Ii...` | Generated JWT signed with Apple private key |
 
+### Email Service Secrets (Optional - for Support System)
+
+| Secret | Example Value | Source |
+|--------|---------------|--------|
+| `EMAIL_CONNECTION_STRING` | `endpoint=https://your-acs.communication.azure.com/;accesskey=...` | Azure Portal → Communication Services → Keys |
+| `EMAIL_SENDER_ADDRESS` | `noreply@your-domain.com` | Azure Communication Services verified sender |
+
+**To configure Azure Communication Services for email:**
+
+1. Go to [Azure Portal](https://portal.azure.com) → **Communication Services**
+2. Create or select a Communication Service resource
+3. Go to **Keys** → copy the **Connection string**
+4. Go to **Email** → **Domains** → Configure a verified domain for sending
+5. The sender address must be from a verified domain
+
 ---
 
 ## Pipeline Workflow Summary
