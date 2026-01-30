@@ -1,0 +1,133 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CollectionTemplateEditor > snapshots > should match snapshot with templates loaded 1`] = `
+<div>
+  <div
+    class="collectionTemplateEditor"
+  >
+    <div
+      class="collectionTemplateEditor__header"
+    >
+      <h3
+        class="collectionTemplateEditor__title"
+      >
+        Templates for "
+        Test Collection
+        "
+      </h3>
+    </div>
+    <p
+      class="collectionTemplateEditor__description"
+    >
+      Select which templates should be available when creating new items in this collection. Templates not selected here can still be used from the full template library.
+    </p>
+    <div
+      class="collectionTemplateEditor__list"
+    >
+      <label
+        class="collectionTemplateEditor__item"
+      >
+        <input
+          checked=""
+          class="collectionTemplateEditor__checkbox"
+          type="checkbox"
+        />
+        <div
+          class="collectionTemplateEditor__itemContent"
+        >
+          <span
+            class="collectionTemplateEditor__itemName"
+          >
+            Template A
+          </span>
+          <span
+            class="collectionTemplateEditor__itemDescription"
+          >
+            First template
+          </span>
+          <span
+            class="collectionTemplateEditor__propertyCount"
+          >
+            1
+             
+            property
+          </span>
+        </div>
+      </label>
+      <label
+        class="collectionTemplateEditor__item"
+      >
+        <input
+          class="collectionTemplateEditor__checkbox"
+          type="checkbox"
+        />
+        <div
+          class="collectionTemplateEditor__itemContent"
+        >
+          <span
+            class="collectionTemplateEditor__itemName"
+          >
+            Template B
+          </span>
+          <span
+            class="collectionTemplateEditor__systemBadge"
+          >
+            System
+          </span>
+          <span
+            class="collectionTemplateEditor__itemDescription"
+          >
+            Second template
+          </span>
+          <span
+            class="collectionTemplateEditor__propertyCount"
+          >
+            0
+             
+            properties
+          </span>
+        </div>
+      </label>
+      <label
+        class="collectionTemplateEditor__item"
+      >
+        <input
+          class="collectionTemplateEditor__checkbox"
+          type="checkbox"
+        />
+        <div
+          class="collectionTemplateEditor__itemContent"
+        >
+          <span
+            class="collectionTemplateEditor__itemName"
+          >
+            Template C
+          </span>
+          <span
+            class="collectionTemplateEditor__propertyCount"
+          >
+            2
+             
+            properties
+          </span>
+        </div>
+      </label>
+    </div>
+    <div
+      class="collectionTemplateEditor__actions"
+    >
+      <button
+        class="settings__button settings__button--primary"
+        disabled=""
+      >
+        Save Changes
+      </button>
+      <button
+        class="settings__button settings__button--secondary"
+      >
+        Back
+      </button>
+    </div>
+  </div>
+</div>
+`;

@@ -694,4 +694,17 @@ describe('CategoryEditorModal', () => {
       expect(screen.getByTestId('visibility-toggle')).toBeInTheDocument();
     });
   });
+
+  describe('snapshots', () => {
+    it('should match snapshot for new category mode', () => {
+      const { container } = render(<CategoryEditorModal {...defaultProps} category={null} />);
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should match snapshot for edit category mode', () => {
+      const existingCategory: Category = mockCategories[0];
+      const { container } = render(<CategoryEditorModal {...defaultProps} category={existingCategory} />);
+      expect(container).toMatchSnapshot();
+    });
+  });
 });

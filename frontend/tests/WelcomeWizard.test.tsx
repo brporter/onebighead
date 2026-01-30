@@ -238,4 +238,11 @@ describe('WelcomeWizard', () => {
 
     expect(screen.getByText('Loading themes...')).toBeInTheDocument();
   });
+
+  describe('snapshots', () => {
+    it('should match snapshot for initial welcome step', () => {
+      const { container } = render(<WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+      expect(container).toMatchSnapshot();
+    });
+  });
 });

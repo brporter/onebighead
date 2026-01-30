@@ -1,0 +1,60 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CollectionView > snapshots > should match snapshot with collections 1`] = `
+<div>
+  <div
+    class="collectionList"
+  >
+    <h2
+      class="collectionList__title"
+    >
+      Your Collections
+    </h2>
+    <p
+      class="collectionList__subtitle"
+    >
+      Select a collection to view its items
+    </p>
+    <div
+      class="collectionList__grid"
+    >
+      <button
+        class="collectionList__card"
+      >
+        <div
+          class="collectionList__content"
+        >
+          <h3
+            class="collectionList__name"
+          >
+            Collection One
+          </h3>
+          <p
+            class="collectionList__description"
+          >
+            First collection
+          </p>
+        </div>
+      </button>
+      <button
+        class="collectionList__card"
+      >
+        <div
+          class="collectionList__content"
+        >
+          <h3
+            class="collectionList__name"
+          >
+            Collection Two
+          </h3>
+          <p
+            class="collectionList__description"
+          >
+            Second collection
+          </p>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+`;

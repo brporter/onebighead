@@ -182,4 +182,44 @@ describe('RequireAuth', () => {
       expect(screen.getByText('Protected Content')).toBeInTheDocument();
     });
   });
+
+  describe('snapshots', () => {
+    it('should match snapshot for loading state', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: null,
+        loading: true,
+        error: null,
+        refetch: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      const { container } = render(
+        <MemoryRouter>
+          <RequireAuth>
+            <div>Protected Content</div>
+          </RequireAuth>
+        </MemoryRouter>
+      );
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should match snapshot for authenticated state', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasCompletedWelcome: true }),
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      const { container } = render(
+        <MemoryRouter>
+          <RequireAuth>
+            <div>Protected Content</div>
+          </RequireAuth>
+        </MemoryRouter>
+      );
+      expect(container).toMatchSnapshot();
+    });
+  });
 });

@@ -322,4 +322,16 @@ describe('CategoryTemplateSelector', () => {
       });
     });
   });
+
+  describe('snapshots', () => {
+    it('should match snapshot with templates', async () => {
+      const { container } = render(<CategoryTemplateSelector {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Collection Template 1')).toBeInTheDocument();
+      });
+
+      expect(container).toMatchSnapshot();
+    });
+  });
 });

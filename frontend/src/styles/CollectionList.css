@@ -77,3 +77,27 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .collectionList {
+    padding: var(--space-lg);
+  }
+
+  .collectionList__title {
+    font-size: 1.5rem;
+  }
+
+  .collectionList__grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .collectionList__imageWrap {
+    height: 140px;
+  }
+
+  .collectionList__content {
+    padding: var(--space-md);
+  }
+}

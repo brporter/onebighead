@@ -1,0 +1,85 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CategoryTemplateSelector > snapshots > should match snapshot with templates 1`] = `
+<div>
+  <div
+    class="categoryTemplateSelector"
+  >
+    <p
+      class="categoryTemplateSelector__hint"
+    >
+      Items in this category will see these templates recommended when adding new items.
+    </p>
+    <div
+      class="categoryTemplateSelector__list"
+    >
+      <label
+        class="categoryTemplateSelector__item "
+      >
+        <input
+          class="categoryTemplateSelector__checkbox"
+          type="checkbox"
+        />
+        <div
+          class="categoryTemplateSelector__itemContent"
+        >
+          <span
+            class="categoryTemplateSelector__itemName"
+          >
+            Collection Template 1
+          </span>
+          <span
+            class="categoryTemplateSelector__itemDescription"
+          >
+            Description 1
+          </span>
+        </div>
+      </label>
+      <label
+        class="categoryTemplateSelector__item "
+      >
+        <input
+          class="categoryTemplateSelector__checkbox"
+          type="checkbox"
+        />
+        <div
+          class="categoryTemplateSelector__itemContent"
+        >
+          <span
+            class="categoryTemplateSelector__itemName"
+          >
+            Collection Template 2
+          </span>
+        </div>
+      </label>
+      <label
+        class="categoryTemplateSelector__item "
+      >
+        <input
+          class="categoryTemplateSelector__checkbox"
+          type="checkbox"
+        />
+        <div
+          class="categoryTemplateSelector__itemContent"
+        >
+          <span
+            class="categoryTemplateSelector__itemName"
+          >
+            Library Template
+          </span>
+          <span
+            class="categoryTemplateSelector__systemBadge"
+          >
+            System
+          </span>
+          <span
+            class="categoryTemplateSelector__itemDescription"
+          >
+            A library template
+          </span>
+        </div>
+      </label>
+    </div>
+  </div>
+</div>
+`;

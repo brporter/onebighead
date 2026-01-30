@@ -1,0 +1,49 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`UserButton > snapshots > should match snapshot for admin user 1`] = `
+<div>
+  <div
+    class="userButton__container"
+  >
+    <button
+      class="userButton userButton--admin"
+      type="button"
+    >
+      Admin
+    </button>
+    <button
+      class="userButton"
+      type="button"
+    >
+      admin@example.com
+    </button>
+    <button
+      class="userButton userButton--signout"
+      type="button"
+    >
+      Sign Out
+    </button>
+  </div>
+</div>
+`;
+
+exports[`UserButton > snapshots > should match snapshot for regular user 1`] = `
+<div>
+  <div
+    class="userButton__container"
+  >
+    <button
+      class="userButton"
+      type="button"
+    >
+      user@example.com
+    </button>
+    <button
+      class="userButton userButton--signout"
+      type="button"
+    >
+      Sign Out
+    </button>
+  </div>
+</div>
+`;

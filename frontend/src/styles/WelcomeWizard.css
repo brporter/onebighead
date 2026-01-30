@@ -3,18 +3,33 @@
 
 .welcomeWizard__intro {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-xxl);
 }
 
 .welcomeWizard__greeting {
   font-size: 1.75rem;
   font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 var(--space-sm) 0;
 }
 
 .welcomeWizard__description {
   font-size: 1rem;
   color: var(--color-text-secondary);
   margin: 0;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .welcomeWizard__intro {
+    margin-bottom: var(--space-xl);
+  }
+
+  .welcomeWizard__greeting {
+    font-size: 1.5rem;
+  }
+
+  .welcomeWizard__description {
+    font-size: 0.95rem;
+  }
 }

@@ -1,0 +1,439 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CategoryView > snapshots > should match snapshot with category selected 1`] = `
+<div>
+  <div
+    class="app__layout"
+  >
+    <nav
+      aria-label="Category navigation"
+      class="app__sidebar"
+    >
+      <aside
+        class="categoryTree"
+      >
+        <div
+          class="categoryTree__header"
+        >
+          <h2
+            class="categoryTree__title"
+          >
+            Categories
+          </h2>
+          <button
+            aria-label="Add category"
+            class="categoryTree__add"
+            type="button"
+          >
+            +
+          </button>
+        </div>
+        <ul
+          class="categoryTree__list"
+        >
+          <li
+            class="categoryTree__node"
+          >
+            <div
+              class="categoryTree__row"
+              style="padding-left: 0px;"
+            >
+              <button
+                aria-label="Collapse Root Category"
+                class="categoryTree__toggle"
+                type="button"
+              >
+                ▾
+              </button>
+              <button
+                class="categoryTree__item categoryTree__item--active"
+                type="button"
+              >
+                Root Category
+              </button>
+              <button
+                aria-label="Edit Root Category"
+                class="categoryTree__edit"
+                type="button"
+              >
+                ✎
+              </button>
+            </div>
+            <ul
+              class="categoryTree__children"
+            >
+              <li
+                class="categoryTree__node"
+              >
+                <div
+                  class="categoryTree__row"
+                  style="padding-left: 14px;"
+                >
+                  <span
+                    aria-hidden="true"
+                    class="categoryTree__toggle-spacer"
+                  >
+                    ▸
+                  </span>
+                  <button
+                    class="categoryTree__item"
+                    type="button"
+                  >
+                    Child Category
+                  </button>
+                  <button
+                    aria-label="Edit Child Category"
+                    class="categoryTree__edit"
+                    type="button"
+                  >
+                    ✎
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </li>
+        </ul>
+        <dialog
+          class="modal-dialog"
+        >
+          <div
+            class="modal"
+          >
+            <div
+              class="modal__header"
+            >
+              <h2
+                class="modal__title"
+              >
+                Add Category
+              </h2>
+              <button
+                aria-label="Close"
+                class="modal__close"
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            <form
+              class="modal__body"
+            >
+              <div
+                class="modal__field"
+              >
+                <label
+                  class="modal__label"
+                  for="category-name"
+                >
+                  Name 
+                  <span
+                    class="modal__required"
+                  >
+                    *
+                  </span>
+                </label>
+                <input
+                  class="modal__input"
+                  id="category-name"
+                  placeholder="Category name"
+                  required=""
+                  type="text"
+                  value=""
+                />
+              </div>
+              <div
+                class="modal__field"
+              >
+                <label
+                  class="modal__label"
+                  for="category-description"
+                >
+                  Description
+                </label>
+                <textarea
+                  class="modal__textarea"
+                  id="category-description"
+                  placeholder="Optional description"
+                  rows="3"
+                />
+              </div>
+              <div
+                class="modal__field"
+              >
+                <label
+                  class="modal__label"
+                  for="category-parent"
+                >
+                  Parent Category
+                </label>
+                <select
+                  class="modal__select"
+                  id="category-parent"
+                >
+                  <option
+                    value=""
+                  >
+                    None (root level)
+                  </option>
+                  <option
+                    value="1"
+                  >
+                    Root Category
+                  </option>
+                  <option
+                    value="2"
+                  >
+                    Child Category
+                  </option>
+                </select>
+              </div>
+              <div
+                class="modal__field"
+              >
+                <div
+                  class="visibility-toggle"
+                >
+                  <label
+                    class="visibility-label"
+                  >
+                    Visibility
+                  </label>
+                  <div
+                    class="visibility-options"
+                  >
+                    <button
+                      class="visibility-option selected"
+                      title="Inherit from parent (Public)"
+                      type="button"
+                    >
+                      Inherit (
+                      Public
+                      )
+                    </button>
+                    <button
+                      class="visibility-option "
+                      title="Mark as public"
+                      type="button"
+                    >
+                      Public
+                    </button>
+                    <button
+                      class="visibility-option "
+                      title="Mark as private"
+                      type="button"
+                    >
+                      Private
+                    </button>
+                  </div>
+                  <div
+                    class="visibility-effective"
+                  >
+                    Effective: 
+                    <span
+                      class="public"
+                    >
+                      Public
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="modal__field"
+              >
+                <label
+                  class="modal__label"
+                >
+                  Recommended Templates
+                </label>
+                <p
+                  class="categoryTemplateSelector__loading"
+                >
+                  Loading templates...
+                </p>
+              </div>
+              <div
+                class="modal__actions"
+              >
+                <button
+                  class="detail__btn detail__btn--primary"
+                  disabled=""
+                  type="submit"
+                >
+                  Create
+                </button>
+                <button
+                  class="detail__btn detail__btn--secondary"
+                  type="button"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </dialog>
+      </aside>
+    </nav>
+    <main
+      class="app__content"
+    >
+      <section
+        class="app__items"
+      >
+        <nav
+          class="mobileNav"
+        >
+          <button
+            class="mobileNav__back"
+            type="button"
+          >
+            ← 
+            Categories
+          </button>
+        </nav>
+        <div
+          class="subcategoryDropdown"
+        >
+          <label
+            class="subcategoryDropdown__label"
+            for="subcategory-filter"
+          >
+            Filter by subcategory:
+          </label>
+          <select
+            class="subcategoryDropdown__select"
+            id="subcategory-filter"
+          >
+            <option
+              value=""
+            >
+              All items
+            </option>
+            <option
+              value="2"
+            >
+              Child Category
+            </option>
+          </select>
+        </div>
+        <aside
+          class="list"
+        >
+          <div
+            class="list__header"
+          >
+            <h2
+              class="list__title"
+            >
+              Items
+            </h2>
+            <div
+              class="list__headerRight"
+            >
+              <div
+                aria-label="Item count"
+                class="list__count"
+              >
+                2
+                 total
+              </div>
+              <button
+                class="list__addButton"
+                type="button"
+              >
+                + Add Item
+              </button>
+            </div>
+          </div>
+          <div
+            class="list__tableWrap"
+          >
+            <table
+              class="list__table"
+            >
+              <thead>
+                <tr>
+                  <th
+                    class="list__th list__th--name"
+                    scope="col"
+                  >
+                    Name
+                  </th>
+                  <th
+                    class="list__th"
+                    scope="col"
+                  >
+                    Summary
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  aria-label="Select Test Item 1"
+                  class="list__tr list__tr--clickable"
+                  role="button"
+                  tabindex="0"
+                >
+                  <td
+                    class="list__td list__td--name"
+                  >
+                    Test Item 1
+                  </td>
+                  <td
+                    class="list__td list__td--summary"
+                  >
+                    Summary 1
+                  </td>
+                </tr>
+                <tr
+                  aria-label="Select Test Item 2"
+                  class="list__tr list__tr--clickable"
+                  role="button"
+                  tabindex="0"
+                >
+                  <td
+                    class="list__td list__td--name"
+                  >
+                    Test Item 2
+                  </td>
+                  <td
+                    class="list__td list__td--summary"
+                  >
+                    Summary 2
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div
+            aria-label="Pagination"
+            class="list__pager"
+          >
+            <button
+              class="list__pagerButton"
+              disabled=""
+              type="button"
+            >
+              Previous
+            </button>
+            <div
+              class="list__pagerStatus"
+            >
+              Page 
+              1
+               of 
+              1
+            </div>
+            <button
+              class="list__pagerButton"
+              disabled=""
+              type="button"
+            >
+              Next
+            </button>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+</div>
+`;

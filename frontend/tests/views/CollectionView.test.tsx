@@ -103,4 +103,11 @@ describe('CollectionView', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/collections/1', { replace: true });
     });
   });
+
+  describe('snapshots', () => {
+    it('should match snapshot with collections', () => {
+      const { container } = renderWithRouter();
+      expect(container).toMatchSnapshot();
+    });
+  });
 });

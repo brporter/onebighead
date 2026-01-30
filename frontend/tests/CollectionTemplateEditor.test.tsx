@@ -394,4 +394,16 @@ describe('CollectionTemplateEditor', () => {
       expect(onDirtyChange).toHaveBeenLastCalledWith(false);
     });
   });
+
+  describe('snapshots', () => {
+    it('should match snapshot with templates loaded', async () => {
+      const { container } = renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('Template A')).toBeInTheDocument();
+      });
+
+      expect(container).toMatchSnapshot();
+    });
+  });
 });

@@ -1,0 +1,152 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`VisibilityToggle > snapshots > should match snapshot for collection mode (public) 1`] = `
+<div>
+  <div
+    class="visibility-toggle"
+  >
+    <label
+      class="visibility-label"
+    >
+      Visibility
+    </label>
+    <div
+      class="visibility-options"
+    >
+      <button
+        class="visibility-option selected"
+        title="Mark as public"
+        type="button"
+      >
+        Public
+      </button>
+      <button
+        class="visibility-option "
+        title="Mark as private"
+        type="button"
+      >
+        Private
+      </button>
+    </div>
+    <div
+      class="visibility-effective"
+    >
+      Effective: 
+      <span
+        class="public"
+      >
+        Public
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`VisibilityToggle > snapshots > should match snapshot for item mode with inherit 1`] = `
+<div>
+  <div
+    class="visibility-toggle"
+  >
+    <label
+      class="visibility-label"
+    >
+      Visibility
+    </label>
+    <div
+      class="visibility-options"
+    >
+      <button
+        class="visibility-option selected"
+        title="Inherit from parent (Public)"
+        type="button"
+      >
+        Inherit (
+        Public
+        )
+      </button>
+      <button
+        class="visibility-option "
+        title="Mark as public"
+        type="button"
+      >
+        Public
+      </button>
+      <button
+        class="visibility-option "
+        title="Mark as private"
+        type="button"
+      >
+        Private
+      </button>
+    </div>
+    <div
+      class="visibility-effective"
+    >
+      Effective: 
+      <span
+        class="public"
+      >
+        Public
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`VisibilityToggle > snapshots > should match snapshot when parent is private 1`] = `
+<div>
+  <div
+    class="visibility-toggle"
+  >
+    <label
+      class="visibility-label"
+    >
+      Visibility
+    </label>
+    <div
+      class="visibility-options"
+    >
+      <button
+        class="visibility-option "
+        disabled=""
+        title="Inherit from parent (Private)"
+        type="button"
+      >
+        Inherit (
+        Private
+        )
+      </button>
+      <button
+        class="visibility-option "
+        disabled=""
+        title="Mark as public"
+        type="button"
+      >
+        Public
+      </button>
+      <button
+        class="visibility-option selected"
+        title="Mark as private"
+        type="button"
+      >
+        Private
+      </button>
+    </div>
+    <div
+      class="visibility-note"
+    >
+      Parent is private; cannot override to public
+    </div>
+    <div
+      class="visibility-effective"
+    >
+      Effective: 
+      <span
+        class="private"
+      >
+        Private
+      </span>
+    </div>
+  </div>
+</div>
+`;

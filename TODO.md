@@ -1,6 +1,5 @@
 # TODO
 
-* On first sign-in, have a welcome experience that asks users to name their tenant and walk them through setting up their first collection. It should be skippable so they can just get started quickly - in which case their tenant name is just their email address.
 * Adjust collection routes so a tenants collection is addressed by name (e.g. /collections/bryanporter.com/) and not numeric tenant ID.
 * Fix settings view stylings - it's terrible.
 * Get alternative proposals for category tree rendering, and come up with a better idea that a default category of "Uncategorized Items"

@@ -1,0 +1,339 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ItemView > snapshots > should match snapshot for existing item 1`] = `
+<div>
+  <div
+    class="app__layout"
+  >
+    <nav
+      aria-label="Category navigation"
+      class="app__sidebar"
+    >
+      <aside
+        class="categoryTree"
+      >
+        <div
+          class="categoryTree__header"
+        >
+          <h2
+            class="categoryTree__title"
+          >
+            Categories
+          </h2>
+          <button
+            aria-label="Add category"
+            class="categoryTree__add"
+            type="button"
+          >
+            +
+          </button>
+        </div>
+        <ul
+          class="categoryTree__list"
+        >
+          <li
+            class="categoryTree__node"
+          >
+            <div
+              class="categoryTree__row"
+              style="padding-left: 0px;"
+            >
+              <span
+                aria-hidden="true"
+                class="categoryTree__toggle-spacer"
+              >
+                ▸
+              </span>
+              <button
+                class="categoryTree__item categoryTree__item--active"
+                type="button"
+              >
+                Root Category
+              </button>
+              <button
+                aria-label="Edit Root Category"
+                class="categoryTree__edit"
+                type="button"
+              >
+                ✎
+              </button>
+            </div>
+          </li>
+        </ul>
+        <dialog
+          class="modal-dialog"
+        >
+          <div
+            class="modal"
+          >
+            <div
+              class="modal__header"
+            >
+              <h2
+                class="modal__title"
+              >
+                Add Category
+              </h2>
+              <button
+                aria-label="Close"
+                class="modal__close"
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            <form
+              class="modal__body"
+            >
+              <div
+                class="modal__field"
+              >
+                <label
+                  class="modal__label"
+                  for="category-name"
+                >
+                  Name 
+                  <span
+                    class="modal__required"
+                  >
+                    *
+                  </span>
+                </label>
+                <input
+                  class="modal__input"
+                  id="category-name"
+                  placeholder="Category name"
+                  required=""
+                  type="text"
+                  value=""
+                />
+              </div>
+              <div
+                class="modal__field"
+              >
+                <label
+                  class="modal__label"
+                  for="category-description"
+                >
+                  Description
+                </label>
+                <textarea
+                  class="modal__textarea"
+                  id="category-description"
+                  placeholder="Optional description"
+                  rows="3"
+                />
+              </div>
+              <div
+                class="modal__field"
+              >
+                <label
+                  class="modal__label"
+                  for="category-parent"
+                >
+                  Parent Category
+                </label>
+                <select
+                  class="modal__select"
+                  id="category-parent"
+                >
+                  <option
+                    value=""
+                  >
+                    None (root level)
+                  </option>
+                  <option
+                    value="1"
+                  >
+                    Root Category
+                  </option>
+                </select>
+              </div>
+              <div
+                class="modal__field"
+              >
+                <div
+                  class="visibility-toggle"
+                >
+                  <label
+                    class="visibility-label"
+                  >
+                    Visibility
+                  </label>
+                  <div
+                    class="visibility-options"
+                  >
+                    <button
+                      class="visibility-option selected"
+                      title="Inherit from parent (Public)"
+                      type="button"
+                    >
+                      Inherit (
+                      Public
+                      )
+                    </button>
+                    <button
+                      class="visibility-option "
+                      title="Mark as public"
+                      type="button"
+                    >
+                      Public
+                    </button>
+                    <button
+                      class="visibility-option "
+                      title="Mark as private"
+                      type="button"
+                    >
+                      Private
+                    </button>
+                  </div>
+                  <div
+                    class="visibility-effective"
+                  >
+                    Effective: 
+                    <span
+                      class="public"
+                    >
+                      Public
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="modal__field"
+              >
+                <label
+                  class="modal__label"
+                >
+                  Recommended Templates
+                </label>
+                <p
+                  class="categoryTemplateSelector__loading"
+                >
+                  Loading templates...
+                </p>
+              </div>
+              <div
+                class="modal__actions"
+              >
+                <button
+                  class="detail__btn detail__btn--primary"
+                  disabled=""
+                  type="submit"
+                >
+                  Create
+                </button>
+                <button
+                  class="detail__btn detail__btn--secondary"
+                  type="button"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </dialog>
+      </aside>
+    </nav>
+    <main
+      class="app__content"
+    >
+      <article
+        class="app__detail"
+      >
+        <nav
+          class="mobileNav"
+        >
+          <button
+            class="mobileNav__back"
+            type="button"
+          >
+            ← 
+            Back to items
+          </button>
+        </nav>
+        <section
+          class="detail"
+        >
+          <div
+            class="detail__header"
+          >
+            <h2
+              class="detail__title"
+            >
+              Test Item
+            </h2>
+            <div
+              class="detail__headerActions"
+            >
+              <button
+                class="detail__btn detail__btn--secondary"
+                type="button"
+              >
+                Edit
+              </button>
+              <button
+                class="detail__close"
+                type="button"
+              >
+                Back to list
+              </button>
+            </div>
+          </div>
+          <p
+            class="detail__description"
+          >
+            Test description
+          </p>
+          <section
+            aria-label="Test Item"
+            class="gallery"
+          >
+            <div
+              class="gallery__viewport"
+            >
+              <img
+                alt="Test image"
+                class="gallery__image"
+                loading="lazy"
+                src="https://example.com/img.jpg"
+              />
+            </div>
+          </section>
+          <div
+            class="detail__properties"
+          >
+            <section
+              class="detail__property-group"
+            >
+              <h3
+                class="detail__property-group-title"
+              >
+                General
+              </h3>
+              <dl
+                class="detail__property-group-list"
+              >
+                <div
+                  class="detail__property-row"
+                >
+                  <dt
+                    class="detail__property-name"
+                  >
+                    Color
+                  </dt>
+                  <dd
+                    class="detail__property-value"
+                  >
+                    Blue
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+        </section>
+      </article>
+    </main>
+  </div>
+</div>
+`;

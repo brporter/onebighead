@@ -384,7 +384,9 @@
   border-top: 1px solid var(--color-border);
 }
 
-.settings-form__button {
+/* Shared button styles - used by forms and other components */
+.settings-form__button,
+.settings__button {
   padding: var(--space-md) var(--space-xl);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -394,29 +396,34 @@
   transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.settings-form__button:disabled {
+.settings-form__button:disabled,
+.settings__button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.settings-form__button--primary {
+.settings-form__button--primary,
+.settings__button--primary {
   background: var(--color-primary);
   color: var(--color-text-inverse);
   border-color: var(--color-primary);
 }
 
-.settings-form__button--primary:hover:not(:disabled) {
+.settings-form__button--primary:hover:not(:disabled),
+.settings__button--primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
 }
 
-.settings-form__button--secondary {
+.settings-form__button--secondary,
+.settings__button--secondary {
   background: var(--color-surface);
   color: var(--color-text-secondary);
   border-color: var(--color-border-strong);
 }
 
-.settings-form__button--secondary:hover:not(:disabled) {
+.settings-form__button--secondary:hover:not(:disabled),
+.settings__button--secondary:hover:not(:disabled) {
   background: var(--color-surface-alt);
 }
 
@@ -586,5 +593,183 @@
 
   .settings-page__content {
     padding: var(--space-md);
+  }
+}
+
+/* ==========================================================================
+   Collection Template Editor
+   ========================================================================== */
+
+.collectionTemplateEditor {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  max-width: 700px;
+}
+
+.collectionTemplateEditor__header {
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.collectionTemplateEditor__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.collectionTemplateEditor__description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.collectionTemplateEditor__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xxl);
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.collectionTemplateEditor__error {
+  padding: var(--space-md);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-size: 0.9rem;
+}
+
+.collectionTemplateEditor__empty {
+  margin: 0;
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+}
+
+.collectionTemplateEditor__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: var(--space-xs);
+}
+
+.collectionTemplateEditor__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.collectionTemplateEditor__item:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
+}
+
+.collectionTemplateEditor__item:has(.collectionTemplateEditor__checkbox:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.collectionTemplateEditor__checkbox {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.collectionTemplateEditor__checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.collectionTemplateEditor__itemContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.collectionTemplateEditor__itemName {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.collectionTemplateEditor__systemBadge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-sm);
+  padding: 2px var(--space-sm);
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  vertical-align: middle;
+}
+
+.collectionTemplateEditor__itemDescription {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.collectionTemplateEditor__propertyCount {
+  font-size: 0.8rem;
+  color: var(--color-text-subtle);
+}
+
+.collectionTemplateEditor__actions {
+  display: flex;
+  gap: var(--space-sm);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Mobile responsive styles for CollectionTemplateEditor */
+@media (max-width: 768px) {
+  .collectionTemplateEditor {
+    padding: var(--space-lg);
+  }
+
+  .collectionTemplateEditor__list {
+    max-height: 300px;
+  }
+
+  .collectionTemplateEditor__item {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .collectionTemplateEditor__actions {
+    flex-direction: column;
+  }
+
+  .collectionTemplateEditor__actions .settings__button {
+    width: 100%;
+    justify-content: center;
   }
 }

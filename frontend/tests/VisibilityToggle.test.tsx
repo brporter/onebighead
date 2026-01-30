@@ -323,8 +323,47 @@ describe('VisibilityToggle', () => {
           onChange={() => {}}
         />
       );
-      
+
       expect(screen.getByText('Visibility')).toBeInTheDocument();
+    });
+  });
+
+  describe('snapshots', () => {
+    it('should match snapshot for collection mode (public)', () => {
+      const { container } = render(
+        <VisibilityToggle
+          isPublicOverride={true}
+          effectiveIsPublic={true}
+          parentIsPublic={true}
+          onChange={() => {}}
+          isCollection={true}
+        />
+      );
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should match snapshot for item mode with inherit', () => {
+      const { container } = render(
+        <VisibilityToggle
+          isPublicOverride={null}
+          effectiveIsPublic={true}
+          parentIsPublic={true}
+          onChange={() => {}}
+        />
+      );
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should match snapshot when parent is private', () => {
+      const { container } = render(
+        <VisibilityToggle
+          isPublicOverride={false}
+          effectiveIsPublic={false}
+          parentIsPublic={false}
+          onChange={() => {}}
+        />
+      );
+      expect(container).toMatchSnapshot();
     });
   });
 });

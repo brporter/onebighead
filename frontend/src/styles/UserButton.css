@@ -48,3 +48,12 @@
   background: var(--color-surface-alt);
   border-color: var(--color-border);
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .userButton {
+    padding: var(--space-md) var(--space-lg);
+    min-height: 44px;
+    max-width: 160px;
+  }
+}

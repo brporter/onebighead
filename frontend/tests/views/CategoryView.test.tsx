@@ -258,4 +258,11 @@ describe('CategoryView', () => {
       expect(screen.getByText('Collection not found')).toBeInTheDocument();
     });
   });
+
+  describe('snapshots', () => {
+    it('should match snapshot with category selected', () => {
+      const { container } = renderWithRouter('/collections/1/categories/1');
+      expect(container).toMatchSnapshot();
+    });
+  });
 });

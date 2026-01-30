@@ -345,4 +345,11 @@ describe('ItemView', () => {
       });
     });
   });
+
+  describe('snapshots', () => {
+    it('should match snapshot for existing item', () => {
+      const { container } = renderWithRouter('/collections/1/items/1');
+      expect(container).toMatchSnapshot();
+    });
+  });
 });

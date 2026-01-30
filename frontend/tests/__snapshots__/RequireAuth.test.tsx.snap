@@ -1,0 +1,19 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RequireAuth > snapshots > should match snapshot for authenticated state 1`] = `
+<div>
+  <div>
+    Protected Content
+  </div>
+</div>
+`;
+
+exports[`RequireAuth > snapshots > should match snapshot for loading state 1`] = `
+<div>
+  <div
+    class="app__loading"
+  >
+    Loading...
+  </div>
+</div>
+`;

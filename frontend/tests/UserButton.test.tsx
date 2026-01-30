@@ -134,10 +134,38 @@ describe('UserButton', () => {
     });
 
     renderWithRouter(<UserButton onClick={mockOnClick} />);
-    
+
     const adminButton = screen.getByText('Admin');
     fireEvent.click(adminButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/admin');
+  });
+
+  describe('snapshots', () => {
+    it('should match snapshot for regular user', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: { userId: 1, email: 'user@example.com', tenantId: 1, isSystemAdministrator: false },
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: mockLogout,
+      });
+
+      const { container } = renderWithRouter(<UserButton onClick={mockOnClick} />);
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should match snapshot for admin user', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: { userId: 1, email: 'admin@example.com', tenantId: 1, isSystemAdministrator: true },
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: mockLogout,
+      });
+
+      const { container } = renderWithRouter(<UserButton onClick={mockOnClick} />);
+      expect(container).toMatchSnapshot();
+    });
   });
 });

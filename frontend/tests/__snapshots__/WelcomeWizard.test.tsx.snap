@@ -1,0 +1,166 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`WelcomeWizard > snapshots > should match snapshot for initial welcome step 1`] = `
+<div>
+  <div
+    class="setupWizard"
+  >
+    <div
+      class="setupWizard__container"
+    >
+      <div
+        class="setupWizard__header"
+      >
+        <h1
+          class="setupWizard__title"
+        >
+          Get Started
+        </h1>
+        <div
+          class="setupWizard__headerActions"
+        >
+          <button
+            class="setupWizard__skipBtn"
+          >
+            Skip Setup
+          </button>
+        </div>
+      </div>
+      <nav
+        class="setupWizard__tabs"
+      >
+        <button
+          class="setupWizard__tab setupWizard__tab--active"
+        >
+          <span
+            class="setupWizard__tabNumber"
+          >
+            1
+          </span>
+          Welcome
+        </button>
+        <button
+          class="setupWizard__tab "
+          disabled=""
+        >
+          <span
+            class="setupWizard__tabNumber"
+          >
+            2
+          </span>
+          Theme
+        </button>
+        <button
+          class="setupWizard__tab "
+        >
+          <span
+            class="setupWizard__tabNumber"
+          >
+            3
+          </span>
+          Preview
+        </button>
+      </nav>
+      <div
+        class="setupWizard__content"
+      >
+        <div
+          class="welcomeWizard__intro"
+        >
+          <h2
+            class="welcomeWizard__greeting"
+          >
+            Welcome to OneBigHead!
+          </h2>
+          <p
+            class="welcomeWizard__description"
+          >
+            Let's get you set up. First, tell us a bit about yourself and your first collection.
+          </p>
+        </div>
+        <div
+          class="setupWizard__field"
+        >
+          <label
+            class="setupWizard__label"
+            for="tenant-name"
+          >
+            Organization / Workspace Name 
+            <span
+              class="setupWizard__required"
+            >
+              *
+            </span>
+          </label>
+          <input
+            class="setupWizard__input"
+            id="tenant-name"
+            placeholder="Your name, company, or workspace"
+            type="text"
+            value="test@example.com"
+          />
+          <p
+            class="setupWizard__hint"
+          >
+            This is how your workspace will be identified.
+          </p>
+        </div>
+        <div
+          class="setupWizard__field"
+        >
+          <label
+            class="setupWizard__label"
+            for="collection-name"
+          >
+            First Collection Name 
+            <span
+              class="setupWizard__required"
+            >
+              *
+            </span>
+          </label>
+          <input
+            class="setupWizard__input"
+            id="collection-name"
+            placeholder="e.g., My Book Collection"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="setupWizard__field"
+        >
+          <label
+            class="setupWizard__label"
+            for="collection-description"
+          >
+            Description
+          </label>
+          <textarea
+            class="setupWizard__textarea"
+            id="collection-description"
+            placeholder="What will you be collecting?"
+            rows="3"
+          />
+        </div>
+      </div>
+      <div
+        class="setupWizard__footer"
+      >
+        <button
+          class="setupWizard__btn setupWizard__btn--secondary"
+          disabled=""
+        >
+          Previous
+        </button>
+        <button
+          class="setupWizard__btn setupWizard__btn--primary"
+          disabled=""
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+`;
