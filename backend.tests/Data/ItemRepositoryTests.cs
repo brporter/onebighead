@@ -283,6 +283,125 @@ public class ItemRepositoryTests : IDisposable
         Assert.Null(result);
     }
 
+    [Fact]
+    public async Task UpdateAsync_UpdatesUserFlag()
+    {
+        // Arrange - Create item with None flag
+        var item = new Item
+        {
+            Id = 1,
+            TenantId = TestTenantId,
+            CollectionId = TestCollectionId,
+            Name = "Test Item",
+            UserFlag = UserFlag.None
+        };
+        await _context.Items.AddAsync(item);
+        await _context.SaveChangesAsync();
+        _context.Entry(item).State = EntityState.Detached;
+
+        // Act - Update to Want flag
+        var updatedItem = new Item
+        {
+            Name = "Test Item",
+            CollectionId = TestCollectionId,
+            UserFlag = UserFlag.Want
+        };
+        var result = await _repository.UpdateAsync(1, updatedItem, TestTenantId);
+
+        // Assert - Verify flag was updated
+        Assert.NotNull(result);
+        Assert.Equal(UserFlag.Want, result.UserFlag);
+
+        // Also verify it's persisted in the database
+        _context.Entry(result).State = EntityState.Detached;
+        var savedItem = await _context.Items.FindAsync(1);
+        Assert.Equal(UserFlag.Want, savedItem!.UserFlag);
+    }
+
+    [Theory]
+    [InlineData(UserFlag.None, UserFlag.Have)]
+    [InlineData(UserFlag.Have, UserFlag.Want)]
+    [InlineData(UserFlag.Want, UserFlag.TradeOrSell)]
+    [InlineData(UserFlag.TradeOrSell, UserFlag.None)]
+    public async Task UpdateAsync_UpdatesUserFlag_AllTransitions(UserFlag initialFlag, UserFlag newFlag)
+    {
+        // Arrange
+        var item = new Item
+        {
+            Id = 1,
+            TenantId = TestTenantId,
+            CollectionId = TestCollectionId,
+            Name = "Test Item",
+            UserFlag = initialFlag
+        };
+        await _context.Items.AddAsync(item);
+        await _context.SaveChangesAsync();
+        _context.Entry(item).State = EntityState.Detached;
+
+        // Act
+        var updatedItem = new Item
+        {
+            Name = "Test Item",
+            CollectionId = TestCollectionId,
+            UserFlag = newFlag
+        };
+        var result = await _repository.UpdateAsync(1, updatedItem, TestTenantId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(newFlag, result.UserFlag);
+    }
+
+    #endregion
+
+    #region CreateAsync UserFlag Tests
+
+    [Fact]
+    public async Task CreateAsync_PersistsUserFlag()
+    {
+        // Arrange
+        var item = new Item
+        {
+            TenantId = TestTenantId,
+            CollectionId = TestCollectionId,
+            Name = "Item with Flag",
+            UserFlag = UserFlag.Want
+        };
+
+        // Act
+        var result = await _repository.CreateAsync(item);
+
+        // Assert
+        Assert.Equal(UserFlag.Want, result.UserFlag);
+
+        // Verify it's persisted
+        var savedItem = await _context.Items.FindAsync(result.Id);
+        Assert.Equal(UserFlag.Want, savedItem!.UserFlag);
+    }
+
+    [Theory]
+    [InlineData(UserFlag.None)]
+    [InlineData(UserFlag.Have)]
+    [InlineData(UserFlag.Want)]
+    [InlineData(UserFlag.TradeOrSell)]
+    public async Task CreateAsync_PersistsAllUserFlagValues(UserFlag flag)
+    {
+        // Arrange
+        var item = new Item
+        {
+            TenantId = TestTenantId,
+            CollectionId = TestCollectionId,
+            Name = $"Item with {flag}",
+            UserFlag = flag
+        };
+
+        // Act
+        var result = await _repository.CreateAsync(item);
+
+        // Assert
+        Assert.Equal(flag, result.UserFlag);
+    }
+
     #endregion
 
     #region DeleteAsync Tests

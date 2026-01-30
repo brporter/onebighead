@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ItemFlagRibbon > snapshots > should render Trade/Sell ribbon 1`] = `
+<div>
+  <div
+    class="itemFlagRibbon itemFlagRibbon--trade"
+  >
+    <span
+      class="itemFlagRibbon__text"
+    >
+      For Trade/Sale
+    </span>
+  </div>
+</div>
+`;
+
+exports[`ItemFlagRibbon > snapshots > should render Want ribbon 1`] = `
+<div>
+  <div
+    class="itemFlagRibbon itemFlagRibbon--want"
+  >
+    <span
+      class="itemFlagRibbon__text"
+    >
+      I Want This!
+    </span>
+  </div>
+</div>
+`;
+
+exports[`ItemFlagRibbon > snapshots > should render null for Have flag 1`] = `<div />`;
+
+exports[`ItemFlagRibbon > snapshots > should render null for None flag 1`] = `<div />`;

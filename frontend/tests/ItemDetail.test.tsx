@@ -3,11 +3,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemDetail from '../src/components/item/ItemDetail';
 import type { Item } from '../src/utils/types';
+import { UserFlag } from '../src/utils/types';
 
 describe('ItemDetail', () => {
   const mockItem: Item = {
     id: 1,
     tenantId: 1,
+    collectionId: 1,
     categoryId: 2,
     name: 'Test Item',
     summary: 'Test summary',
@@ -21,6 +23,9 @@ describe('ItemDetail', () => {
       { url: 'https://example.com/image1.jpg', alt: 'Image 1' },
       { url: 'https://example.com/image2.jpg', alt: 'Image 2' },
     ],
+    isPublicOverride: null,
+    effectiveIsPublic: true,
+    userFlag: UserFlag.None,
   };
 
   beforeEach(() => {
@@ -132,6 +137,58 @@ describe('ItemDetail', () => {
       await user.click(screen.getByText('Edit'));
 
       expect(handleEdit).toHaveBeenCalled();
+    });
+  });
+
+  describe('user flag ribbon', () => {
+    it('should not show ribbon for None flag', () => {
+      render(<ItemDetail item={{ ...mockItem, userFlag: UserFlag.None }} />);
+      expect(screen.queryByText('I Want This!')).not.toBeInTheDocument();
+      expect(screen.queryByText('For Trade/Sale')).not.toBeInTheDocument();
+    });
+
+    it('should not show ribbon for Have flag', () => {
+      render(<ItemDetail item={{ ...mockItem, userFlag: UserFlag.Have }} />);
+      expect(screen.queryByText('I Want This!')).not.toBeInTheDocument();
+      expect(screen.queryByText('For Trade/Sale')).not.toBeInTheDocument();
+    });
+
+    it('should show Want ribbon', () => {
+      render(<ItemDetail item={{ ...mockItem, userFlag: UserFlag.Want }} />);
+      expect(screen.getByText('I Want This!')).toBeInTheDocument();
+    });
+
+    it('should show Trade/Sell ribbon', () => {
+      render(<ItemDetail item={{ ...mockItem, userFlag: UserFlag.TradeOrSell }} />);
+      expect(screen.getByText('For Trade/Sale')).toBeInTheDocument();
+    });
+
+    it('should render snapshot with None flag (no ribbon)', () => {
+      const { container } = render(
+        <ItemDetail item={{ ...mockItem, userFlag: UserFlag.None }} onEdit={() => {}} />
+      );
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should render snapshot with Have flag (no ribbon)', () => {
+      const { container } = render(
+        <ItemDetail item={{ ...mockItem, userFlag: UserFlag.Have }} onEdit={() => {}} />
+      );
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should render snapshot with Want flag (with ribbon)', () => {
+      const { container } = render(
+        <ItemDetail item={{ ...mockItem, userFlag: UserFlag.Want }} onEdit={() => {}} />
+      );
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should render snapshot with TradeOrSell flag (with ribbon)', () => {
+      const { container } = render(
+        <ItemDetail item={{ ...mockItem, userFlag: UserFlag.TradeOrSell }} onEdit={() => {}} />
+      );
+      expect(container).toMatchSnapshot();
     });
   });
 });

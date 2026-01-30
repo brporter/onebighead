@@ -60,6 +60,7 @@ public class ItemRepository : IItemRepository
         existingItem.Properties = item.Properties;
         existingItem.Images = item.Images;
         existingItem.IsPublicOverride = item.IsPublicOverride;
+        existingItem.UserFlag = item.UserFlag;
 
         await _context.SaveChangesAsync();
         return existingItem;

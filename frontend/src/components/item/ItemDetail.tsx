@@ -1,6 +1,8 @@
 import ImageGallery from '../common/ImageGallery';
 import PropertyRender from './PropertyRender';
+import ItemFlagRibbon from './ItemFlagRibbon';
 import type { Item } from '../../utils/types';
+import { UserFlag } from '../../utils/types';
 
 interface ItemDetailProps {
   item: Item | null;
@@ -21,8 +23,13 @@ function ItemDetail({
     );
   }
 
+  // Check if ribbon will be displayed (Want or TradeOrSell flags)
+  const hasRibbon = item.userFlag === UserFlag.Want || item.userFlag === UserFlag.TradeOrSell;
+  const sectionClass = hasRibbon ? 'detail detail--hasRibbon' : 'detail';
+
   return (
-    <section className="detail">
+    <section className={sectionClass}>
+      <ItemFlagRibbon userFlag={item.userFlag} />
       <div className="detail__header">
         <h2 className="detail__title">{item.name}</h2>
         <div className="detail__headerActions">

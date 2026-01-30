@@ -48,6 +48,12 @@ public class Item
     [JsonPropertyName("effectiveIsPublic")]
     public bool EffectiveIsPublic { get; set; }
 
+    /// <summary>
+    /// User's relationship with this item (Have, Want, Trade/Sell).
+    /// </summary>
+    [JsonPropertyName("userFlag")]
+    public UserFlag UserFlag { get; set; } = UserFlag.None;
+
     [JsonIgnore]
     [ForeignKey(nameof(TenantId))]
     public Tenant? Tenant { get; set; }

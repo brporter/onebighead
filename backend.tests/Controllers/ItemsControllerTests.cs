@@ -347,6 +347,172 @@ public class ItemsControllerTests
 
     #endregion
 
+    #region UserFlag Tests
+
+    [Fact]
+    public async Task CreateItem_PersistsUserFlag_WhenProvided()
+    {
+        // Arrange
+        var request = new CreateItemRequest
+        {
+            Name = "Item with Flag",
+            Summary = "Summary",
+            Description = "Description",
+            CategoryId = TestCategoryId,
+            CollectionId = TestCollectionId,
+            UserFlag = UserFlag.Want
+        };
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
+
+        Item? capturedItem = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(TestCategoryId, TestTenantId))
+            .ReturnsAsync(category);
+        _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
+            .Callback<Item>(item => capturedItem = item)
+            .ReturnsAsync((Item item) => new Item
+            {
+                Id = 1,
+                TenantId = item.TenantId,
+                CollectionId = item.CollectionId,
+                Name = item.Name,
+                UserFlag = item.UserFlag
+            });
+
+        // Act
+        var result = await _controller.CreateItem(request);
+
+        // Assert
+        Assert.NotNull(capturedItem);
+        Assert.Equal(UserFlag.Want, capturedItem!.UserFlag);
+        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+        var returnedItem = Assert.IsType<Item>(createdResult.Value);
+        Assert.Equal(UserFlag.Want, returnedItem.UserFlag);
+    }
+
+    [Fact]
+    public async Task CreateItem_DefaultsUserFlagToNone_WhenNotProvided()
+    {
+        // Arrange
+        var request = new CreateItemRequest
+        {
+            Name = "Item without Flag",
+            CategoryId = TestCategoryId,
+            CollectionId = TestCollectionId
+            // UserFlag not set - should default to None
+        };
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
+
+        Item? capturedItem = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(TestCategoryId, TestTenantId))
+            .ReturnsAsync(category);
+        _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
+            .Callback<Item>(item => capturedItem = item)
+            .ReturnsAsync((Item item) => new Item
+            {
+                Id = 1,
+                TenantId = item.TenantId,
+                CollectionId = item.CollectionId,
+                Name = item.Name,
+                UserFlag = item.UserFlag
+            });
+
+        // Act
+        var result = await _controller.CreateItem(request);
+
+        // Assert
+        Assert.NotNull(capturedItem);
+        Assert.Equal(UserFlag.None, capturedItem!.UserFlag);
+    }
+
+    [Fact]
+    public async Task UpdateItem_PersistsUserFlag_WhenChanged()
+    {
+        // Arrange
+        var request = new UpdateItemRequest
+        {
+            Name = "Updated Item",
+            Summary = "Updated Summary",
+            Description = "Updated Description",
+            CategoryId = TestCategoryId,
+            CollectionId = TestCollectionId,
+            UserFlag = UserFlag.TradeOrSell
+        };
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
+
+        Item? capturedItem = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(TestCategoryId, TestTenantId))
+            .ReturnsAsync(category);
+        _mockItemRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Item>(), TestTenantId))
+            .Callback<int, Item, int>((id, item, tenantId) => capturedItem = item)
+            .ReturnsAsync((int id, Item item, int tenantId) => new Item
+            {
+                Id = id,
+                TenantId = tenantId,
+                CollectionId = item.CollectionId,
+                Name = item.Name,
+                UserFlag = item.UserFlag
+            });
+
+        // Act
+        var result = await _controller.UpdateItem(1, request);
+
+        // Assert
+        Assert.NotNull(capturedItem);
+        Assert.Equal(UserFlag.TradeOrSell, capturedItem!.UserFlag);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var returnedItem = Assert.IsType<Item>(okResult.Value);
+        Assert.Equal(UserFlag.TradeOrSell, returnedItem.UserFlag);
+    }
+
+    [Theory]
+    [InlineData(UserFlag.None)]
+    [InlineData(UserFlag.Have)]
+    [InlineData(UserFlag.Want)]
+    [InlineData(UserFlag.TradeOrSell)]
+    public async Task CreateItem_PersistsAllUserFlagValues(UserFlag userFlag)
+    {
+        // Arrange
+        var request = new CreateItemRequest
+        {
+            Name = $"Item with {userFlag} Flag",
+            CollectionId = TestCollectionId,
+            UserFlag = userFlag
+        };
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+
+        Item? capturedItem = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
+            .Callback<Item>(item => capturedItem = item)
+            .ReturnsAsync((Item item) => new Item
+            {
+                Id = 1,
+                TenantId = item.TenantId,
+                CollectionId = item.CollectionId,
+                Name = item.Name,
+                UserFlag = item.UserFlag
+            });
+
+        // Act
+        var result = await _controller.CreateItem(request);
+
+        // Assert
+        Assert.NotNull(capturedItem);
+        Assert.Equal(userFlag, capturedItem!.UserFlag);
+    }
+
+    #endregion
+
     #region Security Tests
 
     [Fact]

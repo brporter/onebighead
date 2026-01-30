@@ -24,6 +24,8 @@ public class CreateItemRequest
 
     public bool? IsPublicOverride { get; set; }
 
+    public UserFlag UserFlag { get; set; } = UserFlag.None;
+
     public Item ToItem(int tenantId)
     {
         return new Item
@@ -36,7 +38,8 @@ public class CreateItemRequest
             Description = Description,
             Properties = Properties,
             Images = Images,
-            IsPublicOverride = IsPublicOverride
+            IsPublicOverride = IsPublicOverride,
+            UserFlag = UserFlag
         };
     }
 }
@@ -62,6 +65,8 @@ public class UpdateItemRequest
 
     public bool? IsPublicOverride { get; set; }
 
+    public UserFlag UserFlag { get; set; } = UserFlag.None;
+
     public Item ToItem(int id, int tenantId)
     {
         return new Item
@@ -75,7 +80,8 @@ public class UpdateItemRequest
             Description = Description,
             Properties = Properties,
             Images = Images,
-            IsPublicOverride = IsPublicOverride
+            IsPublicOverride = IsPublicOverride,
+            UserFlag = UserFlag
         };
     }
 }

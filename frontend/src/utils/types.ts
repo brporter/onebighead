@@ -9,6 +9,19 @@ export interface ItemImage {
   alt: string;
 }
 
+/**
+ * User's relationship with an item - whether they have it,
+ * want it, or are willing to trade/sell it.
+ *
+ * Note: Uses string values to match backend JsonStringEnumConverter serialization.
+ */
+export enum UserFlag {
+  None = "None",
+  Have = "Have",
+  Want = "Want",
+  TradeOrSell = "TradeOrSell",
+}
+
 export interface Item {
   id: number | null;
   tenantId: number;
@@ -21,6 +34,7 @@ export interface Item {
   images: ItemImage[];
   isPublicOverride: boolean | null;
   effectiveIsPublic: boolean;
+  userFlag: UserFlag;
 }
 
 export interface Category {

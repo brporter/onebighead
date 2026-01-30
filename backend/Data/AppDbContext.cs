@@ -116,6 +116,11 @@ public class AppDbContext : DbContext
             entity.HasIndex(i => i.CollectionId);
             entity.HasIndex(i => i.CategoryId);
 
+            // Index for user flag queries (finding items by Have/Want/Trade status)
+            entity.HasIndex(i => i.UserFlag);
+            // Composite index for tenant-scoped flag queries (most common use case)
+            entity.HasIndex(i => new { i.TenantId, i.UserFlag });
+
             // Configure JSON columns for Properties and Images
             var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             

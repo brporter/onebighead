@@ -1,7 +1,6 @@
 # TODO
 
 * Adjust collection routes so a tenants collection is addressed by name (e.g. /collections/bryanporter.com/) and not numeric tenant ID.
-* Fix settings view stylings - it's terrible.
 * Get alternative proposals for category tree rendering, and come up with a better idea that a default category of "Uncategorized Items"
 * Implement "I have" vs. "I want" tags
 * Implement a generic tag system and build the "I have" and "I want" mechanism on top of that

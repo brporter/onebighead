@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemEditor from '../src/components/item/ItemEditor';
 import type { Item } from '../src/utils/types';
+import { UserFlag } from '../src/utils/types';
 
 // Mock DataContext for PropertyEditor and ImageEditor
 vi.mock('../src/contexts/DataContext', () => ({
@@ -33,11 +34,14 @@ describe('ItemEditor', () => {
       { url: 'https://example.com/image1.jpg', alt: 'Image 1' },
       { url: 'https://example.com/image2.jpg', alt: 'Image 2' },
     ],
+    isPublicOverride: null,
+    effectiveIsPublic: true,
+    userFlag: UserFlag.None,
   };
 
   const mockCategories = [
-    { tenantId: 1, categoryId: 1, name: 'Category 1', description: 'Desc 1', parentCategoryId: null, isSystem: false },
-    { tenantId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false },
+    { tenantId: 1, collectionId: 1, categoryId: 1, name: 'Category 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
+    { tenantId: 1, collectionId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const defaultProps = {
@@ -378,6 +382,171 @@ describe('ItemEditor', () => {
       const fileInput = document.querySelector('input[type="file"]');
       expect(fileInput).toBeInTheDocument();
       expect(fileInput).toHaveAttribute('accept', 'image/jpeg,image/png,image/gif,image/webp');
+    });
+  });
+
+  describe('user flag selector', () => {
+    it('should display the relationship fieldset', () => {
+      render(<ItemEditor item={mockItem} {...defaultProps} />);
+
+      expect(screen.getByText('My Relationship to This Item')).toBeInTheDocument();
+    });
+
+    it('should display all flag options', () => {
+      render(<ItemEditor item={mockItem} {...defaultProps} />);
+
+      expect(screen.getByText('None')).toBeInTheDocument();
+      expect(screen.getByText('I Have This')).toBeInTheDocument();
+      expect(screen.getByText('I Want This')).toBeInTheDocument();
+      expect(screen.getByText('For Trade/Sale')).toBeInTheDocument();
+    });
+
+    it('should have None selected by default', () => {
+      render(<ItemEditor item={mockItem} {...defaultProps} />);
+
+      const noneRadio = screen.getByRole('radio', { name: 'None' });
+      expect(noneRadio).toBeChecked();
+    });
+
+    it('should select Have flag', async () => {
+      const user = userEvent.setup();
+
+      render(<ItemEditor item={mockItem} {...defaultProps} />);
+
+      const haveRadio = screen.getByRole('radio', { name: 'I Have This' });
+      await user.click(haveRadio);
+
+      expect(haveRadio).toBeChecked();
+    });
+
+    it('should select Want flag', async () => {
+      const user = userEvent.setup();
+
+      render(<ItemEditor item={mockItem} {...defaultProps} />);
+
+      const wantRadio = screen.getByRole('radio', { name: 'I Want This' });
+      await user.click(wantRadio);
+
+      expect(wantRadio).toBeChecked();
+    });
+
+    it('should select TradeOrSell flag', async () => {
+      const user = userEvent.setup();
+
+      render(<ItemEditor item={mockItem} {...defaultProps} />);
+
+      const tradeRadio = screen.getByRole('radio', { name: 'For Trade/Sale' });
+      await user.click(tradeRadio);
+
+      expect(tradeRadio).toBeChecked();
+    });
+
+    it('should include userFlag in saved data', async () => {
+      const user = userEvent.setup();
+      const handleSave = vi.fn();
+
+      render(<ItemEditor item={mockItem} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+
+      const wantRadio = screen.getByRole('radio', { name: 'I Want This' });
+      await user.click(wantRadio);
+
+      await user.click(screen.getByText('Save Changes'));
+
+      expect(handleSave).toHaveBeenCalledWith(expect.objectContaining({
+        userFlag: UserFlag.Want,
+      }));
+    });
+
+    it('should preserve existing userFlag from item', () => {
+      const itemWithFlag = { ...mockItem, userFlag: UserFlag.TradeOrSell };
+      render(<ItemEditor item={itemWithFlag} {...defaultProps} />);
+
+      const tradeRadio = screen.getByRole('radio', { name: 'For Trade/Sale' });
+      expect(tradeRadio).toBeChecked();
+    });
+
+    it('should change flag from Have to Want and save', async () => {
+      const user = userEvent.setup();
+      const handleSave = vi.fn();
+      const itemWithHaveFlag = { ...mockItem, userFlag: UserFlag.Have };
+
+      render(<ItemEditor item={itemWithHaveFlag} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+
+      // Verify initial state
+      expect(screen.getByRole('radio', { name: 'I Have This' })).toBeChecked();
+
+      // Change to Want
+      const wantRadio = screen.getByRole('radio', { name: 'I Want This' });
+      await user.click(wantRadio);
+
+      expect(wantRadio).toBeChecked();
+
+      await user.click(screen.getByText('Save Changes'));
+
+      expect(handleSave).toHaveBeenCalledWith(expect.objectContaining({
+        userFlag: UserFlag.Want,
+      }));
+    });
+
+    it('should include userFlag in new item creation', async () => {
+      const user = userEvent.setup();
+      const handleSave = vi.fn();
+
+      render(<ItemEditor item={null} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+
+      // Fill required fields
+      await user.type(screen.getByLabelText('Name'), 'New Item');
+
+      // Select a flag
+      const tradeRadio = screen.getByRole('radio', { name: 'For Trade/Sale' });
+      await user.click(tradeRadio);
+
+      await user.click(screen.getByText('Create Item'));
+
+      expect(handleSave).toHaveBeenCalledWith(expect.objectContaining({
+        name: 'New Item',
+        userFlag: UserFlag.TradeOrSell,
+      }));
+    });
+
+    it('should default to None flag for new items', async () => {
+      const user = userEvent.setup();
+      const handleSave = vi.fn();
+
+      render(<ItemEditor item={null} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+
+      // Verify None is checked by default
+      expect(screen.getByRole('radio', { name: 'None' })).toBeChecked();
+
+      // Fill required fields and save without changing flag
+      await user.type(screen.getByLabelText('Name'), 'New Item Without Flag');
+      await user.click(screen.getByText('Create Item'));
+
+      expect(handleSave).toHaveBeenCalledWith(expect.objectContaining({
+        userFlag: UserFlag.None,
+      }));
+    });
+
+    it('should render snapshot with user flag selector', () => {
+      const { container } = render(<ItemEditor item={mockItem} {...defaultProps} />);
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should render snapshot for new item with user flag selector', () => {
+      const { container } = render(<ItemEditor item={null} {...defaultProps} />);
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should render snapshot with Have flag selected', () => {
+      const itemWithFlag = { ...mockItem, userFlag: UserFlag.Have };
+      const { container } = render(<ItemEditor item={itemWithFlag} {...defaultProps} />);
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should render snapshot with Want flag selected', () => {
+      const itemWithFlag = { ...mockItem, userFlag: UserFlag.Want };
+      const { container } = render(<ItemEditor item={itemWithFlag} {...defaultProps} />);
+      expect(container).toMatchSnapshot();
     });
   });
 });

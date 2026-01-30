@@ -789,8 +789,10 @@
    ========================================================================== */
 
 .detail {
+  position: relative;
   padding: var(--space-xl);
   min-height: 200px;
+  overflow: hidden;
 }
 
 .detail--empty {
@@ -818,6 +820,17 @@
   display: flex;
   gap: var(--space-sm);
   align-items: center;
+}
+
+/* Offset header actions when ribbon is displayed to prevent overlap */
+.detail--hasRibbon .detail__headerActions {
+  margin-right: 100px;
+}
+
+@media (max-width: 480px) {
+  .detail--hasRibbon .detail__headerActions {
+    margin-right: 80px;
+  }
 }
 
 .detail__title {
@@ -920,6 +933,59 @@
   min-height: 100px;
 }
 
+.detail__fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin: 0;
+}
+
+.detail__legend {
+  padding: 0 var(--space-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.detail__radioGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.detail__radioLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.detail__radioLabel:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.detail__radioInput {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.detail__radioText {
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+@media (max-width: 480px) {
+  .detail__radioGroup {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+}
+
 .detail__actions {
   display: flex;
   flex-wrap: wrap;
@@ -976,6 +1042,66 @@
 .detail__btn--danger:hover:not(:disabled) {
   background: var(--color-danger-hover);
   border-color: var(--color-danger-hover);
+}
+
+/* --------------------------------------------------------------------------
+   Item Flag Ribbon (Fork me on GitHub style)
+   -------------------------------------------------------------------------- */
+
+.itemFlagRibbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.itemFlagRibbon__text {
+  position: absolute;
+  display: block;
+  width: 225px;
+  padding: 8px 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transform: rotate(45deg);
+  right: -55px;
+  top: 30px;
+  box-shadow: 0 3px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+.itemFlagRibbon--want .itemFlagRibbon__text {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+  color: #fff;
+  border-top: 1px dashed rgba(255, 255, 255, 0.4);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
+}
+
+.itemFlagRibbon--trade .itemFlagRibbon__text {
+  background: linear-gradient(135deg, #4ecdc4 0%, #44b3ab 100%);
+  color: #fff;
+  border-top: 1px dashed rgba(255, 255, 255, 0.4);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 480px) {
+  .itemFlagRibbon {
+    width: 120px;
+    height: 120px;
+  }
+
+  .itemFlagRibbon__text {
+    width: 180px;
+    padding: 6px 0;
+    font-size: 0.7rem;
+    right: -45px;
+    top: 22px;
+  }
 }
 
 /* ==========================================================================

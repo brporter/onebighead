@@ -405,7 +405,7 @@ export function DataProvider({ children }: DataProviderProps) {
   const updateItem = useCallback(async (id: number, updates: Partial<Item>): Promise<void> => {
     const currentItem = items.find((i) => i.id === id);
     if (!currentItem) return;
-    
+
     const updatedItem = { ...currentItem, ...updates };
     const result = await itemsApi.update(id, updatedItem);
     itemsCacheRef.current.clear();

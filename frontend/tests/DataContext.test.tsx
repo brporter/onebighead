@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { DataProvider, useData } from '../src/contexts/DataContext';
 import type { Item, Category, Collection } from '../src/utils/types';
+import { UserFlag } from '../src/utils/types';
 
 const mockCollections: Collection[] = [
   { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', isPublic: true },
@@ -13,8 +14,8 @@ const mockCategories: Category[] = [
 ];
 
 const mockItems: Item[] = [
-  { id: 1, tenantId: 1, collectionId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], isPublicOverride: null, effectiveIsPublic: true },
-  { id: 2, tenantId: 1, collectionId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], isPublicOverride: null, effectiveIsPublic: true },
+  { id: 1, tenantId: 1, collectionId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], isPublicOverride: null, effectiveIsPublic: true, userFlag: UserFlag.None },
+  { id: 2, tenantId: 1, collectionId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], isPublicOverride: null, effectiveIsPublic: true, userFlag: UserFlag.Have },
 ];
 
 // Test component to access context
@@ -423,6 +424,120 @@ describe('DataContext', () => {
       });
 
       expect(capturedData!.items).toHaveLength(1);
+    });
+
+    it('should include userFlag when adding a new item', async () => {
+      let capturedRequestBody: string | null = null;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation((url, options) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        const method = options?.method || 'GET';
+
+        if (urlStr === '/api/items' && method === 'POST') {
+          capturedRequestBody = options?.body as string;
+          const body = JSON.parse(capturedRequestBody);
+          const newItem = { ...body, id: 100 };
+          return Promise.resolve({
+            ok: true,
+            json: async () => newItem,
+          } as Response);
+        }
+
+        if (urlStr.includes('/property-suggestions/sync') && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ categories: [], names: [] }),
+          } as Response);
+        }
+
+        return Promise.resolve({ ok: false, statusText: 'Not Found' } as Response);
+      });
+
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      const newItem: Item = {
+        id: null,
+        tenantId: 1,
+        collectionId: 1,
+        categoryId: 1,
+        name: 'New Item with Flag',
+        summary: 'Summary',
+        description: 'Description',
+        properties: [],
+        images: [],
+        isPublicOverride: null,
+        effectiveIsPublic: true,
+        userFlag: UserFlag.Want,
+      };
+
+      await act(async () => {
+        await capturedData!.addItem(newItem);
+      });
+
+      expect(capturedRequestBody).not.toBeNull();
+      const parsedBody = JSON.parse(capturedRequestBody!);
+      expect(parsedBody.userFlag).toBe(UserFlag.Want);
+    });
+
+    it('should include userFlag when updating an item', async () => {
+      let capturedRequestBody: string | null = null;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation((url, options) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        const method = options?.method || 'GET';
+
+        if (urlStr.includes('/api/items') && method === 'GET') {
+          return Promise.resolve({
+            ok: true,
+            headers: new Headers({ 'ETag': '"test-etag"' }),
+            json: async () => mockItems,
+          } as Response);
+        }
+
+        if (urlStr.match(/\/api\/items\/\d+/) && method === 'PUT') {
+          capturedRequestBody = options?.body as string;
+          const body = JSON.parse(capturedRequestBody);
+          return Promise.resolve({
+            ok: true,
+            json: async () => body,
+          } as Response);
+        }
+
+        if (urlStr.includes('/property-suggestions/sync') && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ categories: [], names: [] }),
+          } as Response);
+        }
+
+        return Promise.resolve({ ok: false, statusText: 'Not Found' } as Response);
+      });
+
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      await act(async () => {
+        await capturedData!.loadItemsForCategory(1);
+      });
+
+      await act(async () => {
+        await capturedData!.updateItem(1, { userFlag: UserFlag.TradeOrSell });
+      });
+
+      expect(capturedRequestBody).not.toBeNull();
+      const parsedBody = JSON.parse(capturedRequestBody!);
+      expect(parsedBody.userFlag).toBe(UserFlag.TradeOrSell);
     });
   });
 

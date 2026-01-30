@@ -4,6 +4,7 @@ import ImageEditor from '../common/ImageEditor';
 import CategorySelector from '../category/CategorySelector';
 import VisibilityToggle from '../common/VisibilityToggle';
 import type { Item, Category, ItemProperty, Collection } from '../../utils/types';
+import { UserFlag } from '../../utils/types';
 
 interface ItemEditorProps {
   item: Item | null;
@@ -24,18 +25,28 @@ function ItemEditor({
   onDelete,
   initialProperties,
 }: ItemEditorProps) {
-  const [formData, setFormData] = useState<Item>(() => item ?? {
-    id: null,
-    tenantId: 1,
-    collectionId: 0,
-    categoryId: null,
-    name: '',
-    summary: '',
-    description: '',
-    properties: initialProperties ?? [],
-    images: [],
-    isPublicOverride: null,
-    effectiveIsPublic: false,
+  const [formData, setFormData] = useState<Item>(() => {
+    if (item) {
+      // Ensure userFlag has a default value even if not present in loaded item
+      return {
+        ...item,
+        userFlag: item.userFlag ?? UserFlag.None,
+      };
+    }
+    return {
+      id: null,
+      tenantId: 1,
+      collectionId: 0,
+      categoryId: null,
+      name: '',
+      summary: '',
+      description: '',
+      properties: initialProperties ?? [],
+      images: [],
+      isPublicOverride: null,
+      effectiveIsPublic: false,
+      userFlag: UserFlag.None,
+    };
   });
 
   const isNew = formData.id === null;
@@ -134,6 +145,52 @@ function ItemEditor({
             label="Visibility"
           />
         </div>
+
+        <fieldset className="detail__fieldset">
+          <legend className="detail__legend">My Relationship to This Item</legend>
+          <div className="detail__radioGroup">
+            <label className="detail__radioLabel">
+              <input
+                type="radio"
+                name="userFlag"
+                className="detail__radioInput"
+                checked={formData.userFlag === UserFlag.None}
+                onChange={() => handleFieldChange('userFlag', UserFlag.None)}
+              />
+              <span className="detail__radioText">None</span>
+            </label>
+            <label className="detail__radioLabel">
+              <input
+                type="radio"
+                name="userFlag"
+                className="detail__radioInput"
+                checked={formData.userFlag === UserFlag.Have}
+                onChange={() => handleFieldChange('userFlag', UserFlag.Have)}
+              />
+              <span className="detail__radioText">I Have This</span>
+            </label>
+            <label className="detail__radioLabel">
+              <input
+                type="radio"
+                name="userFlag"
+                className="detail__radioInput"
+                checked={formData.userFlag === UserFlag.Want}
+                onChange={() => handleFieldChange('userFlag', UserFlag.Want)}
+              />
+              <span className="detail__radioText">I Want This</span>
+            </label>
+            <label className="detail__radioLabel">
+              <input
+                type="radio"
+                name="userFlag"
+                className="detail__radioInput"
+                checked={formData.userFlag === UserFlag.TradeOrSell}
+                onChange={() => handleFieldChange('userFlag', UserFlag.TradeOrSell)}
+              />
+              <span className="detail__radioText">For Trade/Sale</span>
+            </label>
+          </div>
+        </fieldset>
 
         <div className="detail__actions">
           <button
