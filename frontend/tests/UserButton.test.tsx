@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import UserButton from '../src/UserButton';
-import * as UserContext from '../src/UserContext';
+import UserButton from '../src/components/user/UserButton';
+import * as UserContext from '../src/contexts/UserContext';
 
-vi.mock('../src/UserContext', () => ({
+vi.mock('../src/contexts/UserContext', () => ({
   useUser: vi.fn(),
 }));
 

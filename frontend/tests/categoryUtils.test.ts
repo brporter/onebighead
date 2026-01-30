@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getCategoryAndDescendantIds } from '../src/categoryUtils';
-import type { Category } from '../src/types';
+import { getCategoryAndDescendantIds } from '../src/utils/categoryUtils';
+import type { Category } from '../src/utils/types';
 
 describe('getCategoryAndDescendantIds', () => {
   const categories: Category[] = [

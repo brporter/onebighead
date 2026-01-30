@@ -2,7 +2,7 @@
  * Categories API
  */
 import { api } from './client';
-import type { Category } from '../types';
+import type { Category } from '../utils/types';
 
 export interface CreateCategoryRequest {
   collectionId: number;

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../DataContext';
-import CollectionList from '../CollectionList';
+import { useData } from '../contexts/DataContext';
+import CollectionList from '../components/collection/CollectionList';
 
 function CollectionView() {
   const navigate = useNavigate();

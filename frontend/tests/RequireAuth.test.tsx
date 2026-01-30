@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
-import RequireAuth from '../src/RequireAuth';
-import * as UserContext from '../src/UserContext';
-import type { CurrentUser } from '../src/types';
+import RequireAuth from '../src/components/common/RequireAuth';
+import * as UserContext from '../src/contexts/UserContext';
+import type { CurrentUser } from '../src/utils/types';
 
-vi.mock('../src/UserContext', () => ({
+vi.mock('../src/contexts/UserContext', () => ({
   useUser: vi.fn(),
 }));
 

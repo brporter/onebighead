@@ -2,7 +2,7 @@
  * Items API
  */
 import { api } from './client';
-import type { Item } from '../types';
+import type { Item } from '../utils/types';
 
 export interface GetItemsOptions {
   categoryId?: number;

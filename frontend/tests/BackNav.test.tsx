@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
-import BackNav from '../src/BackNav';
+import BackNav from '../src/components/common/BackNav';
 
 describe('BackNav', () => {
   it('should render with the provided label', () => {

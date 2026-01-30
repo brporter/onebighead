@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import CollectionTemplateEditor from '../src/CollectionTemplateEditor';
-import DataContext from '../src/DataContext';
-import type { Collection, ItemTemplate } from '../src/types';
+import CollectionTemplateEditor from '../src/components/collection/CollectionTemplateEditor';
+import DataContext from '../src/contexts/DataContext';
+import type { Collection, ItemTemplate } from '../src/utils/types';
 
 const mockCollection: Collection = {
   collectionId: 1,

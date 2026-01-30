@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import CollectionSetupWizard from '../CollectionSetupWizard';
+import CollectionSetupWizard from '../components/collection/CollectionSetupWizard';
 import '../styles/App.css';
 
 function SetupView() {

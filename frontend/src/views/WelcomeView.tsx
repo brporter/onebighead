@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import WelcomeWizard from '../WelcomeWizard';
+import WelcomeWizard from '../components/wizard/WelcomeWizard';
 import '../styles/App.css';
 import '../styles/WelcomeWizard.css';
 

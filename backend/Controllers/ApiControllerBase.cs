@@ -4,8 +4,26 @@ using System.Security.Claims;
 namespace backend.Controllers;
 
 /// <summary>
-/// Base controller providing common functionality for API controllers.
+/// Base controller providing tenant-scoped functionality for API controllers.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <b>When to use ApiControllerBase:</b>
+/// Use this base class for controllers that operate on tenant-scoped data.
+/// This includes most domain controllers like Collections, Categories, Items, etc.
+/// These controllers require an authenticated user with a valid tenant_id claim.
+/// </para>
+/// <para>
+/// <b>When to use ControllerBase directly:</b>
+/// Use the standard ControllerBase for controllers that:
+/// <list type="bullet">
+///   <item>Handle authentication (AuthController) - operates before tenant context exists</item>
+///   <item>Serve system-wide data (ThemesController) - themes are shared across tenants</item>
+///   <item>Handle cross-tenant administration (AdminController, AdminSupportController)</item>
+///   <item>Accept both authenticated and anonymous requests (SupportController)</item>
+/// </list>
+/// </para>
+/// </remarks>
 [ApiController]
 public abstract class ApiControllerBase : ControllerBase
 {

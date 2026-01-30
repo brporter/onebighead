@@ -1,3 +1,4 @@
+using backend.DTOs;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -178,5 +179,3 @@ public class ImagesController : ApiControllerBase
         return NoContent();
     }
 }
-
-public record ImageUploadResponse(Guid Key, string Url);

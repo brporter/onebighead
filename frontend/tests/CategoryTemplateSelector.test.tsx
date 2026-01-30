@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CategoryTemplateSelector from '../src/CategoryTemplateSelector';
-import { useData } from '../src/DataContext';
-import type { ItemTemplate } from '../src/types';
+import CategoryTemplateSelector from '../src/components/category/CategoryTemplateSelector';
+import { useData } from '../src/contexts/DataContext';
+import type { ItemTemplate } from '../src/utils/types';
 
-vi.mock('../src/DataContext', () => ({
+vi.mock('../src/contexts/DataContext', () => ({
   useData: vi.fn(),
 }));
 

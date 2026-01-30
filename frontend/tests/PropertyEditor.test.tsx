@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import PropertyEditor from '../src/PropertyEditor';
-import type { ItemProperty } from '../src/types';
+import PropertyEditor from '../src/components/item/PropertyEditor';
+import type { ItemProperty } from '../src/utils/types';
 
 const mockAddLocalCategorySuggestion = vi.fn();
 const mockAddLocalNameSuggestion = vi.fn();
 
-vi.mock('../src/DataContext', () => ({
+vi.mock('../src/contexts/DataContext', () => ({
   useData: () => ({
     propertyCategorySuggestions: ['General', 'Technical'],
     propertyNameSuggestions: ['Color', 'Size'],

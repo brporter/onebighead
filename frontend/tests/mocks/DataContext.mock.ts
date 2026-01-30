@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { vi } from 'vitest';
-import type { Category, Item, Collection, Tenant } from '../../src/types';
-import type { DataContextValue } from '../../src/DataContext';
+import type { Category, Item, Collection, Tenant } from '../../src/utils/types';
+import type { DataContextValue } from '../../src/contexts/DataContext';
 
 export const mockCategories: Category[] = [
   { tenantId: 1, categoryId: 1, name: 'Root Category', description: 'Root description', parentCategoryId: null, isSystem: false },
@@ -69,8 +69,8 @@ export const createMockDataContext = (overrides?: Partial<DataContextValue>): Da
 export const mockDataContextValue = createMockDataContext();
 
 // Mock the DataContext module
-vi.mock('../../src/DataContext', async () => {
-  const actual = await vi.importActual<typeof import('../../src/DataContext')>('../../src/DataContext');
+vi.mock('../../src/contexts/DataContext', async () => {
+  const actual = await vi.importActual<typeof import('../../src/contexts/DataContext')>('../../src/contexts/DataContext');
   return {
     ...actual,
     useData: vi.fn(() => mockDataContextValue),

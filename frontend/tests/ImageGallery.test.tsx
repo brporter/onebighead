@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ImageGallery from '../src/ImageGallery';
+import ImageGallery from '../src/components/common/ImageGallery';
 
 describe('ImageGallery', () => {
   describe('snapshots', () => {

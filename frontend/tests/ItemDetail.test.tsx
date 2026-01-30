@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ItemDetail from '../src/ItemDetail';
-import type { Item } from '../src/types';
+import ItemDetail from '../src/components/item/ItemDetail';
+import type { Item } from '../src/utils/types';
 
 describe('ItemDetail', () => {
   const mockItem: Item = {

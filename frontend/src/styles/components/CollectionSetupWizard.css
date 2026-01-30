@@ -1,0 +1,12 @@
+/* Collection Setup Wizard and Welcome Wizard styles
+ *
+ * NOTE: Legacy styles are still in App.css for backward compatibility.
+ * New wizard-related styles should be added here.
+ *
+ * This file demonstrates the component CSS pattern:
+ * - Co-located with component in styles/components/
+ * - BEM naming convention (.component, .component__element, .component--modifier)
+ * - Uses CSS custom properties from App.css
+ */
+
+/* Additional wizard styles can be added here */

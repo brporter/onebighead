@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './styles/App.css';
-import { useData } from './DataContext';
-import { useUser } from './UserContext';
-import UserButton from './UserButton';
-import { SupportModal } from './SupportModal';
-import { UnreadSupportBanner } from './UnreadSupportBanner';
+import { useData } from './contexts/DataContext';
+import { useUser } from './contexts/UserContext';
+import UserButton from './components/user/UserButton';
+import { SupportModal } from './components/support/SupportModal';
+import { UnreadSupportBanner } from './components/support/UnreadSupportBanner';
 
 function App() {
   const {

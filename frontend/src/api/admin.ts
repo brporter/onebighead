@@ -2,7 +2,7 @@
  * Admin API
  */
 import { api } from './client';
-import type { TenantSummary, UserSummary, ItemTemplate, CreateItemTemplateRequest } from '../types';
+import type { TenantSummary, UserSummary, ItemTemplate, CreateItemTemplateRequest } from '../utils/types';
 
 export const adminApi = {
   // Tenants

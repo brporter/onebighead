@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ItemList from '../src/ItemList';
-import type { Item } from '../src/types';
+import ItemList from '../src/components/item/ItemList';
+import type { Item } from '../src/utils/types';
 
 describe('ItemList', () => {
   const createMockItems = (count: number): Item[] => {

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CategoryEditorModal from '../src/CategoryEditorModal';
-import type { Category, Collection } from '../src/types';
+import CategoryEditorModal from '../src/components/category/CategoryEditorModal';
+import type { Category, Collection } from '../src/utils/types';
 
 // Use vi.hoisted for mocks that need to be available before module loading
 const { mockAddCategory, mockUpdateCategory, mockDeleteCategory } = vi.hoisted(() => ({
@@ -73,7 +73,7 @@ const mockCategories: Category[] = [
 ];
 
 // Mock DataContext
-vi.mock('../src/DataContext', () => ({
+vi.mock('../src/contexts/DataContext', () => ({
   useData: () => ({
     categories: mockCategories,
     currentCollection: mockCollection,
@@ -87,7 +87,7 @@ vi.mock('../src/DataContext', () => ({
 }));
 
 // Mock CategoryTemplateSelector to simplify tests
-vi.mock('../src/CategoryTemplateSelector', () => ({
+vi.mock('../src/components/category/CategoryTemplateSelector', () => ({
   default: ({ selectedTemplateIds, onChange }: { selectedTemplateIds: number[]; onChange: (ids: number[]) => void }) => (
     <div data-testid="category-template-selector">
       Template Selector (selected: {selectedTemplateIds.length})
@@ -97,7 +97,7 @@ vi.mock('../src/CategoryTemplateSelector', () => ({
 }));
 
 // Mock VisibilityToggle to simplify tests
-vi.mock('../src/VisibilityToggle', () => ({
+vi.mock('../src/components/common/VisibilityToggle', () => ({
   default: ({ label }: { label?: string }) => (
     <div data-testid="visibility-toggle">{label ?? 'Visibility'}</div>
   ),

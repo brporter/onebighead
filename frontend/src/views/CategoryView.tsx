@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
-import { useData } from '../DataContext';
-import CategoryTree from '../CategoryTree';
-import ItemList from '../ItemList';
-import SubcategoryDropdown from '../SubcategoryDropdown';
-import BackNav from '../BackNav';
-import { getCategoryAndDescendantIds } from '../categoryUtils';
+import { useData } from '../contexts/DataContext';
+import CategoryTree from '../components/category/CategoryTree';
+import ItemList from '../components/item/ItemList';
+import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
+import BackNav from '../components/common/BackNav';
+import { getCategoryAndDescendantIds } from '../utils/categoryUtils';
 
 function CategoryView() {
   const { collectionId, categoryId } = useParams<{ collectionId: string; categoryId?: string }>();

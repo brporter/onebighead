@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createEmptyItem } from '../src/itemUtils';
+import { createEmptyItem } from '../src/utils/itemUtils';
 
 describe('createEmptyItem', () => {
   it('should create an empty item with provided values', () => {

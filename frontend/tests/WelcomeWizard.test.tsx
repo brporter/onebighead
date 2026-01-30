@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import WelcomeWizard from '../src/WelcomeWizard';
-import * as UserContext from '../src/UserContext';
-import * as DataContext from '../src/DataContext';
+import WelcomeWizard from '../src/components/wizard/WelcomeWizard';
+import * as UserContext from '../src/contexts/UserContext';
+import * as DataContext from '../src/contexts/DataContext';
 import * as authApi from '../src/api/auth';
-import type { CurrentUser, CollectionTheme } from '../src/types';
+import type { CurrentUser, CollectionTheme } from '../src/utils/types';
 
-vi.mock('../src/UserContext', () => ({
+vi.mock('../src/contexts/UserContext', () => ({
   useUser: vi.fn(),
 }));
 
-vi.mock('../src/DataContext', () => ({
+vi.mock('../src/contexts/DataContext', () => ({
   useData: vi.fn(),
 }));
 

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import SubcategoryDropdown from '../src/SubcategoryDropdown';
-import type { Category } from '../src/types';
+import SubcategoryDropdown from '../src/components/category/SubcategoryDropdown';
+import type { Category } from '../src/utils/types';
 
 describe('SubcategoryDropdown', () => {
   const mockSubcategories: Category[] = [

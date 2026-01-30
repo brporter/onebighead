@@ -52,12 +52,23 @@ docker compose up -d              # Start local SQL Server
 
 ### Backend Structure
 
-- **Controllers/**: API endpoints inheriting from `ApiControllerBase` which provides tenant context
-- **Models/**: EF Core entities (Collection, Category, Item, ItemTemplate, User, Tenant, etc.)
-- **Data/**: Repository pattern - interfaces (I*Repository) and implementations, plus `AppDbContext`
-- **DTOs/**: Data transfer objects for API requests/responses
-- **Services/**: Business logic (ImageProvider, VisibilityService, EmailService, TokenService)
-- **Authentication/**: Custom cookie-based JWT authentication scheme
+```
+backend/
+├── Controllers/     # API endpoints (see "When to use ApiControllerBase" below)
+├── Models/          # EF Core entities
+├── Data/            # Repository pattern (I*Repository interfaces + implementations)
+├── DTOs/            # Request/response data transfer objects
+├── Services/        # Business logic services
+└── Authentication/  # Custom cookie-based JWT authentication
+```
+
+**Controllers:**
+- Inherit from `ApiControllerBase` for tenant-scoped endpoints (Collections, Items, Categories, etc.)
+- Inherit from `ControllerBase` directly for: authentication, system-wide data, cross-tenant admin, or anonymous endpoints
+
+**DTOs:**
+- All request/response classes go in `DTOs/` folder (not inline in controllers)
+- Organize by domain: `CollectionRequests.cs`, `CategoryRequests.cs`, `AuthRequests.cs`, etc.
 
 Key patterns:
 - Multi-tenancy: All data access is scoped by `TenantId` via repository methods
@@ -66,17 +77,46 @@ Key patterns:
 
 ### Frontend Structure
 
-- **src/api/**: Type-safe API client modules (collections, items, categories, templates, etc.)
-- **src/views/**: Route-level page components (CollectionView, CategoryView, ItemView, SettingsView)
-- **src/DataContext.tsx**: Central React context managing all data operations with caching
-- **src/types.ts**: TypeScript interfaces matching backend DTOs
-- **src/router.tsx**: React Router configuration with lazy-loaded routes
-- **tests/**: Component and integration tests using Vitest + Testing Library
+```
+frontend/src/
+├── api/                  # Type-safe API client modules
+├── components/           # React components organized by domain
+│   ├── common/          # Reusable UI components (BackNav, ImageGallery, etc.)
+│   ├── category/        # Category-related components
+│   ├── collection/      # Collection-related components
+│   ├── item/            # Item-related components
+│   ├── support/         # Support ticket components
+│   ├── template/        # Template editor components
+│   ├── user/            # User-related components
+│   └── wizard/          # Setup wizard components
+├── contexts/            # React contexts (UserContext, DataContext)
+├── utils/               # Utility functions and type definitions
+├── views/               # Route-level page components
+├── styles/              # CSS files
+│   ├── App.css          # Base styles and CSS custom properties
+│   └── components/      # Component-specific CSS (for new components)
+├── App.tsx              # Main app component
+├── main.tsx             # Entry point
+└── router.tsx           # React Router configuration
+```
+
+**Component naming conventions:**
+- `*View` - Route-level page components (in `views/`)
+- `*Modal` - Modal dialog components
+- `*Editor` - Data entry/editing components
+- `*List` - List display components
+- `*Card` - Card-style display components
+
+**CSS organization:**
+- Base styles and CSS custom properties are in `styles/App.css`
+- New component-specific styles should go in `styles/components/` or co-located with the component
+- Use BEM naming: `.component`, `.component__element`, `.component--modifier`
 
 Key patterns:
 - All API calls go through the centralized `api/` modules, never direct fetch
 - `DataContext` provides data operations and local caching throughout the app
 - Routes are lazy-loaded with `React.lazy()` and `Suspense`
+- Components use barrel exports (`index.ts`) for cleaner imports
 
 ### Data Flow
 

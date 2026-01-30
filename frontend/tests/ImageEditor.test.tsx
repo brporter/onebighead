@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ImageEditor from '../src/ImageEditor';
-import { DataProvider } from '../src/DataContext';
-import type { ItemImage } from '../src/types';
+import ImageEditor from '../src/components/common/ImageEditor';
+import { DataProvider } from '../src/contexts/DataContext';
+import type { ItemImage } from '../src/utils/types';
 
 // Mock fetch for image upload
 const mockFetch = vi.fn();

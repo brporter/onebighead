@@ -3,10 +3,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ItemView from '../../src/views/ItemView';
-import { useData } from '../../src/DataContext';
-import type { Collection, Category, Item } from '../../src/types';
+import { useData } from '../../src/contexts/DataContext';
+import type { Collection, Category, Item } from '../../src/utils/types';
 
-vi.mock('../../src/DataContext', () => ({
+vi.mock('../../src/contexts/DataContext', () => ({
   useData: vi.fn(),
 }));
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Item, ItemProperty, ItemImage, Category, CategoryNode, Collection, Tenant } from '../src/types';
+import type { Item, ItemProperty, ItemImage, Category, CategoryNode, Collection, Tenant } from '../src/utils/types';
 
 describe('types', () => {
   describe('Item interface', () => {

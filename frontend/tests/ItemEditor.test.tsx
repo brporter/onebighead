@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ItemEditor from '../src/ItemEditor';
-import type { Item } from '../src/types';
+import ItemEditor from '../src/components/item/ItemEditor';
+import type { Item } from '../src/utils/types';
 
 // Mock DataContext for PropertyEditor and ImageEditor
-vi.mock('../src/DataContext', () => ({
+vi.mock('../src/contexts/DataContext', () => ({
   useData: () => ({
     propertyCategorySuggestions: [],
     propertyNameSuggestions: [],

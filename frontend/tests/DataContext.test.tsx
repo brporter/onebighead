@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
-import { DataProvider, useData } from '../src/DataContext';
-import type { Item, Category, Collection } from '../src/types';
+import { DataProvider, useData } from '../src/contexts/DataContext';
+import type { Item, Category, Collection } from '../src/utils/types';
 
 const mockCollections: Collection[] = [
   { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', isPublic: true },

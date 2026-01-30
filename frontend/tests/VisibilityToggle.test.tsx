@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import VisibilityToggle from '../src/VisibilityToggle';
+import VisibilityToggle from '../src/components/common/VisibilityToggle';
 
 describe('VisibilityToggle', () => {
   describe('Collection mode (isCollection=true)', () => {

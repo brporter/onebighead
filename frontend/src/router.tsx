@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import App from './App';
-import RequireAuth from './RequireAuth';
+import RequireAuth from './components/common/RequireAuth';
 
 // Lazy load route components for better initial load performance
 const CollectionView = lazy(() => import('./views/CollectionView'));
@@ -9,7 +9,7 @@ const CategoryView = lazy(() => import('./views/CategoryView'));
 const ItemView = lazy(() => import('./views/ItemView'));
 const SetupView = lazy(() => import('./views/SetupView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
-const SystemAdmin = lazy(() => import('./SystemAdmin'));
+const SystemAdmin = lazy(() => import('./views/SystemAdmin'));
 const WelcomeView = lazy(() => import('./views/WelcomeView'));
 
 // Loading fallback component

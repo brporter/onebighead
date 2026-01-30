@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { itemsApi, type GetItemsOptions } from '../../src/api/items';
-import type { Item } from '../../src/types';
+import type { Item } from '../../src/utils/types';
 
 describe('itemsApi', () => {
   let mockFetch: ReturnType<typeof vi.fn>;

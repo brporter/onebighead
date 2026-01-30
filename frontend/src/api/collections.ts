@@ -2,7 +2,7 @@
  * Collections API
  */
 import { api } from './client';
-import type { Collection, SetupCollectionRequest } from '../types';
+import type { Collection, SetupCollectionRequest } from '../utils/types';
 
 export interface CreateCollectionRequest {
   name: string;

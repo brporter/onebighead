@@ -2,7 +2,7 @@
  * Auth API
  */
 import { api } from './client';
-import type { CurrentUser } from '../types';
+import type { CurrentUser } from '../utils/types';
 
 export interface CompleteWelcomeResponse {
   tenantId: number;

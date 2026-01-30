@@ -2,7 +2,7 @@
  * Themes API
  */
 import { api } from './client';
-import type { CollectionTheme } from '../types';
+import type { CollectionTheme } from '../utils/types';
 
 export const themesApi = {
   /**

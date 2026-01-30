@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import PropertyRender from '../src/PropertyRender';
-import type { ItemProperty } from '../src/types';
+import PropertyRender from '../src/components/item/PropertyRender';
+import type { ItemProperty } from '../src/utils/types';
 
 describe('PropertyRender', () => {
   const mockProperties: ItemProperty[] = [

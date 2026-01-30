@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/SettingsView.css';
-import { useData } from '../DataContext';
-import { useUser } from '../UserContext';
+import { useData } from '../contexts/DataContext';
+import { useUser } from '../contexts/UserContext';
 import { exportApi } from '../api';
-import ItemTemplateEditor from '../ItemTemplateEditor';
-import CollectionTemplateEditor from '../CollectionTemplateEditor';
-import VisibilityToggle from '../VisibilityToggle';
-import CollectionSetupWizard from '../CollectionSetupWizard';
-import { SupportSection } from '../SupportSection';
-import UserButton from '../UserButton';
-import { SupportModal } from '../SupportModal';
-import type { Collection } from '../types';
+import ItemTemplateEditor from '../components/template/ItemTemplateEditor';
+import CollectionTemplateEditor from '../components/collection/CollectionTemplateEditor';
+import VisibilityToggle from '../components/common/VisibilityToggle';
+import CollectionSetupWizard from '../components/collection/CollectionSetupWizard';
+import { SupportSection } from '../components/support/SupportSection';
+import UserButton from '../components/user/UserButton';
+import { SupportModal } from '../components/support/SupportModal';
+import type { Collection } from '../utils/types';
 
 type SettingsSection = 'collections' | 'templates' | 'export' | 'support';
 

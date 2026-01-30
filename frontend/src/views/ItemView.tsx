@@ -1,13 +1,13 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useData } from '../DataContext';
-import ItemDetail from '../ItemDetail';
-import ItemEditor from '../ItemEditor';
-import BackNav from '../BackNav';
-import CategoryTree from '../CategoryTree';
-import TemplateSelector from '../TemplateSelector';
-import { createEmptyItem } from '../itemUtils';
-import type { Item, ItemProperty } from '../types';
+import { useData } from '../contexts/DataContext';
+import ItemDetail from '../components/item/ItemDetail';
+import ItemEditor from '../components/item/ItemEditor';
+import BackNav from '../components/common/BackNav';
+import CategoryTree from '../components/category/CategoryTree';
+import TemplateSelector from '../components/template/TemplateSelector';
+import { createEmptyItem } from '../utils/itemUtils';
+import type { Item, ItemProperty } from '../utils/types';
 
 function ItemView() {
   const { collectionId, itemId } = useParams<{ collectionId: string; itemId: string }>();

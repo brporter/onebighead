@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CategoryTree from '../src/CategoryTree';
-import type { Category } from '../src/types';
-import * as DataContext from '../src/DataContext';
+import CategoryTree from '../src/components/category/CategoryTree';
+import type { Category } from '../src/utils/types';
+import * as DataContext from '../src/contexts/DataContext';
 
 // Mock the useData hook
-vi.mock('../src/DataContext', async () => {
-  const actual = await vi.importActual<typeof import('../src/DataContext')>('../src/DataContext');
+vi.mock('../src/contexts/DataContext', async () => {
+  const actual = await vi.importActual<typeof import('../src/contexts/DataContext')>('../src/contexts/DataContext');
   return {
     ...actual,
     useData: vi.fn(),

@@ -2,7 +2,7 @@
  * Item Templates API
  */
 import { api } from './client';
-import type { ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest } from '../types';
+import type { ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest } from '../utils/types';
 
 export type TemplateFilter = 'system' | 'tenant' | 'shared' | 'personal';
 
