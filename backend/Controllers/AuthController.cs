@@ -1,5 +1,6 @@
 using backend.Authentication;
 using backend.Data;
+using backend.DTOs;
 using backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -13,6 +14,7 @@ public class AuthController : ControllerBase
     private readonly IOidcTokenValidator _tokenValidator;
     private readonly ITokenService _tokenService;
     private readonly IUserRepository _userRepository;
+    private readonly ITenantRepository _tenantRepository;
     private readonly IOAuthService _oauthService;
     private readonly AuthenticationSettings _settings;
     private readonly ILogger<AuthController> _logger;
@@ -23,6 +25,7 @@ public class AuthController : ControllerBase
         IOidcTokenValidator tokenValidator,
         ITokenService tokenService,
         IUserRepository userRepository,
+        ITenantRepository tenantRepository,
         IOAuthService oauthService,
         IOptions<AuthenticationSettings> settings,
         ILogger<AuthController> logger)
@@ -30,6 +33,7 @@ public class AuthController : ControllerBase
         _tokenValidator = tokenValidator;
         _tokenService = tokenService;
         _userRepository = userRepository;
+        _tenantRepository = tenantRepository;
         _oauthService = oauthService;
         _settings = settings.Value;
         _logger = logger;
@@ -287,7 +291,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("me")]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser()
     {
         var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
         var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
@@ -299,12 +303,59 @@ public class AuthController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
+        var tenantId = int.Parse(tenantIdClaim);
+        var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+
         return Ok(new
         {
             userId = int.Parse(userIdClaim),
             email = emailClaim,
-            tenantId = int.Parse(tenantIdClaim),
+            tenantId = tenantId,
+            tenantName = tenant?.Name ?? string.Empty,
+            hasCompletedWelcome = tenant?.HasCompletedWelcome ?? false,
             isSystemAdministrator = isAdmin
+        });
+    }
+
+    [HttpPost("complete-welcome")]
+    public async Task<IActionResult> CompleteWelcome([FromBody] CompleteWelcomeRequest request)
+    {
+        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
+        var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+
+        if (string.IsNullOrEmpty(tenantIdClaim))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var tenantId = int.Parse(tenantIdClaim);
+        var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+
+        if (tenant == null)
+        {
+            return NotFound(new { error = "Tenant not found" });
+        }
+
+        // Update tenant name if provided, otherwise use the user's email address
+        if (!string.IsNullOrWhiteSpace(request.TenantName))
+        {
+            tenant.Name = request.TenantName.Trim();
+        }
+        else if (!string.IsNullOrEmpty(emailClaim))
+        {
+            tenant.Name = emailClaim;
+        }
+
+        tenant.HasCompletedWelcome = true;
+        await _tenantRepository.UpdateAsync(tenant);
+
+        _logger.LogInformation("Tenant {TenantId} completed welcome with name: {TenantName}", tenantId, tenant.Name);
+
+        return Ok(new
+        {
+            tenantId = tenant.Id,
+            tenantName = tenant.Name,
+            hasCompletedWelcome = tenant.HasCompletedWelcome
         });
     }
 }

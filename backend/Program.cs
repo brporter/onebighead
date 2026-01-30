@@ -32,6 +32,7 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICollectionRepository, CollectionRepository>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<IPropertySuggestionRepository, PropertySuggestionRepository>();
 builder.Services.AddScoped<IItemTemplateRepository, ItemTemplateRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();

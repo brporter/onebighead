@@ -60,6 +60,8 @@ export interface CurrentUser {
   userId: number;
   email: string;
   tenantId: number;
+  tenantName: string;
+  hasCompletedWelcome: boolean;
   isSystemAdministrator: boolean;
 }
 

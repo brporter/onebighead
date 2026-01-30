@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
 import RequireAuth from '../src/RequireAuth';
 import * as UserContext from '../src/UserContext';
+import type { CurrentUser } from '../src/types';
 
 vi.mock('../src/UserContext', () => ({
   useUser: vi.fn(),
@@ -20,10 +21,23 @@ Object.defineProperty(window, 'location', {
 function renderWithRouter(children: React.ReactNode, initialRoute = '/collections') {
   return render(
     <MemoryRouter initialEntries={[initialRoute]}>
-      {children}
+      <Routes>
+        <Route path="*" element={children} />
+        <Route path="/welcome" element={<div>Welcome Page</div>} />
+      </Routes>
     </MemoryRouter>
   );
 }
+
+const createUser = (overrides: Partial<CurrentUser> = {}): CurrentUser => ({
+  userId: 1,
+  email: 'test@example.com',
+  tenantId: 1,
+  tenantName: 'Test Tenant',
+  hasCompletedWelcome: true,
+  isSystemAdministrator: false,
+  ...overrides,
+});
 
 describe('RequireAuth', () => {
   beforeEach(() => {
@@ -37,6 +51,7 @@ describe('RequireAuth', () => {
       loading: true,
       error: null,
       refetch: vi.fn(),
+      logout: vi.fn(),
     });
 
     renderWithRouter(
@@ -49,12 +64,13 @@ describe('RequireAuth', () => {
     expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
   });
 
-  it('should render children when user is authenticated', () => {
+  it('should render children when user is authenticated and has completed welcome', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: { userId: 1, email: 'test@example.com', tenantId: 1 },
+      user: createUser({ hasCompletedWelcome: true }),
       loading: false,
       error: null,
       refetch: vi.fn(),
+      logout: vi.fn(),
     });
 
     renderWithRouter(
@@ -72,6 +88,7 @@ describe('RequireAuth', () => {
       loading: false,
       error: null,
       refetch: vi.fn(),
+      logout: vi.fn(),
     });
 
     renderWithRouter(
@@ -91,6 +108,7 @@ describe('RequireAuth', () => {
       loading: false,
       error: null,
       refetch: vi.fn(),
+      logout: vi.fn(),
     });
 
     renderWithRouter(
@@ -101,5 +119,67 @@ describe('RequireAuth', () => {
     );
 
     expect(mockLocation.href).toBe('/signin?returnUrl=%2Fcollections%2F1%2Fitems%2Fnew%3FcategoryId%3D5');
+  });
+
+  describe('welcome redirect', () => {
+    it('should redirect to /welcome when hasCompletedWelcome is false', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasCompletedWelcome: false }),
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      renderWithRouter(
+        <RequireAuth>
+          <div>Protected Content</div>
+        </RequireAuth>,
+        '/collections'
+      );
+
+      expect(screen.getByText('Welcome Page')).toBeInTheDocument();
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+    });
+
+    it('should not redirect to /welcome when skipWelcomeCheck is true', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasCompletedWelcome: false }),
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      // Render without routing to test the component directly
+      render(
+        <MemoryRouter initialEntries={['/welcome']}>
+          <RequireAuth skipWelcomeCheck>
+            <div>Welcome Wizard Content</div>
+          </RequireAuth>
+        </MemoryRouter>
+      );
+
+      expect(screen.getByText('Welcome Wizard Content')).toBeInTheDocument();
+    });
+
+    it('should allow access when hasCompletedWelcome is true', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasCompletedWelcome: true }),
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      renderWithRouter(
+        <RequireAuth>
+          <div>Protected Content</div>
+        </RequireAuth>,
+        '/collections'
+      );
+
+      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+    });
   });
 });

@@ -17,6 +17,7 @@ public class AuthControllerTests
     private readonly Mock<IOidcTokenValidator> _mockTokenValidator;
     private readonly Mock<ITokenService> _mockTokenService;
     private readonly Mock<IUserRepository> _mockUserRepository;
+    private readonly Mock<ITenantRepository> _mockTenantRepository;
     private readonly Mock<IOAuthService> _mockOAuthService;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
     private readonly AuthenticationSettings _settings;
@@ -27,6 +28,7 @@ public class AuthControllerTests
         _mockTokenValidator = new Mock<IOidcTokenValidator>();
         _mockTokenService = new Mock<ITokenService>();
         _mockUserRepository = new Mock<IUserRepository>();
+        _mockTenantRepository = new Mock<ITenantRepository>();
         _mockOAuthService = new Mock<IOAuthService>();
         _mockLogger = new Mock<ILogger<AuthController>>();
 
@@ -67,6 +69,7 @@ public class AuthControllerTests
             _mockTokenValidator.Object,
             _mockTokenService.Object,
             _mockUserRepository.Object,
+            _mockTenantRepository.Object,
             _mockOAuthService.Object,
             options,
             _mockLogger.Object);
@@ -415,29 +418,133 @@ public class AuthControllerTests
     #region GetCurrentUser Tests
 
     [Fact]
-    public void GetCurrentUser_ReturnsUnauthorized_WhenNotAuthenticated()
+    public async Task GetCurrentUser_ReturnsUnauthorized_WhenNotAuthenticated()
     {
         // Arrange - default setup has no auth
 
         // Act
-        var result = _controller.GetCurrentUser();
+        var result = await _controller.GetCurrentUser();
 
         // Assert
         Assert.IsType<UnauthorizedObjectResult>(result);
     }
 
     [Fact]
-    public void GetCurrentUser_ReturnsUser_WhenAuthenticated()
+    public async Task GetCurrentUser_ReturnsUser_WhenAuthenticated()
     {
         // Arrange
         SetupHttpContext(authenticated: true, tenantId: 5, email: "user@test.com");
+        _mockTenantRepository.Setup(r => r.GetByIdAsync(5))
+            .ReturnsAsync(new Tenant { Id = 5, Name = "Test Tenant", HasCompletedWelcome = true });
 
         // Act
-        var result = _controller.GetCurrentUser();
+        var result = await _controller.GetCurrentUser();
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
+    }
+
+    [Fact]
+    public async Task GetCurrentUser_ReturnsHasCompletedWelcome_FromTenant()
+    {
+        // Arrange
+        SetupHttpContext(authenticated: true, tenantId: 1, email: "user@test.com");
+        _mockTenantRepository.Setup(r => r.GetByIdAsync(1))
+            .ReturnsAsync(new Tenant { Id = 1, Name = "Test", HasCompletedWelcome = false });
+
+        // Act
+        var result = await _controller.GetCurrentUser();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var json = System.Text.Json.JsonSerializer.Serialize(okResult.Value);
+        Assert.Contains("\"hasCompletedWelcome\":false", json);
+    }
+
+    #endregion
+
+    #region CompleteWelcome Tests
+
+    [Fact]
+    public async Task CompleteWelcome_ReturnsUnauthorized_WhenNotAuthenticated()
+    {
+        // Arrange - default setup has no auth
+        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = "Test" };
+
+        // Act
+        var result = await _controller.CompleteWelcome(request);
+
+        // Assert
+        Assert.IsType<UnauthorizedObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task CompleteWelcome_UpdatesTenantName_WhenProvided()
+    {
+        // Arrange
+        SetupHttpContext(authenticated: true, tenantId: 1, email: "user@test.com");
+        var tenant = new Tenant { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
+        _mockTenantRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(tenant);
+        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = "New Name" };
+
+        // Act
+        var result = await _controller.CompleteWelcome(request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("New Name", tenant.Name);
+        Assert.True(tenant.HasCompletedWelcome);
+        _mockTenantRepository.Verify(r => r.UpdateAsync(tenant), Times.Once);
+    }
+
+    [Fact]
+    public async Task CompleteWelcome_UsesEmail_WhenTenantNameNotProvided()
+    {
+        // Arrange
+        SetupHttpContext(authenticated: true, tenantId: 1, email: "user@example.com");
+        var tenant = new Tenant { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
+        _mockTenantRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(tenant);
+        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = null };
+
+        // Act
+        var result = await _controller.CompleteWelcome(request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("user@example.com", tenant.Name);
+        Assert.True(tenant.HasCompletedWelcome);
+    }
+
+    [Fact]
+    public async Task CompleteWelcome_SetsHasCompletedWelcome_ToTrue()
+    {
+        // Arrange
+        SetupHttpContext(authenticated: true, tenantId: 1, email: "user@test.com");
+        var tenant = new Tenant { Id = 1, Name = "Test", HasCompletedWelcome = false };
+        _mockTenantRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(tenant);
+        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = "My Org" };
+
+        // Act
+        await _controller.CompleteWelcome(request);
+
+        // Assert
+        Assert.True(tenant.HasCompletedWelcome);
+    }
+
+    [Fact]
+    public async Task CompleteWelcome_ReturnsNotFound_WhenTenantDoesNotExist()
+    {
+        // Arrange
+        SetupHttpContext(authenticated: true, tenantId: 999, email: "user@test.com");
+        _mockTenantRepository.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Tenant?)null);
+        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = "Test" };
+
+        // Act
+        var result = await _controller.CompleteWelcome(request);
+
+        // Assert
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     #endregion

@@ -4,6 +4,12 @@
 import { api } from './client';
 import type { CurrentUser } from '../types';
 
+export interface CompleteWelcomeResponse {
+  tenantId: number;
+  tenantName: string;
+  hasCompletedWelcome: boolean;
+}
+
 export const authApi = {
   getCurrentUser(): Promise<CurrentUser | null> {
     return api.get<CurrentUser>('/auth/me').catch((error) => {
@@ -20,5 +26,9 @@ export const authApi = {
 
   getLoginUrl(provider: string): string {
     return `/api/auth/login/${provider}`;
+  },
+
+  completeWelcome(tenantName?: string): Promise<CompleteWelcomeResponse> {
+    return api.post<CompleteWelcomeResponse>('/auth/complete-welcome', { tenantName });
   },
 };
