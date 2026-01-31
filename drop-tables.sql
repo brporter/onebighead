@@ -1,4 +1,5 @@
--- Drop all tables except __EFMigrationsHistory
+-- Drop all tables and reset migration history
+-- This allows migrations to re-run and recreate tables from scratch
 -- Tables are dropped in reverse dependency order (leaf tables first)
 
 -- Disable all foreign key constraints first (makes drop order less critical)
@@ -24,6 +25,14 @@ IF OBJECT_ID('dbo.ItemTemplates', 'U') IS NOT NULL DROP TABLE dbo.ItemTemplates;
 IF OBJECT_ID('dbo.CollectionThemes', 'U') IS NOT NULL DROP TABLE dbo.CollectionThemes;
 GO
 
--- Note: __EFMigrationsHistory is preserved for database migrations
-PRINT 'All application tables dropped. __EFMigrationsHistory preserved.';
+-- Clear migration history so idempotent migrations will re-run
+-- The idempotent script checks this table to decide what to apply
+IF OBJECT_ID('dbo.__EFMigrationsHistory', 'U') IS NOT NULL
+BEGIN
+    TRUNCATE TABLE dbo.__EFMigrationsHistory;
+    PRINT 'Migration history cleared.';
+END
+GO
+
+PRINT 'All application tables dropped. Ready for fresh migration.';
 GO
