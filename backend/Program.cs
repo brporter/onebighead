@@ -115,7 +115,28 @@ if (!app.Environment.IsDevelopment())
     if (Directory.Exists(collectionsPath))
     {
         var fileProvider = new PhysicalFileProvider(collectionsPath);
-        
+
+        // SPA fallback for top-level routes: rewrite /settings, /setup, /admin, /welcome to index.html
+        app.Use(async (context, next) =>
+        {
+            var path = context.Request.Path.Value ?? "";
+
+            // Top-level SPA routes that need fallback to index.html
+            if (path.Equals("/settings", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/settings/", StringComparison.OrdinalIgnoreCase) ||
+                path.Equals("/setup", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/setup/", StringComparison.OrdinalIgnoreCase) ||
+                path.Equals("/admin", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/admin/", StringComparison.OrdinalIgnoreCase) ||
+                path.Equals("/welcome", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/welcome/", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Request.Path = "/collections/index.html";
+            }
+
+            await next();
+        });
+
         // SPA fallback middleware: rewrite /collections/* requests to index.html
         // if the requested file doesn't exist (allows React Router to handle routing)
         app.Use(async (context, next) =>
