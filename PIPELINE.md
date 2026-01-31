@@ -48,18 +48,18 @@ The pipeline does **not** provision infrastructure. You must run the deployment 
 
 ---
 
-## Step 2: Create Azure Service Principal
+## Step 2: Create Azure Service Principal with OIDC
 
-Create a service principal that GitHub Actions will use to authenticate with Azure.
+Create a service principal that GitHub Actions will use to authenticate with Azure via OIDC (workload identity federation). This eliminates the need to store secrets like client credentials.
 
 ### 2.1 Create the Service Principal
 
 ```bash
+# Create service principal (without --sdk-auth since we'll use OIDC)
 az ad sp create-for-rbac \
   --name "<app-name>-github-actions" \
   --role Contributor \
-  --scopes /subscriptions/<subscription-id>/resourceGroups/<app-name>-rg \
-  --sdk-auth
+  --scopes /subscriptions/<subscription-id>/resourceGroups/<app-name>-rg
 ```
 
 **Example:**
@@ -67,8 +67,7 @@ az ad sp create-for-rbac \
 az ad sp create-for-rbac \
   --name "onebighead-github-actions" \
   --role Contributor \
-  --scopes /subscriptions/12345678-1234-1234-1234-123456789abc/resourceGroups/onebighead-rg \
-  --sdk-auth
+  --scopes /subscriptions/12345678-1234-1234-1234-123456789abc/resourceGroups/onebighead-rg
 ```
 
 **Find your subscription ID:**
@@ -76,29 +75,61 @@ az ad sp create-for-rbac \
 az account show --query id -o tsv
 ```
 
-**Output** (save this entire JSON - you'll need it for `AZURE_CREDENTIALS`):
+**Output** (save these values for GitHub secrets):
 ```json
 {
-  "clientId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "subscriptionId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "tenantId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
-  "resourceManagerEndpointUrl": "https://management.azure.com/",
-  "activeDirectoryGraphResourceId": "https://graph.windows.net/",
-  "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
-  "galleryEndpointUrl": "https://gallery.azure.com/",
-  "managementEndpointUrl": "https://management.core.windows.net/"
+  "appId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "displayName": "onebighead-github-actions",
+  "password": "...",
+  "tenant": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 }
 ```
 
-### 2.2 Grant SQL Azure Admin Access
+> **Note:** The `password` is not needed when using OIDC authentication.
+
+### 2.2 Configure OIDC Federated Credential
+
+Set up workload identity federation to allow GitHub Actions to authenticate without storing secrets:
+
+```bash
+# Get the application (client) ID from step 2.1
+SP_APP_ID="<appId-from-above>"
+
+# Create federated credential for GitHub Actions
+# Replace 'your-username' with your GitHub org/user and 'your-repo' with the repo name
+az ad app federated-credential create \
+  --id $SP_APP_ID \
+  --parameters '{
+    "name": "github-actions-production",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "repo:your-username/your-repo:environment:production",
+    "audiences": ["api://AzureADTokenExchange"],
+    "description": "GitHub Actions deployment to production"
+  }'
+```
+
+**Example:**
+```bash
+SP_APP_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+az ad app federated-credential create \
+  --id $SP_APP_ID \
+  --parameters '{
+    "name": "github-actions-production",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "repo:myusername/onebighead:environment:production",
+    "audiences": ["api://AzureADTokenExchange"],
+    "description": "GitHub Actions deployment to production"
+  }'
+```
+
+### 2.3 Grant SQL Azure Admin Access
 
 The service principal needs to run database migrations. Add it as a SQL Azure AD administrator:
 
 ```bash
-# Get the service principal's object ID (use clientId from the JSON above)
-SP_OBJECT_ID=$(az ad sp show --id <clientId> --query id -o tsv)
+# Get the service principal's object ID
+SP_OBJECT_ID=$(az ad sp show --id $SP_APP_ID --query id -o tsv)
 
 # Get your SQL server name
 SQL_SERVER_NAME=$(az sql server list --resource-group <app-name>-rg --query "[0].name" -o tsv)
@@ -123,6 +154,31 @@ az sql server ad-admin create \
   --object-id $SP_OBJECT_ID
 ```
 
+### 2.4 Create Database User for Service Principal
+
+Create a contained database user for the service principal so it can run migrations:
+
+```bash
+# Get the service principal display name
+SP_DISPLAY_NAME=$(az ad sp show --id $SP_APP_ID --query displayName -o tsv)
+
+# Connect to the database and create the user
+# Use your preferred method to authenticate (e.g., Azure Portal Query Editor, Azure Data Studio, or sqlcmd)
+sqlcmd -S <sql-server-name>.database.windows.net \
+    -d <database-name> \
+    --authentication-method=ActiveDirectoryDefault \
+    -Q "
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '${SP_DISPLAY_NAME}')
+BEGIN
+    CREATE USER [${SP_DISPLAY_NAME}] FROM EXTERNAL PROVIDER;
+END
+ALTER ROLE db_datareader ADD MEMBER [${SP_DISPLAY_NAME}];
+ALTER ROLE db_datawriter ADD MEMBER [${SP_DISPLAY_NAME}];
+ALTER ROLE db_ddladmin ADD MEMBER [${SP_DISPLAY_NAME}];
+PRINT 'User configured successfully';
+"
+```
+
 ---
 
 ## Step 3: Configure GitHub Repository Secrets
@@ -135,7 +191,9 @@ Navigate to your GitHub repository:
 
 | Secret Name | Description | How to Obtain |
 |-------------|-------------|---------------|
-| `AZURE_CREDENTIALS` | Service principal JSON for Azure authentication | Copy the entire JSON output from Step 2.1 |
+| `AZURE_CLIENT_ID` | Service principal application (client) ID | The `appId` from Step 2.1 |
+| `AZURE_TENANT_ID` | Azure AD tenant ID | The `tenant` from Step 2.1, or run `az account show --query tenantId -o tsv` |
+| `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | Run `az account show --query id -o tsv` |
 | `AZURE_APP_NAME` | Base name used for all Azure resources | The `--name` value you used in `deploy.sh` (e.g., `onebighead`) |
 | `AZURE_LOCATION` | Azure region where resources are deployed | The `--location` value you used in `deploy.sh` (e.g., `eastus`) |
 | `JWT_SIGNING_KEY` | Secret key for signing JWT tokens | The `--jwt-key` value you used in `deploy.sh` (minimum 32 characters) |
@@ -162,16 +220,29 @@ If you've configured a custom domain for your Container App, set this secret to 
 
 **If not set:** The pipeline will use the Container App's default URL (e.g., `myapp-app.azurecontainerapps.io`)
 
-#### `AZURE_CREDENTIALS`
+#### `AZURE_CLIENT_ID`
 
-**Value:** The complete JSON object from Step 2.1
+**Value:** The application (client) ID of your service principal
 
-**Example value:**
-```json
-{"clientId":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx","clientSecret":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","subscriptionId":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx","tenantId":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx","activeDirectoryEndpointUrl":"https://login.microsoftonline.com","resourceManagerEndpointUrl":"https://management.azure.com/","activeDirectoryGraphResourceId":"https://graph.windows.net/","sqlManagementEndpointUrl":"https://management.core.windows.net:8443/","galleryEndpointUrl":"https://gallery.azure.com/","managementEndpointUrl":"https://management.core.windows.net/"}
-```
+**Example value:** `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
 
-> **Note:** Paste as a single line or preserve the JSON formatting exactly.
+This is the `appId` from the service principal creation output in Step 2.1.
+
+#### `AZURE_TENANT_ID`
+
+**Value:** Your Azure AD tenant ID
+
+**Example value:** `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+
+Get this from the service principal output (`tenant`) or run: `az account show --query tenantId -o tsv`
+
+#### `AZURE_SUBSCRIPTION_ID`
+
+**Value:** Your Azure subscription ID
+
+**Example value:** `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+
+Get this by running: `az account show --query id -o tsv`
 
 #### `AZURE_APP_NAME`
 
@@ -330,9 +401,10 @@ The pipeline is already configured to use the `production` environment.
 - Check that the target branch is `main`
 
 **Azure login fails:**
-- Verify `AZURE_CREDENTIALS` contains valid JSON
-- Check the service principal hasn't expired
-- Ensure the subscription ID is correct
+- Verify `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` are correct
+- Check the federated credential was created correctly (Step 2.2)
+- Ensure the federated credential subject matches `repo:<owner>/<repo>:environment:production`
+- Verify the GitHub environment is named exactly `production`
 
 **Container push fails:**
 - Verify `AZURE_APP_NAME` matches your actual resource names
@@ -356,7 +428,9 @@ The pipeline is already configured to use the `production` environment.
 
 | Secret | Example Value | Source |
 |--------|---------------|--------|
-| `AZURE_CREDENTIALS` | `{"clientId":"...","clientSecret":"...","subscriptionId":"...","tenantId":"..."}` | `az ad sp create-for-rbac --sdk-auth` output |
+| `AZURE_CLIENT_ID` | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | `appId` from `az ad sp create-for-rbac` output |
+| `AZURE_TENANT_ID` | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | `az account show --query tenantId -o tsv` |
+| `AZURE_SUBSCRIPTION_ID` | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | `az account show --query id -o tsv` |
 | `AZURE_APP_NAME` | `onebighead` | Your chosen app name from `deploy.sh` |
 | `AZURE_LOCATION` | `eastus` | Azure region from `deploy.sh` |
 | `JWT_SIGNING_KEY` | `MySecureJwtSigningKey32Characters!` | Same value used in `deploy.sh --jwt-key` |

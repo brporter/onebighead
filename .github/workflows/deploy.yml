@@ -3,11 +3,13 @@
 #
 # Prerequisites (one-time setup before first pipeline run):
 #   1. Azure infrastructure must be provisioned using deploy.sh (without --skip-infra)
-#   2. GitHub repository secrets must be configured (see DEPLOYMENT.md)
-#   3. Azure service principal must have appropriate permissions
+#   2. GitHub repository secrets must be configured (see PIPELINE.md)
+#   3. Azure service principal must have OIDC federated credentials configured
 #
 # Required GitHub Secrets:
-#   AZURE_CREDENTIALS        - Service principal credentials JSON
+#   AZURE_CLIENT_ID          - Service principal client ID
+#   AZURE_TENANT_ID          - Azure AD tenant ID
+#   AZURE_SUBSCRIPTION_ID    - Azure subscription ID
 #   AZURE_APP_NAME           - Base name for Azure resources (e.g., "onebighead")
 #   AZURE_LOCATION           - Azure region (e.g., "eastus")
 #   JWT_SIGNING_KEY          - JWT signing key (min 32 characters)
@@ -36,6 +38,11 @@ concurrency:
 env:
   DOTNET_VERSION: '10.0.x'
   NODE_VERSION: '20'
+
+# OIDC permissions for Azure login
+permissions:
+  id-token: write   # Required for OIDC
+  contents: read
 
 jobs:
   # Only run if PR was merged (not just closed) or manually triggered
@@ -115,7 +122,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       # Derive resource names from APP_NAME
       - name: Set environment variables
@@ -314,14 +323,12 @@ jobs:
           SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
           echo "Waiting for SQL Azure serverless database to be ready..."
           echo "This may take up to 60 seconds if the database is paused."
-          
+
           for i in {1..12}; do
             echo "  Connection attempt $i/12..."
             if sqlcmd -S "$SQL_SERVER_FQDN" \
                 -d "$SQL_DB_NAME" \
-                --authentication-method=ActiveDirectoryServicePrincipal \
-                -U "${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" \
-                -P "${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" \
+                --authentication-method=ActiveDirectoryDefault \
                 -Q "SELECT 1" \
                 -b \
                 2>&1; then
@@ -331,7 +338,7 @@ jobs:
             echo "  Database not ready yet, waiting 10 seconds..."
             sleep 10
           done
-          
+
           echo "::error::SQL Azure database did not become ready within 2 minutes"
           exit 1
 
@@ -342,9 +349,7 @@ jobs:
           # -b flag makes sqlcmd exit with non-zero code on SQL errors
           sqlcmd -S "$SQL_SERVER_FQDN" \
             -d "$SQL_DB_NAME" \
-            --authentication-method=ActiveDirectoryServicePrincipal \
-            -U "${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" \
-            -P "${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" \
+            --authentication-method=ActiveDirectoryDefault \
             -b \
             -i publish/migrate.sql
           echo "Migrations applied successfully."
