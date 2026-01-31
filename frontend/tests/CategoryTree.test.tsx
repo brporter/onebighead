@@ -23,7 +23,22 @@ describe('CategoryTree', () => {
     { tenantId: 1, categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null, isSystem: false },
   ];
 
+  // Shared expanded state for tests that need to verify toggle behavior
+  let expandedCategoryIds = new Set([1, 5]); // Root categories expanded by default
+  const toggleCategoryExpanded = vi.fn((categoryId: number) => {
+    expandedCategoryIds = new Set(expandedCategoryIds);
+    if (expandedCategoryIds.has(categoryId)) {
+      expandedCategoryIds.delete(categoryId);
+    } else {
+      expandedCategoryIds.add(categoryId);
+    }
+  });
+
   beforeEach(() => {
+    // Reset expanded state
+    expandedCategoryIds = new Set([1, 5]);
+    toggleCategoryExpanded.mockClear();
+
     // Default mock: not loading, no error
     vi.mocked(DataContext.useData).mockReturnValue({
       currentCollection: null,
@@ -55,6 +70,8 @@ describe('CategoryTree', () => {
       syncPropertySuggestions: vi.fn(async () => {}),
       addLocalCategorySuggestion: vi.fn(),
       addLocalNameSuggestion: vi.fn(),
+      expandedCategoryIds,
+      toggleCategoryExpanded,
     });
   });
 
@@ -138,7 +155,7 @@ describe('CategoryTree', () => {
       expect(handleSelect).toHaveBeenCalledWith(1);
     });
 
-    it('should collapse expanded category when clicking toggle', async () => {
+    it('should call toggleCategoryExpanded when clicking collapse button', async () => {
       const user = userEvent.setup();
 
       render(
@@ -149,21 +166,54 @@ describe('CategoryTree', () => {
         />
       );
 
-      // Children should be visible initially
+      // Children should be visible initially (Root 1 is expanded)
       expect(screen.getAllByText('Child 1-1').length).toBeGreaterThanOrEqual(1);
 
       // Click collapse button for Root 1
       const collapseButton = screen.getByLabelText('Collapse Root 1');
       await user.click(collapseButton);
 
-      // Children should be hidden from tree (may still appear in modal's parent selector)
-      const child11Elements = screen.queryAllByText('Child 1-1');
-      const treeChild = child11Elements.find(el => el.classList.contains('categoryTree__item'));
-      expect(treeChild).toBeFalsy();
+      // Verify toggle was called with the correct category ID
+      expect(toggleCategoryExpanded).toHaveBeenCalledWith(1);
     });
 
-    it('should expand collapsed category when clicking toggle', async () => {
+    it('should call toggleCategoryExpanded when clicking expand button', async () => {
       const user = userEvent.setup();
+
+      // Start with Root 1 collapsed
+      vi.mocked(DataContext.useData).mockReturnValue({
+        currentCollection: null,
+        setCurrentCollection: vi.fn(),
+        collections: [],
+        collectionsLoading: false,
+        collectionsError: null,
+        loadCollections: vi.fn(async () => {}),
+        addCollection: vi.fn(async () => ({ collectionId: 1, tenantId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
+        updateCollection: vi.fn(async () => {}),
+        deleteCollection: vi.fn(async () => {}),
+        categories: mockCategories,
+        categoriesLoading: false,
+        categoriesError: null,
+        loadCategoriesForCollection: vi.fn(async () => {}),
+        addCategory: vi.fn(async () => 6),
+        updateCategory: vi.fn(async () => {}),
+        deleteCategory: vi.fn(async () => {}),
+        items: [],
+        itemsLoading: false,
+        itemsError: null,
+        loadItemsForCategory: vi.fn(async () => {}),
+        addItem: vi.fn(async () => 0),
+        updateItem: vi.fn(async () => {}),
+        deleteItem: vi.fn(async () => {}),
+        propertyCategorySuggestions: [],
+        propertyNameSuggestions: [],
+        loadPropertySuggestions: vi.fn(async () => {}),
+        syncPropertySuggestions: vi.fn(async () => {}),
+        addLocalCategorySuggestion: vi.fn(),
+        addLocalNameSuggestion: vi.fn(),
+        expandedCategoryIds: new Set([5]), // Only Root 2 expanded, Root 1 collapsed
+        toggleCategoryExpanded,
+      });
 
       render(
         <CategoryTree
@@ -173,26 +223,15 @@ describe('CategoryTree', () => {
         />
       );
 
-      // First collapse
-      const collapseButton = screen.getByLabelText('Collapse Root 1');
-      await user.click(collapseButton);
-
-      // Verify collapsed
-      let child11Elements = screen.queryAllByText('Child 1-1');
-      let treeChild = child11Elements.find(el => el.classList.contains('categoryTree__item'));
-      expect(treeChild).toBeFalsy();
-
-      // Then expand
+      // Click expand button for Root 1
       const expandButton = screen.getByLabelText('Expand Root 1');
       await user.click(expandButton);
 
-      // Verify expanded
-      child11Elements = screen.queryAllByText('Child 1-1');
-      treeChild = child11Elements.find(el => el.classList.contains('categoryTree__item'));
-      expect(treeChild).toBeTruthy();
+      // Verify toggle was called with the correct category ID
+      expect(toggleCategoryExpanded).toHaveBeenCalledWith(1);
     });
 
-    it('should show nested grandchildren when parent is expanded', async () => {
+    it('should call toggleCategoryExpanded for nested categories', async () => {
       const user = userEvent.setup();
 
       render(
@@ -204,17 +243,16 @@ describe('CategoryTree', () => {
       );
 
       // Grandchild should not be visible (Child 1-1 is not expanded by default)
-      let grandchildElements = screen.queryAllByText('Grandchild 1-1-1');
-      let treeGrandchild = grandchildElements.find(el => el.classList.contains('categoryTree__item'));
+      const grandchildElements = screen.queryAllByText('Grandchild 1-1-1');
+      const treeGrandchild = grandchildElements.find(el => el.classList.contains('categoryTree__item'));
       expect(treeGrandchild).toBeFalsy();
 
       // Expand Child 1-1
       const expandButton = screen.getByLabelText('Expand Child 1-1');
       await user.click(expandButton);
 
-      grandchildElements = screen.queryAllByText('Grandchild 1-1-1');
-      treeGrandchild = grandchildElements.find(el => el.classList.contains('categoryTree__item'));
-      expect(treeGrandchild).toBeTruthy();
+      // Verify toggle was called with the correct category ID
+      expect(toggleCategoryExpanded).toHaveBeenCalledWith(2);
     });
 
     it('should highlight selected category', () => {
@@ -308,6 +346,8 @@ describe('CategoryTree', () => {
         syncPropertySuggestions: vi.fn(async () => {}),
         addLocalCategorySuggestion: vi.fn(),
         addLocalNameSuggestion: vi.fn(),
+        expandedCategoryIds: new Set(),
+        toggleCategoryExpanded: vi.fn(),
       });
 
       render(
@@ -352,6 +392,8 @@ describe('CategoryTree', () => {
         syncPropertySuggestions: vi.fn(async () => {}),
         addLocalCategorySuggestion: vi.fn(),
         addLocalNameSuggestion: vi.fn(),
+        expandedCategoryIds: new Set(),
+        toggleCategoryExpanded: vi.fn(),
       });
 
       render(

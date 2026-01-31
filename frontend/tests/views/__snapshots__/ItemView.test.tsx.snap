@@ -238,6 +238,15 @@ exports[`ItemView > snapshots > should match snapshot for existing item 1`] = `
     <main
       class="app__content"
     >
+      <div
+        class="collection-title-bar"
+      >
+        <h1
+          class="collection-title-bar__title"
+        >
+          Test Collection
+        </h1>
+      </div>
       <article
         class="app__detail"
       >

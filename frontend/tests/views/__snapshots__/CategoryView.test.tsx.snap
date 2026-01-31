@@ -276,6 +276,20 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
     <main
       class="app__content"
     >
+      <div
+        class="collection-title-bar"
+      >
+        <h1
+          class="collection-title-bar__title"
+        >
+          Test Collection
+        </h1>
+        <p
+          class="collection-title-bar__subtitle"
+        >
+          Browse categories, then view items and details.
+        </p>
+      </div>
       <section
         class="app__items"
       >

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { vi } from 'vitest';
-import type { Category, Item, Collection, Tenant } from '../../src/utils/types';
+import type { Category, Item, Collection } from '../../src/utils/types';
 import type { DataContextValue } from '../../src/contexts/DataContext';
 import { Visibility, UserFlag } from '../../src/utils/types';
 
@@ -45,33 +45,74 @@ export const mockCollections: Collection[] = [
   { collectionId: 1, name: 'Test Collection', tenantId: 1, description: '', heroImageUrl: null, slug: 'test-collection', visibility: Visibility.Private, effectiveIsPublic: false },
 ];
 
-export const mockTenants: Tenant[] = [
-  { tenantId: 1, name: 'Test Tenant', owner: 'test@example.com' },
-];
-
 export const createMockDataContext = (overrides?: Partial<DataContextValue>): DataContextValue => ({
+  // Current collection
+  currentCollection: mockCollections[0],
+  setCurrentCollection: vi.fn(),
+
+  // Collections
+  collections: mockCollections,
+  collectionsLoading: false,
+  collectionsError: null,
+  loadCollections: vi.fn(async () => {}),
+  addCollection: vi.fn(async () => mockCollections[0]),
+  setupCollection: vi.fn(async () => mockCollections[0]),
+  updateCollection: vi.fn(async () => {}),
+  deleteCollection: vi.fn(async () => {}),
+
+  // Themes
+  themes: [],
+  themesLoading: false,
+  themesError: null,
+  loadThemes: vi.fn(async () => {}),
+
+  // Categories
   categories: mockCategories,
   categoriesLoading: false,
   categoriesError: null,
-  items: mockItems,
-  itemsLoading: false,
-  itemsError: null,
-  collections: mockCollections,
-  tenants: mockTenants,
-  addItem: vi.fn(async () => 3),
-  updateItem: vi.fn(async () => {}),
-  deleteItem: vi.fn(async () => {}),
-  refreshItems: vi.fn(async () => {}),
+  loadCategoriesForCollection: vi.fn(async () => {}),
   addCategory: vi.fn(async () => 4),
   updateCategory: vi.fn(async () => {}),
   deleteCategory: vi.fn(async () => {}),
-  refreshCategories: vi.fn(async () => {}),
-  addCollection: vi.fn(),
-  updateCollection: vi.fn(),
-  deleteCollection: vi.fn(),
-  addTenant: vi.fn(),
-  updateTenant: vi.fn(),
-  deleteTenant: vi.fn(),
+  getCategoryTemplates: vi.fn(async () => []),
+
+  // Items
+  items: mockItems,
+  itemsLoading: false,
+  itemsError: null,
+  loadItemsForCategory: vi.fn(async () => {}),
+  loadItemById: vi.fn(async () => null),
+  addItem: vi.fn(async () => 3),
+  updateItem: vi.fn(async () => {}),
+  deleteItem: vi.fn(async () => {}),
+
+  // Image upload
+  uploadImage: vi.fn(async () => ({ key: 'test-key', url: 'https://example.com/image.jpg' })),
+
+  // Property suggestions
+  propertyCategorySuggestions: [],
+  propertyNameSuggestions: [],
+  loadPropertySuggestions: vi.fn(async () => {}),
+  syncPropertySuggestions: vi.fn(async () => {}),
+  addLocalCategorySuggestion: vi.fn(),
+  addLocalNameSuggestion: vi.fn(),
+
+  // Item templates
+  itemTemplates: [],
+  itemTemplatesLoading: false,
+  itemTemplatesError: null,
+  loadItemTemplates: vi.fn(async () => {}),
+  loadCollectionTemplates: vi.fn(async () => []),
+  createItemTemplate: vi.fn(async () => ({ itemTemplateId: 1, name: 'Test', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' })),
+  updateItemTemplate: vi.fn(async () => ({ itemTemplateId: 1, name: 'Test', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' })),
+  deleteItemTemplate: vi.fn(async () => {}),
+  associateTemplateWithCollection: vi.fn(async () => {}),
+  disassociateTemplateFromCollection: vi.fn(async () => {}),
+
+  // Category tree UI state
+  expandedCategoryIds: new Set([1, 3]), // Root categories expanded by default
+  toggleCategoryExpanded: vi.fn(),
+
   ...overrides,
 });
 

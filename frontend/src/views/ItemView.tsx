@@ -176,6 +176,12 @@ function ItemView() {
     navigate(`/collections/${collectionIdNum}/categories/${catId}`);
   }
 
+  function handleBackToCollections() {
+    navigate('/collections');
+  }
+
+  const showBackToCollections = collections.length > 1;
+
   if (isLoading || collectionsLoading) {
     return <div className="app__loading">Loading...</div>;
   }
@@ -216,6 +222,14 @@ function ItemView() {
         />
       </nav>
       <main className="app__content">
+        <div className="collection-title-bar">
+          {showBackToCollections && (
+            <button className="collection-title-bar__back" onClick={handleBackToCollections}>
+              ← All Collections
+            </button>
+          )}
+          <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
+        </div>
         <article className="app__detail">
           <BackNav label="Back to items" onClick={handleBackToItems} />
           {isEditing || isNewItem ? (

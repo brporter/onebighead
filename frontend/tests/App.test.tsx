@@ -87,6 +87,7 @@ describe('App with Router', () => {
     itemsLoading: false,
     itemsError: null,
     loadItemsForCategory: vi.fn(),
+    loadItemById: vi.fn(async () => null),
     addItem: vi.fn(async () => 3),
     updateItem: vi.fn(async () => {}),
     deleteItem: vi.fn(async () => {}),
@@ -108,6 +109,8 @@ describe('App with Router', () => {
     loadItemTemplates: vi.fn(async () => []),
     loadCollectionTemplates: vi.fn(async () => []),
     getCategoryTemplates: vi.fn(async () => []),
+    expandedCategoryIds: new Set([1]),
+    toggleCategoryExpanded: vi.fn(),
   };
 
   beforeEach(() => {

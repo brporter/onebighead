@@ -108,7 +108,16 @@ function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expa
 }
 
 function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTreeProps) {
-  const { categoriesLoading, categoriesError, items, loadCategoriesForCollection, loadItemsForCategory, currentCollection } = useData();
+  const {
+    categoriesLoading,
+    categoriesError,
+    items,
+    loadCategoriesForCollection,
+    loadItemsForCategory,
+    currentCollection,
+    expandedCategoryIds,
+    toggleCategoryExpanded,
+  } = useData();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -123,22 +132,6 @@ function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTree
   }, [categories, items]);
 
   const tree = useMemo(() => buildTree(visibleCategories), [visibleCategories]);
-  
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(() => {
-    const rootIds = (categories ?? [])
-      .filter((c) => c.parentCategoryId == null)
-      .map((c) => c.categoryId);
-    return new Set(rootIds);
-  });
-
-  function toggle(id: number) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
 
   function handleEdit(category: Category) {
     setEditingCategory(category);
@@ -204,8 +197,8 @@ function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTree
             level={0}
             selectedCategoryId={selectedCategoryId}
             onSelect={onSelect}
-            expandedIds={expandedIds}
-            onToggle={toggle}
+            expandedIds={expandedCategoryIds}
+            onToggle={toggleCategoryExpanded}
             onEdit={handleEdit}
           />
         ))}

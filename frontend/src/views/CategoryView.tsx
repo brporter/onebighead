@@ -137,6 +137,12 @@ function CategoryView() {
     );
   }
 
+  function handleBackToCollections() {
+    navigate('/collections');
+  }
+
+  const showBackToCollections = collections.length > 1;
+
   // Show category tree with placeholder if no category selected
   if (!categoryIdNum) {
     return (
@@ -149,6 +155,14 @@ function CategoryView() {
           />
         </nav>
         <main className="app__content">
+          <div className="collection-title-bar">
+            {showBackToCollections && (
+              <button className="collection-title-bar__back" onClick={handleBackToCollections}>
+                ← All Collections
+              </button>
+            )}
+            <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
+          </div>
           <section className="placeholder">
             <p className="placeholder__text">Select a category to browse items</p>
           </section>
@@ -168,6 +182,15 @@ function CategoryView() {
         />
       </nav>
       <main className="app__content">
+        <div className="collection-title-bar">
+          {showBackToCollections && (
+            <button className="collection-title-bar__back" onClick={handleBackToCollections}>
+              ← All Collections
+            </button>
+          )}
+          <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
+          <p className="collection-title-bar__subtitle">Browse categories, then view items and details.</p>
+        </div>
         <section className="app__items">
           <BackNav label="Categories" onClick={handleBackToCategories} />
           {showSubcategoryDropdown && (

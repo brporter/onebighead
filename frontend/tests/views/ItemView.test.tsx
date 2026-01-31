@@ -63,8 +63,12 @@ describe('ItemView', () => {
     currentCollection: mockCollections[0],
     setCurrentCollection: vi.fn(),
     categories: mockCategories,
+    categoriesLoading: false,
+    categoriesError: null,
     loadCategoriesForCollection: vi.fn(),
     items: mockItems,
+    itemsLoading: false,
+    itemsError: null,
     loadItemsForCategory: vi.fn(),
     loadItemById: vi.fn(async () => null),
     addItem: vi.fn(async () => 2),
@@ -88,6 +92,8 @@ describe('ItemView', () => {
     associateTemplateWithCollection: vi.fn(async () => {}),
     disassociateTemplateFromCollection: vi.fn(async () => {}),
     getCategoryTemplates: vi.fn(async () => []),
+    expandedCategoryIds: new Set([1]),
+    toggleCategoryExpanded: vi.fn(),
   };
 
   beforeEach(() => {

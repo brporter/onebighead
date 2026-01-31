@@ -76,6 +76,10 @@ export interface DataContextValue {
   deleteItemTemplate: (id: number) => Promise<void>;
   associateTemplateWithCollection: (collectionId: number, templateId: number) => Promise<void>;
   disassociateTemplateFromCollection: (collectionId: number, templateId: number) => Promise<void>;
+
+  // Category tree UI state
+  expandedCategoryIds: Set<number>;
+  toggleCategoryExpanded: (categoryId: number) => void;
 }
 
 const defaultContextValue: DataContextValue = {
@@ -126,6 +130,8 @@ const defaultContextValue: DataContextValue = {
   deleteItemTemplate: async () => {},
   associateTemplateWithCollection: async () => {},
   disassociateTemplateFromCollection: async () => {},
+  expandedCategoryIds: new Set(),
+  toggleCategoryExpanded: () => {},
 };
 
 const DataContext = createContext<DataContextValue>(defaultContextValue);
@@ -171,6 +177,10 @@ export function DataProvider({ children }: DataProviderProps) {
   const [itemTemplates, setItemTemplates] = useState<ItemTemplate[]>([]);
   const [itemTemplatesLoading, setItemTemplatesLoading] = useState(false);
   const [itemTemplatesError, setItemTemplatesError] = useState<string | null>(null);
+
+  // Category tree UI state (persisted across views)
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<number>>(new Set());
+  const expandedCategoryIdsInitializedRef = useRef(false);
 
   // Load property suggestions from API with caching
   const loadPropertySuggestions = useCallback(async (collectionId: number) => {
@@ -301,6 +311,19 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, []);
 
+  // Toggle category expansion
+  const toggleCategoryExpanded = useCallback((categoryId: number) => {
+    setExpandedCategoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  }, []);
+
   // Category operations
   const loadCategoriesForCollection = useCallback(async (collectionId: number) => {
     try {
@@ -308,12 +331,21 @@ export function DataProvider({ children }: DataProviderProps) {
       setCategoriesError(null);
       const data = await categoriesApi.getAll(collectionId);
       setCategories(data);
+
+      // Initialize expanded state with root categories (only once per collection load)
+      if (!expandedCategoryIdsInitializedRef.current || expandedCategoryIds.size === 0) {
+        const rootIds = data
+          .filter((c) => c.parentCategoryId == null)
+          .map((c) => c.categoryId);
+        setExpandedCategoryIds(new Set(rootIds));
+        expandedCategoryIdsInitializedRef.current = true;
+      }
     } catch (error) {
       setCategoriesError(error instanceof Error ? error.message : 'Failed to fetch categories');
     } finally {
       setCategoriesLoading(false);
     }
-  }, []);
+  }, [expandedCategoryIds.size]);
 
   const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; visibility?: Visibility; itemTemplateIds?: number[] }): Promise<number> => {
     const created = await categoriesApi.create(category);
@@ -525,6 +557,8 @@ export function DataProvider({ children }: DataProviderProps) {
     deleteItemTemplate,
     associateTemplateWithCollection,
     disassociateTemplateFromCollection,
+    expandedCategoryIds,
+    toggleCategoryExpanded,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

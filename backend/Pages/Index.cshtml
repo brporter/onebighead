@@ -11,7 +11,18 @@
             <nav class="landing__nav">
                 <a asp-page="/About" class="landing__nav-link">About</a>
                 <a asp-page="/Privacy" class="landing__nav-link">Privacy Policy</a>
-                <a asp-page="/SignIn" class="landing__nav-link landing__nav-link--signin">Sign In</a>
+                @if (Model.IsAuthenticated)
+                {
+                    <a href="/collections" class="landing__nav-link">My Collections</a>
+                    <a href="#" class="landing__nav-link"
+                       onclick="event.preventDefault(); fetch('/api/auth/logout', {method:'POST',credentials:'same-origin'}).then(()=>location.reload());">
+                        Sign Out
+                    </a>
+                }
+                else
+                {
+                    <a asp-page="/SignIn" class="landing__nav-link landing__nav-link--signin">Sign In</a>
+                }
             </nav>
         </div>
     </header>
@@ -23,7 +34,14 @@
                 Your personal collection manager for vintage technology, rare collectibles, and cherished items.
             </p>
             <div class="landing__cta">
-                <a asp-page="/SignUp" class="landing__button landing__button--primary">Get Started</a>
+                @if (Model.IsAuthenticated)
+                {
+                    <a href="/collections" class="landing__button landing__button--primary">Go to Collections</a>
+                }
+                else
+                {
+                    <a asp-page="/SignUp" class="landing__button landing__button--primary">Get Started</a>
+                }
                 <a asp-page="/About" class="landing__button landing__button--secondary">Learn More</a>
             </div>
         </section>
