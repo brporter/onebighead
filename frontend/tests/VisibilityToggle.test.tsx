@@ -203,7 +203,7 @@ describe('VisibilityToggle', () => {
       expect(publicBtn).toBeDisabled();
     });
 
-    it('should disable Inherit button when parent is private and visibility is not Default', () => {
+    it('should enable Inherit button even when parent is private', () => {
       render(
         <VisibilityToggle
           visibility={Visibility.Private}
@@ -214,7 +214,22 @@ describe('VisibilityToggle', () => {
       );
 
       const inheritBtn = screen.getByText(/Inherit \(Private\)/);
-      expect(inheritBtn).toBeDisabled();
+      expect(inheritBtn).toBeEnabled();
+    });
+
+    it('should allow switching from Private to Inherit when parent is private', () => {
+      const onChange = vi.fn();
+      render(
+        <VisibilityToggle
+          visibility={Visibility.Private}
+          effectiveIsPublic={false}
+          parentIsPublic={false}
+          onChange={onChange}
+        />
+      );
+
+      fireEvent.click(screen.getByText(/Inherit \(Private\)/));
+      expect(onChange).toHaveBeenCalledWith(Visibility.Default);
     });
 
     it('should show note when parent is private', () => {

@@ -108,7 +108,6 @@ exports[`VisibilityToggle > snapshots > should match snapshot when parent is pri
     >
       <button
         class="visibility-option "
-        disabled=""
         title="Inherit from parent (Private)"
         type="button"
       >

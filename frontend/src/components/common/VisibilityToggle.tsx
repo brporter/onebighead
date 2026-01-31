@@ -51,7 +51,7 @@ export default function VisibilityToggle({
     }
   };
 
-  const canOverride = parentIsPublic || isCollection;
+  const canSetPublic = parentIsPublic || isCollection;
   const inheritedText = parentIsPublic ? 'Public' : 'Private';
 
   return (
@@ -62,8 +62,7 @@ export default function VisibilityToggle({
           <button
             type="button"
             className={`visibility-option ${localValue === 'inherit' ? 'selected' : ''}`}
-            onClick={() => canOverride && handleChange('inherit')}
-            disabled={!canOverride && localValue !== 'inherit'}
+            onClick={() => handleChange('inherit')}
             title={`Inherit from parent (${inheritedText})`}
           >
             Inherit ({inheritedText})
@@ -72,8 +71,8 @@ export default function VisibilityToggle({
         <button
           type="button"
           className={`visibility-option ${localValue === 'public' ? 'selected' : ''}`}
-          onClick={() => canOverride && handleChange('public')}
-          disabled={!canOverride}
+          onClick={() => canSetPublic && handleChange('public')}
+          disabled={!canSetPublic}
           title="Mark as public"
         >
           Public
@@ -87,7 +86,7 @@ export default function VisibilityToggle({
           Private
         </button>
       </div>
-      {!canOverride && !isCollection && (
+      {!canSetPublic && !isCollection && (
         <div className="visibility-note">
           Parent is private; cannot override to public
         </div>
