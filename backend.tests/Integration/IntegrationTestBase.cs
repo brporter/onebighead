@@ -1,11 +1,11 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using backend.Data;
-using backend.Models;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.Models;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace backend.Tests.Integration;
+namespace OneBigHead.Server.Tests.Integration;
 
 /// <summary>
 /// Base class for integration tests providing common functionality.

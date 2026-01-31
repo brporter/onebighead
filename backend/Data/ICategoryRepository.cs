@@ -1,6 +1,6 @@
-using backend.Models;
+using OneBigHead.Server.Models;
 
-namespace backend.Data;
+namespace OneBigHead.Server.Data;
 
 public interface ICategoryRepository
 {

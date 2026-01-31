@@ -1,8 +1,8 @@
-using backend.Data;
-using backend.Models;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Services;
+namespace OneBigHead.Server.Services;
 
 /// <summary>
 /// Seeds the database with initial system data like collection themes and item templates.

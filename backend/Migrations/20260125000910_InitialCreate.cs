@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace backend.Migrations
+namespace OneBigHead.Server.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using backend.DTOs;
-using backend.Models;
+using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Models;
 
-namespace backend.Tests.Integration;
+namespace OneBigHead.Server.Tests.Integration;
 
 [Trait("Category", "Integration")]
 public class CategoriesControllerTests : IntegrationTestBase

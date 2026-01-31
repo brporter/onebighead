@@ -1,4 +1,4 @@
-namespace backend.Authentication;
+namespace OneBigHead.Server.Authentication;
 
 public class AuthenticationSettings
 {

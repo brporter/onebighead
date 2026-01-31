@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace backend.Data;
+namespace OneBigHead.Server.Data;
 
 /// <summary>
 /// Design-time factory for generating migrations targeting SQL Server.

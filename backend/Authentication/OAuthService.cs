@@ -1,10 +1,10 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Web;
-using backend.Models;
+using OneBigHead.Server.Models;
 using Microsoft.Extensions.Options;
 
-namespace backend.Authentication;
+namespace OneBigHead.Server.Authentication;
 
 public interface IOAuthService
 {

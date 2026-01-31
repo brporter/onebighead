@@ -1,9 +1,9 @@
-using backend.Controllers;
+using OneBigHead.Server.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace backend.Tests.Controllers;
+namespace OneBigHead.Server.Tests.Controllers;
 
 // Concrete implementation to test abstract base class
 public class TestableApiController : ApiControllerBase

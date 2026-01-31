@@ -1,12 +1,12 @@
-using backend.Authentication;
-using backend.Models;
+using OneBigHead.Server.Authentication;
+using OneBigHead.Server.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using System.Net;
 
-namespace backend.Tests.Authentication;
+namespace OneBigHead.Server.Tests.Authentication;
 
 [Trait("Category", "Unit")]
 public class OAuthServiceTests

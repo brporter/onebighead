@@ -1,4 +1,4 @@
-namespace backend.Models;
+namespace OneBigHead.Server.Models;
 
 /// <summary>
 /// Represents a user's relationship with an item - whether they have it,

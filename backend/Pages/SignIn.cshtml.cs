@@ -1,8 +1,8 @@
-using backend.Authentication;
+using OneBigHead.Server.Authentication;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
 
-namespace backend.Pages;
+namespace OneBigHead.Server.Pages;
 
 public class SignInModel : PageModel
 {

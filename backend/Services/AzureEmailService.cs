@@ -2,7 +2,7 @@ using Azure;
 using Azure.Communication.Email;
 using Microsoft.Extensions.Options;
 
-namespace backend.Services;
+namespace OneBigHead.Server.Services;
 
 public class AzureEmailService : IEmailService
 {

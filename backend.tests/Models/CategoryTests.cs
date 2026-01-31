@@ -1,7 +1,7 @@
-using backend.Models;
+using OneBigHead.Server.Models;
 using System.Text.Json;
 
-namespace backend.Tests.Models;
+namespace OneBigHead.Server.Tests.Models;
 
 [Trait("Category", "Unit")]
 public class CategoryTests

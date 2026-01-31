@@ -1,9 +1,9 @@
-using backend.DTOs;
-using backend.Models;
+using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace backend.Tests.DTOs;
+namespace OneBigHead.Server.Tests.DTOs;
 
 [Trait("Category", "Unit")]
 public class ItemRequestsTests

@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using backend.Models;
+using OneBigHead.Server.Models;
 
-namespace backend.DTOs;
+namespace OneBigHead.Server.DTOs;
 
 public class ItemTemplatePropertyDto
 {

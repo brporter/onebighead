@@ -1,4 +1,4 @@
-namespace backend.Models;
+namespace OneBigHead.Server.Models;
 
 public enum SupportRequestStatus
 {

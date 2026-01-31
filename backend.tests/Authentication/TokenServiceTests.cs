@@ -1,9 +1,9 @@
-using backend.Authentication;
-using backend.Models;
+using OneBigHead.Server.Authentication;
+using OneBigHead.Server.Models;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
-namespace backend.Tests.Authentication;
+namespace OneBigHead.Server.Tests.Authentication;
 
 [Trait("Category", "Unit")]
 public class TokenServiceTests

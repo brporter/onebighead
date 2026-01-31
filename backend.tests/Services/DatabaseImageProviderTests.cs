@@ -1,8 +1,8 @@
-using backend.Data;
-using backend.Services;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.Services;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Tests.Services;
+namespace OneBigHead.Server.Tests.Services;
 
 [Trait("Category", "Integration")]
 public class DatabaseImageProviderTests : IDisposable

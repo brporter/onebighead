@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace backend.Controllers;
+namespace OneBigHead.Server.Controllers;
 
 /// <summary>
 /// Base controller providing tenant-scoped functionality for API controllers.

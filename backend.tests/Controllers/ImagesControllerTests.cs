@@ -1,13 +1,13 @@
-using backend.Controllers;
-using backend.DTOs;
-using backend.Services;
+using OneBigHead.Server.Controllers;
+using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System.Security.Claims;
 using System.Text;
 
-namespace backend.Tests.Controllers;
+namespace OneBigHead.Server.Tests.Controllers;
 
 [Trait("Category", "Unit")]
 public class ImagesControllerTests

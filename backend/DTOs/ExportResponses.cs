@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using backend.Models;
+using OneBigHead.Server.Models;
 
-namespace backend.DTOs;
+namespace OneBigHead.Server.DTOs;
 
 public class ExportData
 {

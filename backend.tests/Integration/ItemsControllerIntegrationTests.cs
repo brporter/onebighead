@@ -1,8 +1,8 @@
-using backend.Controllers;
-using backend.Data;
-using backend.DTOs;
-using backend.Models;
-using backend.Services;
+using OneBigHead.Server.Controllers;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Models;
+using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +10,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace backend.Tests.Integration;
+namespace OneBigHead.Server.Tests.Integration;
 
 /// <summary>
 /// Integration tests that verify the full request/response cycle including JSON serialization.

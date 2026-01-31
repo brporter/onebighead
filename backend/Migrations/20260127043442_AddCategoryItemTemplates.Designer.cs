@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using backend.Data;
+using OneBigHead.Server.Data;
 
 #nullable disable
 
-namespace backend.Migrations
+namespace OneBigHead.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260127043442_AddCategoryItemTemplates")]
@@ -25,7 +25,7 @@ namespace backend.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("backend.Models.Category", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -71,7 +71,7 @@ namespace backend.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("backend.Models.CategoryItemTemplate", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.CategoryItemTemplate", b =>
                 {
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
@@ -91,7 +91,7 @@ namespace backend.Migrations
                     b.ToTable("CategoryItemTemplates");
                 });
 
-            modelBuilder.Entity("backend.Models.Collection", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Collection", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -139,7 +139,7 @@ namespace backend.Migrations
                     b.ToTable("Collections");
                 });
 
-            modelBuilder.Entity("backend.Models.CollectionItemTemplate", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.CollectionItemTemplate", b =>
                 {
                     b.Property<int>("CollectionId")
                         .HasColumnType("int");
@@ -154,7 +154,7 @@ namespace backend.Migrations
                     b.ToTable("CollectionItemTemplates");
                 });
 
-            modelBuilder.Entity("backend.Models.Item", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Item", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -217,7 +217,7 @@ namespace backend.Migrations
                     b.ToTable("Items");
                 });
 
-            modelBuilder.Entity("backend.Models.ItemTemplate", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.ItemTemplate", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -252,7 +252,7 @@ namespace backend.Migrations
                     b.ToTable("ItemTemplates");
                 });
 
-            modelBuilder.Entity("backend.Models.ItemTemplateProperty", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.ItemTemplateProperty", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -284,7 +284,7 @@ namespace backend.Migrations
                     b.ToTable("ItemTemplateProperties");
                 });
 
-            modelBuilder.Entity("backend.Models.PropertySuggestion", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.PropertySuggestion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -318,7 +318,7 @@ namespace backend.Migrations
                     b.ToTable("PropertySuggestions");
                 });
 
-            modelBuilder.Entity("backend.Models.StoredImage", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.StoredImage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -351,7 +351,7 @@ namespace backend.Migrations
                     b.ToTable("StoredImages");
                 });
 
-            modelBuilder.Entity("backend.Models.Tenant", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Tenant", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -374,7 +374,7 @@ namespace backend.Migrations
                     b.ToTable("Tenants");
                 });
 
-            modelBuilder.Entity("backend.Models.User", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -416,20 +416,20 @@ namespace backend.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("backend.Models.Category", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Category", b =>
                 {
-                    b.HasOne("backend.Models.Collection", "Collection")
+                    b.HasOne("OneBigHead.Server.Models.Collection", "Collection")
                         .WithMany("Categories")
                         .HasForeignKey("CollectionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("backend.Models.Category", "ParentCategory")
+                    b.HasOne("OneBigHead.Server.Models.Category", "ParentCategory")
                         .WithMany("ChildCategories")
                         .HasForeignKey("ParentCategoryId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("backend.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
                         .WithMany("Categories")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -442,15 +442,15 @@ namespace backend.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("backend.Models.CategoryItemTemplate", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.CategoryItemTemplate", b =>
                 {
-                    b.HasOne("backend.Models.Category", "Category")
+                    b.HasOne("OneBigHead.Server.Models.Category", "Category")
                         .WithMany("CategoryItemTemplates")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("backend.Models.ItemTemplate", "ItemTemplate")
+                    b.HasOne("OneBigHead.Server.Models.ItemTemplate", "ItemTemplate")
                         .WithMany("CategoryItemTemplates")
                         .HasForeignKey("ItemTemplateId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -461,9 +461,9 @@ namespace backend.Migrations
                     b.Navigation("ItemTemplate");
                 });
 
-            modelBuilder.Entity("backend.Models.Collection", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Collection", b =>
                 {
-                    b.HasOne("backend.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
                         .WithMany("Collections")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -472,15 +472,15 @@ namespace backend.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("backend.Models.CollectionItemTemplate", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.CollectionItemTemplate", b =>
                 {
-                    b.HasOne("backend.Models.Collection", "Collection")
+                    b.HasOne("OneBigHead.Server.Models.Collection", "Collection")
                         .WithMany("CollectionItemTemplates")
                         .HasForeignKey("CollectionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("backend.Models.ItemTemplate", "ItemTemplate")
+                    b.HasOne("OneBigHead.Server.Models.ItemTemplate", "ItemTemplate")
                         .WithMany("CollectionItemTemplates")
                         .HasForeignKey("ItemTemplateId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -491,20 +491,20 @@ namespace backend.Migrations
                     b.Navigation("ItemTemplate");
                 });
 
-            modelBuilder.Entity("backend.Models.Item", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Item", b =>
                 {
-                    b.HasOne("backend.Models.Category", "Category")
+                    b.HasOne("OneBigHead.Server.Models.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("backend.Models.Collection", "Collection")
+                    b.HasOne("OneBigHead.Server.Models.Collection", "Collection")
                         .WithMany("Items")
                         .HasForeignKey("CollectionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("backend.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -517,9 +517,9 @@ namespace backend.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("backend.Models.ItemTemplate", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.ItemTemplate", b =>
                 {
-                    b.HasOne("backend.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -527,9 +527,9 @@ namespace backend.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("backend.Models.ItemTemplateProperty", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.ItemTemplateProperty", b =>
                 {
-                    b.HasOne("backend.Models.ItemTemplate", "ItemTemplate")
+                    b.HasOne("OneBigHead.Server.Models.ItemTemplate", "ItemTemplate")
                         .WithMany("Properties")
                         .HasForeignKey("ItemTemplateId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -538,15 +538,15 @@ namespace backend.Migrations
                     b.Navigation("ItemTemplate");
                 });
 
-            modelBuilder.Entity("backend.Models.PropertySuggestion", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.PropertySuggestion", b =>
                 {
-                    b.HasOne("backend.Models.Collection", "Collection")
+                    b.HasOne("OneBigHead.Server.Models.Collection", "Collection")
                         .WithMany()
                         .HasForeignKey("CollectionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("backend.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -557,9 +557,9 @@ namespace backend.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("backend.Models.StoredImage", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.StoredImage", b =>
                 {
-                    b.HasOne("backend.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -568,9 +568,9 @@ namespace backend.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("backend.Models.User", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
                 {
-                    b.HasOne("backend.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
                         .WithMany("Users")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -579,14 +579,14 @@ namespace backend.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("backend.Models.Category", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Category", b =>
                 {
                     b.Navigation("CategoryItemTemplates");
 
                     b.Navigation("ChildCategories");
                 });
 
-            modelBuilder.Entity("backend.Models.Collection", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Collection", b =>
                 {
                     b.Navigation("Categories");
 
@@ -595,7 +595,7 @@ namespace backend.Migrations
                     b.Navigation("Items");
                 });
 
-            modelBuilder.Entity("backend.Models.ItemTemplate", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.ItemTemplate", b =>
                 {
                     b.Navigation("CategoryItemTemplates");
 
@@ -604,7 +604,7 @@ namespace backend.Migrations
                     b.Navigation("Properties");
                 });
 
-            modelBuilder.Entity("backend.Models.Tenant", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.Tenant", b =>
                 {
                     b.Navigation("Categories");
 

@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace backend.Migrations
+namespace OneBigHead.Server.Migrations
 {
     /// <inheritdoc />
     public partial class AddUserFlagToItem : Migration

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace backend.DTOs;
+namespace OneBigHead.Server.DTOs;
 
 public class TenantSummaryResponse
 {

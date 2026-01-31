@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace backend.Utilities;
+namespace OneBigHead.Server.Utilities;
 
 /// <summary>
 /// Provides utilities for computing ETags for HTTP caching.

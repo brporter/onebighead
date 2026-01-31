@@ -3,7 +3,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
-namespace backend.Authentication;
+namespace OneBigHead.Server.Authentication;
 
 public class CookieJwtAuthenticationHandler : AuthenticationHandler<CookieJwtAuthenticationOptions>
 {

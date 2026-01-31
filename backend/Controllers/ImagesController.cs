@@ -1,9 +1,9 @@
-using backend.DTOs;
-using backend.Services;
+using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace backend.Controllers;
+namespace OneBigHead.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

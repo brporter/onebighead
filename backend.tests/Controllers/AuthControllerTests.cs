@@ -1,8 +1,8 @@
-using backend.Authentication;
-using backend.Controllers;
-using backend.Data;
-using backend.DTOs;
-using backend.Models;
+using OneBigHead.Server.Authentication;
+using OneBigHead.Server.Controllers;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using System.Security.Claims;
 
-namespace backend.Tests.Controllers;
+namespace OneBigHead.Server.Tests.Controllers;
 
 [Trait("Category", "Unit")]
 public class AuthControllerTests
@@ -471,7 +471,7 @@ public class AuthControllerTests
     public async Task CompleteWelcome_ReturnsUnauthorized_WhenNotAuthenticated()
     {
         // Arrange - default setup has no auth
-        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = "Test" };
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = "Test" };
 
         // Act
         var result = await _controller.CompleteWelcome(request);
@@ -487,7 +487,7 @@ public class AuthControllerTests
         SetupHttpContext(authenticated: true, tenantId: 1, email: "user@test.com");
         var tenant = new Tenant { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
         _mockTenantRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(tenant);
-        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = "New Name" };
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = "New Name" };
 
         // Act
         var result = await _controller.CompleteWelcome(request);
@@ -506,7 +506,7 @@ public class AuthControllerTests
         SetupHttpContext(authenticated: true, tenantId: 1, email: "user@example.com");
         var tenant = new Tenant { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
         _mockTenantRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(tenant);
-        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = null };
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = null };
 
         // Act
         var result = await _controller.CompleteWelcome(request);
@@ -524,7 +524,7 @@ public class AuthControllerTests
         SetupHttpContext(authenticated: true, tenantId: 1, email: "user@test.com");
         var tenant = new Tenant { Id = 1, Name = "Test", HasCompletedWelcome = false };
         _mockTenantRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(tenant);
-        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = "My Org" };
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = "My Org" };
 
         // Act
         await _controller.CompleteWelcome(request);
@@ -539,7 +539,7 @@ public class AuthControllerTests
         // Arrange
         SetupHttpContext(authenticated: true, tenantId: 999, email: "user@test.com");
         _mockTenantRepository.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Tenant?)null);
-        var request = new backend.DTOs.CompleteWelcomeRequest { TenantName = "Test" };
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = "Test" };
 
         // Act
         var result = await _controller.CompleteWelcome(request);

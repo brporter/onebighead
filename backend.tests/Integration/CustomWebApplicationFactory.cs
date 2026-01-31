@@ -1,5 +1,5 @@
-using backend.Data;
-using backend.Services;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
-namespace backend.Tests.Integration;
+namespace OneBigHead.Server.Tests.Integration;
 
 /// <summary>
 /// Custom WebApplicationFactory for integration testing with in-memory database.

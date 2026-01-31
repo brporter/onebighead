@@ -1,8 +1,8 @@
-using backend.Data;
-using backend.Models;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Tests.Integration.Data;
+namespace OneBigHead.Server.Tests.Integration.Data;
 
 [Trait("Category", "Integration")]
 public class CategoryRepositoryTests : IDisposable

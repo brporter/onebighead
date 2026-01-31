@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace backend.Models;
+namespace OneBigHead.Server.Models;
 
 /// <summary>
 /// Defines a category template within a collection theme.

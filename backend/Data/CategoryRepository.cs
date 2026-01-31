@@ -1,7 +1,7 @@
-using backend.Models;
+using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Data;
+namespace OneBigHead.Server.Data;
 
 public class CategoryRepository : ICategoryRepository
 {

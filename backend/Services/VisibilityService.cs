@@ -1,6 +1,6 @@
-using backend.Models;
+using OneBigHead.Server.Models;
 
-namespace backend.Services;
+namespace OneBigHead.Server.Services;
 
 public interface IVisibilityService
 {

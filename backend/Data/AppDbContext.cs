@@ -1,9 +1,9 @@
 using System.Text.Json;
-using backend.Models;
+using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-namespace backend.Data;
+namespace OneBigHead.Server.Data;
 
 public class AppDbContext : DbContext
 {

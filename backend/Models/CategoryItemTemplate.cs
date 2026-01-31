@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace backend.Models;
+namespace OneBigHead.Server.Models;
 
 public class CategoryItemTemplate
 {

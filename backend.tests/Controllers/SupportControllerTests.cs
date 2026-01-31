@@ -1,14 +1,14 @@
-using backend.Controllers;
-using backend.Data;
-using backend.DTOs;
-using backend.Models;
-using backend.Services;
+using OneBigHead.Server.Controllers;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Models;
+using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System.Security.Claims;
 
-namespace backend.Tests.Controllers;
+namespace OneBigHead.Server.Tests.Controllers;
 
 [Trait("Category", "Unit")]
 public class SupportControllerTests

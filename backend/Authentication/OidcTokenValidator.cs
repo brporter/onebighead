@@ -1,11 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
-using backend.Models;
+using OneBigHead.Server.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
-namespace backend.Authentication;
+namespace OneBigHead.Server.Authentication;
 
 public interface IOidcTokenValidator
 {

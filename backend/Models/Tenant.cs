@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace backend.Models;
+namespace OneBigHead.Server.Models;
 
 public class Tenant
 {

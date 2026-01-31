@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace backend.Tests.Integration;
+namespace OneBigHead.Server.Tests.Integration;
 
 /// <summary>
 /// Test authentication handler that creates authenticated users from request headers.

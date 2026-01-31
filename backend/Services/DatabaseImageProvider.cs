@@ -1,8 +1,8 @@
-using backend.Data;
-using backend.Models;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Services;
+namespace OneBigHead.Server.Services;
 
 public class DatabaseImageProvider : IImageProvider
 {

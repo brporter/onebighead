@@ -1,4 +1,4 @@
-namespace backend.Services;
+namespace OneBigHead.Server.Services;
 
 public class EmailSettings
 {

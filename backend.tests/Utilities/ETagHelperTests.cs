@@ -1,6 +1,6 @@
-using backend.Utilities;
+using OneBigHead.Server.Utilities;
 
-namespace backend.Tests.Utilities;
+namespace OneBigHead.Server.Tests.Utilities;
 
 [Trait("Category", "Unit")]
 public class ETagHelperTests

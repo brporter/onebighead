@@ -1,6 +1,6 @@
-using backend.Authentication;
-using backend.Data;
-using backend.Services;
+using OneBigHead.Server.Authentication;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using System.Text.Json.Serialization;

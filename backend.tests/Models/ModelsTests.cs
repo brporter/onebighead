@@ -1,6 +1,6 @@
-using backend.Models;
+using OneBigHead.Server.Models;
 
-namespace backend.Tests.Models;
+namespace OneBigHead.Server.Tests.Models;
 
 [Trait("Category", "Unit")]
 public class ItemTests

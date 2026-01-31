@@ -1,4 +1,4 @@
-namespace backend.DTOs;
+namespace OneBigHead.Server.DTOs;
 
 public class PropertySuggestionsResponse
 {

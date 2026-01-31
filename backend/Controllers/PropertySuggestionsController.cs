@@ -1,9 +1,9 @@
-using backend.Data;
-using backend.DTOs;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace backend.Controllers;
+namespace OneBigHead.Server.Controllers;
 
 [ApiController]
 [Route("api/collections/{collectionId}/property-suggestions")]

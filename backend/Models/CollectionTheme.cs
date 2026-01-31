@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace backend.Models;
+namespace OneBigHead.Server.Models;
 
 /// <summary>
 /// A collection theme provides a preset bundle of templates and categories

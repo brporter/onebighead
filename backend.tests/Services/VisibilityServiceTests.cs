@@ -1,7 +1,7 @@
-using backend.Models;
-using backend.Services;
+using OneBigHead.Server.Models;
+using OneBigHead.Server.Services;
 
-namespace backend.Tests.Services;
+namespace OneBigHead.Server.Tests.Services;
 
 [Trait("Category", "Unit")]
 public class VisibilityServiceTests

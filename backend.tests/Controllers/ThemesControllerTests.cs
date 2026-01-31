@@ -1,12 +1,12 @@
-using backend.Controllers;
-using backend.Data;
-using backend.Models;
+using OneBigHead.Server.Controllers;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System.Security.Claims;
 
-namespace backend.Tests.Controllers;
+namespace OneBigHead.Server.Tests.Controllers;
 
 [Trait("Category", "Unit")]
 public class ThemesControllerTests
@@ -73,7 +73,7 @@ public class ThemesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedThemes = Assert.IsAssignableFrom<IEnumerable<backend.DTOs.CollectionThemeDto>>(okResult.Value);
+        var returnedThemes = Assert.IsAssignableFrom<IEnumerable<OneBigHead.Server.DTOs.CollectionThemeDto>>(okResult.Value);
         Assert.Equal(2, returnedThemes.Count());
     }
 
@@ -89,7 +89,7 @@ public class ThemesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedThemes = Assert.IsAssignableFrom<IEnumerable<backend.DTOs.CollectionThemeDto>>(okResult.Value);
+        var returnedThemes = Assert.IsAssignableFrom<IEnumerable<OneBigHead.Server.DTOs.CollectionThemeDto>>(okResult.Value);
         Assert.Empty(returnedThemes);
     }
 
@@ -137,7 +137,7 @@ public class ThemesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedThemes = Assert.IsAssignableFrom<IEnumerable<backend.DTOs.CollectionThemeDto>>(okResult.Value).ToList();
+        var returnedThemes = Assert.IsAssignableFrom<IEnumerable<OneBigHead.Server.DTOs.CollectionThemeDto>>(okResult.Value).ToList();
         Assert.Single(returnedThemes);
         
         var theme = returnedThemes[0];
@@ -173,7 +173,7 @@ public class ThemesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedTheme = Assert.IsType<backend.DTOs.CollectionThemeDto>(okResult.Value);
+        var returnedTheme = Assert.IsType<OneBigHead.Server.DTOs.CollectionThemeDto>(okResult.Value);
         Assert.Equal(1, returnedTheme.ThemeId);
         Assert.Equal("Books", returnedTheme.Name);
     }

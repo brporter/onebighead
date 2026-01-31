@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 
-namespace backend.Tests.Integration;
+namespace OneBigHead.Server.Tests.Integration;
 
 [Trait("Category", "Integration")]
 public class HealthCheckTests : IntegrationTestBase
