@@ -2,7 +2,7 @@ using backend.Data;
 using backend.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Tests.Data;
+namespace backend.Tests.Integration.Data;
 
 [Trait("Category", "Integration")]
 public class CollectionRepositoryTests : IDisposable

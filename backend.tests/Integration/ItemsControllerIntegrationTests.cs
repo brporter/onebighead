@@ -10,7 +10,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace backend.Tests.Controllers;
+namespace backend.Tests.Integration;
 
 /// <summary>
 /// Integration tests that verify the full request/response cycle including JSON serialization.

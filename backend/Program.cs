@@ -22,10 +22,13 @@ builder.Services.Configure<RouteOptions>(options =>
     options.LowercaseUrls = true;
 });
 
-// Configure EF Core with SQL Server
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+// Configure EF Core with SQL Server (skipped in Testing environment - tests provide their own)
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(connectionString));
+}
 
 // Register repositories
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -65,19 +68,18 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// In Debug builds: run migrations automatically
-// In Release builds: use migration bundle for deployments
-#if DEBUG
+// In Development: run migrations and seed automatically
+// In other environments: use migration bundles for deployments
+if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     context.Database.Migrate();
-    
+
     // Seed database with system data
     var seeder = new DatabaseSeeder(context);
     await seeder.SeedAsync();
 }
-#endif
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

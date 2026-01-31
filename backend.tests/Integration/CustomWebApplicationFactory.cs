@@ -1,0 +1,135 @@
+using backend.Data;
+using backend.Services;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+
+namespace backend.Tests.Integration;
+
+/// <summary>
+/// Custom WebApplicationFactory for integration testing with in-memory database.
+/// Each instance creates a unique database to ensure test isolation.
+/// </summary>
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>
+{
+    private readonly string _databaseName;
+
+    public CustomWebApplicationFactory()
+    {
+        // Generate unique database name for each factory instance
+        _databaseName = $"TestDb_{Guid.NewGuid()}";
+    }
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        // Set environment to Testing - this causes Program.cs to skip SQL Server configuration
+        builder.UseEnvironment("Testing");
+
+        builder.ConfigureTestServices(services =>
+        {
+            // Add in-memory database for testing
+            // (Program.cs skips DbContext registration in Testing environment)
+            services.AddDbContext<AppDbContext>(options =>
+            {
+                options.UseInMemoryDatabase(_databaseName);
+            });
+
+            // Replace email service with a test implementation
+            services.RemoveAll<IEmailService>();
+            services.AddScoped<IEmailService, TestEmailService>();
+
+            // Configure test authentication
+            services.AddAuthentication(defaultScheme: TestAuthHandler.SchemeName)
+                .AddScheme<TestAuthSchemeOptions, TestAuthHandler>(
+                    TestAuthHandler.SchemeName, options => { });
+        });
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+
+        // Ensure database is created
+        using var scope = host.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        context.Database.EnsureCreated();
+
+        return host;
+    }
+
+    /// <summary>
+    /// Creates a client that is authenticated with the specified claims.
+    /// </summary>
+    public HttpClient CreateAuthenticatedClient(int tenantId, int userId, string email = "test@example.com")
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.TenantIdHeader, tenantId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email);
+        return client;
+    }
+
+    /// <summary>
+    /// Creates an unauthenticated client for testing anonymous endpoints.
+    /// </summary>
+    public HttpClient CreateUnauthenticatedClient()
+    {
+        return CreateClient();
+    }
+
+    /// <summary>
+    /// Seeds the database with test data using a scoped context.
+    /// </summary>
+    public async Task SeedDatabaseAsync(Action<AppDbContext> seedAction)
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        seedAction(context);
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds the database with test data using an async action.
+    /// </summary>
+    public async Task SeedDatabaseAsync(Func<AppDbContext, Task> seedAction)
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await seedAction(context);
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Gets a scoped database context for assertions.
+    /// </summary>
+    public AppDbContext GetDbContext()
+    {
+        var scope = Services.CreateScope();
+        return scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    }
+}
+
+/// <summary>
+/// Test email service that captures sent emails for verification.
+/// </summary>
+public class TestEmailService : IEmailService
+{
+    public List<(string To, string Subject, int RequestId)> SupportConfirmations { get; } = new();
+    public List<(string To, string Subject, string Reply, int RequestId)> SupportReplies { get; } = new();
+
+    public Task SendSupportRequestConfirmationAsync(string toEmail, string subject, int requestId, bool isLoggedInUser)
+    {
+        SupportConfirmations.Add((toEmail, subject, requestId));
+        return Task.CompletedTask;
+    }
+
+    public Task SendSupportReplyNotificationAsync(string toEmail, string subject, string replyMessage, int requestId, bool isLoggedInUser)
+    {
+        SupportReplies.Add((toEmail, subject, replyMessage, requestId));
+        return Task.CompletedTask;
+    }
+}
