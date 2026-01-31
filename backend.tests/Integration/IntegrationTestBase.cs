@@ -76,14 +76,15 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
             Name = "Test Tenant"
         });
 
-        // Create default user
+        // Create default user (TenantAdmin)
         context.Users.Add(new User
         {
             Id = DefaultUserId,
             TenantId = DefaultTenantId,
             Email = DefaultEmail,
             IdentityProvider = IdentityProvider.Microsoft,
-            ProviderSubjectId = "test-user-1"
+            ProviderSubjectId = "test-user-1",
+            TenantRole = TenantRole.TenantAdmin
         });
 
         // Create default collection
@@ -151,9 +152,9 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
     /// <summary>
     /// Creates an authenticated client for a different tenant/user.
     /// </summary>
-    protected HttpClient CreateClientForTenant(int tenantId, int userId, string email = "other@example.com")
+    protected HttpClient CreateClientForTenant(int tenantId, int userId, string email = "other@example.com", string tenantRole = "TenantAdmin")
     {
-        return Factory.CreateAuthenticatedClient(tenantId, userId, email);
+        return Factory.CreateAuthenticatedClient(tenantId, userId, email, tenantRole);
     }
 
     /// <summary>
@@ -162,6 +163,22 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
     protected HttpClient CreateAnonymousClient()
     {
         return Factory.CreateUnauthenticatedClient();
+    }
+
+    /// <summary>
+    /// Creates an authenticated client with Normal (non-admin) role for the default tenant.
+    /// </summary>
+    protected HttpClient CreateNormalUserClient(int userId = 999, string email = "normal@example.com")
+    {
+        return Factory.CreateAuthenticatedClient(DefaultTenantId, userId, email, "Normal");
+    }
+
+    /// <summary>
+    /// Creates an authenticated client with TenantAdmin role for the default tenant.
+    /// </summary>
+    protected HttpClient CreateAdminUserClient(int userId = DefaultUserId, string email = DefaultEmail)
+    {
+        return Factory.CreateAuthenticatedClient(DefaultTenantId, userId, email, "TenantAdmin");
     }
 
     /// <summary>

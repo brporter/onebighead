@@ -252,9 +252,50 @@ public class UserTests
         Assert.Equal(0, user.Id);
         Assert.Equal(0, user.TenantId);
         Assert.Equal(string.Empty, user.Email);
-        Assert.Equal(IdentityProvider.Microsoft, user.IdentityProvider);
-        Assert.Equal(string.Empty, user.ProviderSubjectId);
+        Assert.Equal(IdentityProvider.None, user.IdentityProvider);
+        Assert.Null(user.ProviderSubjectId);
         Assert.Null(user.Tenant);
+        Assert.Equal(TenantRole.Normal, user.TenantRole);
+        Assert.False(user.IsLinked);
+    }
+
+    [Fact]
+    public void User_IsLinked_ReturnsTrueWhenProviderSubjectIdIsSet()
+    {
+        // Arrange
+        var user = new User
+        {
+            ProviderSubjectId = "provider-123"
+        };
+
+        // Assert
+        Assert.True(user.IsLinked);
+    }
+
+    [Fact]
+    public void User_IsLinked_ReturnsFalseWhenProviderSubjectIdIsNull()
+    {
+        // Arrange
+        var user = new User
+        {
+            ProviderSubjectId = null
+        };
+
+        // Assert
+        Assert.False(user.IsLinked);
+    }
+
+    [Fact]
+    public void User_IsLinked_ReturnsFalseWhenProviderSubjectIdIsEmpty()
+    {
+        // Arrange
+        var user = new User
+        {
+            ProviderSubjectId = string.Empty
+        };
+
+        // Assert
+        Assert.False(user.IsLinked);
     }
 
     [Fact]

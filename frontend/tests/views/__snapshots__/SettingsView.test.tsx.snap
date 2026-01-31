@@ -1,0 +1,2070 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SettingsView > snapshots > should match snapshot for admin user - collections section 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📋
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Item Templates
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                👥
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Team Members
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📦
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          class="settings-section"
+        >
+          <div
+            class="settings-section__header"
+          >
+            <div>
+              <h2
+                class="settings-section__title"
+              >
+                Collections
+              </h2>
+              <p
+                class="settings-section__description"
+              >
+                Manage your collections. Each collection can have categories and items.
+              </p>
+            </div>
+            <button
+              class="settings-section__addButton"
+            >
+              + New Collection
+            </button>
+          </div>
+          <div
+            class="settings-collection-grid"
+          >
+            <div
+              class="settings-collection-card"
+            >
+              <div
+                class="settings-collection-card__content"
+              >
+                <h3
+                  class="settings-collection-card__name"
+                >
+                  Test Collection 1
+                </h3>
+                <p
+                  class="settings-collection-card__description"
+                >
+                  First collection description
+                </p>
+                <div
+                  class="settings-collection-card__meta"
+                >
+                  <span
+                    class="settings-collection-card__visibility settings-collection-card__visibility--public"
+                  >
+                    🌐 Public
+                  </span>
+                </div>
+              </div>
+              <div
+                class="settings-collection-card__actions"
+              >
+                <button
+                  class="settings-collection-card__button"
+                >
+                  Templates
+                </button>
+                <button
+                  class="settings-collection-card__button"
+                >
+                  Edit
+                </button>
+                <button
+                  class="settings-collection-card__button settings-collection-card__button--danger"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+            <div
+              class="settings-collection-card"
+            >
+              <div
+                class="settings-collection-card__content"
+              >
+                <h3
+                  class="settings-collection-card__name"
+                >
+                  Test Collection 2
+                </h3>
+                <p
+                  class="settings-collection-card__description"
+                >
+                  Second collection description
+                </p>
+                <div
+                  class="settings-collection-card__meta"
+                >
+                  <span
+                    class="settings-collection-card__visibility "
+                  >
+                    🔒 Private
+                  </span>
+                </div>
+              </div>
+              <div
+                class="settings-collection-card__actions"
+              >
+                <button
+                  class="settings-collection-card__button"
+                >
+                  Templates
+                </button>
+                <button
+                  class="settings-collection-card__button"
+                >
+                  Edit
+                </button>
+                <button
+                  class="settings-collection-card__button settings-collection-card__button--danger"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsView > snapshots > should match snapshot for export section 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📋
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Item Templates
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                👥
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Team Members
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📦
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          class="settings-section"
+        >
+          <div
+            class="settings-section__header"
+          >
+            <div>
+              <h2
+                class="settings-section__title"
+              >
+                Data Export
+              </h2>
+              <p
+                class="settings-section__description"
+              >
+                Download all your collections, categories, and items as a ZIP file. This includes all metadata and can be used for backup purposes.
+              </p>
+            </div>
+          </div>
+          <div
+            class="settings-export-card"
+          >
+            <div
+              class="settings-export-card__icon"
+            >
+              📦
+            </div>
+            <div
+              class="settings-export-card__content"
+            >
+              <h3
+                class="settings-export-card__title"
+              >
+                Export All Data
+              </h3>
+              <p
+                class="settings-export-card__description"
+              >
+                Creates a ZIP archive containing JSON files with all your collections, categories, items, and their properties.
+              </p>
+            </div>
+            <button
+              class="settings-export-card__button"
+            >
+              Download Export
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsView > snapshots > should match snapshot for normal user - collections section 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          class="settings-section"
+        >
+          <div
+            class="settings-section__header"
+          >
+            <div>
+              <h2
+                class="settings-section__title"
+              >
+                Collections
+              </h2>
+              <p
+                class="settings-section__description"
+              >
+                Manage your collections. Each collection can have categories and items.
+              </p>
+            </div>
+          </div>
+          <div
+            class="settings-collection-grid"
+          >
+            <div
+              class="settings-collection-card"
+            >
+              <div
+                class="settings-collection-card__content"
+              >
+                <h3
+                  class="settings-collection-card__name"
+                >
+                  Test Collection 1
+                </h3>
+                <p
+                  class="settings-collection-card__description"
+                >
+                  First collection description
+                </p>
+                <div
+                  class="settings-collection-card__meta"
+                >
+                  <span
+                    class="settings-collection-card__visibility settings-collection-card__visibility--public"
+                  >
+                    🌐 Public
+                  </span>
+                </div>
+              </div>
+              <div
+                class="settings-collection-card__actions"
+              >
+                <button
+                  class="settings-collection-card__button"
+                >
+                  Templates
+                </button>
+                <button
+                  class="settings-collection-card__button"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+            <div
+              class="settings-collection-card"
+            >
+              <div
+                class="settings-collection-card__content"
+              >
+                <h3
+                  class="settings-collection-card__name"
+                >
+                  Test Collection 2
+                </h3>
+                <p
+                  class="settings-collection-card__description"
+                >
+                  Second collection description
+                </p>
+                <div
+                  class="settings-collection-card__meta"
+                >
+                  <span
+                    class="settings-collection-card__visibility "
+                  >
+                    🔒 Private
+                  </span>
+                </div>
+              </div>
+              <div
+                class="settings-collection-card__actions"
+              >
+                <button
+                  class="settings-collection-card__button"
+                >
+                  Templates
+                </button>
+                <button
+                  class="settings-collection-card__button"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsView > snapshots > should match snapshot for support section 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📋
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Item Templates
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                👥
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Team Members
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📦
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          class="settings-section settings-section--support"
+        >
+          <div
+            class="settings-section__header"
+          >
+            <div>
+              <h2
+                class="settings-section__title"
+              >
+                Support Requests
+              </h2>
+              <p
+                class="settings-section__description"
+              >
+                View and manage your support requests. Get help with any issues you encounter.
+              </p>
+            </div>
+          </div>
+          <div
+            data-testid="support-section"
+          >
+            Support Section (fullPage: 
+            true
+            )
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsView > snapshots > should match snapshot for team section 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📋
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Item Templates
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                👥
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Team Members
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📦
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          class="settings-section"
+        >
+          <div
+            class="settings-section__header"
+          >
+            <div>
+              <h2
+                class="settings-section__title"
+              >
+                Team Members
+              </h2>
+              <p
+                class="settings-section__description"
+              >
+                Invite team members to collaborate on your collections.
+              </p>
+            </div>
+          </div>
+          <div
+            data-testid="user-management"
+          >
+            <span>
+              User Management
+            </span>
+            <button>
+              Mark Team Dirty
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsView > snapshots > should match snapshot for templates section 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📋
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Item Templates
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                👥
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Team Members
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📦
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          class="settings-section settings-section--templates"
+        >
+          <div
+            data-testid="item-template-editor"
+          >
+            <button>
+              Close Template Editor
+            </button>
+            <button>
+              Mark Dirty
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsView > snapshots > should match snapshot in collection edit mode 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📋
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Item Templates
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                👥
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Team Members
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📦
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          class="settings-section"
+        >
+          <div
+            class="settings-section__header"
+          >
+            <div>
+              <h2
+                class="settings-section__title"
+              >
+                Collections
+              </h2>
+              <p
+                class="settings-section__description"
+              >
+                Manage your collections. Each collection can have categories and items.
+              </p>
+            </div>
+          </div>
+          <form
+            class="settings-form"
+          >
+            <h3
+              class="settings-form__title"
+            >
+              Edit Collection
+            </h3>
+            <div
+              class="settings-form__field"
+            >
+              <label
+                class="settings-form__label"
+              >
+                Name 
+                <span
+                  class="settings-form__required"
+                >
+                  *
+                </span>
+              </label>
+              <input
+                class="settings-form__input"
+                placeholder="My Collection"
+                type="text"
+                value="Test Collection 1"
+              />
+            </div>
+            <div
+              class="settings-form__field"
+            >
+              <label
+                class="settings-form__label"
+              >
+                Description
+              </label>
+              <textarea
+                class="settings-form__textarea"
+                placeholder="A brief description of this collection"
+                rows="3"
+              >
+                First collection description
+              </textarea>
+            </div>
+            <div
+              class="settings-form__field"
+            >
+              <label
+                class="settings-form__label"
+              >
+                Hero Image URL
+              </label>
+              <input
+                class="settings-form__input"
+                placeholder="https://example.com/image.jpg"
+                type="url"
+                value="https://example.com/hero1.jpg"
+              />
+            </div>
+            <div
+              class="settings-form__field"
+            >
+              <div
+                data-testid="visibility-toggle"
+              >
+                <label>
+                  Collection Visibility
+                </label>
+                <select>
+                  <option
+                    value="Private"
+                  >
+                    Private
+                  </option>
+                  <option
+                    value="Public"
+                  >
+                    Public
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div
+              class="settings-form__field"
+            >
+              <label
+                class="settings-form__label"
+              >
+                Item Templates
+              </label>
+              <p
+                class="settings-form__hint"
+              >
+                Configure which templates are available when creating items in this collection.
+              </p>
+              <button
+                class="settings-form__button settings-form__button--secondary"
+                type="button"
+              >
+                Manage Templates
+              </button>
+            </div>
+            <div
+              class="settings-form__actions"
+            >
+              <button
+                class="settings-form__button settings-form__button--primary"
+                type="submit"
+              >
+                Save Changes
+              </button>
+              <button
+                class="settings-form__button settings-form__button--secondary"
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsView > snapshots > should match snapshot with collection template editor 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📋
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Item Templates
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                👥
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Team Members
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📦
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          class="settings-section"
+        >
+          <div
+            data-testid="collection-template-editor"
+          >
+            <span>
+              Editing templates for: 
+              Test Collection 1
+            </span>
+            <button>
+              Close Collection Templates
+            </button>
+            <button>
+              Mark Collection Templates Dirty
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsView > snapshots > should match snapshot with error displayed 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📋
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Item Templates
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                👥
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Team Members
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📦
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          class="settings-section"
+        >
+          <div
+            class="settings-section__header"
+          >
+            <div>
+              <h2
+                class="settings-section__title"
+              >
+                Collections
+              </h2>
+              <p
+                class="settings-section__description"
+              >
+                Manage your collections. Each collection can have categories and items.
+              </p>
+            </div>
+          </div>
+          <div
+            class="settings-section__error"
+          >
+            Failed to save
+          </div>
+          <form
+            class="settings-form"
+          >
+            <h3
+              class="settings-form__title"
+            >
+              Edit Collection
+            </h3>
+            <div
+              class="settings-form__field"
+            >
+              <label
+                class="settings-form__label"
+              >
+                Name 
+                <span
+                  class="settings-form__required"
+                >
+                  *
+                </span>
+              </label>
+              <input
+                class="settings-form__input"
+                placeholder="My Collection"
+                type="text"
+                value="Test Collection 1"
+              />
+            </div>
+            <div
+              class="settings-form__field"
+            >
+              <label
+                class="settings-form__label"
+              >
+                Description
+              </label>
+              <textarea
+                class="settings-form__textarea"
+                placeholder="A brief description of this collection"
+                rows="3"
+              >
+                First collection description
+              </textarea>
+            </div>
+            <div
+              class="settings-form__field"
+            >
+              <label
+                class="settings-form__label"
+              >
+                Hero Image URL
+              </label>
+              <input
+                class="settings-form__input"
+                placeholder="https://example.com/image.jpg"
+                type="url"
+                value="https://example.com/hero1.jpg"
+              />
+            </div>
+            <div
+              class="settings-form__field"
+            >
+              <div
+                data-testid="visibility-toggle"
+              >
+                <label>
+                  Collection Visibility
+                </label>
+                <select>
+                  <option
+                    value="Private"
+                  >
+                    Private
+                  </option>
+                  <option
+                    value="Public"
+                  >
+                    Public
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div
+              class="settings-form__field"
+            >
+              <label
+                class="settings-form__label"
+              >
+                Item Templates
+              </label>
+              <p
+                class="settings-form__hint"
+              >
+                Configure which templates are available when creating items in this collection.
+              </p>
+              <button
+                class="settings-form__button settings-form__button--secondary"
+                type="button"
+              >
+                Manage Templates
+              </button>
+            </div>
+            <div
+              class="settings-form__actions"
+            >
+              <button
+                class="settings-form__button settings-form__button--primary"
+                type="submit"
+              >
+                Save Changes
+              </button>
+              <button
+                class="settings-form__button settings-form__button--secondary"
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] = `
+<div>
+  <div
+    class="settings-page"
+  >
+    <header
+      class="settings-page__header"
+    >
+      <div
+        class="settings-page__headerContent"
+      >
+        <div
+          class="settings-page__headerLeft"
+        >
+          <button
+            class="settings-page__back"
+          >
+            ← Back to Collections
+          </button>
+          <h1
+            class="settings-page__title"
+          >
+            Settings
+          </h1>
+        </div>
+        <div
+          class="settings-page__headerRight"
+        >
+          <button
+            class="support-link"
+          >
+            <span
+              class="support-link__icon"
+            >
+              ?
+            </span>
+            Support
+          </button>
+          <button
+            data-testid="user-button"
+          >
+            User Button
+          </button>
+        </div>
+      </div>
+    </header>
+    <div
+      class="settings-page__layout"
+    >
+      <nav
+        class="settings-nav"
+      >
+        <ul
+          class="settings-nav__list"
+        >
+          <li>
+            <button
+              class="settings-nav__item settings-nav__item--active"
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📚
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📋
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Item Templates
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                👥
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Team Members
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                📦
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                💬
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                Support
+              </span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      <main
+        class="settings-page__content"
+      >
+        <div
+          data-testid="collection-setup-wizard"
+        >
+          <button>
+            Complete Setup
+          </button>
+          <button>
+            Cancel Setup
+          </button>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;

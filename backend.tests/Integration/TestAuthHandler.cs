@@ -15,6 +15,7 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthSchemeOptions>
     public const string TenantIdHeader = "X-Test-TenantId";
     public const string UserIdHeader = "X-Test-UserId";
     public const string EmailHeader = "X-Test-Email";
+    public const string TenantRoleHeader = "X-Test-TenantRole";
 
     public TestAuthHandler(
         IOptionsMonitor<TestAuthSchemeOptions> options,
@@ -38,13 +39,17 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthSchemeOptions>
         var email = Request.Headers.TryGetValue(EmailHeader, out var emailValue)
             ? emailValue.ToString()
             : "test@example.com";
+        var tenantRole = Request.Headers.TryGetValue(TenantRoleHeader, out var roleValue)
+            ? roleValue.ToString()
+            : "TenantAdmin"; // Default to TenantAdmin for backwards compatibility
 
         var claims = new List<Claim>
         {
             new("tenant_id", tenantId),
             new(ClaimTypes.NameIdentifier, userId),
             new(ClaimTypes.Email, email),
-            new("sub", userId)
+            new("sub", userId),
+            new("tenant_role", tenantRole)
         };
 
         var identity = new ClaimsIdentity(claims, SchemeName);

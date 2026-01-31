@@ -1,0 +1,455 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`UserManagement > snapshots > should match snapshot while loading 1`] = `
+<div>
+  <div
+    class="userManagement"
+  >
+    <div
+      class="userManagement__loading"
+    >
+      Loading team members...
+    </div>
+  </div>
+</div>
+`;
+
+exports[`UserManagement > snapshots > should match snapshot with error 1`] = `
+<div>
+  <div
+    class="userManagement"
+  >
+    <div
+      class="userManagement__header"
+    >
+      <h3
+        class="userManagement__title"
+      >
+        Team Members
+      </h3>
+      <p
+        class="userManagement__description"
+      >
+        Manage who has access to your collections. Invite team members by email.
+      </p>
+    </div>
+    <div
+      class="userManagement__error"
+    >
+      Failed to load
+    </div>
+    <form
+      class="userManagement__inviteForm"
+    >
+      <div
+        class="userManagement__inviteInputs"
+      >
+        <input
+          class="userManagement__inviteEmail"
+          placeholder="Enter email address"
+          type="email"
+          value=""
+        />
+        <select
+          class="userManagement__inviteRole"
+        >
+          <option
+            value="Normal"
+          >
+            Member
+          </option>
+          <option
+            value="TenantAdmin"
+          >
+            Admin
+          </option>
+        </select>
+        <button
+          class="userManagement__inviteButton"
+          disabled=""
+          type="submit"
+        >
+          Invite
+        </button>
+      </div>
+    </form>
+    <div
+      class="userManagement__list"
+    />
+    <div
+      class="userManagement__legend"
+    >
+      <p>
+        <strong>
+          Admin:
+        </strong>
+         Can create collections, templates, invite users, and export data.
+      </p>
+      <p>
+        <strong>
+          Member:
+        </strong>
+         Can create and edit items and categories.
+      </p>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`UserManagement > snapshots > should match snapshot with pending user 1`] = `
+<div>
+  <div
+    class="userManagement"
+  >
+    <div
+      class="userManagement__header"
+    >
+      <h3
+        class="userManagement__title"
+      >
+        Team Members
+      </h3>
+      <p
+        class="userManagement__description"
+      >
+        Manage who has access to your collections. Invite team members by email.
+      </p>
+    </div>
+    <form
+      class="userManagement__inviteForm"
+    >
+      <div
+        class="userManagement__inviteInputs"
+      >
+        <input
+          class="userManagement__inviteEmail"
+          placeholder="Enter email address"
+          type="email"
+          value=""
+        />
+        <select
+          class="userManagement__inviteRole"
+        >
+          <option
+            value="Normal"
+          >
+            Member
+          </option>
+          <option
+            value="TenantAdmin"
+          >
+            Admin
+          </option>
+        </select>
+        <button
+          class="userManagement__inviteButton"
+          disabled=""
+          type="submit"
+        >
+          Invite
+        </button>
+      </div>
+    </form>
+    <div
+      class="userManagement__list"
+    >
+      <div
+        class="userManagement__user userManagement__user--pending"
+      >
+        <div
+          class="userManagement__userInfo"
+        >
+          <div
+            class="userManagement__userEmail"
+          >
+            pending@example.com
+          </div>
+          <div
+            class="userManagement__userMeta"
+          >
+            <span
+              class="userManagement__statusBadge userManagement__statusBadge--pending"
+            >
+              Pending
+            </span>
+          </div>
+        </div>
+        <div
+          class="userManagement__userActions"
+        >
+          <select
+            class="userManagement__roleSelect"
+          >
+            <option
+              value="Normal"
+            >
+              Member
+            </option>
+            <option
+              value="TenantAdmin"
+            >
+              Admin
+            </option>
+          </select>
+          <button
+            class="userManagement__removeButton"
+            title="Remove user"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+    <div
+      class="userManagement__legend"
+    >
+      <p>
+        <strong>
+          Admin:
+        </strong>
+         Can create collections, templates, invite users, and export data.
+      </p>
+      <p>
+        <strong>
+          Member:
+        </strong>
+         Can create and edit items and categories.
+      </p>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`UserManagement > snapshots > should match snapshot with users loaded 1`] = `
+<div>
+  <div
+    class="userManagement"
+  >
+    <div
+      class="userManagement__header"
+    >
+      <h3
+        class="userManagement__title"
+      >
+        Team Members
+      </h3>
+      <p
+        class="userManagement__description"
+      >
+        Manage who has access to your collections. Invite team members by email.
+      </p>
+    </div>
+    <form
+      class="userManagement__inviteForm"
+    >
+      <div
+        class="userManagement__inviteInputs"
+      >
+        <input
+          class="userManagement__inviteEmail"
+          placeholder="Enter email address"
+          type="email"
+          value=""
+        />
+        <select
+          class="userManagement__inviteRole"
+        >
+          <option
+            value="Normal"
+          >
+            Member
+          </option>
+          <option
+            value="TenantAdmin"
+          >
+            Admin
+          </option>
+        </select>
+        <button
+          class="userManagement__inviteButton"
+          disabled=""
+          type="submit"
+        >
+          Invite
+        </button>
+      </div>
+    </form>
+    <div
+      class="userManagement__list"
+    >
+      <div
+        class="userManagement__user "
+      >
+        <div
+          class="userManagement__userInfo"
+        >
+          <div
+            class="userManagement__userEmail"
+          >
+            admin@example.com
+            <span
+              class="userManagement__youBadge"
+            >
+              You
+            </span>
+          </div>
+          <div
+            class="userManagement__userMeta"
+          >
+            <span
+              class="userManagement__statusBadge userManagement__statusBadge--active"
+            >
+              Active
+            </span>
+            <span
+              class="userManagement__provider"
+            >
+              Microsoft
+            </span>
+          </div>
+        </div>
+        <div
+          class="userManagement__userActions"
+        >
+          <select
+            class="userManagement__roleSelect"
+            disabled=""
+            title="You cannot change your own role"
+          >
+            <option
+              value="Normal"
+            >
+              Member
+            </option>
+            <option
+              value="TenantAdmin"
+            >
+              Admin
+            </option>
+          </select>
+          <button
+            class="userManagement__removeButton"
+            disabled=""
+            title="You cannot remove yourself"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+      <div
+        class="userManagement__user "
+      >
+        <div
+          class="userManagement__userInfo"
+        >
+          <div
+            class="userManagement__userEmail"
+          >
+            member@example.com
+          </div>
+          <div
+            class="userManagement__userMeta"
+          >
+            <span
+              class="userManagement__statusBadge userManagement__statusBadge--active"
+            >
+              Active
+            </span>
+            <span
+              class="userManagement__provider"
+            >
+              Google
+            </span>
+          </div>
+        </div>
+        <div
+          class="userManagement__userActions"
+        >
+          <select
+            class="userManagement__roleSelect"
+          >
+            <option
+              value="Normal"
+            >
+              Member
+            </option>
+            <option
+              value="TenantAdmin"
+            >
+              Admin
+            </option>
+          </select>
+          <button
+            class="userManagement__removeButton"
+            title="Remove user"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+      <div
+        class="userManagement__user userManagement__user--pending"
+      >
+        <div
+          class="userManagement__userInfo"
+        >
+          <div
+            class="userManagement__userEmail"
+          >
+            pending@example.com
+          </div>
+          <div
+            class="userManagement__userMeta"
+          >
+            <span
+              class="userManagement__statusBadge userManagement__statusBadge--pending"
+            >
+              Pending
+            </span>
+          </div>
+        </div>
+        <div
+          class="userManagement__userActions"
+        >
+          <select
+            class="userManagement__roleSelect"
+          >
+            <option
+              value="Normal"
+            >
+              Member
+            </option>
+            <option
+              value="TenantAdmin"
+            >
+              Admin
+            </option>
+          </select>
+          <button
+            class="userManagement__removeButton"
+            title="Remove user"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+    <div
+      class="userManagement__legend"
+    >
+      <p>
+        <strong>
+          Admin:
+        </strong>
+         Can create collections, templates, invite users, and export data.
+      </p>
+      <p>
+        <strong>
+          Member:
+        </strong>
+         Can create and edit items and categories.
+      </p>
+    </div>
+  </div>
+</div>
+`;
