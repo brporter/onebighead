@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/SettingsView.css';
 import { useData } from '../contexts/DataContext';
@@ -9,12 +9,12 @@ import CollectionTemplateEditor from '../components/collection/CollectionTemplat
 import VisibilityToggle from '../components/common/VisibilityToggle';
 import CollectionSetupWizard from '../components/collection/CollectionSetupWizard';
 import { SupportSection } from '../components/support/SupportSection';
-import UserButton from '../components/user/UserButton';
+import { UserButton, UserManagement } from '../components/user';
 import { SupportModal } from '../components/support/SupportModal';
 import type { Collection } from '../utils/types';
 import { Visibility } from '../utils/types';
 
-type SettingsSection = 'collections' | 'templates' | 'export' | 'support';
+type SettingsSection = 'collections' | 'templates' | 'team' | 'export' | 'support';
 
 function SettingsView() {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ function SettingsView() {
   // Initialize section from URL query param or default to collections
   const initialSection = (searchParams.get('section') as SettingsSection) || 'collections';
   const [activeSection, setActiveSection] = useState<SettingsSection>(
-    ['collections', 'templates', 'export', 'support'].includes(initialSection) ? initialSection : 'collections'
+    ['collections', 'templates', 'team', 'export', 'support'].includes(initialSection) ? initialSection : 'collections'
   );
   const [isAdding, setIsAdding] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
@@ -40,9 +40,11 @@ function SettingsView() {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [editingCollectionTemplates, setEditingCollectionTemplates] = useState<Collection | null>(null);
   const [collectionTemplateEditorDirty, setCollectionTemplateEditorDirty] = useState(false);
+  const [teamManagementDirty, setTeamManagementDirty] = useState(false);
 
   const hasUnsavedChanges = useCallback(() => {
     if (activeSection === 'templates' && templateEditorDirty) return true;
+    if (activeSection === 'team' && teamManagementDirty) return true;
     if (editingCollectionTemplates && collectionTemplateEditorDirty) return true;
     if (!isAdding && editingId === null) return false;
     return (
@@ -51,7 +53,7 @@ function SettingsView() {
       formData.heroImageUrl !== originalFormData.heroImageUrl ||
       formData.visibility !== originalFormData.visibility
     );
-  }, [activeSection, templateEditorDirty, editingCollectionTemplates, collectionTemplateEditorDirty, isAdding, editingId, formData, originalFormData]);
+  }, [activeSection, templateEditorDirty, teamManagementDirty, editingCollectionTemplates, collectionTemplateEditorDirty, isAdding, editingId, formData, originalFormData]);
 
   const confirmAndNavigate = useCallback((path: string) => {
     if (hasUnsavedChanges()) {
@@ -226,7 +228,7 @@ function SettingsView() {
               Manage your collections. Each collection can have categories and items.
             </p>
           </div>
-          {!isEditing && (
+          {!isEditing && user?.isTenantAdmin && (
             <button className="settings-section__addButton" onClick={handleAddClick}>
               + New Collection
             </button>
@@ -349,7 +351,7 @@ function SettingsView() {
                   >
                     Edit
                   </button>
-                  {collections.length > 1 && (
+                  {collections.length > 1 && user?.isTenantAdmin && (
                     <button
                       className="settings-collection-card__button settings-collection-card__button--danger"
                       onClick={() => handleDelete(collection.collectionId)}
@@ -407,6 +409,20 @@ function SettingsView() {
     </div>
   );
 
+  const renderTeamSection = () => (
+    <div className="settings-section">
+      <div className="settings-section__header">
+        <div>
+          <h2 className="settings-section__title">Team Members</h2>
+          <p className="settings-section__description">
+            Invite team members to collaborate on your collections.
+          </p>
+        </div>
+      </div>
+      <UserManagement onDirtyChange={setTeamManagementDirty} />
+    </div>
+  );
+
   const renderSupportSection = () => (
     <div className="settings-section settings-section--support">
       <div className="settings-section__header">
@@ -427,6 +443,8 @@ function SettingsView() {
         return renderCollectionsSection();
       case 'templates':
         return renderTemplatesSection();
+      case 'team':
+        return renderTeamSection();
       case 'export':
         return renderExportSection();
       case 'support':
@@ -436,12 +454,25 @@ function SettingsView() {
     }
   };
 
-  const navItems: { id: SettingsSection; label: string; icon: string }[] = [
-    { id: 'collections', label: 'Collections', icon: '📚' },
-    { id: 'templates', label: 'Item Templates', icon: '📋' },
-    { id: 'export', label: 'Data Export', icon: '📦' },
-    { id: 'support', label: 'Support', icon: '💬' },
-  ];
+  const navItems = useMemo(() => {
+    const items: { id: SettingsSection; label: string; icon: string }[] = [
+      { id: 'collections', label: 'Collections', icon: '📚' },
+    ];
+
+    // Admin-only sections
+    if (user?.isTenantAdmin) {
+      items.push(
+        { id: 'templates', label: 'Item Templates', icon: '📋' },
+        { id: 'team', label: 'Team Members', icon: '👥' },
+        { id: 'export', label: 'Data Export', icon: '📦' }
+      );
+    }
+
+    // Support is always visible
+    items.push({ id: 'support', label: 'Support', icon: '💬' });
+
+    return items;
+  }, [user?.isTenantAdmin]);
 
   return (
     <div className="settings-page">

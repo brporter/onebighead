@@ -16,15 +16,19 @@ public class User
 
     public IdentityProvider IdentityProvider { get; set; }
 
-    [Required]
     [MaxLength(255)]
-    public string ProviderSubjectId { get; set; } = string.Empty;
+    public string? ProviderSubjectId { get; set; }
 
     public bool IsSystemAdministrator { get; set; }
+
+    public TenantRole TenantRole { get; set; } = TenantRole.Normal;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     [ForeignKey(nameof(TenantId))]
     public Tenant? Tenant { get; set; }
+
+    [NotMapped]
+    public bool IsLinked => !string.IsNullOrEmpty(ProviderSubjectId);
 }
 

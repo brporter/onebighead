@@ -32,6 +32,7 @@ public class TokenService : ITokenService
             new(ClaimTypes.Email, user.Email),
             new("tenant_id", user.TenantId.ToString()),
             new("provider", user.IdentityProvider.ToString()),
+            new("tenant_role", user.TenantRole.ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 

@@ -1,0 +1,322 @@
+/* User Management Component */
+.userManagement {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  max-width: 700px;
+}
+
+.userManagement__header {
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.userManagement__title {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.userManagement__description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.userManagement__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xxl);
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.userManagement__error {
+  padding: var(--space-md);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-size: 0.9rem;
+}
+
+/* Invite Form */
+.userManagement__inviteForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.userManagement__inviteInputs {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.userManagement__inviteEmail {
+  flex: 1;
+  min-width: 200px;
+  padding: var(--space-md);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.userManagement__inviteEmail:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+}
+
+.userManagement__inviteEmail::placeholder {
+  color: var(--color-text-muted);
+}
+
+.userManagement__inviteRole {
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 110px;
+}
+
+.userManagement__inviteRole:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+}
+
+.userManagement__inviteButton {
+  padding: var(--space-md) var(--space-xl);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-success);
+  color: var(--color-text-inverse);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.userManagement__inviteButton:hover:not(:disabled) {
+  background: var(--color-success-hover);
+}
+
+.userManagement__inviteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.userManagement__inviteError {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-danger-bg);
+  border-radius: var(--radius-sm);
+  color: var(--color-danger);
+  font-size: 0.85rem;
+}
+
+/* User List */
+.userManagement__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.userManagement__user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.userManagement__user:hover {
+  border-color: var(--color-border-strong);
+}
+
+.userManagement__user--pending {
+  background: var(--color-surface-alt);
+  border-style: dashed;
+}
+
+.userManagement__userInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.userManagement__userEmail {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.userManagement__youBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-sm);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+}
+
+.userManagement__userMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.userManagement__statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-sm);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+}
+
+.userManagement__statusBadge--pending {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.userManagement__statusBadge--active {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--color-success);
+}
+
+.userManagement__provider {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.userManagement__userActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.userManagement__roleSelect {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.userManagement__roleSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.userManagement__roleSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.userManagement__removeButton {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.userManagement__removeButton:hover:not(:disabled) {
+  background: var(--color-danger-bg);
+}
+
+.userManagement__removeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Legend */
+.userManagement__legend {
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.userManagement__legend p {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.userManagement__legend p:last-child {
+  margin-bottom: 0;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .userManagement {
+    padding: var(--space-lg);
+  }
+
+  .userManagement__inviteInputs {
+    flex-direction: column;
+  }
+
+  .userManagement__inviteEmail {
+    min-width: 100%;
+  }
+
+  .userManagement__inviteRole {
+    width: 100%;
+  }
+
+  .userManagement__inviteButton {
+    width: 100%;
+  }
+
+  .userManagement__user {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .userManagement__userActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

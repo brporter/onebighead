@@ -33,6 +33,16 @@ export enum Visibility {
   Public = "Public",    // Explicitly public (if parent allows)
 }
 
+/**
+ * User's role within a tenant.
+ *
+ * Note: Uses string values to match backend JsonStringEnumConverter serialization.
+ */
+export enum TenantRole {
+  Normal = "Normal",
+  TenantAdmin = "TenantAdmin",
+}
+
 export interface Item {
   id: number | null;
   tenantId: number;
@@ -89,6 +99,8 @@ export interface CurrentUser {
   tenantName: string;
   hasCompletedWelcome: boolean;
   isSystemAdministrator: boolean;
+  tenantRole: TenantRole;
+  isTenantAdmin: boolean;
 }
 
 export interface TenantSummary {
@@ -169,5 +181,23 @@ export interface SetupCollectionRequest {
   heroImageUrl?: string;
   visibility?: Visibility;
   themeId: number;
+}
+
+export interface TenantUser {
+  userId: number;
+  email: string;
+  tenantRole: TenantRole;
+  isLinked: boolean;
+  identityProvider: string | null;
+  createdAt: string;
+}
+
+export interface InviteUserRequest {
+  email: string;
+  role: TenantRole;
+}
+
+export interface UpdateUserRoleRequest {
+  role: TenantRole;
 }
 

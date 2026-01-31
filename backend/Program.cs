@@ -61,7 +61,11 @@ builder.Services.AddHttpClient();
 builder.Services.AddAuthentication(CookieJwtAuthenticationExtensions.SchemeName)
     .AddCookieJwtAuthentication();
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("TenantAdmin", policy =>
+        policy.RequireClaim("tenant_role", "TenantAdmin"));
+});
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

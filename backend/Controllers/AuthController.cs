@@ -189,30 +189,36 @@ public class AuthController : ControllerBase
 
     private async Task<User?> GetOrCreateUser(IdentityProvider provider, OidcValidationResult validationResult)
     {
+        // 1. Check for existing linked user by provider ID
         var user = await _userRepository.GetByProviderIdAsync(provider, validationResult.Subject!);
-
-        if (user is null)
+        if (user != null)
         {
-            // Check if user exists with same email but different provider
-            user = await _userRepository.GetByEmailAsync(validationResult.Email!);
-
-            if (user is null)
-            {
-                // Auto-provision new user with new tenant
-                _logger.LogInformation("Auto-provisioning new user with email {Email}", validationResult.Email);
-                user = await _userRepository.CreateWithNewTenantAsync(
-                    validationResult.Email!,
-                    provider,
-                    validationResult.Subject!);
-            }
-            else
-            {
-                // User exists with same email but different provider
-                _logger.LogInformation("User {Email} authenticated with different provider", validationResult.Email);
-            }
+            return user;
         }
 
-        return user;
+        // 2. Check for pending user by email (email linking)
+        var pendingUser = await _userRepository.GetByEmailAsync(validationResult.Email!);
+        if (pendingUser != null && !pendingUser.IsLinked)
+        {
+            // Link pending user to this OAuth identity
+            _logger.LogInformation("Linking pending user {Email} to {Provider}", validationResult.Email, provider);
+            return await _userRepository.LinkUserAsync(
+                pendingUser.Id, provider, validationResult.Subject!);
+        }
+
+        if (pendingUser != null)
+        {
+            // User exists with same email but different provider (already linked)
+            _logger.LogInformation("User {Email} authenticated with different provider", validationResult.Email);
+            return pendingUser;
+        }
+
+        // 3. Auto-provision new user with new tenant (first-time signup)
+        _logger.LogInformation("Auto-provisioning new user with email {Email}", validationResult.Email);
+        return await _userRepository.CreateWithNewTenantAsync(
+            validationResult.Email!,
+            provider,
+            validationResult.Subject!);
     }
 
     private void SetAuthCookie(string token)
@@ -296,6 +302,7 @@ public class AuthController : ControllerBase
         var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
         var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
         var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var tenantRoleClaim = User.FindFirst("tenant_role")?.Value;
         var isAdmin = User.IsInRole("SystemAdministrator");
 
         if (string.IsNullOrEmpty(tenantIdClaim) || string.IsNullOrEmpty(userIdClaim))
@@ -313,7 +320,9 @@ public class AuthController : ControllerBase
             tenantId = tenantId,
             tenantName = tenant?.Name ?? string.Empty,
             hasCompletedWelcome = tenant?.HasCompletedWelcome ?? false,
-            isSystemAdministrator = isAdmin
+            isSystemAdministrator = isAdmin,
+            tenantRole = tenantRoleClaim ?? "Normal",
+            isTenantAdmin = tenantRoleClaim == "TenantAdmin"
         });
     }
 

@@ -65,6 +65,7 @@ public partial class CollectionsController : ApiControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "TenantAdmin")]
     public async Task<ActionResult<Collection>> CreateCollection(CreateCollectionRequest request)
     {
         var tenantId = GetTenantId();
@@ -109,6 +110,7 @@ public partial class CollectionsController : ApiControllerBase
     /// Used by the setup wizard for new users and when creating new collections.
     /// </summary>
     [HttpPost("setup")]
+    [Authorize(Policy = "TenantAdmin")]
     public async Task<ActionResult<Collection>> SetupCollection(SetupCollectionRequest request)
     {
         var tenantId = GetTenantId();
@@ -267,6 +269,7 @@ public partial class CollectionsController : ApiControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "TenantAdmin")]
     public async Task<IActionResult> DeleteCollection(int id)
     {
         var tenantId = GetTenantId();

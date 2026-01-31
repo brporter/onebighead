@@ -58,6 +58,7 @@ public class ItemTemplatesController : ApiControllerBase
     /// Creates a new tenant-owned template.
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = "TenantAdmin")]
     public async Task<ActionResult<ItemTemplateResponse>> CreateTemplate(CreateItemTemplateRequest request)
     {
         var tenantId = GetTenantId();
@@ -75,6 +76,7 @@ public class ItemTemplatesController : ApiControllerBase
     /// Updates a template. For system templates, creates a tenant copy (copy-on-edit).
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = "TenantAdmin")]
     public async Task<ActionResult<ItemTemplateResponse>> UpdateTemplate(int id, UpdateItemTemplateRequest request)
     {
         var tenantId = GetTenantId();
@@ -109,6 +111,7 @@ public class ItemTemplatesController : ApiControllerBase
     /// Deletes a tenant-owned template. System templates cannot be deleted.
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "TenantAdmin")]
     public async Task<IActionResult> DeleteTemplate(int id)
     {
         var tenantId = GetTenantId();

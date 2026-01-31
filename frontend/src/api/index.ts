@@ -23,4 +23,5 @@ export { authApi } from './auth';
 export { adminApi } from './admin';
 export { exportApi } from './export';
 export { themesApi } from './themes';
+export { usersApi } from './users';
 export * from './support';

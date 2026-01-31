@@ -28,6 +28,7 @@ public class ExportController : ApiControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "TenantAdmin")]
     public async Task<IActionResult> ExportData()
     {
         var tenantId = GetTenantId();
