@@ -3,8 +3,9 @@ using Microsoft.Data.SqlClient;
 
 // Database Seed Utility
 // Seeds the database with data from external JSON definition files
+// Operates idempotently - skips rows that already exist
 
-var seedsPath = args.FirstOrDefault(a => !a.StartsWith("-")) 
+var seedsPath = args.FirstOrDefault(a => !a.StartsWith("-"))
     ?? Path.Combine(AppContext.BaseDirectory, "seeds");
 var force = args.Contains("--force") || args.Contains("-f");
 var dryRun = args.Contains("--dry-run");
@@ -30,6 +31,7 @@ if (help)
     Console.WriteLine("Seed Files:");
     Console.WriteLine("  Seeds are loaded in alphabetical order from the seeds directory.");
     Console.WriteLine("  Each JSON file defines data for one or more tables.");
+    Console.WriteLine("  Use 'checkColumns' (array) for composite key idempotency.");
     Console.WriteLine();
     Console.WriteLine("Example:");
     Console.WriteLine("  dbseed --force");
@@ -136,25 +138,18 @@ catch (Exception ex)
 async Task ProcessTable(SqlConnection? connection, SeedTable table, bool isDryRun)
 {
     Console.WriteLine($"  Table: {table.Name}");
-    
+
     if (table.Rows == null || table.Rows.Count == 0)
     {
         Console.WriteLine("    No rows defined, skipping.");
         return;
     }
 
-    // Check if data already exists (if CheckColumn specified)
-    if (!string.IsNullOrEmpty(table.CheckColumn) && connection != null)
+    // Build list of check columns (support both single and composite keys)
+    var checkColumns = table.CheckColumns?.ToList() ?? new List<string>();
+    if (!string.IsNullOrEmpty(table.CheckColumn) && !checkColumns.Contains(table.CheckColumn))
     {
-        var checkSql = $"SELECT COUNT(*) FROM [{table.Name}]";
-        using var checkCmd = new SqlCommand(checkSql, connection);
-        var result = await checkCmd.ExecuteScalarAsync();
-        var count = result != null ? (int)result : 0;
-        if (count > 0)
-        {
-            Console.WriteLine($"    Table already has {count} row(s), skipping (use CheckColumn to control).");
-            return;
-        }
+        checkColumns.Add(table.CheckColumn);
     }
 
     // Enable identity insert if needed
@@ -167,14 +162,16 @@ async Task ProcessTable(SqlConnection? connection, SeedTable table, bool isDryRu
     try
     {
         var insertedCount = 0;
+        var skippedCount = 0;
+
         foreach (var row in table.Rows)
         {
             var columns = row.Keys.ToList();
             var columnList = string.Join(", ", columns.Select(c => $"[{c}]"));
             var paramList = string.Join(", ", columns.Select((_, i) => $"@p{i}"));
-            
+
             var insertSql = $"INSERT INTO [{table.Name}] ({columnList}) VALUES ({paramList})";
-            
+
             if (isDryRun)
             {
                 var values = string.Join(", ", row.Values.Select(v => v?.ToString() ?? "NULL"));
@@ -182,17 +179,22 @@ async Task ProcessTable(SqlConnection? connection, SeedTable table, bool isDryRu
             }
             else if (connection != null)
             {
-                // Check if row exists (if CheckColumn specified)
-                if (!string.IsNullOrEmpty(table.CheckColumn) && row.ContainsKey(table.CheckColumn))
+                // Check if row exists using check columns (idempotent insert)
+                if (checkColumns.Count > 0 && checkColumns.All(c => row.ContainsKey(c)))
                 {
-                    var existsSql = $"SELECT COUNT(*) FROM [{table.Name}] WHERE [{table.CheckColumn}] = @check";
+                    var whereClauses = checkColumns.Select((c, i) => $"[{c}] = @check{i}");
+                    var existsSql = $"SELECT COUNT(*) FROM [{table.Name}] WHERE {string.Join(" AND ", whereClauses)}";
                     using var existsCmd = new SqlCommand(existsSql, connection);
-                    var checkValue = ConvertJsonElement(row[table.CheckColumn]);
-                    existsCmd.Parameters.AddWithValue("@check", checkValue ?? DBNull.Value);
+                    for (int i = 0; i < checkColumns.Count; i++)
+                    {
+                        var checkValue = ConvertJsonElement(row[checkColumns[i]]);
+                        existsCmd.Parameters.AddWithValue($"@check{i}", checkValue ?? DBNull.Value);
+                    }
                     var existsResult = await existsCmd.ExecuteScalarAsync();
                     var exists = existsResult != null && (int)existsResult > 0;
                     if (exists)
                     {
+                        skippedCount++;
                         continue; // Skip existing rows
                     }
                 }
@@ -207,10 +209,17 @@ async Task ProcessTable(SqlConnection? connection, SeedTable table, bool isDryRu
                 insertedCount++;
             }
         }
-        
+
         if (!isDryRun)
         {
-            Console.WriteLine($"    Inserted {insertedCount} row(s).");
+            if (skippedCount > 0)
+            {
+                Console.WriteLine($"    Inserted {insertedCount} row(s), skipped {skippedCount} existing row(s).");
+            }
+            else
+            {
+                Console.WriteLine($"    Inserted {insertedCount} row(s).");
+            }
         }
     }
     finally
@@ -254,6 +263,7 @@ class SeedTable
 {
     public string Name { get; set; } = "";
     public string? CheckColumn { get; set; }
+    public List<string>? CheckColumns { get; set; }
     public bool IdentityInsert { get; set; }
     public List<Dictionary<string, object?>> Rows { get; set; } = new();
 }

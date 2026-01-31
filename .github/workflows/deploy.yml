@@ -354,6 +354,16 @@ jobs:
             -i publish/migrate.sql
           echo "Migrations applied successfully."
 
+      - name: Seed database
+        run: |
+          SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
+          echo "Seeding database with reference data..."
+          # Build connection string for dbseed (uses Azure CLI auth via DefaultAzureCredential)
+          export ConnectionStrings__DefaultConnection="Server=tcp:${SQL_SERVER_FQDN},1433;Database=${SQL_DB_NAME};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;"
+          # Run seeder with --force (no prompt) - operates idempotently
+          ./publish/dbseed publish/seeds --force
+          echo "Database seeding complete."
+
       - name: Remove runner IP from SQL firewall
         if: always()
         run: |

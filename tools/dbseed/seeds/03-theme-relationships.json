@@ -2,7 +2,7 @@
   "tables": [
     {
       "name": "CollectionThemeTemplates",
-      "checkColumn": null,
+      "checkColumns": ["ThemeId", "ItemTemplateId"],
       "rows": [
         { "ThemeId": 1, "ItemTemplateId": 1, "SortOrder": 1 },
         { "ThemeId": 2, "ItemTemplateId": 2, "SortOrder": 1 },
