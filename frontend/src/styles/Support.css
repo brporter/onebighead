@@ -283,6 +283,28 @@
   gap: var(--space-md);
 }
 
+.support-requests__header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-sm);
+}
+
+.support-requests__new-button {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.support-requests__new-button:hover {
+  background: var(--color-primary-hover);
+}
+
 .support-requests__empty {
   padding: var(--space-xl);
   text-align: center;

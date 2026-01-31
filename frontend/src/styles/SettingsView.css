@@ -6,11 +6,11 @@
   background: var(--color-bg);
 }
 
-/* Header */
+/* Header - matched to landing page styling */
 .settings-page__header {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  padding: var(--space-md) var(--space-xl);
+  padding: var(--space-md) var(--space-lg);
   position: sticky;
   top: 0;
   z-index: 100;

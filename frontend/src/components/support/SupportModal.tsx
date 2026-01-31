@@ -5,10 +5,11 @@ import '../../styles/Support.css';
 interface SupportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   userEmail?: string | null;
 }
 
-export function SupportModal({ isOpen, onClose, userEmail }: SupportModalProps) {
+export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportModalProps) {
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [email, setEmail] = useState('');
@@ -36,6 +37,7 @@ export function SupportModal({ isOpen, onClose, userEmail }: SupportModalProps) 
 
       await createSupportRequest(request);
       setIsSuccess(true);
+      onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit support request');
     } finally {

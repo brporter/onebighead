@@ -38,6 +38,7 @@ function SettingsView() {
   const [exportError, setExportError] = useState<string | null>(null);
   const [templateEditorDirty, setTemplateEditorDirty] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [supportRefreshKey, setSupportRefreshKey] = useState(0);
   const [editingCollectionTemplates, setEditingCollectionTemplates] = useState<Collection | null>(null);
   const [collectionTemplateEditorDirty, setCollectionTemplateEditorDirty] = useState(false);
   const [teamManagementDirty, setTeamManagementDirty] = useState(false);
@@ -433,7 +434,11 @@ function SettingsView() {
           </p>
         </div>
       </div>
-      <SupportSection isFullPage={true} />
+      <SupportSection
+        isFullPage={true}
+        onNewRequest={() => setIsSupportOpen(true)}
+        refreshKey={supportRefreshKey}
+      />
     </div>
   );
 
@@ -522,6 +527,7 @@ function SettingsView() {
       <SupportModal
         isOpen={isSupportOpen}
         onClose={() => setIsSupportOpen(false)}
+        onSuccess={() => setSupportRefreshKey((k) => k + 1)}
         userEmail={user?.email}
       />
     </div>

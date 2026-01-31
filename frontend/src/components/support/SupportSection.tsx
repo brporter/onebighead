@@ -11,9 +11,11 @@ import '../../styles/Support.css';
 
 interface SupportSectionProps {
   isFullPage?: boolean;
+  onNewRequest?: () => void;
+  refreshKey?: number;
 }
 
-export function SupportSection({ isFullPage = false }: SupportSectionProps) {
+export function SupportSection({ isFullPage = false, onNewRequest, refreshKey }: SupportSectionProps) {
   const [requests, setRequests] = useState<SupportRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +25,7 @@ export function SupportSection({ isFullPage = false }: SupportSectionProps) {
 
   useEffect(() => {
     loadRequests();
-  }, []);
+  }, [refreshKey]);
 
   const loadRequests = async () => {
     try {
@@ -226,6 +228,17 @@ export function SupportSection({ isFullPage = false }: SupportSectionProps) {
   // List view
   return (
     <div className="support-requests">
+      {onNewRequest && (
+        <div className="support-requests__header">
+          <button
+            className="support-requests__new-button"
+            onClick={onNewRequest}
+          >
+            + New Support Request
+          </button>
+        </div>
+      )}
+
       {error && <div className="settings__error">{error}</div>}
 
       {requests.length === 0 ? (

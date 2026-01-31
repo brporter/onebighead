@@ -8,9 +8,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-lg) var(--space-xl);
+  padding: var(--space-md) var(--space-lg);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .systemAdmin__title {
@@ -57,7 +60,7 @@
 .systemAdmin__tabs {
   display: flex;
   gap: var(--space-sm);
-  padding: var(--space-md) var(--space-xl);
+  padding: var(--space-md) var(--space-lg);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
