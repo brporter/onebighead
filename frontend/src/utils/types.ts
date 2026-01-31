@@ -98,6 +98,7 @@ export interface CurrentUser {
   tenantId: number;
   tenantName: string;
   hasCompletedWelcome: boolean;
+  hasAcceptedTerms: boolean;
   isSystemAdministrator: boolean;
   tenantRole: TenantRole;
   isTenantAdmin: boolean;

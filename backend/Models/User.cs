@@ -25,10 +25,19 @@ public class User
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// The date/time when the user accepted the Terms of Service and Privacy Policy.
+    /// Null if the user has not yet accepted.
+    /// </summary>
+    public DateTime? AcceptedTermsAt { get; set; }
+
     [ForeignKey(nameof(TenantId))]
     public Tenant? Tenant { get; set; }
 
     [NotMapped]
     public bool IsLinked => !string.IsNullOrEmpty(ProviderSubjectId);
+
+    [NotMapped]
+    public bool HasAcceptedTerms => AcceptedTermsAt.HasValue;
 }
 

@@ -10,6 +10,7 @@ const ItemView = lazy(() => import('./views/ItemView'));
 const SetupView = lazy(() => import('./views/SetupView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 const SystemAdmin = lazy(() => import('./views/SystemAdmin'));
+const TermsView = lazy(() => import('./views/TermsView'));
 const WelcomeView = lazy(() => import('./views/WelcomeView'));
 
 // Loading fallback component
@@ -99,9 +100,19 @@ export const router = createBrowserRouter([
   {
     path: '/welcome',
     element: (
-      <RequireAuth skipWelcomeCheck>
+      <RequireAuth skipWelcomeCheck skipTermsCheck>
         <Suspense fallback={<LoadingFallback />}>
           <WelcomeView />
+        </Suspense>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/terms',
+    element: (
+      <RequireAuth skipTermsCheck>
+        <Suspense fallback={<LoadingFallback />}>
+          <TermsView />
         </Suspense>
       </RequireAuth>
     ),

@@ -1,0 +1,202 @@
+/* Terms Acceptance Component */
+.terms-acceptance {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--space-xl);
+}
+
+.terms-acceptance__header {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.terms-acceptance__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-sm);
+}
+
+.terms-acceptance__subtitle {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.terms-acceptance__documents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.terms-acceptance__document {
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+
+.terms-acceptance__document h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-sm);
+}
+
+.terms-acceptance__document p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 var(--space-md);
+  line-height: 1.5;
+}
+
+.terms-acceptance__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.terms-acceptance__link:hover {
+  text-decoration: underline;
+}
+
+.terms-acceptance__link::after {
+  content: '\2197'; /* Arrow symbol */
+  font-size: 0.8em;
+}
+
+.terms-acceptance__error {
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+  font-size: 0.9rem;
+}
+
+.terms-acceptance__checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.terms-acceptance__checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  cursor: pointer;
+}
+
+.terms-acceptance__checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.terms-acceptance__checkbox span {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.terms-acceptance__checkbox a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.terms-acceptance__checkbox a:hover {
+  text-decoration: underline;
+}
+
+.terms-acceptance__actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.terms-acceptance__button {
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), opacity var(--transition-fast);
+  border: none;
+}
+
+.terms-acceptance__button--primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.terms-acceptance__button--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.terms-acceptance__button--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.terms-acceptance__button--secondary {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.terms-acceptance__button--secondary:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+/* Full page view styling */
+.terms-view {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.terms-view__header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.terms-view__header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.terms-view__logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.terms-view__main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) var(--space-lg);
+}
+
+.terms-view__container {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  width: 100%;
+  max-width: 650px;
+}

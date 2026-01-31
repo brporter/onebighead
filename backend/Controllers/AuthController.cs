@@ -311,18 +311,51 @@ public class AuthController : ControllerBase
         }
 
         var tenantId = int.Parse(tenantIdClaim);
+        var userId = int.Parse(userIdClaim);
         var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+        var user = await _userRepository.GetByIdAsync(userId);
 
         return Ok(new
         {
-            userId = int.Parse(userIdClaim),
+            userId = userId,
             email = emailClaim,
             tenantId = tenantId,
             tenantName = tenant?.Name ?? string.Empty,
             hasCompletedWelcome = tenant?.HasCompletedWelcome ?? false,
+            hasAcceptedTerms = user?.HasAcceptedTerms ?? false,
             isSystemAdministrator = isAdmin,
             tenantRole = tenantRoleClaim ?? "Normal",
             isTenantAdmin = tenantRoleClaim == "TenantAdmin"
+        });
+    }
+
+    [HttpPost("accept-terms")]
+    public async Task<IActionResult> AcceptTerms()
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var userId = int.Parse(userIdClaim);
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        if (user == null)
+        {
+            return NotFound(new { error = "User not found" });
+        }
+
+        user.AcceptedTermsAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(user);
+
+        _logger.LogInformation("User {UserId} ({Email}) accepted Terms of Service and Privacy Policy", userId, user.Email);
+
+        return Ok(new
+        {
+            hasAcceptedTerms = true,
+            acceptedTermsAt = user.AcceptedTermsAt
         });
     }
 

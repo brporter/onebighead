@@ -24,6 +24,7 @@ function renderWithRouter(children: React.ReactNode, initialRoute = '/collection
       <Routes>
         <Route path="*" element={children} />
         <Route path="/welcome" element={<div>Welcome Page</div>} />
+        <Route path="/terms" element={<div>Terms Page</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -35,7 +36,10 @@ const createUser = (overrides: Partial<CurrentUser> = {}): CurrentUser => ({
   tenantId: 1,
   tenantName: 'Test Tenant',
   hasCompletedWelcome: true,
+  hasAcceptedTerms: true,
   isSystemAdministrator: false,
+  tenantRole: 'Normal' as const,
+  isTenantAdmin: false,
   ...overrides,
 });
 
@@ -166,6 +170,88 @@ describe('RequireAuth', () => {
     it('should allow access when hasCompletedWelcome is true', () => {
       vi.mocked(UserContext.useUser).mockReturnValue({
         user: createUser({ hasCompletedWelcome: true }),
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      renderWithRouter(
+        <RequireAuth>
+          <div>Protected Content</div>
+        </RequireAuth>,
+        '/collections'
+      );
+
+      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+    });
+  });
+
+  describe('terms redirect', () => {
+    it('should redirect to /terms when hasAcceptedTerms is false and hasCompletedWelcome is true', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasAcceptedTerms: false, hasCompletedWelcome: true }),
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      renderWithRouter(
+        <RequireAuth>
+          <div>Protected Content</div>
+        </RequireAuth>,
+        '/collections'
+      );
+
+      expect(screen.getByText('Terms Page')).toBeInTheDocument();
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+    });
+
+    it('should not redirect to /terms for new users (hasCompletedWelcome false)', () => {
+      // New users should go to welcome wizard, where terms are part of the flow
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasAcceptedTerms: false, hasCompletedWelcome: false }),
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      renderWithRouter(
+        <RequireAuth>
+          <div>Protected Content</div>
+        </RequireAuth>,
+        '/collections'
+      );
+
+      expect(screen.getByText('Welcome Page')).toBeInTheDocument();
+      expect(screen.queryByText('Terms Page')).not.toBeInTheDocument();
+    });
+
+    it('should not redirect to /terms when skipTermsCheck is true', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasAcceptedTerms: false, hasCompletedWelcome: true }),
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/terms']}>
+          <RequireAuth skipTermsCheck>
+            <div>Terms Content</div>
+          </RequireAuth>
+        </MemoryRouter>
+      );
+
+      expect(screen.getByText('Terms Content')).toBeInTheDocument();
+    });
+
+    it('should allow access when hasAcceptedTerms is true', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasAcceptedTerms: true, hasCompletedWelcome: true }),
         loading: false,
         error: null,
         refetch: vi.fn(),

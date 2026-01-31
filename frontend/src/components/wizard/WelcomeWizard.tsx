@@ -5,15 +5,17 @@ import { authApi } from '../../api';
 import type { CollectionTheme } from '../../utils/types';
 import ThemeCard from '../collection/ThemeCard';
 import ThemePreview from '../collection/ThemePreview';
+import { TermsAcceptance } from '../common';
 
 interface WelcomeWizardProps {
   onComplete: (collectionId: number) => void;
   onSkip: () => void;
 }
 
-type StepId = 'welcome' | 'theme' | 'preview';
+type StepId = 'terms' | 'welcome' | 'theme' | 'preview';
 
 const STEPS: { id: StepId; label: string }[] = [
+  { id: 'terms', label: 'Terms' },
   { id: 'welcome', label: 'Welcome' },
   { id: 'theme', label: 'Theme' },
   { id: 'preview', label: 'Preview' },
@@ -23,7 +25,11 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
   const { user, refetch: refetchUser } = useUser();
   const { themes, themesLoading, loadThemes, setupCollection } = useData();
 
-  const [activeStep, setActiveStep] = useState<StepId>('welcome');
+  // Start at terms step if user hasn't accepted terms, otherwise skip to welcome
+  const [activeStep, setActiveStep] = useState<StepId>(() =>
+    user?.hasAcceptedTerms ? 'welcome' : 'terms'
+  );
+  const [termsAccepted, setTermsAccepted] = useState(user?.hasAcceptedTerms ?? false);
   const [tenantName, setTenantName] = useState('');
   const [collectionName, setCollectionName] = useState('');
   const [collectionDescription, setCollectionDescription] = useState('');
@@ -56,8 +62,16 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
     ? themes.find(t => t.themeId === selectedThemeId) ?? null
     : null;
 
+  const handleTermsAccepted = async () => {
+    setTermsAccepted(true);
+    await refetchUser();
+    setActiveStep('welcome');
+  };
+
   const canProceed = (step: StepId): boolean => {
     switch (step) {
+      case 'terms':
+        return termsAccepted;
       case 'welcome':
         return tenantName.trim().length > 0 && collectionName.trim().length > 0;
       case 'theme':
@@ -130,6 +144,13 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
 
   const renderStepContent = () => {
     switch (activeStep) {
+      case 'terms':
+        return (
+          <div className="setupWizard__content setupWizard__content--terms">
+            <TermsAcceptance onAccepted={handleTermsAccepted} />
+          </div>
+        );
+
       case 'welcome':
         return (
           <div className="setupWizard__content">
@@ -250,13 +271,16 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
         <div className="setupWizard__header">
           <h1 className="setupWizard__title">Get Started</h1>
           <div className="setupWizard__headerActions">
-            <button
-              className="setupWizard__skipBtn"
-              onClick={handleSkip}
-              disabled={isSubmitting}
-            >
-              Skip Setup
-            </button>
+            {/* Hide skip button on terms step - terms must be accepted */}
+            {activeStep !== 'terms' && (
+              <button
+                className="setupWizard__skipBtn"
+                onClick={handleSkip}
+                disabled={isSubmitting}
+              >
+                Skip Setup
+              </button>
+            )}
           </div>
         </div>
 
@@ -282,33 +306,36 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
 
         {renderStepContent()}
 
-        <div className="setupWizard__footer">
-          <button
-            className="setupWizard__btn setupWizard__btn--secondary"
-            onClick={handlePrevious}
-            disabled={currentStepIndex === 0 || isSubmitting}
-          >
-            Previous
-          </button>
+        {/* Hide navigation footer on terms step - TermsAcceptance has its own button */}
+        {activeStep !== 'terms' && (
+          <div className="setupWizard__footer">
+            <button
+              className="setupWizard__btn setupWizard__btn--secondary"
+              onClick={handlePrevious}
+              disabled={currentStepIndex === 0 || activeStep === 'welcome' || isSubmitting}
+            >
+              Previous
+            </button>
 
-          {activeStep === 'preview' ? (
-            <button
-              className="setupWizard__btn setupWizard__btn--primary"
-              onClick={handleSubmit}
-              disabled={!canProceed('welcome') || !canProceed('theme') || isSubmitting}
-            >
-              {isSubmitting ? 'Creating...' : 'Get Started'}
-            </button>
-          ) : (
-            <button
-              className="setupWizard__btn setupWizard__btn--primary"
-              onClick={handleNext}
-              disabled={!canProceed(activeStep)}
-            >
-              Next
-            </button>
-          )}
-        </div>
+            {activeStep === 'preview' ? (
+              <button
+                className="setupWizard__btn setupWizard__btn--primary"
+                onClick={handleSubmit}
+                disabled={!canProceed('welcome') || !canProceed('theme') || isSubmitting}
+              >
+                {isSubmitting ? 'Creating...' : 'Get Started'}
+              </button>
+            ) : (
+              <button
+                className="setupWizard__btn setupWizard__btn--primary"
+                onClick={handleNext}
+                disabled={!canProceed(activeStep)}
+              >
+                Next
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

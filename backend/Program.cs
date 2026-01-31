@@ -129,7 +129,9 @@ if (!app.Environment.IsDevelopment())
                 path.Equals("/admin", StringComparison.OrdinalIgnoreCase) ||
                 path.StartsWith("/admin/", StringComparison.OrdinalIgnoreCase) ||
                 path.Equals("/welcome", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/welcome/", StringComparison.OrdinalIgnoreCase))
+                path.StartsWith("/welcome/", StringComparison.OrdinalIgnoreCase) ||
+                path.Equals("/terms", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/terms/", StringComparison.OrdinalIgnoreCase))
             {
                 context.Request.Path = "/collections/index.html";
             }

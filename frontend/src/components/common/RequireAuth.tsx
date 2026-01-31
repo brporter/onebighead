@@ -5,14 +5,17 @@ interface RequireAuthProps {
   children: React.ReactNode;
   /** Skip the welcome redirect check (used for the /welcome route itself) */
   skipWelcomeCheck?: boolean;
+  /** Skip the terms acceptance redirect check (used for the /terms route itself) */
+  skipTermsCheck?: boolean;
 }
 
 /**
  * Wrapper component that redirects unauthenticated users to the sign-in page.
+ * Also redirects users who haven't accepted terms to the terms page.
  * Also redirects first-time users to the welcome wizard.
  * Preserves the original URL so users can be redirected back after login.
  */
-function RequireAuth({ children, skipWelcomeCheck = false }: RequireAuthProps) {
+function RequireAuth({ children, skipWelcomeCheck = false, skipTermsCheck = false }: RequireAuthProps) {
   const { user, loading } = useUser();
   const location = useLocation();
 
@@ -25,6 +28,12 @@ function RequireAuth({ children, skipWelcomeCheck = false }: RequireAuthProps) {
     const returnUrl = encodeURIComponent(location.pathname + location.search);
     window.location.href = `/signin?returnUrl=${returnUrl}`;
     return null;
+  }
+
+  // Redirect to terms acceptance if user hasn't accepted terms
+  // (but skip for users who haven't completed welcome - they'll accept terms in the wizard)
+  if (!skipTermsCheck && !user.hasAcceptedTerms && user.hasCompletedWelcome) {
+    return <Navigate to="/terms" replace />;
   }
 
   // Redirect to welcome wizard if user hasn't completed welcome

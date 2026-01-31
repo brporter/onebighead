@@ -27,7 +27,10 @@ const createUser = (overrides: Partial<CurrentUser> = {}): CurrentUser => ({
   tenantId: 1,
   tenantName: 'Test Tenant',
   hasCompletedWelcome: false,
+  hasAcceptedTerms: true, // Default to true so tests start at welcome step
   isSystemAdministrator: false,
+  tenantRole: 'Normal' as const,
+  isTenantAdmin: false,
   ...overrides,
 });
 
@@ -237,6 +240,39 @@ describe('WelcomeWizard', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
 
     expect(screen.getByText('Loading themes...')).toBeInTheDocument();
+  });
+
+  describe('terms acceptance step', () => {
+    it('should show terms step first when user has not accepted terms', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasAcceptedTerms: false }),
+        loading: false,
+        error: null,
+        refetch: mockRefetch,
+        logout: vi.fn(),
+      });
+
+      render(<WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+
+      expect(screen.getByText('Terms of Service & Privacy Policy')).toBeInTheDocument();
+      // Skip button should not be visible on terms step
+      expect(screen.queryByRole('button', { name: 'Skip Setup' })).not.toBeInTheDocument();
+    });
+
+    it('should skip terms step when user has already accepted terms', () => {
+      vi.mocked(UserContext.useUser).mockReturnValue({
+        user: createUser({ hasAcceptedTerms: true }),
+        loading: false,
+        error: null,
+        refetch: mockRefetch,
+        logout: vi.fn(),
+      });
+
+      render(<WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+
+      expect(screen.getByText('Welcome to OneBigHead!')).toBeInTheDocument();
+      expect(screen.queryByText('Terms of Service & Privacy Policy')).not.toBeInTheDocument();
+    });
   });
 
   describe('snapshots', () => {

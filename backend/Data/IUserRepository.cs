@@ -14,6 +14,7 @@ public interface IUserRepository
     Task<bool> UpdateRoleAsync(int userId, int tenantId, TenantRole role);
     Task<bool> DeleteByIdAndTenantAsync(int userId, int tenantId);
     Task<int> CountAdminsInTenantAsync(int tenantId);
+    Task UpdateAsync(User user);
 }
 
 

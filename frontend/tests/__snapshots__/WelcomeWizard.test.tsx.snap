@@ -30,12 +30,22 @@ exports[`WelcomeWizard > snapshots > should match snapshot for initial welcome s
         class="setupWizard__tabs"
       >
         <button
-          class="setupWizard__tab setupWizard__tab--active"
+          class="setupWizard__tab "
         >
           <span
             class="setupWizard__tabNumber"
           >
             1
+          </span>
+          Terms
+        </button>
+        <button
+          class="setupWizard__tab setupWizard__tab--active"
+        >
+          <span
+            class="setupWizard__tabNumber"
+          >
+            2
           </span>
           Welcome
         </button>
@@ -46,7 +56,7 @@ exports[`WelcomeWizard > snapshots > should match snapshot for initial welcome s
           <span
             class="setupWizard__tabNumber"
           >
-            2
+            3
           </span>
           Theme
         </button>
@@ -56,7 +66,7 @@ exports[`WelcomeWizard > snapshots > should match snapshot for initial welcome s
           <span
             class="setupWizard__tabNumber"
           >
-            3
+            4
           </span>
           Preview
         </button>

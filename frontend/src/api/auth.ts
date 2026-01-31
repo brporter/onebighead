@@ -10,6 +10,11 @@ export interface CompleteWelcomeResponse {
   hasCompletedWelcome: boolean;
 }
 
+export interface AcceptTermsResponse {
+  hasAcceptedTerms: boolean;
+  acceptedTermsAt: string;
+}
+
 export const authApi = {
   getCurrentUser(): Promise<CurrentUser | null> {
     return api.get<CurrentUser>('/auth/me').catch((error) => {
@@ -30,5 +35,9 @@ export const authApi = {
 
   completeWelcome(tenantName?: string): Promise<CompleteWelcomeResponse> {
     return api.post<CompleteWelcomeResponse>('/auth/complete-welcome', { tenantName });
+  },
+
+  acceptTerms(): Promise<AcceptTermsResponse> {
+    return api.post<AcceptTermsResponse>('/auth/accept-terms', {});
   },
 };

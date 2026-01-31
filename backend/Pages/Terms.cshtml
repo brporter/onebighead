@@ -1,0 +1,145 @@
+@page
+@model TermsModel
+@{
+    ViewData["Title"] = "Terms of Service";
+}
+
+<div class="landing">
+    <header class="landing__header">
+        <div class="landing__header-content">
+            <a asp-page="/Index" class="landing__logo">OneBigHead</a>
+            <nav class="landing__nav">
+                <a asp-page="/About" class="landing__nav-link">About</a>
+                <a asp-page="/Privacy" class="landing__nav-link">Privacy Policy</a>
+                <a asp-page="/Terms" class="landing__nav-link landing__nav-link--active">Terms of Service</a>
+                <a asp-page="/SignIn" class="landing__nav-link landing__nav-link--signin">Sign In</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="landing__main landing__main--narrow">
+        <article class="landing__article">
+            <h1>Terms of Service</h1>
+            <p class="landing__date">Last updated: January 1, 2026</p>
+
+            <section>
+                <h2>1. Acceptance of Terms</h2>
+                <p>
+                    By accessing or using OneBigHead ("the Service"), you agree to be bound by these Terms of
+                    Service and our Privacy Policy. If you do not agree to these terms, please do not use the Service.
+                </p>
+            </section>
+
+            <section>
+                <h2>2. Description of Service</h2>
+                <p>
+                    OneBigHead is a collection management platform that allows users to organize, document,
+                    and manage their personal collections. The Service includes features for creating collections,
+                    categorizing items, uploading images, and sharing collections publicly or privately.
+                </p>
+            </section>
+
+            <section>
+                <h2>3. User Accounts</h2>
+                <p>
+                    To use the Service, you must create an account using a supported authentication provider.
+                    You are responsible for:
+                </p>
+                <ul>
+                    <li>Maintaining the security of your account credentials</li>
+                    <li>All activities that occur under your account</li>
+                    <li>Notifying us immediately of any unauthorized access</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>4. User Content</h2>
+                <p>
+                    You retain ownership of all content you upload to the Service ("User Content"). By uploading
+                    content, you grant us a limited license to store, display, and transmit your content as
+                    necessary to provide the Service.
+                </p>
+                <p>You agree not to upload content that:</p>
+                <ul>
+                    <li>Infringes on intellectual property rights of others</li>
+                    <li>Contains illegal, harmful, or offensive material</li>
+                    <li>Violates any applicable laws or regulations</li>
+                    <li>Contains malware or malicious code</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>5. Acceptable Use</h2>
+                <p>You agree to use the Service only for lawful purposes and in accordance with these Terms. You agree not to:</p>
+                <ul>
+                    <li>Use the Service in any way that violates applicable laws</li>
+                    <li>Attempt to gain unauthorized access to any part of the Service</li>
+                    <li>Interfere with or disrupt the Service or its servers</li>
+                    <li>Use automated systems to access the Service without permission</li>
+                    <li>Impersonate any person or entity</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>6. Privacy</h2>
+                <p>
+                    Your use of the Service is also governed by our <a asp-page="/Privacy">Privacy Policy</a>,
+                    which describes how we collect, use, and protect your personal information.
+                </p>
+            </section>
+
+            <section>
+                <h2>7. Service Availability</h2>
+                <p>
+                    We strive to maintain high availability of the Service, but we do not guarantee uninterrupted
+                    access. We may modify, suspend, or discontinue any aspect of the Service at any time.
+                </p>
+            </section>
+
+            <section>
+                <h2>8. Limitation of Liability</h2>
+                <p>
+                    To the maximum extent permitted by law, OneBigHead shall not be liable for any indirect,
+                    incidental, special, consequential, or punitive damages resulting from your use of or
+                    inability to use the Service.
+                </p>
+            </section>
+
+            <section>
+                <h2>9. Termination</h2>
+                <p>
+                    We may terminate or suspend your account at any time for violations of these Terms.
+                    You may also delete your account at any time through the Service settings.
+                </p>
+            </section>
+
+            <section>
+                <h2>10. Changes to Terms</h2>
+                <p>
+                    We may update these Terms from time to time. We will notify you of material changes by
+                    posting the updated Terms on this page and updating the "Last updated" date. Continued
+                    use of the Service after changes constitutes acceptance of the new Terms.
+                </p>
+            </section>
+
+            <section>
+                <h2>11. Contact Us</h2>
+                <p>
+                    If you have questions about these Terms, please contact us at
+                    <a href="mailto:legal@onebighead.com">legal@onebighead.com</a>.
+                </p>
+            </section>
+        </article>
+    </main>
+
+    <footer class="landing__footer">
+        <div class="landing__footer-content">
+            <p>&copy; 2026 OneBigHead. All rights reserved.</p>
+            <nav class="landing__footer-nav">
+                <a asp-page="/About">About</a>
+                <a asp-page="/Privacy">Privacy Policy</a>
+                <a asp-page="/Terms">Terms of Service</a>
+            </nav>
+        </div>
+    </footer>
+</div>
