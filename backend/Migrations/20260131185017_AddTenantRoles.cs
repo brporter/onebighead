@@ -32,7 +32,9 @@ namespace OneBigHead.Server.Migrations
                 defaultValue: 0);
 
             // Set all existing users as TenantAdmin since they created their tenants
-            migrationBuilder.Sql("UPDATE Users SET TenantRole = 1");
+            // Use EXEC to defer parsing - otherwise SQL Server validates column names at batch compile time
+            // before the ADD COLUMN has executed, causing "Invalid column name 'TenantRole'" error
+            migrationBuilder.Sql("EXEC(N'UPDATE Users SET TenantRole = 1')");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_IdentityProvider_ProviderSubjectId",
