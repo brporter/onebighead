@@ -22,6 +22,17 @@ export enum UserFlag {
   TradeOrSell = "TradeOrSell",
 }
 
+/**
+ * Visibility setting for collections, categories, and items.
+ *
+ * Note: Uses string values to match backend JsonStringEnumConverter serialization.
+ */
+export enum Visibility {
+  Default = "Default",  // Inherit from parent
+  Private = "Private",  // Explicitly private
+  Public = "Public",    // Explicitly public (if parent allows)
+}
+
 export interface Item {
   id: number | null;
   tenantId: number;
@@ -32,7 +43,7 @@ export interface Item {
   description: string;
   properties: ItemProperty[];
   images: ItemImage[];
-  isPublicOverride: boolean | null;
+  visibility: Visibility;
   effectiveIsPublic: boolean;
   userFlag: UserFlag;
 }
@@ -45,7 +56,7 @@ export interface Category {
   description: string;
   parentCategoryId: number | null;
   isSystem: boolean;
-  isPublicOverride: boolean | null;
+  visibility: Visibility;
   effectiveIsPublic: boolean;
   itemTemplateIds: number[];
 }
@@ -61,7 +72,8 @@ export interface Collection {
   description: string;
   heroImageUrl: string | null;
   slug: string;
-  isPublic: boolean;
+  visibility: Visibility;
+  effectiveIsPublic: boolean;
 }
 
 export interface Tenant {
@@ -155,7 +167,7 @@ export interface SetupCollectionRequest {
   name: string;
   description?: string;
   heroImageUrl?: string;
-  isPublic?: boolean;
+  visibility?: Visibility;
   themeId: number;
 }
 

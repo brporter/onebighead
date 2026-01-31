@@ -1,5 +1,5 @@
 import type { Item } from './types';
-import { UserFlag } from './types';
+import { UserFlag, Visibility } from './types';
 
 export function createEmptyItem(categoryId: number | null, collectionId: number, tenantId: number): Item {
   return {
@@ -12,7 +12,7 @@ export function createEmptyItem(categoryId: number | null, collectionId: number,
     description: '',
     properties: [],
     images: [],
-    isPublicOverride: null,
+    visibility: Visibility.Default,
     effectiveIsPublic: true,
     userFlag: UserFlag.None,
   };

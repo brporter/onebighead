@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ItemView from '../../src/views/ItemView';
 import { useData } from '../../src/contexts/DataContext';
 import type { Collection, Category, Item } from '../../src/utils/types';
+import { Visibility, UserFlag } from '../../src/utils/types';
 
 vi.mock('../../src/contexts/DataContext', () => ({
   useData: vi.fn(),
@@ -31,11 +32,11 @@ function renderWithRouter(initialRoute: string) {
 
 describe('ItemView', () => {
   const mockCollections: Collection[] = [
-    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', isPublic: true },
+    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
   ];
 
   const mockCategories: Category[] = [
-    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
+    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockItems: Item[] = [
@@ -49,8 +50,9 @@ describe('ItemView', () => {
       description: 'Test description',
       properties: [{ category: 'General', name: 'Color', value: 'Blue' }],
       images: [{ url: 'https://example.com/img.jpg', alt: 'Test image' }],
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
+      userFlag: UserFlag.None,
     },
   ];
 

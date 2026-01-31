@@ -202,7 +202,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         {
             Name = "New Collection",
             Description = "A new test collection",
-            IsPublic = true
+            Visibility = Visibility.Public
         };
 
         // Act
@@ -214,7 +214,8 @@ public class CollectionsControllerTests : IntegrationTestBase
         Assert.NotNull(created);
         Assert.Equal("New Collection", created.Name);
         Assert.Equal("new-collection", created.Slug);
-        Assert.True(created.IsPublic);
+        Assert.True(created.EffectiveIsPublic);
+        Assert.Equal(Visibility.Public, created.Visibility);
         Assert.Equal(DefaultTenantId, created.TenantId);
 
         // Verify persisted in database
@@ -289,7 +290,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         {
             Name = "Updated Collection",
             Description = "Updated description",
-            IsPublic = true
+            Visibility = Visibility.Public
         };
 
         // Act
@@ -301,7 +302,8 @@ public class CollectionsControllerTests : IntegrationTestBase
         Assert.NotNull(updated);
         Assert.Equal("Updated Collection", updated.Name);
         Assert.Equal("Updated description", updated.Description);
-        Assert.True(updated.IsPublic);
+        Assert.True(updated.EffectiveIsPublic);
+        Assert.Equal(Visibility.Public, updated.Visibility);
     }
 
     [Fact]

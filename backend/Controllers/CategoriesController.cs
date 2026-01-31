@@ -136,13 +136,28 @@ public class CategoriesController : ApiControllerBase
             return BadRequest("Invalid collection");
         }
 
+        // Get all categories for visibility computation
+        var allCategories = (await _categoryRepository.GetByCollectionAsync(request.CollectionId, tenantId)).ToList();
+        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+        var categoryLookup = allCategories.ToDictionary(c => c.Id);
+
         // Validate ParentCategoryId belongs to tenant and same collection
+        Category? parentCategory = null;
         if (request.ParentCategoryId.HasValue)
         {
-            var parentCategory = await _categoryRepository.GetByIdAsync(request.ParentCategoryId.Value, tenantId);
-            if (parentCategory is null || parentCategory.CollectionId != request.CollectionId)
+            if (!categoryLookup.TryGetValue(request.ParentCategoryId.Value, out parentCategory))
             {
                 return BadRequest("Invalid parent category");
+            }
+        }
+
+        // Validate visibility: cannot set Public when parent is private
+        if (request.Visibility == Visibility.Public)
+        {
+            bool parentEffectivelyPublic = parentCategory?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
+            if (!parentEffectivelyPublic)
+            {
+                return BadRequest("Cannot set visibility to Public when parent is private.");
             }
         }
 
@@ -154,7 +169,7 @@ public class CategoriesController : ApiControllerBase
             Description = request.Description ?? string.Empty,
             ParentCategoryId = request.ParentCategoryId,
             IsSystem = false,
-            IsPublicOverride = request.IsPublicOverride
+            Visibility = request.Visibility
         };
 
         var created = await _categoryRepository.CreateAsync(category);
@@ -191,13 +206,35 @@ public class CategoriesController : ApiControllerBase
             return BadRequest("The name 'Unassigned Items' is reserved for system use.");
         }
 
+        // Get collection for visibility checks
+        var collection = await _collectionRepository.GetByIdAsync(existingCategory.CollectionId, tenantId);
+        if (collection is null)
+        {
+            return NotFound("Collection not found");
+        }
+
+        // Get all categories for visibility computation
+        var allCategories = (await _categoryRepository.GetByCollectionAsync(existingCategory.CollectionId, tenantId)).ToList();
+        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+        var categoryLookup = allCategories.ToDictionary(c => c.Id);
+
         // Validate ParentCategoryId belongs to tenant and same collection
+        Category? parentCategory = null;
         if (request.ParentCategoryId.HasValue)
         {
-            var parentCategory = await _categoryRepository.GetByIdAsync(request.ParentCategoryId.Value, tenantId);
-            if (parentCategory is null || parentCategory.CollectionId != existingCategory.CollectionId)
+            if (!categoryLookup.TryGetValue(request.ParentCategoryId.Value, out parentCategory))
             {
                 return BadRequest("Invalid parent category");
+            }
+        }
+
+        // Validate visibility: cannot set Public when parent is private
+        if (request.Visibility == Visibility.Public)
+        {
+            bool parentEffectivelyPublic = parentCategory?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
+            if (!parentEffectivelyPublic)
+            {
+                return BadRequest("Cannot set visibility to Public when parent is private.");
             }
         }
 
@@ -208,7 +245,7 @@ public class CategoriesController : ApiControllerBase
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             ParentCategoryId = request.ParentCategoryId,
-            IsPublicOverride = request.IsPublicOverride
+            Visibility = request.Visibility
         };
 
         var updated = await _categoryRepository.UpdateAsync(id, category, tenantId);

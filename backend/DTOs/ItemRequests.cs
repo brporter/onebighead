@@ -22,7 +22,7 @@ public class CreateItemRequest
 
     public List<ItemImage> Images { get; set; } = new();
 
-    public bool? IsPublicOverride { get; set; }
+    public Visibility Visibility { get; set; } = Visibility.Default;
 
     public UserFlag UserFlag { get; set; } = UserFlag.None;
 
@@ -38,7 +38,7 @@ public class CreateItemRequest
             Description = Description,
             Properties = Properties,
             Images = Images,
-            IsPublicOverride = IsPublicOverride,
+            Visibility = Visibility,
             UserFlag = UserFlag
         };
     }
@@ -63,7 +63,7 @@ public class UpdateItemRequest
 
     public List<ItemImage> Images { get; set; } = new();
 
-    public bool? IsPublicOverride { get; set; }
+    public Visibility Visibility { get; set; } = Visibility.Default;
 
     public UserFlag UserFlag { get; set; } = UserFlag.None;
 
@@ -80,7 +80,7 @@ public class UpdateItemRequest
             Description = Description,
             Properties = Properties,
             Images = Images,
-            IsPublicOverride = IsPublicOverride,
+            Visibility = Visibility,
             UserFlag = UserFlag
         };
     }

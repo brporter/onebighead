@@ -14,7 +14,7 @@ public class CreateCategoryRequest
     [MaxLength(1000)]
     public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
-    public bool? IsPublicOverride { get; set; }
+    public Visibility Visibility { get; set; } = Visibility.Default;
     public List<int>? ItemTemplateIds { get; set; }
 }
 
@@ -27,7 +27,7 @@ public class UpdateCategoryRequest
     [MaxLength(1000)]
     public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
-    public bool? IsPublicOverride { get; set; }
+    public Visibility Visibility { get; set; } = Visibility.Default;
     public List<int>? ItemTemplateIds { get; set; }
 }
 
@@ -40,7 +40,7 @@ public class CategoryResponse
     public string Description { get; set; } = string.Empty;
     public bool IsSystem { get; set; }
     public int? ParentCategoryId { get; set; }
-    public bool? IsPublicOverride { get; set; }
+    public Visibility Visibility { get; set; } = Visibility.Default;
     public bool EffectiveIsPublic { get; set; }
     public List<int> ItemTemplateIds { get; set; } = new();
 
@@ -55,7 +55,7 @@ public class CategoryResponse
             Description = category.Description,
             IsSystem = category.IsSystem,
             ParentCategoryId = category.ParentCategoryId,
-            IsPublicOverride = category.IsPublicOverride,
+            Visibility = category.Visibility,
             EffectiveIsPublic = category.EffectiveIsPublic,
             ItemTemplateIds = templateIds ?? new()
         };

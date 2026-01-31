@@ -26,8 +26,12 @@ public class Collection
     [MaxLength(100)]
     public string Slug { get; set; } = string.Empty;
 
-    [JsonPropertyName("isPublic")]
-    public bool IsPublic { get; set; } = false;
+    [JsonPropertyName("visibility")]
+    public Visibility Visibility { get; set; } = Visibility.Private;
+
+    [NotMapped]
+    [JsonPropertyName("effectiveIsPublic")]
+    public bool EffectiveIsPublic => Visibility == Visibility.Public;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -7,6 +7,7 @@ import CategoryView from '../src/views/CategoryView';
 import ItemView from '../src/views/ItemView';
 import { useData } from '../src/contexts/DataContext';
 import type { Category, Item, Collection } from '../src/utils/types';
+import { Visibility, UserFlag } from '../src/utils/types';
 
 // Mock the DataContext
 vi.mock('../src/contexts/DataContext', () => ({
@@ -32,12 +33,12 @@ function renderWithRouter(initialRoute = '/collections') {
 
 describe('App with Router', () => {
   const mockCollections: Collection[] = [
-    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', isPublic: true },
+    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
   ];
 
   const mockCategories: Category[] = [
-    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
-    { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
+    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockItems: Item[] = [
@@ -51,8 +52,9 @@ describe('App with Router', () => {
       description: 'Description 1',
       properties: [{ category: 'General', name: 'Prop', value: 'Value' }],
       images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
+      userFlag: UserFlag.None,
     },
     {
       id: 2,
@@ -64,8 +66,9 @@ describe('App with Router', () => {
       description: 'Description 2',
       properties: [],
       images: [],
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
+      userFlag: UserFlag.None,
     },
   ];
 

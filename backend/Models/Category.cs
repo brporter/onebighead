@@ -25,8 +25,8 @@ public class Category
 
     public int? ParentCategoryId { get; set; }
 
-    [JsonPropertyName("isPublicOverride")]
-    public bool? IsPublicOverride { get; set; }
+    [JsonPropertyName("visibility")]
+    public Visibility Visibility { get; set; } = Visibility.Default;
 
     [NotMapped]
     [JsonPropertyName("effectiveIsPublic")]

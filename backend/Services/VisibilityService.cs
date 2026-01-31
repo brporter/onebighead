@@ -16,7 +16,7 @@ public class VisibilityService : IVisibilityService
     {
         // Build lookup for O(1) parent access
         // Materialize to list first to avoid multiple enumeration if input is a lazy IEnumerable
-        var categoryLookup = allCategories as IDictionary<int, Category> 
+        var categoryLookup = allCategories as IDictionary<int, Category>
             ?? (allCategories as IList<Category> ?? allCategories.ToList()).ToDictionary(c => c.Id);
         ComputeEffectiveVisibilityInternal(category, collection, categoryLookup);
     }
@@ -24,7 +24,7 @@ public class VisibilityService : IVisibilityService
     private static void ComputeEffectiveVisibilityInternal(Category category, Collection collection, IDictionary<int, Category> categoryLookup)
     {
         // If collection is not public, category cannot be public
-        if (!collection.IsPublic)
+        if (!collection.EffectiveIsPublic)
         {
             category.EffectiveIsPublic = false;
             return;
@@ -41,28 +41,34 @@ public class VisibilityService : IVisibilityService
             }
         }
 
-        // If override is set, use it
-        if (category.IsPublicOverride.HasValue)
+        // Handle explicit visibility settings
+        if (category.Visibility == Visibility.Private)
         {
-            category.EffectiveIsPublic = category.IsPublicOverride.Value;
+            category.EffectiveIsPublic = false;
             return;
         }
 
-        // Inherit from parent category or collection
+        if (category.Visibility == Visibility.Public)
+        {
+            category.EffectiveIsPublic = true;
+            return;
+        }
+
+        // Default: Inherit from parent category or collection
         if (category.ParentCategoryId.HasValue && categoryLookup.TryGetValue(category.ParentCategoryId.Value, out var parent))
         {
             category.EffectiveIsPublic = parent.EffectiveIsPublic;
         }
         else
         {
-            category.EffectiveIsPublic = collection.IsPublic;
+            category.EffectiveIsPublic = collection.EffectiveIsPublic;
         }
     }
 
     public void ComputeEffectiveVisibility(Item item, Collection collection, Category? category, IEnumerable<Category> allCategories)
     {
         // If collection is not public, item cannot be public
-        if (!collection.IsPublic)
+        if (!collection.EffectiveIsPublic)
         {
             item.EffectiveIsPublic = false;
             return;
@@ -78,30 +84,36 @@ public class VisibilityService : IVisibilityService
             }
         }
 
-        // If override is set, use it
-        if (item.IsPublicOverride.HasValue)
+        // Handle explicit visibility settings
+        if (item.Visibility == Visibility.Private)
         {
-            item.EffectiveIsPublic = item.IsPublicOverride.Value;
+            item.EffectiveIsPublic = false;
             return;
         }
 
-        // Inherit from category or collection
-        item.EffectiveIsPublic = category?.EffectiveIsPublic ?? collection.IsPublic;
+        if (item.Visibility == Visibility.Public)
+        {
+            item.EffectiveIsPublic = true;
+            return;
+        }
+
+        // Default: Inherit from category or collection
+        item.EffectiveIsPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
     }
 
     public void ComputeEffectiveVisibility(IEnumerable<Category> categories, Collection collection)
     {
         var categoryList = categories.ToList();
         var categoryLookup = categoryList.ToDictionary(c => c.Id);
-        
+
         // Build a dependency order (parents before children)
         var processed = new HashSet<int>();
         var ordered = new List<Category>();
-        
+
         void ProcessCategory(Category cat)
         {
             if (processed.Contains(cat.Id)) return;
-            
+
             if (cat.ParentCategoryId.HasValue && categoryLookup.TryGetValue(cat.ParentCategoryId.Value, out var parent))
             {
                 if (!processed.Contains(parent.Id))
@@ -109,16 +121,16 @@ public class VisibilityService : IVisibilityService
                     ProcessCategory(parent);
                 }
             }
-            
+
             processed.Add(cat.Id);
             ordered.Add(cat);
         }
-        
+
         foreach (var category in categoryList)
         {
             ProcessCategory(category);
         }
-        
+
         // Now compute in order using the lookup for O(1) access
         foreach (var category in ordered)
         {
@@ -130,11 +142,11 @@ public class VisibilityService : IVisibilityService
     {
         // Build lookup for O(1) category access
         var categoryLookup = categories.ToDictionary(c => c.Id);
-        
+
         foreach (var item in items)
         {
             var category = item.CategoryId.HasValue && categoryLookup.TryGetValue(item.CategoryId.Value, out var cat)
-                ? cat 
+                ? cat
                 : null;
             ComputeEffectiveVisibility(item, collection, category, categories);
         }

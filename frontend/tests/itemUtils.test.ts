@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createEmptyItem } from '../src/utils/itemUtils';
-import { UserFlag } from '../src/utils/types';
+import { UserFlag, Visibility } from '../src/utils/types';
 
 describe('createEmptyItem', () => {
   it('should create an empty item with provided values', () => {
@@ -16,7 +16,7 @@ describe('createEmptyItem', () => {
       description: '',
       properties: [],
       images: [],
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
       userFlag: UserFlag.None,
     });
@@ -35,7 +35,7 @@ describe('createEmptyItem', () => {
       description: '',
       properties: [],
       images: [],
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
       userFlag: UserFlag.None,
     });
@@ -54,7 +54,7 @@ describe('createEmptyItem', () => {
       description: '',
       properties: [],
       images: [],
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
       userFlag: UserFlag.None,
     });

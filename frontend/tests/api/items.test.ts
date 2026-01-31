@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { itemsApi, type GetItemsOptions } from '../../src/api/items';
 import type { Item } from '../../src/utils/types';
+import { Visibility } from '../../src/utils/types';
 
 describe('itemsApi', () => {
   let mockFetch: ReturnType<typeof vi.fn>;
@@ -17,7 +18,7 @@ describe('itemsApi', () => {
   describe('getAll', () => {
     it('should fetch all items without options', async () => {
       const mockItems: Item[] = [
-        { id: 1, tenantId: 1, collectionId: 1, name: 'Item 1', summary: '', description: '', properties: [], images: [], categoryId: 1, isPublicOverride: null, effectiveIsPublic: true },
+        { id: 1, tenantId: 1, collectionId: 1, name: 'Item 1', summary: '', description: '', properties: [], images: [], categoryId: 1, visibility: Visibility.Default, effectiveIsPublic: true },
       ];
       
       mockFetch.mockResolvedValueOnce({
@@ -108,7 +109,7 @@ describe('itemsApi', () => {
         properties: [],
         images: [],
         categoryId: 5,
-        isPublicOverride: null,
+        visibility: Visibility.Default,
         effectiveIsPublic: true,
       };
 
@@ -136,7 +137,7 @@ describe('itemsApi', () => {
         properties: [{ category: 'Size', name: 'Width', value: '10cm' }],
         images: [],
         categoryId: 3,
-        isPublicOverride: null,
+        visibility: Visibility.Default,
         effectiveIsPublic: true,
       };
 
@@ -169,7 +170,7 @@ describe('itemsApi', () => {
         properties: [],
         images: [],
         categoryId: 3,
-        isPublicOverride: true,
+        visibility: Visibility.Public,
         effectiveIsPublic: true,
       };
 

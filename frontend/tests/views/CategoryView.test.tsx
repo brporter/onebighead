@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import CategoryView from '../../src/views/CategoryView';
 import { useData } from '../../src/contexts/DataContext';
 import type { Collection, Category, Item } from '../../src/utils/types';
+import { Visibility, UserFlag } from '../../src/utils/types';
 
 vi.mock('../../src/contexts/DataContext', () => ({
   useData: vi.fn(),
@@ -32,12 +33,12 @@ function renderWithRouter(initialRoute: string) {
 
 describe('CategoryView', () => {
   const mockCollections: Collection[] = [
-    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', isPublic: true },
+    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
   ];
 
   const mockCategories: Category[] = [
-    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
-    { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
+    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockItems: Item[] = [
@@ -51,8 +52,9 @@ describe('CategoryView', () => {
       description: 'Description 1',
       properties: [],
       images: [],
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
+      userFlag: UserFlag.None,
     },
     {
       id: 2,
@@ -64,8 +66,9 @@ describe('CategoryView', () => {
       description: 'Description 2',
       properties: [],
       images: [],
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
+      userFlag: UserFlag.None,
     },
   ];
 

@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemEditor from '../src/components/item/ItemEditor';
 import type { Item } from '../src/utils/types';
-import { UserFlag } from '../src/utils/types';
+import { UserFlag, Visibility } from '../src/utils/types';
 
 // Mock DataContext for PropertyEditor and ImageEditor
 vi.mock('../src/contexts/DataContext', () => ({
@@ -34,14 +34,14 @@ describe('ItemEditor', () => {
       { url: 'https://example.com/image1.jpg', alt: 'Image 1' },
       { url: 'https://example.com/image2.jpg', alt: 'Image 2' },
     ],
-    isPublicOverride: null,
+    visibility: Visibility.Default,
     effectiveIsPublic: true,
     userFlag: UserFlag.None,
   };
 
   const mockCategories = [
-    { tenantId: 1, collectionId: 1, categoryId: 1, name: 'Category 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
-    { tenantId: 1, collectionId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
+    { tenantId: 1, collectionId: 1, categoryId: 1, name: 'Category 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { tenantId: 1, collectionId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const defaultProps = {

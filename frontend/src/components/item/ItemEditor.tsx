@@ -4,7 +4,7 @@ import ImageEditor from '../common/ImageEditor';
 import CategorySelector from '../category/CategorySelector';
 import VisibilityToggle from '../common/VisibilityToggle';
 import type { Item, Category, ItemProperty, Collection } from '../../utils/types';
-import { UserFlag } from '../../utils/types';
+import { UserFlag, Visibility } from '../../utils/types';
 
 interface ItemEditorProps {
   item: Item | null;
@@ -43,7 +43,7 @@ function ItemEditor({
       description: '',
       properties: initialProperties ?? [],
       images: [],
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: false,
       userFlag: UserFlag.None,
     };
@@ -53,7 +53,7 @@ function ItemEditor({
 
   // Determine if parent allows public override
   const getParentIsPublic = (): boolean => {
-    if (!collection?.isPublic) return false;
+    if (!collection?.effectiveIsPublic) return false;
     if (formData.categoryId === null) return true;
     const category = categories.find((c) => c.categoryId === formData.categoryId);
     return category?.effectiveIsPublic ?? true;
@@ -138,10 +138,10 @@ function ItemEditor({
 
         <div className="detail__field">
           <VisibilityToggle
-            isPublicOverride={formData.isPublicOverride}
+            visibility={formData.visibility}
             effectiveIsPublic={formData.effectiveIsPublic}
             parentIsPublic={getParentIsPublic()}
-            onChange={(value) => handleFieldChange('isPublicOverride', value)}
+            onChange={(value) => handleFieldChange('visibility', value)}
             label="Visibility"
           />
         </div>

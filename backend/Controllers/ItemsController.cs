@@ -163,16 +163,31 @@ public class ItemsController : ApiControllerBase
             return BadRequest("Invalid collection");
         }
         
+        // Get all categories for visibility computation
+        var allCategories = (await _categoryRepository.GetByCollectionAsync(request.CollectionId, tenantId)).ToList();
+        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+        var categoryLookup = allCategories.ToDictionary(c => c.Id);
+
         // Validate CategoryId belongs to tenant and collection
+        Category? category = null;
         if (request.CategoryId.HasValue)
         {
-            var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, tenantId);
-            if (category is null || category.CollectionId != request.CollectionId)
+            if (!categoryLookup.TryGetValue(request.CategoryId.Value, out category))
             {
                 return BadRequest("Invalid category");
             }
         }
-        
+
+        // Validate visibility: cannot set Public when parent is private
+        if (request.Visibility == Visibility.Public)
+        {
+            bool parentEffectivelyPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
+            if (!parentEffectivelyPublic)
+            {
+                return BadRequest("Cannot set visibility to Public when parent is private.");
+            }
+        }
+
         var item = request.ToItem(tenantId);
         var created = await _itemRepository.CreateAsync(item);
         return CreatedAtAction(nameof(GetItem), new { id = created.Id }, created);
@@ -190,16 +205,31 @@ public class ItemsController : ApiControllerBase
             return BadRequest("Invalid collection");
         }
         
+        // Get all categories for visibility computation
+        var allCategories = (await _categoryRepository.GetByCollectionAsync(request.CollectionId, tenantId)).ToList();
+        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+        var categoryLookup = allCategories.ToDictionary(c => c.Id);
+
         // Validate CategoryId belongs to tenant and collection
+        Category? category = null;
         if (request.CategoryId.HasValue)
         {
-            var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, tenantId);
-            if (category is null || category.CollectionId != request.CollectionId)
+            if (!categoryLookup.TryGetValue(request.CategoryId.Value, out category))
             {
                 return BadRequest("Invalid category");
             }
         }
-        
+
+        // Validate visibility: cannot set Public when parent is private
+        if (request.Visibility == Visibility.Public)
+        {
+            bool parentEffectivelyPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
+            if (!parentEffectivelyPublic)
+            {
+                return BadRequest("Cannot set visibility to Public when parent is private.");
+            }
+        }
+
         var item = request.ToItem(id, tenantId);
         var updated = await _itemRepository.UpdateAsync(id, item, tenantId);
         if (updated is null)

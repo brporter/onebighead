@@ -41,8 +41,8 @@ public class Item
     [JsonPropertyName("images")]
     public List<ItemImage> Images { get; set; } = new();
 
-    [JsonPropertyName("isPublicOverride")]
-    public bool? IsPublicOverride { get; set; }
+    [JsonPropertyName("visibility")]
+    public Visibility Visibility { get; set; } = Visibility.Default;
 
     [NotMapped]
     [JsonPropertyName("effectiveIsPublic")]

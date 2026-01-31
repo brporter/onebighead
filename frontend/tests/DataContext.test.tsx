@@ -2,20 +2,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { DataProvider, useData } from '../src/contexts/DataContext';
 import type { Item, Category, Collection } from '../src/utils/types';
-import { UserFlag } from '../src/utils/types';
+import { UserFlag, Visibility } from '../src/utils/types';
 
 const mockCollections: Collection[] = [
-  { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', isPublic: true },
+  { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
 ];
 
 const mockCategories: Category[] = [
-  { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
-  { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false, isPublicOverride: null, effectiveIsPublic: true, itemTemplateIds: [] },
+  { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+  { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
 ];
 
 const mockItems: Item[] = [
-  { id: 1, tenantId: 1, collectionId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], isPublicOverride: null, effectiveIsPublic: true, userFlag: UserFlag.None },
-  { id: 2, tenantId: 1, collectionId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], isPublicOverride: null, effectiveIsPublic: true, userFlag: UserFlag.Have },
+  { id: 1, tenantId: 1, collectionId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.None },
+  { id: 2, tenantId: 1, collectionId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.Have },
 ];
 
 // Test component to access context
@@ -471,7 +471,7 @@ describe('DataContext', () => {
         description: 'Description',
         properties: [],
         images: [],
-        isPublicOverride: null,
+        visibility: Visibility.Default,
         effectiveIsPublic: true,
         userFlag: UserFlag.Want,
       };

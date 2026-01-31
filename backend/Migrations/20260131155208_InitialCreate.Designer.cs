@@ -12,8 +12,8 @@ using OneBigHead.Server.Data;
 namespace OneBigHead.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260125054259_AddVisibilityFields")]
-    partial class AddVisibilityFields
+    [Migration("20260131155208_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -42,10 +42,6 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<bool?>("IsPublicOverride")
-                        .HasColumnType("bit")
-                        .HasJsonPropertyName("isPublicOverride");
-
                     b.Property<bool>("IsSystem")
                         .HasColumnType("bit");
 
@@ -60,6 +56,10 @@ namespace OneBigHead.Server.Migrations
                     b.Property<int>("TenantId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Visibility")
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("visibility");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CollectionId");
@@ -69,6 +69,26 @@ namespace OneBigHead.Server.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.CategoryItemTemplate", b =>
+                {
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("CategoryId", "ItemTemplateId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("ItemTemplateId");
+
+                    b.ToTable("CategoryItemTemplates");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.Collection", b =>
@@ -92,10 +112,6 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
-                    b.Property<bool>("IsPublic")
-                        .HasColumnType("bit")
-                        .HasJsonPropertyName("isPublic");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -108,6 +124,10 @@ namespace OneBigHead.Server.Migrations
 
                     b.Property<int>("TenantId")
                         .HasColumnType("int");
+
+                    b.Property<int>("Visibility")
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("visibility");
 
                     b.HasKey("Id");
 
@@ -132,6 +152,94 @@ namespace OneBigHead.Server.Migrations
                     b.HasIndex("ItemTemplateId");
 
                     b.ToTable("CollectionItemTemplates");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.CollectionTheme", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("IconName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SortOrder");
+
+                    b.ToTable("CollectionThemes");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.CollectionThemeCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ParentName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ThemeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ThemeId");
+
+                    b.ToTable("CollectionThemeCategories");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.CollectionThemeTemplate", b =>
+                {
+                    b.Property<int>("ThemeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("ThemeId", "ItemTemplateId");
+
+                    b.HasIndex("ItemTemplateId");
+
+                    b.HasIndex("ThemeId");
+
+                    b.ToTable("CollectionThemeTemplates");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.Item", b =>
@@ -161,10 +269,6 @@ namespace OneBigHead.Server.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasJsonPropertyName("images");
 
-                    b.Property<bool?>("IsPublicOverride")
-                        .HasColumnType("bit")
-                        .HasJsonPropertyName("isPublicOverride");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -186,6 +290,14 @@ namespace OneBigHead.Server.Migrations
                         .HasColumnType("int")
                         .HasJsonPropertyName("tenantId");
 
+                    b.Property<int>("UserFlag")
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("userFlag");
+
+                    b.Property<int>("Visibility")
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("visibility");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -193,6 +305,10 @@ namespace OneBigHead.Server.Migrations
                     b.HasIndex("CollectionId");
 
                     b.HasIndex("TenantId");
+
+                    b.HasIndex("UserFlag");
+
+                    b.HasIndex("TenantId", "UserFlag");
 
                     b.ToTable("Items");
                 });
@@ -331,6 +447,103 @@ namespace OneBigHead.Server.Migrations
                     b.ToTable("StoredImages");
                 });
 
+            modelBuilder.Entity("OneBigHead.Server.Models.SupportReply", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("supportReplyId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsFromAdmin")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("SupportRequestId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupportRequestId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SupportRequestId", "IsFromAdmin", "IsRead");
+
+                    b.ToTable("SupportReplies");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.SupportRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("supportRequestId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SupportRequests");
+                });
+
             modelBuilder.Entity("OneBigHead.Server.Models.Tenant", b =>
                 {
                     b.Property<int>("Id")
@@ -341,6 +554,9 @@ namespace OneBigHead.Server.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("HasCompletedWelcome")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -422,6 +638,25 @@ namespace OneBigHead.Server.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("OneBigHead.Server.Models.CategoryItemTemplate", b =>
+                {
+                    b.HasOne("OneBigHead.Server.Models.Category", "Category")
+                        .WithMany("CategoryItemTemplates")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OneBigHead.Server.Models.ItemTemplate", "ItemTemplate")
+                        .WithMany("CategoryItemTemplates")
+                        .HasForeignKey("ItemTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("ItemTemplate");
+                });
+
             modelBuilder.Entity("OneBigHead.Server.Models.Collection", b =>
                 {
                     b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
@@ -450,6 +685,36 @@ namespace OneBigHead.Server.Migrations
                     b.Navigation("Collection");
 
                     b.Navigation("ItemTemplate");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.CollectionThemeCategory", b =>
+                {
+                    b.HasOne("OneBigHead.Server.Models.CollectionTheme", "Theme")
+                        .WithMany("ThemeCategories")
+                        .HasForeignKey("ThemeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Theme");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.CollectionThemeTemplate", b =>
+                {
+                    b.HasOne("OneBigHead.Server.Models.ItemTemplate", "ItemTemplate")
+                        .WithMany()
+                        .HasForeignKey("ItemTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OneBigHead.Server.Models.CollectionTheme", "Theme")
+                        .WithMany("ThemeTemplates")
+                        .HasForeignKey("ThemeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ItemTemplate");
+
+                    b.Navigation("Theme");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.Item", b =>
@@ -529,6 +794,34 @@ namespace OneBigHead.Server.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("OneBigHead.Server.Models.SupportReply", b =>
+                {
+                    b.HasOne("OneBigHead.Server.Models.SupportRequest", "SupportRequest")
+                        .WithMany("Replies")
+                        .HasForeignKey("SupportRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OneBigHead.Server.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("SupportRequest");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.SupportRequest", b =>
+                {
+                    b.HasOne("OneBigHead.Server.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
                 {
                     b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
@@ -542,6 +835,8 @@ namespace OneBigHead.Server.Migrations
 
             modelBuilder.Entity("OneBigHead.Server.Models.Category", b =>
                 {
+                    b.Navigation("CategoryItemTemplates");
+
                     b.Navigation("ChildCategories");
                 });
 
@@ -554,11 +849,25 @@ namespace OneBigHead.Server.Migrations
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("OneBigHead.Server.Models.CollectionTheme", b =>
+                {
+                    b.Navigation("ThemeCategories");
+
+                    b.Navigation("ThemeTemplates");
+                });
+
             modelBuilder.Entity("OneBigHead.Server.Models.ItemTemplate", b =>
                 {
+                    b.Navigation("CategoryItemTemplates");
+
                     b.Navigation("CollectionItemTemplates");
 
                     b.Navigation("Properties");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.SupportRequest", b =>
+                {
+                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.Tenant", b =>

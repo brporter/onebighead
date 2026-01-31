@@ -39,10 +39,6 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<bool?>("IsPublicOverride")
-                        .HasColumnType("bit")
-                        .HasJsonPropertyName("isPublicOverride");
-
                     b.Property<bool>("IsSystem")
                         .HasColumnType("bit");
 
@@ -56,6 +52,10 @@ namespace OneBigHead.Server.Migrations
 
                     b.Property<int>("TenantId")
                         .HasColumnType("int");
+
+                    b.Property<int>("Visibility")
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("visibility");
 
                     b.HasKey("Id");
 
@@ -109,10 +109,6 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
-                    b.Property<bool>("IsPublic")
-                        .HasColumnType("bit")
-                        .HasJsonPropertyName("isPublic");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -125,6 +121,10 @@ namespace OneBigHead.Server.Migrations
 
                     b.Property<int>("TenantId")
                         .HasColumnType("int");
+
+                    b.Property<int>("Visibility")
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("visibility");
 
                     b.HasKey("Id");
 
@@ -266,10 +266,6 @@ namespace OneBigHead.Server.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasJsonPropertyName("images");
 
-                    b.Property<bool?>("IsPublicOverride")
-                        .HasColumnType("bit")
-                        .HasJsonPropertyName("isPublicOverride");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -294,6 +290,10 @@ namespace OneBigHead.Server.Migrations
                     b.Property<int>("UserFlag")
                         .HasColumnType("int")
                         .HasJsonPropertyName("userFlag");
+
+                    b.Property<int>("Visibility")
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("visibility");
 
                     b.HasKey("Id");
 

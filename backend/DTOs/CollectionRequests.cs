@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using OneBigHead.Server.Models;
 
 namespace OneBigHead.Server.DTOs;
 
@@ -13,7 +14,7 @@ public class CreateCollectionRequest
 
     [MaxLength(500)]
     public string? HeroImageUrl { get; set; }
-    public bool IsPublic { get; set; } = false;
+    public Visibility Visibility { get; set; } = Visibility.Private;
 }
 
 public class UpdateCollectionRequest
@@ -27,7 +28,7 @@ public class UpdateCollectionRequest
 
     [MaxLength(500)]
     public string? HeroImageUrl { get; set; }
-    public bool IsPublic { get; set; } = false;
+    public Visibility Visibility { get; set; } = Visibility.Private;
 }
 
 public class SetupCollectionRequest
@@ -42,7 +43,7 @@ public class SetupCollectionRequest
     [MaxLength(500)]
     public string? HeroImageUrl { get; set; }
     
-    public bool IsPublic { get; set; } = false;
+    public Visibility Visibility { get; set; } = Visibility.Private;
 
     /// <summary>
     /// The theme ID to apply to the new collection.

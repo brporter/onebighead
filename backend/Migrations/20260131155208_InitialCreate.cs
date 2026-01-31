@@ -12,17 +12,57 @@ namespace OneBigHead.Server.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "CollectionThemes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    IconName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CollectionThemes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Tenants",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    HasCompletedWelcome = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Tenants", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CollectionThemeCategories",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ThemeId = table.Column<int>(type: "int", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    ParentName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CollectionThemeCategories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CollectionThemeCategories_CollectionThemes_ThemeId",
+                        column: x => x.ThemeId,
+                        principalTable: "CollectionThemes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -36,6 +76,7 @@ namespace OneBigHead.Server.Migrations
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
                     HeroImageUrl = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     Slug = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Visibility = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -66,6 +107,28 @@ namespace OneBigHead.Server.Migrations
                     table.PrimaryKey("PK_ItemTemplates", x => x.Id);
                     table.ForeignKey(
                         name: "FK_ItemTemplates_Tenants_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "Tenants",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "StoredImages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TenantId = table.Column<int>(type: "int", nullable: false),
+                    FileName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    ContentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Data = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StoredImages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StoredImages_Tenants_TenantId",
                         column: x => x.TenantId,
                         principalTable: "Tenants",
                         principalColumn: "Id",
@@ -107,7 +170,8 @@ namespace OneBigHead.Server.Migrations
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
                     IsSystem = table.Column<bool>(type: "bit", nullable: false),
-                    ParentCategoryId = table.Column<int>(type: "int", nullable: true)
+                    ParentCategoryId = table.Column<int>(type: "int", nullable: true),
+                    Visibility = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -185,6 +249,31 @@ namespace OneBigHead.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CollectionThemeTemplates",
+                columns: table => new
+                {
+                    ThemeId = table.Column<int>(type: "int", nullable: false),
+                    ItemTemplateId = table.Column<int>(type: "int", nullable: false),
+                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CollectionThemeTemplates", x => new { x.ThemeId, x.ItemTemplateId });
+                    table.ForeignKey(
+                        name: "FK_CollectionThemeTemplates_CollectionThemes_ThemeId",
+                        column: x => x.ThemeId,
+                        principalTable: "CollectionThemes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CollectionThemeTemplates_ItemTemplates_ItemTemplateId",
+                        column: x => x.ItemTemplateId,
+                        principalTable: "ItemTemplates",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ItemTemplateProperties",
                 columns: table => new
                 {
@@ -207,6 +296,58 @@ namespace OneBigHead.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "SupportRequests",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
+                    Subject = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SupportRequests", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SupportRequests_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CategoryItemTemplates",
+                columns: table => new
+                {
+                    CategoryId = table.Column<int>(type: "int", nullable: false),
+                    ItemTemplateId = table.Column<int>(type: "int", nullable: false),
+                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CategoryItemTemplates", x => new { x.CategoryId, x.ItemTemplateId });
+                    table.ForeignKey(
+                        name: "FK_CategoryItemTemplates_Categories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "Categories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CategoryItemTemplates_ItemTemplates_ItemTemplateId",
+                        column: x => x.ItemTemplateId,
+                        principalTable: "ItemTemplates",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Items",
                 columns: table => new
                 {
@@ -219,7 +360,9 @@ namespace OneBigHead.Server.Migrations
                     Summary = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Properties = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Images = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Images = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Visibility = table.Column<int>(type: "int", nullable: false),
+                    UserFlag = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -244,6 +387,36 @@ namespace OneBigHead.Server.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "SupportReplies",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SupportRequestId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: true),
+                    IsFromAdmin = table.Column<bool>(type: "bit", nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SupportReplies", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SupportReplies_SupportRequests_SupportRequestId",
+                        column: x => x.SupportRequestId,
+                        principalTable: "SupportRequests",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SupportReplies_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_CollectionId",
                 table: "Categories",
@@ -258,6 +431,16 @@ namespace OneBigHead.Server.Migrations
                 name: "IX_Categories_TenantId",
                 table: "Categories",
                 column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CategoryItemTemplates_CategoryId",
+                table: "CategoryItemTemplates",
+                column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CategoryItemTemplates_ItemTemplateId",
+                table: "CategoryItemTemplates",
+                column: "ItemTemplateId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CollectionItemTemplates_ItemTemplateId",
@@ -276,6 +459,26 @@ namespace OneBigHead.Server.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_CollectionThemeCategories_ThemeId",
+                table: "CollectionThemeCategories",
+                column: "ThemeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CollectionThemes_SortOrder",
+                table: "CollectionThemes",
+                column: "SortOrder");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CollectionThemeTemplates_ItemTemplateId",
+                table: "CollectionThemeTemplates",
+                column: "ItemTemplateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CollectionThemeTemplates_ThemeId",
+                table: "CollectionThemeTemplates",
+                column: "ThemeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Items_CategoryId",
                 table: "Items",
                 column: "CategoryId");
@@ -289,6 +492,16 @@ namespace OneBigHead.Server.Migrations
                 name: "IX_Items_TenantId",
                 table: "Items",
                 column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Items_TenantId_UserFlag",
+                table: "Items",
+                columns: new[] { "TenantId", "UserFlag" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Items_UserFlag",
+                table: "Items",
+                column: "UserFlag");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ItemTemplateProperties_ItemTemplateId",
@@ -317,6 +530,51 @@ namespace OneBigHead.Server.Migrations
                 column: "TenantId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_StoredImages_TenantId",
+                table: "StoredImages",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportReplies_SupportRequestId",
+                table: "SupportReplies",
+                column: "SupportRequestId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportReplies_SupportRequestId_IsFromAdmin_IsRead",
+                table: "SupportReplies",
+                columns: new[] { "SupportRequestId", "IsFromAdmin", "IsRead" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportReplies_UserId",
+                table: "SupportReplies",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportRequests_CreatedAt",
+                table: "SupportRequests",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportRequests_Email",
+                table: "SupportRequests",
+                column: "Email");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportRequests_IsDeleted",
+                table: "SupportRequests",
+                column: "IsDeleted");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportRequests_Status",
+                table: "SupportRequests",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportRequests_UserId",
+                table: "SupportRequests",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Tenants_Name",
                 table: "Tenants",
                 column: "Name");
@@ -342,7 +600,16 @@ namespace OneBigHead.Server.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "CategoryItemTemplates");
+
+            migrationBuilder.DropTable(
                 name: "CollectionItemTemplates");
+
+            migrationBuilder.DropTable(
+                name: "CollectionThemeCategories");
+
+            migrationBuilder.DropTable(
+                name: "CollectionThemeTemplates");
 
             migrationBuilder.DropTable(
                 name: "Items");
@@ -354,7 +621,13 @@ namespace OneBigHead.Server.Migrations
                 name: "PropertySuggestions");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "StoredImages");
+
+            migrationBuilder.DropTable(
+                name: "SupportReplies");
+
+            migrationBuilder.DropTable(
+                name: "CollectionThemes");
 
             migrationBuilder.DropTable(
                 name: "Categories");
@@ -363,7 +636,13 @@ namespace OneBigHead.Server.Migrations
                 name: "ItemTemplates");
 
             migrationBuilder.DropTable(
+                name: "SupportRequests");
+
+            migrationBuilder.DropTable(
                 name: "Collections");
+
+            migrationBuilder.DropTable(
+                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Tenants");

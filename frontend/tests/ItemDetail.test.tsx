@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemDetail from '../src/components/item/ItemDetail';
 import type { Item } from '../src/utils/types';
-import { UserFlag } from '../src/utils/types';
+import { UserFlag, Visibility } from '../src/utils/types';
 
 describe('ItemDetail', () => {
   const mockItem: Item = {
@@ -23,7 +23,7 @@ describe('ItemDetail', () => {
       { url: 'https://example.com/image1.jpg', alt: 'Image 1' },
       { url: 'https://example.com/image2.jpg', alt: 'Image 2' },
     ],
-    isPublicOverride: null,
+    visibility: Visibility.Default,
     effectiveIsPublic: true,
     userFlag: UserFlag.None,
   };

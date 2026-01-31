@@ -85,7 +85,7 @@ public partial class CollectionsController : ApiControllerBase
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
             Slug = slug,
-            IsPublic = request.IsPublic
+            Visibility = request.Visibility
         };
 
         var created = await _collectionRepository.CreateAsync(collection);
@@ -136,7 +136,7 @@ public partial class CollectionsController : ApiControllerBase
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
             Slug = slug,
-            IsPublic = request.IsPublic
+            Visibility = request.Visibility
         };
 
         var created = await _collectionRepository.CreateAsync(collection);
@@ -259,7 +259,7 @@ public partial class CollectionsController : ApiControllerBase
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
             Slug = slug,
-            IsPublic = request.IsPublic
+            Visibility = request.Visibility
         };
 
         var updated = await _collectionRepository.UpdateAsync(id, collection, tenantId);

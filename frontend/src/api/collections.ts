@@ -3,19 +3,20 @@
  */
 import { api } from './client';
 import type { Collection, SetupCollectionRequest } from '../utils/types';
+import { Visibility } from '../utils/types';
 
 export interface CreateCollectionRequest {
   name: string;
   description?: string;
   heroImageUrl?: string;
-  isPublic?: boolean;
+  visibility?: Visibility;
 }
 
 export interface UpdateCollectionRequest {
   name: string;
   description?: string;
   heroImageUrl?: string;
-  isPublic?: boolean;
+  visibility?: Visibility;
 }
 
 export const collectionsApi = {
@@ -36,7 +37,7 @@ export const collectionsApi = {
       name: request.name,
       description: request.description,
       heroImageUrl: request.heroImageUrl,
-      isPublic: request.isPublic ?? false,
+      visibility: request.visibility ?? Visibility.Private,
     });
   },
 

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CategoryEditorModal from '../src/components/category/CategoryEditorModal';
 import type { Category, Collection } from '../src/utils/types';
+import { Visibility } from '../src/utils/types';
 
 // Use vi.hoisted for mocks that need to be available before module loading
 const { mockAddCategory, mockUpdateCategory, mockDeleteCategory } = vi.hoisted(() => ({
@@ -18,7 +19,8 @@ const mockCollection: Collection = {
   description: 'Test Description',
   heroImageUrl: null,
   slug: 'test-collection',
-  isPublic: true,
+  visibility: Visibility.Public,
+  effectiveIsPublic: true,
 };
 
 const mockCategories: Category[] = [
@@ -30,7 +32,7 @@ const mockCategories: Category[] = [
     description: 'Description 1',
     parentCategoryId: null,
     isSystem: false,
-    isPublicOverride: null,
+    visibility: Visibility.Default,
     effectiveIsPublic: true,
     itemTemplateIds: [],
   },
@@ -42,7 +44,7 @@ const mockCategories: Category[] = [
     description: 'Description 2',
     parentCategoryId: null, // Make it root level so it can be parent
     isSystem: false,
-    isPublicOverride: null,
+    visibility: Visibility.Default,
     effectiveIsPublic: true,
     itemTemplateIds: [],
   },
@@ -54,7 +56,7 @@ const mockCategories: Category[] = [
     description: 'Description 3',
     parentCategoryId: 1, // Child of Category 1
     isSystem: false,
-    isPublicOverride: null,
+    visibility: Visibility.Default,
     effectiveIsPublic: true,
     itemTemplateIds: [],
   },
@@ -66,7 +68,7 @@ const mockCategories: Category[] = [
     description: 'System category',
     parentCategoryId: null,
     isSystem: true,
-    isPublicOverride: null,
+    visibility: Visibility.Default,
     effectiveIsPublic: true,
     itemTemplateIds: [],
   },
@@ -180,8 +182,9 @@ describe('CategoryEditorModal', () => {
       description: 'Description 1',
       parentCategoryId: null,
       isSystem: false,
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
+      itemTemplateIds: [],
     };
 
     it('should render "Edit: Category Name" title when editing', () => {
@@ -232,8 +235,9 @@ describe('CategoryEditorModal', () => {
       description: 'System category',
       parentCategoryId: null,
       isSystem: true,
-      isPublicOverride: null,
+      visibility: Visibility.Default,
       effectiveIsPublic: true,
+      itemTemplateIds: [],
     };
 
     it('should show category name as title for system category', () => {
@@ -346,7 +350,7 @@ describe('CategoryEditorModal', () => {
           name: 'New Category',
           description: 'New Description',
           parentCategoryId: null,
-          isPublicOverride: null,
+          visibility: Visibility.Default,
           itemTemplateIds: [],
         });
       });
@@ -423,7 +427,7 @@ describe('CategoryEditorModal', () => {
           name: 'Updated Category',
           description: 'Description 1',
           parentCategoryId: null,
-          isPublicOverride: null,
+          visibility: Visibility.Default,
           itemTemplateIds: [],
         });
       });

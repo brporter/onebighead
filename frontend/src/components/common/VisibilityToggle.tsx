@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
+import { Visibility } from '../../utils/types';
 
 export interface VisibilityToggleProps {
-  /** Current override value: true=public, false=private, null=inherit */
-  isPublicOverride: boolean | null;
+  /** Current visibility setting */
+  visibility: Visibility;
   /** Computed effective visibility */
   effectiveIsPublic: boolean;
   /** Whether the parent is public (allows override) */
   parentIsPublic: boolean;
   /** Callback when visibility changes */
-  onChange: (value: boolean | null) => void;
+  onChange: (value: Visibility) => void;
   /** Label for the toggle */
   label?: string;
   /** True if this is a collection (no inherit option) */
@@ -16,7 +17,7 @@ export interface VisibilityToggleProps {
 }
 
 export default function VisibilityToggle({
-  isPublicOverride,
+  visibility,
   effectiveIsPublic,
   parentIsPublic,
   onChange,
@@ -24,28 +25,28 @@ export default function VisibilityToggle({
   isCollection = false,
 }: VisibilityToggleProps) {
   const [localValue, setLocalValue] = useState<'inherit' | 'public' | 'private'>(
-    isCollection 
-      ? (effectiveIsPublic ? 'public' : 'private')
-      : (isPublicOverride === null ? 'inherit' : isPublicOverride ? 'public' : 'private')
+    isCollection
+      ? (visibility === Visibility.Public ? 'public' : 'private')
+      : (visibility === Visibility.Default ? 'inherit' : visibility === Visibility.Public ? 'public' : 'private')
   );
 
   useEffect(() => {
     if (isCollection) {
-      setLocalValue(effectiveIsPublic ? 'public' : 'private');
+      setLocalValue(visibility === Visibility.Public ? 'public' : 'private');
     } else {
-      setLocalValue(isPublicOverride === null ? 'inherit' : isPublicOverride ? 'public' : 'private');
+      setLocalValue(visibility === Visibility.Default ? 'inherit' : visibility === Visibility.Public ? 'public' : 'private');
     }
-  }, [isPublicOverride, effectiveIsPublic, isCollection]);
+  }, [visibility, isCollection]);
 
   const handleChange = (newValue: 'inherit' | 'public' | 'private') => {
     setLocalValue(newValue);
     if (isCollection) {
-      onChange(newValue === 'public');
+      onChange(newValue === 'public' ? Visibility.Public : Visibility.Private);
     } else {
       if (newValue === 'inherit') {
-        onChange(null);
+        onChange(Visibility.Default);
       } else {
-        onChange(newValue === 'public');
+        onChange(newValue === 'public' ? Visibility.Public : Visibility.Private);
       }
     }
   };

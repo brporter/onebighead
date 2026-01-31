@@ -18,8 +18,8 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_WithPrivateCollection_IsPrivate()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = false };
-        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Private };
+        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", Visibility = Visibility.Default };
         var categories = new List<Category> { category };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -30,8 +30,8 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_WithPrivateCollection_CannotOverrideToPublic()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = false };
-        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", IsPublicOverride = true };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Private };
+        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", Visibility = Visibility.Public };
         var categories = new List<Category> { category };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -42,8 +42,8 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_WithPublicCollection_InheritsPublic()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", Visibility = Visibility.Default };
         var categories = new List<Category> { category };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -54,8 +54,8 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_WithPublicCollection_CanOverrideToPrivate()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", IsPublicOverride = false };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", Visibility = Visibility.Private };
         var categories = new List<Category> { category };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -66,9 +66,9 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_WithPrivateParent_IsPrivate()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", IsPublicOverride = false };
-        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", Visibility = Visibility.Private };
+        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, Visibility = Visibility.Default };
         var categories = new List<Category> { parentCategory, childCategory };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -79,9 +79,9 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_WithPrivateParent_CannotOverrideToPublic()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", IsPublicOverride = false };
-        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, IsPublicOverride = true };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", Visibility = Visibility.Private };
+        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, Visibility = Visibility.Public };
         var categories = new List<Category> { parentCategory, childCategory };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -92,9 +92,9 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_WithPublicParent_InheritsPublic()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", IsPublicOverride = true };
-        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", Visibility = Visibility.Public };
+        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, Visibility = Visibility.Default };
         var categories = new List<Category> { parentCategory, childCategory };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -105,9 +105,9 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_WithPublicParent_CanOverrideToPrivate()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", IsPublicOverride = true };
-        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, IsPublicOverride = false };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", Visibility = Visibility.Public };
+        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, Visibility = Visibility.Private };
         var categories = new List<Category> { parentCategory, childCategory };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -118,10 +118,10 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_DeepHierarchy_PropagatesVisibility()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var root = new Category { Id = 1, CollectionId = 1, Name = "Root", IsPublicOverride = true };
-        var child = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, IsPublicOverride = null };
-        var grandChild = new Category { Id = 3, CollectionId = 1, Name = "GrandChild", ParentCategoryId = 2, IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var root = new Category { Id = 1, CollectionId = 1, Name = "Root", Visibility = Visibility.Public };
+        var child = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, Visibility = Visibility.Default };
+        var grandChild = new Category { Id = 3, CollectionId = 1, Name = "GrandChild", ParentCategoryId = 2, Visibility = Visibility.Default };
         var categories = new List<Category> { root, child, grandChild };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -134,10 +134,10 @@ public class VisibilityServiceTests
     [Fact]
     public void Category_DeepHierarchy_PrivateBreaksChain()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var root = new Category { Id = 1, CollectionId = 1, Name = "Root", IsPublicOverride = true };
-        var child = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, IsPublicOverride = false };
-        var grandChild = new Category { Id = 3, CollectionId = 1, Name = "GrandChild", ParentCategoryId = 2, IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var root = new Category { Id = 1, CollectionId = 1, Name = "Root", Visibility = Visibility.Public };
+        var child = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, Visibility = Visibility.Private };
+        var grandChild = new Category { Id = 3, CollectionId = 1, Name = "GrandChild", ParentCategoryId = 2, Visibility = Visibility.Default };
         var categories = new List<Category> { root, child, grandChild };
 
         _service.ComputeEffectiveVisibility(categories, collection);
@@ -154,8 +154,8 @@ public class VisibilityServiceTests
     [Fact]
     public void Item_WithPrivateCollection_IsPrivate()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = false };
-        var item = new Item { Id = 1, CollectionId = 1, Name = "Item", IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Private };
+        var item = new Item { Id = 1, CollectionId = 1, Name = "Item", Visibility = Visibility.Default };
         var items = new List<Item> { item };
         var categories = new List<Category>();
 
@@ -167,8 +167,8 @@ public class VisibilityServiceTests
     [Fact]
     public void Item_WithPrivateCollection_CannotOverrideToPublic()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = false };
-        var item = new Item { Id = 1, CollectionId = 1, Name = "Item", IsPublicOverride = true };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Private };
+        var item = new Item { Id = 1, CollectionId = 1, Name = "Item", Visibility = Visibility.Public };
         var items = new List<Item> { item };
         var categories = new List<Category>();
 
@@ -180,8 +180,8 @@ public class VisibilityServiceTests
     [Fact]
     public void Item_WithPublicCollection_InheritsPublic()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var item = new Item { Id = 1, CollectionId = 1, Name = "Item", IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var item = new Item { Id = 1, CollectionId = 1, Name = "Item", Visibility = Visibility.Default };
         var items = new List<Item> { item };
         var categories = new List<Category>();
 
@@ -193,8 +193,8 @@ public class VisibilityServiceTests
     [Fact]
     public void Item_WithPublicCollection_CanOverrideToPrivate()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var item = new Item { Id = 1, CollectionId = 1, Name = "Item", IsPublicOverride = false };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var item = new Item { Id = 1, CollectionId = 1, Name = "Item", Visibility = Visibility.Private };
         var items = new List<Item> { item };
         var categories = new List<Category>();
 
@@ -206,9 +206,9 @@ public class VisibilityServiceTests
     [Fact]
     public void Item_WithPrivateCategory_IsPrivate()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", IsPublicOverride = false };
-        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 1, Name = "Item", IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", Visibility = Visibility.Private };
+        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 1, Name = "Item", Visibility = Visibility.Default };
         var categories = new List<Category> { category };
         var items = new List<Item> { item };
 
@@ -221,9 +221,9 @@ public class VisibilityServiceTests
     [Fact]
     public void Item_WithPrivateCategory_CannotOverrideToPublic()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", IsPublicOverride = false };
-        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 1, Name = "Item", IsPublicOverride = true };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", Visibility = Visibility.Private };
+        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 1, Name = "Item", Visibility = Visibility.Public };
         var categories = new List<Category> { category };
         var items = new List<Item> { item };
 
@@ -236,9 +236,9 @@ public class VisibilityServiceTests
     [Fact]
     public void Item_WithPublicCategory_InheritsPublic()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", IsPublicOverride = true };
-        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 1, Name = "Item", IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", Visibility = Visibility.Public };
+        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 1, Name = "Item", Visibility = Visibility.Default };
         var categories = new List<Category> { category };
         var items = new List<Item> { item };
 
@@ -251,9 +251,9 @@ public class VisibilityServiceTests
     [Fact]
     public void Item_WithPublicCategory_CanOverrideToPrivate()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", IsPublicOverride = true };
-        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 1, Name = "Item", IsPublicOverride = false };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var category = new Category { Id = 1, CollectionId = 1, Name = "Category", Visibility = Visibility.Public };
+        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 1, Name = "Item", Visibility = Visibility.Private };
         var categories = new List<Category> { category };
         var items = new List<Item> { item };
 
@@ -266,10 +266,10 @@ public class VisibilityServiceTests
     [Fact]
     public void Item_WithNestedPrivateCategory_IsPrivate()
     {
-        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", IsPublic = true };
-        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", IsPublicOverride = true };
-        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, IsPublicOverride = false };
-        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 2, Name = "Item", IsPublicOverride = null };
+        var collection = new Collection { Id = 1, TenantId = 1, Name = "Test", Visibility = Visibility.Public };
+        var parentCategory = new Category { Id = 1, CollectionId = 1, Name = "Parent", Visibility = Visibility.Public };
+        var childCategory = new Category { Id = 2, CollectionId = 1, Name = "Child", ParentCategoryId = 1, Visibility = Visibility.Private };
+        var item = new Item { Id = 1, CollectionId = 1, CategoryId = 2, Name = "Item", Visibility = Visibility.Default };
         var categories = new List<Category> { parentCategory, childCategory };
         var items = new List<Item> { item };
 

@@ -94,7 +94,7 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
             Name = "Test Collection",
             Slug = "test-collection",
             Description = "A test collection",
-            IsPublic = false
+            Visibility = Visibility.Private
         });
 
         // Create default system category (unassigned items)
@@ -171,6 +171,38 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
     {
         var content = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<T>(content, JsonOptions);
+    }
+
+    /// <summary>
+    /// Helper to POST JSON with correct serialization options (enums as strings).
+    /// </summary>
+    protected Task<HttpResponseMessage> PostJsonAsync<T>(string url, T content)
+    {
+        return Client.PostAsJsonAsync(url, content, JsonOptions);
+    }
+
+    /// <summary>
+    /// Helper to POST JSON with a specific client and correct serialization options.
+    /// </summary>
+    protected Task<HttpResponseMessage> PostJsonAsync<T>(HttpClient client, string url, T content)
+    {
+        return client.PostAsJsonAsync(url, content, JsonOptions);
+    }
+
+    /// <summary>
+    /// Helper to PUT JSON with correct serialization options (enums as strings).
+    /// </summary>
+    protected Task<HttpResponseMessage> PutJsonAsync<T>(string url, T content)
+    {
+        return Client.PutAsJsonAsync(url, content, JsonOptions);
+    }
+
+    /// <summary>
+    /// Helper to PUT JSON with a specific client and correct serialization options.
+    /// </summary>
+    protected Task<HttpResponseMessage> PutJsonAsync<T>(HttpClient client, string url, T content)
+    {
+        return client.PutAsJsonAsync(url, content, JsonOptions);
     }
 
     /// <summary>

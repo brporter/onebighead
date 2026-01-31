@@ -342,12 +342,17 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsOkResult_WhenCategoryExists()
     {
         // Arrange
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
         var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Original", Description = "Original Desc", IsSystem = false };
         var request = new UpdateCategoryRequest { Name = "Updated Category", Description = "Updated Desc" };
         var updatedCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Updated Category", Description = "Updated Desc" };
-        
+
         _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
             .ReturnsAsync(existingCategory);
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(new List<Category> { existingCategory });
         _mockRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Category>(), TestTenantId))
             .ReturnsAsync(updatedCategory);
 
@@ -412,10 +417,15 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsNotFound_WhenUpdateReturnsNull()
     {
         // Arrange - simulates a race condition where category is deleted between get and update
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
         var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Original", Description = "Original Desc", IsSystem = false };
         var request = new UpdateCategoryRequest { Name = "Updated", Description = "Updated Desc" };
         _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
             .ReturnsAsync(existingCategory);
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(new List<Category> { existingCategory });
         _mockRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Category>(), TestTenantId))
             .ReturnsAsync((Category?)null);
 
@@ -551,6 +561,7 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsBadRequest_WhenParentCategoryNotOwnedByTenant()
     {
         // Arrange
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
         var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Existing", IsSystem = false };
         var request = new UpdateCategoryRequest
         {
@@ -560,8 +571,10 @@ public class CategoriesControllerTests
 
         _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
             .ReturnsAsync(existingCategory);
-        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
-            .ReturnsAsync((Category?)null);
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(new List<Category> { existingCategory });
 
         // Act
         var result = await _controller.UpdateCategory(1, request);
@@ -574,18 +587,20 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsBadRequest_WhenParentCategoryBelongsToDifferentCollection()
     {
         // Arrange
+        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
         var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Existing", IsSystem = false };
-        var parentCategory = new Category { Id = 99, TenantId = TestTenantId, CollectionId = 999, Name = "Parent in different collection" }; // Different collection
         var request = new UpdateCategoryRequest
         {
             Name = "Updated",
-            ParentCategoryId = 99
+            ParentCategoryId = 99  // Parent in different collection - won't be in categoryLookup
         };
 
         _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
             .ReturnsAsync(existingCategory);
-        _mockRepository.Setup(repo => repo.GetByIdAsync(99, TestTenantId))
-            .ReturnsAsync(parentCategory);
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(collection);
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+            .ReturnsAsync(new List<Category> { existingCategory }); // Parent not in this collection's categories
 
         // Act
         var result = await _controller.UpdateCategory(1, request);

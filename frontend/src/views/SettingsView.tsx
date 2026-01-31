@@ -12,6 +12,7 @@ import { SupportSection } from '../components/support/SupportSection';
 import UserButton from '../components/user/UserButton';
 import { SupportModal } from '../components/support/SupportModal';
 import type { Collection } from '../utils/types';
+import { Visibility } from '../utils/types';
 
 type SettingsSection = 'collections' | 'templates' | 'export' | 'support';
 
@@ -29,8 +30,8 @@ function SettingsView() {
   const [isAdding, setIsAdding] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '', isPublic: false });
-  const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '', isPublic: false });
+  const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '', visibility: Visibility.Private });
+  const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '', visibility: Visibility.Private });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -48,7 +49,7 @@ function SettingsView() {
       formData.name !== originalFormData.name ||
       formData.description !== originalFormData.description ||
       formData.heroImageUrl !== originalFormData.heroImageUrl ||
-      formData.isPublic !== originalFormData.isPublic
+      formData.visibility !== originalFormData.visibility
     );
   }, [activeSection, templateEditorDirty, editingCollectionTemplates, collectionTemplateEditorDirty, isAdding, editingId, formData, originalFormData]);
 
@@ -99,7 +100,7 @@ function SettingsView() {
       name: collection.name,
       description: collection.description || '',
       heroImageUrl: collection.heroImageUrl || '',
-      isPublic: collection.isPublic ?? false,
+      visibility: collection.visibility ?? Visibility.Private,
     };
     setFormData(initial);
     setOriginalFormData(initial);
@@ -135,14 +136,14 @@ function SettingsView() {
           formData.name.trim(),
           formData.description.trim() || undefined,
           formData.heroImageUrl.trim() || undefined,
-          formData.isPublic
+          formData.visibility
         );
       } else if (editingId !== null) {
         await updateCollection(editingId, {
           name: formData.name.trim(),
           description: formData.description.trim() || undefined,
           heroImageUrl: formData.heroImageUrl.trim() || undefined,
-          isPublic: formData.isPublic,
+          visibility: formData.visibility,
         });
       }
       setIsAdding(false);
@@ -272,10 +273,10 @@ function SettingsView() {
             </div>
             <div className="settings-form__field">
               <VisibilityToggle
-                isPublicOverride={formData.isPublic}
-                effectiveIsPublic={formData.isPublic}
+                visibility={formData.visibility}
+                effectiveIsPublic={formData.visibility === Visibility.Public}
                 parentIsPublic={true}
-                onChange={(value) => setFormData((prev) => ({ ...prev, isPublic: value === true }))}
+                onChange={(value) => setFormData((prev) => ({ ...prev, visibility: value }))}
                 label="Collection Visibility"
                 isCollection={true}
               />
@@ -330,8 +331,8 @@ function SettingsView() {
                     <p className="settings-collection-card__description">{collection.description}</p>
                   )}
                   <div className="settings-collection-card__meta">
-                    <span className={`settings-collection-card__visibility ${collection.isPublic ? 'settings-collection-card__visibility--public' : ''}`}>
-                      {collection.isPublic ? '🌐 Public' : '🔒 Private'}
+                    <span className={`settings-collection-card__visibility ${collection.effectiveIsPublic ? 'settings-collection-card__visibility--public' : ''}`}>
+                      {collection.effectiveIsPublic ? '🌐 Public' : '🔒 Private'}
                     </span>
                   </div>
                 </div>

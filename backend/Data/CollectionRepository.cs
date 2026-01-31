@@ -63,7 +63,7 @@ public class CollectionRepository : ICollectionRepository
         existingCollection.Description = collection.Description;
         existingCollection.HeroImageUrl = collection.HeroImageUrl;
         existingCollection.Slug = collection.Slug;
-        existingCollection.IsPublic = collection.IsPublic;
+        existingCollection.Visibility = collection.Visibility;
 
         await _context.SaveChangesAsync();
         return existingCollection;
