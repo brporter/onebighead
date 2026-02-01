@@ -118,9 +118,10 @@ public class SupportController : ControllerBase
         }
 
         // Users can only view their own requests
-        if (request.UserId != userId.Value)
+        // Tickets with null UserId (admin-created for anonymous users) should not be accessible
+        if (request.UserId == null || request.UserId != userId.Value)
         {
-            return Forbid();
+            return NotFound();
         }
 
         // Note: Replies are NOT marked as read here. Use POST /mark-read endpoint explicitly.
@@ -147,9 +148,10 @@ public class SupportController : ControllerBase
         }
 
         // Users can only reply to their own requests
-        if (request.UserId != userId.Value)
+        // Tickets with null UserId should not be accessible
+        if (request.UserId == null || request.UserId != userId.Value)
         {
-            return Forbid();
+            return NotFound();
         }
 
         if (request.IsDeleted)
@@ -197,9 +199,10 @@ public class SupportController : ControllerBase
         }
 
         // Users can only delete their own requests
-        if (request.UserId != userId.Value)
+        // Tickets with null UserId should not be accessible
+        if (request.UserId == null || request.UserId != userId.Value)
         {
-            return Forbid();
+            return NotFound();
         }
 
         await _supportRepository.SoftDeleteAsync(id);
@@ -242,9 +245,10 @@ public class SupportController : ControllerBase
             return NotFound();
         }
 
-        if (request.UserId != userId.Value)
+        // Tickets with null UserId should not be accessible
+        if (request.UserId == null || request.UserId != userId.Value)
         {
-            return Forbid();
+            return NotFound();
         }
 
         await _supportRepository.MarkRepliesAsReadAsync(id, userId.Value);

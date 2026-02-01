@@ -13,6 +13,7 @@ public interface IUserRepository
     Task<User> CreatePendingUserAsync(int tenantId, string email, TenantRole role);
     Task<User?> LinkUserAsync(int userId, IdentityProvider provider, string providerSubjectId);
     Task<bool> DeleteByIdAndTenantAsync(int userId, int tenantId);
+    Task<bool> DeleteAsync(int userId);
     Task UpdateAsync(User user);
     Task UpdateActiveTenantAsync(int userId, int tenantId);
 }

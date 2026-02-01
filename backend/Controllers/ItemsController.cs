@@ -104,7 +104,7 @@ public class ItemsController : ApiControllerBase
     {
         var allCategories = await _categoryRepository.GetAllAsync(tenantId);
         var categoryList = allCategories.ToList();
-        
+
         var result = new HashSet<int> { categoryId };
         var queue = new Queue<int>();
         queue.Enqueue(categoryId);
@@ -123,6 +123,47 @@ public class ItemsController : ApiControllerBase
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Loads categories for a collection with computed visibility.
+    /// </summary>
+    private async Task<(List<Category> Categories, Dictionary<int, Category> Lookup)> LoadCategoriesWithVisibility(
+        int collectionId, int tenantId, Collection collection)
+    {
+        var categories = (await _categoryRepository.GetByCollectionAsync(collectionId, tenantId)).ToList();
+        _visibilityService.ComputeEffectiveVisibility(categories, collection);
+        var lookup = categories.ToDictionary(c => c.Id);
+        return (categories, lookup);
+    }
+
+    /// <summary>
+    /// Validates category ID and visibility for item create/update.
+    /// Returns the category if valid, or a BadRequest result if invalid.
+    /// </summary>
+    private (Category? Category, BadRequestObjectResult? Error) ValidateCategoryAndVisibility(
+        int? categoryId, Visibility visibility, Dictionary<int, Category> categoryLookup, Collection collection)
+    {
+        Category? category = null;
+
+        if (categoryId.HasValue)
+        {
+            if (!categoryLookup.TryGetValue(categoryId.Value, out category))
+            {
+                return (null, BadRequest("Invalid category"));
+            }
+        }
+
+        if (visibility == Visibility.Public)
+        {
+            bool parentEffectivelyPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
+            if (!parentEffectivelyPublic)
+            {
+                return (null, BadRequest("Cannot set visibility to Public when parent is private."));
+            }
+        }
+
+        return (category, null);
     }
 
     [HttpGet("{id}")]
@@ -155,37 +196,20 @@ public class ItemsController : ApiControllerBase
     public async Task<ActionResult<Item>> CreateItem(CreateItemRequest request)
     {
         var tenantId = GetTenantId();
-        
+
         // Validate CollectionId belongs to tenant
         var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, tenantId);
         if (collection is null)
         {
             return BadRequest("Invalid collection");
         }
-        
-        // Get all categories for visibility computation
-        var allCategories = (await _categoryRepository.GetByCollectionAsync(request.CollectionId, tenantId)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
-        var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
-        // Validate CategoryId belongs to tenant and collection
-        Category? category = null;
-        if (request.CategoryId.HasValue)
+        // Load categories and validate
+        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, tenantId, collection);
+        var (_, error) = ValidateCategoryAndVisibility(request.CategoryId, request.Visibility, categoryLookup, collection);
+        if (error != null)
         {
-            if (!categoryLookup.TryGetValue(request.CategoryId.Value, out category))
-            {
-                return BadRequest("Invalid category");
-            }
-        }
-
-        // Validate visibility: cannot set Public when parent is private
-        if (request.Visibility == Visibility.Public)
-        {
-            bool parentEffectivelyPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
-            if (!parentEffectivelyPublic)
-            {
-                return BadRequest("Cannot set visibility to Public when parent is private.");
-            }
+            return error;
         }
 
         var item = request.ToItem(tenantId);
@@ -197,37 +221,20 @@ public class ItemsController : ApiControllerBase
     public async Task<ActionResult<Item>> UpdateItem(int id, UpdateItemRequest request)
     {
         var tenantId = GetTenantId();
-        
+
         // Validate CollectionId belongs to tenant
         var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, tenantId);
         if (collection is null)
         {
             return BadRequest("Invalid collection");
         }
-        
-        // Get all categories for visibility computation
-        var allCategories = (await _categoryRepository.GetByCollectionAsync(request.CollectionId, tenantId)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
-        var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
-        // Validate CategoryId belongs to tenant and collection
-        Category? category = null;
-        if (request.CategoryId.HasValue)
+        // Load categories and validate
+        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, tenantId, collection);
+        var (_, error) = ValidateCategoryAndVisibility(request.CategoryId, request.Visibility, categoryLookup, collection);
+        if (error != null)
         {
-            if (!categoryLookup.TryGetValue(request.CategoryId.Value, out category))
-            {
-                return BadRequest("Invalid category");
-            }
-        }
-
-        // Validate visibility: cannot set Public when parent is private
-        if (request.Visibility == Visibility.Public)
-        {
-            bool parentEffectivelyPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
-            if (!parentEffectivelyPublic)
-            {
-                return BadRequest("Cannot set visibility to Public when parent is private.");
-            }
+            return error;
         }
 
         var item = request.ToItem(id, tenantId);

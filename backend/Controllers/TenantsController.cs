@@ -8,10 +8,9 @@ using Microsoft.Extensions.Options;
 
 namespace OneBigHead.Server.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class TenantsController : ControllerBase
+public class TenantsController : ApiControllerBase
 {
     private readonly ITenantRepository _tenantRepository;
     private readonly ITenantUserRepository _tenantUserRepository;
@@ -34,16 +33,6 @@ public class TenantsController : ControllerBase
         _tokenService = tokenService;
         _settings = settings.Value;
         _logger = logger;
-    }
-
-    private int GetUserId()
-    {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-        {
-            throw new UnauthorizedAccessException("User ID not found in token");
-        }
-        return userId;
     }
 
     /// <summary>

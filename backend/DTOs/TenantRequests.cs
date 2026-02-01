@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using OneBigHead.Server.Models;
 
 namespace OneBigHead.Server.DTOs;
@@ -12,6 +13,8 @@ public class TenantMembershipResponse
 
 public class CreateTenantRequest
 {
+    [Required]
+    [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
 }
 

@@ -1,5 +1,6 @@
 using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace OneBigHead.Server.Data;
 
@@ -104,5 +105,89 @@ public class TenantUserRepository : ITenantUserRepository
     {
         return await _context.TenantUsers
             .CountAsync(tu => tu.UserId == userId);
+    }
+
+    public async Task<AdminCheckResult> UpdateRoleWithAdminCheckAsync(int userId, int tenantId, TenantRole newRole)
+    {
+        // Use serializable isolation to prevent race conditions when checking/updating admin count
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+
+        try
+        {
+            var tenantUser = await _context.TenantUsers
+                .FirstOrDefaultAsync(tu => tu.UserId == userId && tu.TenantId == tenantId);
+
+            if (tenantUser == null)
+            {
+                await transaction.RollbackAsync();
+                return AdminCheckResult.UserNotFound;
+            }
+
+            // Check if demoting from admin to non-admin
+            if (tenantUser.TenantRole == TenantRole.TenantAdmin && newRole != TenantRole.TenantAdmin)
+            {
+                var adminCount = await _context.TenantUsers
+                    .CountAsync(tu => tu.TenantId == tenantId && tu.TenantRole == TenantRole.TenantAdmin);
+
+                if (adminCount <= 1)
+                {
+                    await transaction.RollbackAsync();
+                    return AdminCheckResult.WouldRemoveLastAdmin;
+                }
+            }
+
+            tenantUser.TenantRole = newRole;
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return AdminCheckResult.Success;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<AdminCheckResult> DeleteWithAdminCheckAsync(int userId, int tenantId)
+    {
+        // Use serializable isolation to prevent race conditions when checking/deleting admin
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+
+        try
+        {
+            var tenantUser = await _context.TenantUsers
+                .FirstOrDefaultAsync(tu => tu.UserId == userId && tu.TenantId == tenantId);
+
+            if (tenantUser == null)
+            {
+                await transaction.RollbackAsync();
+                return AdminCheckResult.UserNotFound;
+            }
+
+            // Check if removing an admin
+            if (tenantUser.TenantRole == TenantRole.TenantAdmin)
+            {
+                var adminCount = await _context.TenantUsers
+                    .CountAsync(tu => tu.TenantId == tenantId && tu.TenantRole == TenantRole.TenantAdmin);
+
+                if (adminCount <= 1)
+                {
+                    await transaction.RollbackAsync();
+                    return AdminCheckResult.WouldRemoveLastAdmin;
+                }
+            }
+
+            _context.TenantUsers.Remove(tenantUser);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return AdminCheckResult.Success;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 }

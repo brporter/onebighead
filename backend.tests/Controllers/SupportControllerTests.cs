@@ -277,7 +277,7 @@ public class SupportControllerTests
         var result = await _controller.GetRequest(1);
 
         // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     #endregion

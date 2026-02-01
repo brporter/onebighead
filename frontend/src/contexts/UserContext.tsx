@@ -1,6 +1,31 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { CurrentUser } from '../utils/types';
-import { authApi } from '../api';
+import { authApi, ApiError } from '../api';
+
+/**
+ * Extract a user-friendly error message from an error, preserving status code for API errors.
+ */
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (error instanceof ApiError) {
+    const statusInfo = error.status ? ` (${error.status})` : '';
+    return `${error.message}${statusInfo}`;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return defaultMessage;
+}
+
+/**
+ * Log an error with context, including status code for API errors.
+ */
+function logError(context: string, error: unknown): void {
+  if (error instanceof ApiError) {
+    console.error(`${context}: ${error.message} (status: ${error.status})`);
+  } else {
+    console.error(`${context}:`, error);
+  }
+}
 
 interface UserContextValue {
   user: CurrentUser | null;
@@ -39,7 +64,7 @@ export function UserProvider({ children }: UserProviderProps) {
       const data = await authApi.getCurrentUser();
       setUser(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch user');
+      setError(getErrorMessage(err, 'Failed to fetch user'));
       setUser(null);
     } finally {
       setLoading(false);
@@ -51,7 +76,7 @@ export function UserProvider({ children }: UserProviderProps) {
       await authApi.logout();
       setUser(null);
     } catch (err) {
-      console.error('Logout failed:', err);
+      logError('Logout failed', err);
     }
   }, []);
 

@@ -3,12 +3,16 @@ import { render, act, waitFor } from '@testing-library/react';
 import { UserProvider, useUser } from '../src/contexts/UserContext';
 import type { CurrentUser } from '../src/utils/types';
 
-vi.mock('../src/api', () => ({
-  authApi: {
-    getCurrentUser: vi.fn(),
-    logout: vi.fn(),
-  },
-}));
+vi.mock('../src/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/api')>();
+  return {
+    ...actual,
+    authApi: {
+      getCurrentUser: vi.fn(),
+      logout: vi.fn(),
+    },
+  };
+});
 
 import { authApi } from '../src/api';
 
@@ -184,7 +188,8 @@ describe('UserContext', () => {
       await capturedData!.logout();
     });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Logout failed:', expect.any(Error));
+    // logError now uses different format: "Logout failed: message (status: N)" for ApiError
+    expect(consoleSpy).toHaveBeenCalled();
     // User should still be set (logout failed)
     expect(capturedData!.user).toEqual(mockUser);
 

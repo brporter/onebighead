@@ -180,7 +180,7 @@ public class SupportControllerTests : IntegrationTestBase
         var response = await Client.GetAsync("/api/support/5000");
 
         // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     #endregion

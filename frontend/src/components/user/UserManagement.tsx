@@ -18,7 +18,15 @@ function UserManagement({ onDirtyChange }: UserManagementProps) {
   const [inviteRole, setInviteRole] = useState<TenantRole>(TenantRole.Normal);
   const [isInviting, setIsInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+
+  const validateEmail = (email: string): boolean => {
+    if (!email) return false;
+    // RFC 5322 simplified email regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const loadUsers = useCallback(async () => {
     try {
@@ -45,8 +53,15 @@ function UserManagement({ onDirtyChange }: UserManagementProps) {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
+    // Validate email format
+    if (!validateEmail(inviteEmail.trim())) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+
     setIsInviting(true);
     setInviteError(null);
+    setEmailError(null);
 
     try {
       await usersApi.inviteUser({ email: inviteEmail.trim(), role: inviteRole });
@@ -140,10 +155,13 @@ function UserManagement({ onDirtyChange }: UserManagementProps) {
         <div className="userManagement__inviteInputs">
           <input
             type="email"
-            className="userManagement__inviteEmail"
+            className={`userManagement__inviteEmail${emailError ? ' userManagement__inviteEmail--error' : ''}`}
             placeholder="Enter email address"
             value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
+            onChange={(e) => {
+              setInviteEmail(e.target.value);
+              if (emailError) setEmailError(null);
+            }}
             disabled={isInviting}
           />
           <select
@@ -163,6 +181,7 @@ function UserManagement({ onDirtyChange }: UserManagementProps) {
             {isInviting ? 'Inviting...' : 'Invite'}
           </button>
         </div>
+        {emailError && <div className="userManagement__inviteError">{emailError}</div>}
         {inviteError && <div className="userManagement__inviteError">{inviteError}</div>}
       </form>
 

@@ -12,6 +12,7 @@ public class CreateItemRequest
     [MaxLength(500)]
     public string Summary { get; set; } = string.Empty;
 
+    [MaxLength(10000)]
     public string Description { get; set; } = string.Empty;
 
     public int CollectionId { get; set; }
@@ -53,6 +54,7 @@ public class UpdateItemRequest
     [MaxLength(500)]
     public string Summary { get; set; } = string.Empty;
 
+    [MaxLength(10000)]
     public string Description { get; set; } = string.Empty;
 
     public int CollectionId { get; set; }

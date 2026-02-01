@@ -3,10 +3,55 @@ import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateReques
 import { Visibility } from '../utils/types';
 import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi, ApiError } from '../api';
 
+/**
+ * Evicts the least recently used entries from a cache map when it exceeds the max size.
+ */
+function evictLRU<K, V extends { accessedAt: number }>(cache: Map<K, V>, maxSize: number): void {
+  if (cache.size <= maxSize) return;
+
+  // Sort entries by accessedAt (oldest first) and remove excess
+  const entries = Array.from(cache.entries())
+    .sort(([, a], [, b]) => a.accessedAt - b.accessedAt);
+
+  const toRemove = entries.slice(0, cache.size - maxSize);
+  for (const [key] of toRemove) {
+    cache.delete(key);
+  }
+}
+
+/**
+ * Extract a user-friendly error message from an error, preserving status code for API errors.
+ */
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (error instanceof ApiError) {
+    const statusInfo = error.status ? ` (${error.status})` : '';
+    return `${error.message}${statusInfo}`;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return defaultMessage;
+}
+
+/**
+ * Log an error with context, including status code for API errors.
+ */
+function logError(context: string, error: unknown): void {
+  if (error instanceof ApiError) {
+    console.error(`${context}: ${error.message} (status: ${error.status})`);
+  } else {
+    console.error(`${context}:`, error);
+  }
+}
+
 interface CategoryItemsCache {
   items: Item[];
   etag: string | null;
+  accessedAt: number; // Timestamp for LRU eviction
 }
+
+// Maximum number of category caches to keep
+const MAX_CACHE_SIZE = 20;
 
 interface PropertySuggestionsCache {
   categories: string[];
@@ -200,7 +245,7 @@ export function DataProvider({ children }: DataProviderProps) {
       setPropertyCategorySuggestions(categories);
       setPropertyNameSuggestions(names);
     } catch (error) {
-      console.error('Failed to load property suggestions:', error);
+      logError('Failed to load property suggestions', error);
     }
   }, []);
 
@@ -221,7 +266,7 @@ export function DataProvider({ children }: DataProviderProps) {
         setPropertyCategorySuggestions(categories);
         setPropertyNameSuggestions(names);
       } catch (error) {
-        console.error('Failed to sync property suggestions:', error);
+        logError('Failed to sync property suggestions', error);
       }
       pendingSyncRef.current = null;
     }, 2000);
@@ -264,7 +309,7 @@ export function DataProvider({ children }: DataProviderProps) {
       const data = await collectionsApi.getAll();
       setCollections(data);
     } catch (error) {
-      setCollectionsError(error instanceof Error ? error.message : 'Failed to fetch collections');
+      setCollectionsError(getErrorMessage(error, 'Failed to fetch collections'));
     } finally {
       setCollectionsLoading(false);
     }
@@ -305,7 +350,7 @@ export function DataProvider({ children }: DataProviderProps) {
       const data = await themesApi.getAll();
       setThemes(data);
     } catch (error) {
-      setThemesError(error instanceof Error ? error.message : 'Failed to fetch themes');
+      setThemesError(getErrorMessage(error, 'Failed to fetch themes'));
     } finally {
       setThemesLoading(false);
     }
@@ -341,7 +386,7 @@ export function DataProvider({ children }: DataProviderProps) {
         expandedCategoryIdsInitializedRef.current = true;
       }
     } catch (error) {
-      setCategoriesError(error instanceof Error ? error.message : 'Failed to fetch categories');
+      setCategoriesError(getErrorMessage(error, 'Failed to fetch categories'));
     } finally {
       setCategoriesLoading(false);
     }
@@ -374,33 +419,41 @@ export function DataProvider({ children }: DataProviderProps) {
   const loadItemsForCategory = useCallback(async (categoryId: number) => {
     setCurrentCategoryId(categoryId);
     const cache = itemsCacheRef.current.get(categoryId);
-    
+
     if (cache) {
+      // Update access time for LRU
+      cache.accessedAt = Date.now();
       setItems(cache.items);
     }
-    
+
     try {
       setItemsLoading(true);
       setItemsError(null);
-      
+
       const result = await itemsApi.getAll({
         categoryId,
         includeDescendants: true,
         etag: cache?.etag ?? undefined,
       });
-      
+
       if (result.notModified) {
         setItemsLoading(false);
         return;
       }
-      
-      itemsCacheRef.current.set(categoryId, { items: result.items, etag: result.etag });
-      
+
+      // Store in cache with access timestamp and evict old entries
+      itemsCacheRef.current.set(categoryId, {
+        items: result.items,
+        etag: result.etag,
+        accessedAt: Date.now(),
+      });
+      evictLRU(itemsCacheRef.current, MAX_CACHE_SIZE);
+
       if (categoryId === currentCategoryId || !cache) {
         setItems(result.items);
       }
     } catch (error) {
-      setItemsError(error instanceof Error ? error.message : 'Failed to fetch items');
+      setItemsError(getErrorMessage(error, 'Failed to fetch items'));
     } finally {
       setItemsLoading(false);
     }
@@ -417,11 +470,7 @@ export function DataProvider({ children }: DataProviderProps) {
       });
       return item;
     } catch (error) {
-      if (error instanceof ApiError) {
-        console.error(`Failed to load item ${itemId}: ${error.message} (status: ${error.status})`);
-      } else {
-        console.error('Failed to load item by ID:', error);
-      }
+      logError(`Failed to load item ${itemId}`, error);
       return null;
     }
   }, []);
@@ -472,7 +521,7 @@ export function DataProvider({ children }: DataProviderProps) {
       const data = await templatesApi.getAll(filter);
       setItemTemplates(data);
     } catch (error) {
-      setItemTemplatesError(error instanceof Error ? error.message : 'Failed to fetch item templates');
+      setItemTemplatesError(getErrorMessage(error, 'Failed to fetch item templates'));
     } finally {
       setItemTemplatesLoading(false);
     }

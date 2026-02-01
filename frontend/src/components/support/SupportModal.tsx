@@ -15,14 +15,30 @@ export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportM
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const validateEmail = (email: string): boolean => {
+    if (!email) return false;
+    // RFC 5322 simplified email regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setEmailError(null);
     setIsSubmitting(true);
+
+    // Validate email for anonymous users
+    if (!userEmail && !validateEmail(email)) {
+      setEmailError('Please enter a valid email address');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const request: CreateSupportRequest = {
@@ -50,6 +66,7 @@ export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportM
     setDescription('');
     setEmail('');
     setError(null);
+    setEmailError(null);
     setIsSuccess(false);
     onClose();
   };
@@ -108,12 +125,18 @@ export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportM
                   </label>
                   <input
                     type="email"
-                    className="support-modal__input"
+                    className={`support-modal__input${emailError ? ' support-modal__input--error' : ''}`}
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError(null);
+                    }}
                     placeholder="your@email.com"
                     required
                   />
+                  {emailError && (
+                    <span className="support-modal__field-error">{emailError}</span>
+                  )}
                 </div>
               )}
 

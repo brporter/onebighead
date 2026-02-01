@@ -94,6 +94,9 @@ export class ApiClient {
         ...fetchOptions,
         headers,
         signal: controller.signal,
+        // Include credentials (cookies) for all requests.
+        // This ensures HTTP-only auth cookies are sent, even for CORS requests.
+        credentials: 'include',
       });
 
       clearTimeout(timeoutId);

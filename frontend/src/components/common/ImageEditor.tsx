@@ -7,11 +7,25 @@ interface ImageEditorProps {
   onChange: (images: ItemImage[]) => void;
 }
 
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
 function ImageEditor({ images, onChange }: ImageEditorProps) {
   const { uploadImage } = useData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  function validateFile(file: File): string | null {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return `${file.name}: Invalid file type. Allowed types: JPEG, PNG, GIF, WebP`;
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return `${file.name}: File size exceeds ${MAX_FILE_SIZE_MB}MB limit`;
+    }
+    return null;
+  }
 
   function handleAltChange(index: number, value: string) {
     const updated = images.map((img, i) =>
@@ -27,14 +41,38 @@ function ImageEditor({ images, onChange }: ImageEditorProps) {
     setUploading(true);
     setUploadError(null);
 
+    // Validate all files first
+    const validationErrors: string[] = [];
+    const validFiles: File[] = [];
+
+    for (const file of Array.from(files)) {
+      const error = validateFile(file);
+      if (error) {
+        validationErrors.push(error);
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      setUploadError(validationErrors.join('; '));
+      if (validFiles.length === 0) {
+        setUploading(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+    }
+
     try {
       const newImages: ItemImage[] = [];
-      
-      for (const file of Array.from(files)) {
+
+      for (const file of validFiles) {
         const result = await uploadImage(file);
         newImages.push({ url: result.url, alt: file.name.replace(/\.[^/.]+$/, '') });
       }
-      
+
       onChange([...images, ...newImages]);
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Failed to upload image');

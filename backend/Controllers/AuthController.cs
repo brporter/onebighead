@@ -3,6 +3,7 @@ using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
 namespace OneBigHead.Server.Controllers;
@@ -46,6 +47,7 @@ public class AuthController : ControllerBase
     /// Initiates the OAuth login flow by redirecting to the identity provider
     /// </summary>
     [HttpGet("login/{provider}")]
+    [EnableRateLimiting("auth-login")]
     public IActionResult Login(string provider, [FromQuery] string? returnUrl = null)
     {
         if (!Enum.TryParse<IdentityProvider>(provider, true, out var identityProvider))
@@ -95,6 +97,7 @@ public class AuthController : ControllerBase
     /// Handles the OAuth callback from identity providers (GET for Google/Microsoft)
     /// </summary>
     [HttpGet("callback/{provider}")]
+    [EnableRateLimiting("auth-callback")]
     public async Task<IActionResult> CallbackGet(
         string provider,
         [FromQuery] string? code = null,
@@ -109,6 +112,7 @@ public class AuthController : ControllerBase
     /// Handles the OAuth callback from identity providers (POST for Apple)
     /// </summary>
     [HttpPost("callback/{provider}")]
+    [EnableRateLimiting("auth-callback")]
     public async Task<IActionResult> CallbackPost(
         string provider,
         [FromForm] string? code = null,
@@ -254,6 +258,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("callback")]
+    [EnableRateLimiting("auth-callback")]
     public async Task<IActionResult> Callback([FromBody] AuthCallbackRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Token))
@@ -318,13 +323,11 @@ public class AuthController : ControllerBase
         var tenantRoleClaim = User.FindFirst("tenant_role")?.Value;
         var isAdmin = User.IsInRole("SystemAdministrator");
 
-        if (string.IsNullOrEmpty(tenantIdClaim) || string.IsNullOrEmpty(userIdClaim))
+        if (string.IsNullOrEmpty(tenantIdClaim) || string.IsNullOrEmpty(userIdClaim) ||
+            !int.TryParse(tenantIdClaim, out var tenantId) || !int.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
         }
-
-        var tenantId = int.Parse(tenantIdClaim);
-        var userId = int.Parse(userIdClaim);
         var tenant = await _tenantRepository.GetByIdAsync(tenantId);
         var user = await _userRepository.GetByIdAsync(userId);
 
@@ -370,12 +373,11 @@ public class AuthController : ControllerBase
     {
         var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-        if (string.IsNullOrEmpty(userIdClaim))
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var userId = int.Parse(userIdClaim);
         var user = await _userRepository.GetByIdAsync(userId);
 
         if (user == null)
@@ -401,12 +403,11 @@ public class AuthController : ControllerBase
         var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
         var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
 
-        if (string.IsNullOrEmpty(tenantIdClaim))
+        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
         {
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var tenantId = int.Parse(tenantIdClaim);
         var tenant = await _tenantRepository.GetByIdAsync(tenantId);
 
         if (tenant == null)

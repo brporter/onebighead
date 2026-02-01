@@ -90,27 +90,17 @@ public class UsersController : ApiControllerBase
             return BadRequest(new { error = "You cannot change your own role" });
         }
 
-        // Get current membership
-        var membership = await _tenantUserRepository.GetMembershipAsync(id, tenantId);
-        if (membership == null)
-        {
-            return NotFound(new { error = "User not found in this tenant" });
-        }
+        // Use atomic operation to update role with admin check
+        var result = await _tenantUserRepository.UpdateRoleWithAdminCheckAsync(id, tenantId, request.Role);
 
-        // If demoting to Normal, ensure at least one admin remains
-        if (request.Role == TenantRole.Normal && membership.TenantRole == TenantRole.TenantAdmin)
-        {
-            var adminCount = await _tenantUserRepository.CountAdminsInTenantAsync(tenantId);
-            if (adminCount <= 1)
-            {
-                return BadRequest(new { error = "Cannot demote the last admin. Promote another user first." });
-            }
-        }
-
-        var updated = await _tenantUserRepository.UpdateRoleAsync(id, tenantId, request.Role);
-        if (!updated)
+        if (result == AdminCheckResult.UserNotFound)
         {
             return NotFound(new { error = "User not found" });
+        }
+
+        if (result == AdminCheckResult.WouldRemoveLastAdmin)
+        {
+            return BadRequest(new { error = "Cannot demote the last admin. Promote another user first." });
         }
 
         _logger.LogInformation("Updated user {UserId} role to {Role} in tenant {TenantId}",
@@ -135,27 +125,24 @@ public class UsersController : ApiControllerBase
             return BadRequest(new { error = "You cannot remove yourself from the team" });
         }
 
-        // Get membership
-        var membership = await _tenantUserRepository.GetMembershipAsync(id, tenantId);
-        if (membership == null)
+        // Use atomic operation to check admin count and delete
+        var result = await _tenantUserRepository.DeleteWithAdminCheckAsync(id, tenantId);
+
+        if (result == AdminCheckResult.UserNotFound)
         {
             return NotFound(new { error = "User not found in this tenant" });
         }
 
-        // Check if removing an admin would leave no admins
-        if (membership.TenantRole == TenantRole.TenantAdmin)
+        if (result == AdminCheckResult.WouldRemoveLastAdmin)
         {
-            var adminCount = await _tenantUserRepository.CountAdminsInTenantAsync(tenantId);
-            if (adminCount <= 1)
-            {
-                return BadRequest(new { error = "Cannot remove the last admin. Promote another user first." });
-            }
+            return BadRequest(new { error = "Cannot remove the last admin. Promote another user first." });
         }
 
-        var deleted = await _userRepository.DeleteByIdAndTenantAsync(id, tenantId);
-        if (!deleted)
+        // Check if we need to clean up the user record (if they have no other memberships)
+        var remainingMemberships = await _tenantUserRepository.CountUserMembershipsAsync(id);
+        if (remainingMemberships == 0)
         {
-            return NotFound(new { error = "User not found" });
+            await _userRepository.DeleteAsync(id);
         }
 
         _logger.LogInformation("Removed user {UserId} from tenant {TenantId}", id, tenantId);

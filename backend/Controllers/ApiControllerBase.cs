@@ -70,4 +70,18 @@ public abstract class ApiControllerBase : ControllerBase
         }
         return userId;
     }
+
+    /// <summary>
+    /// Attempts to extract the user ID from the current user's claims.
+    /// </summary>
+    /// <returns>The user ID if present and valid; otherwise, null.</returns>
+    protected int? TryGetUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+        {
+            return null;
+        }
+        return userId;
+    }
 }
