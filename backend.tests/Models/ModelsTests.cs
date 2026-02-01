@@ -201,8 +201,10 @@ public class TenantTests
         // Assert
         Assert.Equal(0, tenant.Id);
         Assert.Equal(string.Empty, tenant.Name);
-        Assert.NotNull(tenant.Users);
-        Assert.Empty(tenant.Users);
+        Assert.NotNull(tenant.ActiveUsers);
+        Assert.Empty(tenant.ActiveUsers);
+        Assert.NotNull(tenant.TenantUsers);
+        Assert.Empty(tenant.TenantUsers);
         Assert.NotNull(tenant.Categories);
         Assert.Empty(tenant.Categories);
         Assert.NotNull(tenant.Collections);
@@ -213,7 +215,8 @@ public class TenantTests
     public void Tenant_Properties_CanBeSetAndGet()
     {
         // Arrange
-        var users = new List<User> { new() { Email = "test@example.com" } };
+        var activeUsers = new List<User> { new() { Email = "test@example.com" } };
+        var tenantUsers = new List<TenantUser> { new() { UserId = 1, TenantId = 1, TenantRole = TenantRole.Normal } };
         var categories = new List<Category> { new() { Name = "Cat1" } };
         var collections = new List<Collection> { new() { Name = "Col1", Slug = "col1" } };
         var createdAt = DateTime.UtcNow;
@@ -224,7 +227,8 @@ public class TenantTests
             Id = 1,
             Name = "Test Tenant",
             CreatedAt = createdAt,
-            Users = users,
+            ActiveUsers = activeUsers,
+            TenantUsers = tenantUsers,
             Categories = categories,
             Collections = collections
         };
@@ -233,7 +237,8 @@ public class TenantTests
         Assert.Equal(1, tenant.Id);
         Assert.Equal("Test Tenant", tenant.Name);
         Assert.Equal(createdAt, tenant.CreatedAt);
-        Assert.Same(users, tenant.Users);
+        Assert.Same(activeUsers, tenant.ActiveUsers);
+        Assert.Same(tenantUsers, tenant.TenantUsers);
         Assert.Same(categories, tenant.Categories);
         Assert.Same(collections, tenant.Collections);
     }
@@ -250,12 +255,11 @@ public class UserTests
 
         // Assert
         Assert.Equal(0, user.Id);
-        Assert.Equal(0, user.TenantId);
+        Assert.Equal(0, user.ActiveTenantId);
         Assert.Equal(string.Empty, user.Email);
         Assert.Equal(IdentityProvider.None, user.IdentityProvider);
         Assert.Null(user.ProviderSubjectId);
-        Assert.Null(user.Tenant);
-        Assert.Equal(TenantRole.Normal, user.TenantRole);
+        Assert.Null(user.ActiveTenant);
         Assert.False(user.IsLinked);
     }
 
@@ -309,22 +313,22 @@ public class UserTests
         var user = new User
         {
             Id = 1,
-            TenantId = 1,
+            ActiveTenantId = 1,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Google,
             ProviderSubjectId = "google-sub-123",
             CreatedAt = createdAt,
-            Tenant = tenant
+            ActiveTenant = tenant
         };
 
         // Assert
         Assert.Equal(1, user.Id);
-        Assert.Equal(1, user.TenantId);
+        Assert.Equal(1, user.ActiveTenantId);
         Assert.Equal("test@example.com", user.Email);
         Assert.Equal(IdentityProvider.Google, user.IdentityProvider);
         Assert.Equal("google-sub-123", user.ProviderSubjectId);
         Assert.Equal(createdAt, user.CreatedAt);
-        Assert.Same(tenant, user.Tenant);
+        Assert.Same(tenant, user.ActiveTenant);
     }
 
     [Theory]

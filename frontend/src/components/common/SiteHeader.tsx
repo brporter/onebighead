@@ -1,19 +1,24 @@
+import { TenantSwitcher } from './TenantSwitcher';
+
 interface SiteHeaderProps {
   title?: string;
   subtitle?: string;
   children?: React.ReactNode;
+  showTenantSwitcher?: boolean;
 }
 
 export function SiteHeader({
   title,
   subtitle,
-  children
+  children,
+  showTenantSwitcher = true
 }: SiteHeaderProps) {
   return (
     <header className="site-header">
       <div className="site-header__content">
         <div className="site-header__brand">
           <a href="/" className="site-header__logo">OneBigHead</a>
+          {showTenantSwitcher && <TenantSwitcher />}
         </div>
         {title && (
           <div className="site-header__title-area">

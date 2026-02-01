@@ -15,29 +15,44 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByEmailAsync(string email)
     {
         return await _context.Users
-            .Include(u => u.Tenant)
+            .Include(u => u.ActiveTenant)
             .FirstOrDefaultAsync(u => u.Email == email);
     }
 
     public async Task<User?> GetByProviderIdAsync(IdentityProvider provider, string providerSubjectId)
     {
         return await _context.Users
-            .Include(u => u.Tenant)
+            .Include(u => u.ActiveTenant)
             .FirstOrDefaultAsync(u => u.IdentityProvider == provider && u.ProviderSubjectId == providerSubjectId);
     }
 
     public async Task<User?> GetByIdAsync(int id)
     {
         return await _context.Users
-            .Include(u => u.Tenant)
+            .Include(u => u.ActiveTenant)
+            .FirstOrDefaultAsync(u => u.Id == id);
+    }
+
+    public async Task<User?> GetByIdWithMembershipsAsync(int id)
+    {
+        return await _context.Users
+            .Include(u => u.ActiveTenant)
+            .Include(u => u.TenantMemberships)
+                .ThenInclude(tm => tm.Tenant)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public async Task<IEnumerable<User>> GetByTenantIdAsync(int tenantId)
     {
+        // Get users who are members of this tenant via TenantUser
+        var userIds = await _context.TenantUsers
+            .Where(tu => tu.TenantId == tenantId)
+            .Select(tu => tu.UserId)
+            .ToListAsync();
+
         return await _context.Users
-            .Include(u => u.Tenant)
-            .Where(u => u.TenantId == tenantId)
+            .Include(u => u.ActiveTenant)
+            .Where(u => userIds.Contains(u.Id))
             .OrderBy(u => u.CreatedAt)
             .ToListAsync();
     }
@@ -62,23 +77,34 @@ public class UserRepository : IUserRepository
             // Note: We no longer create a default collection here.
             // New users will be directed to the setup wizard to create their first collection.
 
-            // Create user associated with the new tenant - first user is TenantAdmin
+            // Create user with this as their active tenant
             var user = new User
             {
-                TenantId = tenant.Id,
+                ActiveTenantId = tenant.Id,
                 Email = email,
                 IdentityProvider = provider,
                 ProviderSubjectId = providerSubjectId,
-                TenantRole = TenantRole.TenantAdmin,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
+            // Create the TenantUser membership - first user is TenantAdmin
+            var tenantUser = new TenantUser
+            {
+                UserId = user.Id,
+                TenantId = tenant.Id,
+                TenantRole = TenantRole.TenantAdmin,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.TenantUsers.Add(tenantUser);
+            await _context.SaveChangesAsync();
+
             await transaction.CommitAsync();
 
-            user.Tenant = tenant;
+            user.ActiveTenant = tenant;
             return user;
         }
         catch
@@ -90,29 +116,52 @@ public class UserRepository : IUserRepository
 
     public async Task<User> CreatePendingUserAsync(int tenantId, string email, TenantRole role)
     {
-        var user = new User
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
         {
-            TenantId = tenantId,
-            Email = email,
-            IdentityProvider = IdentityProvider.None,
-            ProviderSubjectId = null,
-            TenantRole = role,
-            CreatedAt = DateTime.UtcNow
-        };
+            var user = new User
+            {
+                ActiveTenantId = tenantId,
+                Email = email,
+                IdentityProvider = IdentityProvider.None,
+                ProviderSubjectId = null,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
-        // Load tenant for response
-        await _context.Entry(user).Reference(u => u.Tenant).LoadAsync();
+            // Create the TenantUser membership
+            var tenantUser = new TenantUser
+            {
+                UserId = user.Id,
+                TenantId = tenantId,
+                TenantRole = role,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        return user;
+            _context.TenantUsers.Add(tenantUser);
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            // Load tenant for response
+            await _context.Entry(user).Reference(u => u.ActiveTenant).LoadAsync();
+
+            return user;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<User?> LinkUserAsync(int userId, IdentityProvider provider, string providerSubjectId)
     {
         var user = await _context.Users
-            .Include(u => u.Tenant)
+            .Include(u => u.ActiveTenant)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
@@ -127,46 +176,64 @@ public class UserRepository : IUserRepository
         return user;
     }
 
-    public async Task<bool> UpdateRoleAsync(int userId, int tenantId, TenantRole role)
-    {
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == userId && u.TenantId == tenantId);
-
-        if (user == null)
-        {
-            return false;
-        }
-
-        user.TenantRole = role;
-        await _context.SaveChangesAsync();
-        return true;
-    }
-
     public async Task<bool> DeleteByIdAndTenantAsync(int userId, int tenantId)
     {
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == userId && u.TenantId == tenantId);
+        // Delete the TenantUser membership
+        var tenantUser = await _context.TenantUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == userId && tu.TenantId == tenantId);
 
-        if (user == null)
+        if (tenantUser == null)
         {
             return false;
         }
 
-        _context.Users.Remove(user);
+        _context.TenantUsers.Remove(tenantUser);
+
+        // Check if this was the user's only membership
+        var remainingMemberships = await _context.TenantUsers
+            .CountAsync(tu => tu.UserId == userId && tu.TenantId != tenantId);
+
+        if (remainingMemberships == 0)
+        {
+            // If no remaining memberships, delete the user entirely
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null)
+            {
+                _context.Users.Remove(user);
+            }
+        }
+        else
+        {
+            // If user was viewing this tenant, switch to another
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null && user.ActiveTenantId == tenantId)
+            {
+                var nextMembership = await _context.TenantUsers
+                    .Where(tu => tu.UserId == userId && tu.TenantId != tenantId)
+                    .OrderBy(tu => tu.CreatedAt)
+                    .FirstAsync();
+                user.ActiveTenantId = nextMembership.TenantId;
+            }
+        }
+
         await _context.SaveChangesAsync();
         return true;
-    }
-
-    public async Task<int> CountAdminsInTenantAsync(int tenantId)
-    {
-        return await _context.Users
-            .CountAsync(u => u.TenantId == tenantId && u.TenantRole == TenantRole.TenantAdmin);
     }
 
     public async Task UpdateAsync(User user)
     {
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateActiveTenantAsync(int userId, int tenantId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.ActiveTenantId = tenantId;
+            await _context.SaveChangesAsync();
+        }
     }
 }
 

@@ -1,0 +1,134 @@
+/* ==========================================================================
+   Tenant Switcher
+   A dropdown component for switching between tenants
+   ========================================================================== */
+
+.tenant-switcher {
+  position: relative;
+}
+
+.tenant-switcher__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  transition: all var(--transition-fast);
+}
+
+.tenant-switcher__trigger:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
+}
+
+.tenant-switcher__trigger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.tenant-switcher__name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tenant-switcher__icon {
+  font-size: 0.625rem;
+  color: var(--color-text-muted);
+}
+
+.tenant-switcher__dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-xs));
+  left: 0;
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.tenant-switcher__current,
+.tenant-switcher__others {
+  padding: var(--space-sm);
+}
+
+.tenant-switcher__others {
+  border-top: 1px solid var(--color-border);
+}
+
+.tenant-switcher__label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-xs);
+}
+
+.tenant-switcher__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: var(--space-sm);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  transition: background var(--transition-fast);
+}
+
+.tenant-switcher__item:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.tenant-switcher__item:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.tenant-switcher__item--active {
+  background: var(--color-surface-raised);
+  cursor: default;
+}
+
+.tenant-switcher__item--active:hover {
+  background: var(--color-surface-raised);
+}
+
+.tenant-switcher__item-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tenant-switcher__item-role {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  margin-left: var(--space-sm);
+}
+
+@media (max-width: 640px) {
+  .tenant-switcher__name {
+    max-width: 100px;
+  }
+
+  .tenant-switcher__dropdown {
+    right: 0;
+    left: auto;
+  }
+}

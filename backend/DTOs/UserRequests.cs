@@ -28,16 +28,29 @@ public class TenantUserResponse
     public string? IdentityProvider { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    public static TenantUserResponse FromUser(User user)
+    public static TenantUserResponse FromUser(User user, TenantRole role)
     {
         return new TenantUserResponse
         {
             UserId = user.Id,
             Email = user.Email,
-            TenantRole = user.TenantRole,
+            TenantRole = role,
             IsLinked = user.IsLinked,
             IdentityProvider = user.IsLinked ? user.IdentityProvider.ToString() : null,
             CreatedAt = user.CreatedAt
+        };
+    }
+
+    public static TenantUserResponse FromTenantUser(TenantUser tenantUser)
+    {
+        return new TenantUserResponse
+        {
+            UserId = tenantUser.UserId,
+            Email = tenantUser.User.Email,
+            TenantRole = tenantUser.TenantRole,
+            IsLinked = tenantUser.User.IsLinked,
+            IdentityProvider = tenantUser.User.IsLinked ? tenantUser.User.IdentityProvider.ToString() : null,
+            CreatedAt = tenantUser.CreatedAt
         };
     }
 }

@@ -32,7 +32,7 @@ public class AdminController : ControllerBase
             {
                 TenantId = t.Id,
                 Name = t.Name,
-                UserCount = t.Users.Count,
+                UserCount = t.TenantUsers.Count,
                 CollectionCount = t.Collections.Count,
                 ItemCount = _context.Items.Count(i => i.TenantId == t.Id),
                 ImageCount = 0,
@@ -74,7 +74,7 @@ public class AdminController : ControllerBase
                 .ThenInclude(c => c.Items)
             .Include(t => t.Collections)
                 .ThenInclude(c => c.Categories)
-            .Include(t => t.Users)
+            .Include(t => t.TenantUsers)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (tenant is null)
@@ -96,7 +96,7 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<IEnumerable<UserSummaryResponse>>> GetUsers([FromQuery] string? email = null)
     {
         var query = _context.Users
-            .Include(u => u.Tenant)
+            .Include(u => u.ActiveTenant)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(email))
@@ -109,8 +109,8 @@ public class AdminController : ControllerBase
             {
                 UserId = u.Id,
                 Email = u.Email,
-                TenantId = u.TenantId,
-                TenantName = u.Tenant != null ? u.Tenant.Name : "",
+                TenantId = u.ActiveTenantId,
+                TenantName = u.ActiveTenant != null ? u.ActiveTenant.Name : "",
                 IdentityProvider = u.IdentityProvider.ToString(),
                 IsSystemAdministrator = u.IsSystemAdministrator,
                 CreatedAt = u.CreatedAt
@@ -146,7 +146,7 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<UserSummaryResponse>> SetAdminStatus(int id, SetAdminStatusRequest request)
     {
         var user = await _context.Users
-            .Include(u => u.Tenant)
+            .Include(u => u.ActiveTenant)
             .FirstOrDefaultAsync(u => u.Id == id);
 
         if (user is null)
@@ -161,8 +161,8 @@ public class AdminController : ControllerBase
         {
             UserId = user.Id,
             Email = user.Email,
-            TenantId = user.TenantId,
-            TenantName = user.Tenant?.Name ?? "",
+            TenantId = user.ActiveTenantId,
+            TenantName = user.ActiveTenant?.Name ?? "",
             IdentityProvider = user.IdentityProvider.ToString(),
             IsSystemAdministrator = user.IsSystemAdministrator,
             CreatedAt = user.CreatedAt

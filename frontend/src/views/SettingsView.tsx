@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/SettingsView.css';
 import { useData } from '../contexts/DataContext';
 import { useUser } from '../contexts/UserContext';
-import { exportApi } from '../api';
+import { exportApi, tenantsApi } from '../api';
 import ItemTemplateEditor from '../components/template/ItemTemplateEditor';
 import CollectionTemplateEditor from '../components/collection/CollectionTemplateEditor';
 import VisibilityToggle from '../components/common/VisibilityToggle';
@@ -11,10 +11,10 @@ import CollectionSetupWizard from '../components/collection/CollectionSetupWizar
 import { SupportSection } from '../components/support/SupportSection';
 import { UserButton, UserManagement } from '../components/user';
 import { SupportModal } from '../components/support/SupportModal';
-import type { Collection } from '../utils/types';
-import { Visibility } from '../utils/types';
+import type { Collection, TenantMembership } from '../utils/types';
+import { Visibility, TenantRole } from '../utils/types';
 
-type SettingsSection = 'collections' | 'templates' | 'team' | 'export' | 'support';
+type SettingsSection = 'collections' | 'templates' | 'team' | 'tenants' | 'export' | 'support';
 
 function SettingsView() {
   const navigate = useNavigate();
@@ -25,8 +25,14 @@ function SettingsView() {
   // Initialize section from URL query param or default to collections
   const initialSection = (searchParams.get('section') as SettingsSection) || 'collections';
   const [activeSection, setActiveSection] = useState<SettingsSection>(
-    ['collections', 'templates', 'team', 'export', 'support'].includes(initialSection) ? initialSection : 'collections'
+    ['collections', 'templates', 'team', 'tenants', 'export', 'support'].includes(initialSection) ? initialSection : 'collections'
   );
+
+  // Tenant management state
+  const [isCreatingTenant, setIsCreatingTenant] = useState(false);
+  const [newTenantName, setNewTenantName] = useState('');
+  const [tenantError, setTenantError] = useState<string | null>(null);
+  const [isLeavingTenant, setIsLeavingTenant] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -424,6 +430,172 @@ function SettingsView() {
     </div>
   );
 
+  const handleCreateTenant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTenantName.trim()) {
+      setTenantError('Tenant name is required');
+      return;
+    }
+
+    setTenantError(null);
+    try {
+      await tenantsApi.create({ name: newTenantName.trim() });
+      setNewTenantName('');
+      setIsCreatingTenant(false);
+      // Reload to refresh user context with new tenant
+      window.location.reload();
+    } catch (err) {
+      setTenantError(err instanceof Error ? err.message : 'Failed to create tenant');
+    }
+  };
+
+  const handleLeaveTenant = async (tenant: TenantMembership) => {
+    if (!confirm(`Are you sure you want to leave "${tenant.tenantName}"? You will lose access to all data in this tenant.`)) {
+      return;
+    }
+
+    setIsLeavingTenant(tenant.tenantId);
+    setTenantError(null);
+    try {
+      await tenantsApi.leave(tenant.tenantId);
+      // Reload to refresh user context
+      window.location.reload();
+    } catch (err) {
+      setTenantError(err instanceof Error ? err.message : 'Failed to leave tenant');
+      setIsLeavingTenant(null);
+    }
+  };
+
+  const handleSwitchTenant = async (tenant: TenantMembership) => {
+    try {
+      await tenantsApi.switch(tenant.tenantId);
+      window.location.reload();
+    } catch (err) {
+      setTenantError(err instanceof Error ? err.message : 'Failed to switch tenant');
+    }
+  };
+
+  const renderTenantsSection = () => {
+    const tenants = user?.tenants || [];
+    const activeTenant = user?.activeTenant;
+    const canCreateTenant = tenants.length === 1;
+    const canLeaveTenant = (tenant: TenantMembership) => {
+      // Cannot leave if it's the only tenant
+      if (tenants.length <= 1) return false;
+      // Cannot leave if you're the only admin (would need to check server-side, but we'll let API handle it)
+      return true;
+    };
+
+    return (
+      <div className="settings-section">
+        <div className="settings-section__header">
+          <div>
+            <h2 className="settings-section__title">My Tenants</h2>
+            <p className="settings-section__description">
+              Manage your tenant memberships. You can belong to multiple tenants and switch between them.
+            </p>
+          </div>
+          {canCreateTenant && !isCreatingTenant && (
+            <button
+              className="settings-section__addButton"
+              onClick={() => setIsCreatingTenant(true)}
+            >
+              + Create New Tenant
+            </button>
+          )}
+        </div>
+
+        {tenantError && <div className="settings-section__error">{tenantError}</div>}
+
+        {isCreatingTenant && (
+          <form className="settings-form" onSubmit={handleCreateTenant}>
+            <h3 className="settings-form__title">Create New Tenant</h3>
+            <p className="settings-form__hint" style={{ marginBottom: 'var(--space-md)' }}>
+              You're currently a member of "{activeTenant?.tenantName}". Create your own space where you have complete control.
+            </p>
+            <div className="settings-form__field">
+              <label className="settings-form__label">
+                Tenant Name <span className="settings-form__required">*</span>
+              </label>
+              <input
+                type="text"
+                className="settings-form__input"
+                value={newTenantName}
+                onChange={(e) => setNewTenantName(e.target.value)}
+                placeholder="My New Workspace"
+                autoFocus
+              />
+            </div>
+            <div className="settings-form__actions">
+              <button
+                type="submit"
+                className="settings-form__button settings-form__button--primary"
+              >
+                Create Tenant
+              </button>
+              <button
+                type="button"
+                className="settings-form__button settings-form__button--secondary"
+                onClick={() => {
+                  setIsCreatingTenant(false);
+                  setNewTenantName('');
+                  setTenantError(null);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {!isCreatingTenant && (
+          <div className="settings-tenant-list">
+            {tenants.map((tenant) => (
+              <div
+                key={tenant.tenantId}
+                className={`settings-tenant-card ${tenant.tenantId === activeTenant?.tenantId ? 'settings-tenant-card--active' : ''}`}
+              >
+                <div className="settings-tenant-card__content">
+                  <div className="settings-tenant-card__header">
+                    <h3 className="settings-tenant-card__name">{tenant.tenantName}</h3>
+                    {tenant.tenantId === activeTenant?.tenantId && (
+                      <span className="settings-tenant-card__badge settings-tenant-card__badge--current">Current</span>
+                    )}
+                    <span className={`settings-tenant-card__badge ${tenant.tenantRole === TenantRole.TenantAdmin ? 'settings-tenant-card__badge--admin' : ''}`}>
+                      {tenant.tenantRole === TenantRole.TenantAdmin ? 'Admin' : 'Member'}
+                    </span>
+                  </div>
+                  {!tenant.hasCompletedWelcome && (
+                    <p className="settings-tenant-card__status">Setup not completed</p>
+                  )}
+                </div>
+                <div className="settings-tenant-card__actions">
+                  {tenant.tenantId !== activeTenant?.tenantId && (
+                    <button
+                      className="settings-tenant-card__button"
+                      onClick={() => handleSwitchTenant(tenant)}
+                    >
+                      Switch
+                    </button>
+                  )}
+                  {canLeaveTenant(tenant) && (
+                    <button
+                      className="settings-tenant-card__button settings-tenant-card__button--danger"
+                      onClick={() => handleLeaveTenant(tenant)}
+                      disabled={isLeavingTenant === tenant.tenantId}
+                    >
+                      {isLeavingTenant === tenant.tenantId ? 'Leaving...' : 'Leave'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderSupportSection = () => (
     <div className="settings-section settings-section--support">
       <div className="settings-section__header">
@@ -450,6 +622,8 @@ function SettingsView() {
         return renderTemplatesSection();
       case 'team':
         return renderTeamSection();
+      case 'tenants':
+        return renderTenantsSection();
       case 'export':
         return renderExportSection();
       case 'support':
@@ -472,6 +646,9 @@ function SettingsView() {
         { id: 'export', label: 'Data Export', icon: '📦' }
       );
     }
+
+    // My Tenants is always visible (user can manage their memberships)
+    items.push({ id: 'tenants', label: 'My Tenants', icon: '🏢' });
 
     // Support is always visible
     items.push({ id: 'support', label: 'Support', icon: '💬' });

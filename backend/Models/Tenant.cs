@@ -15,7 +15,16 @@ public class Tenant
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public ICollection<User> Users { get; set; } = new List<User>();
+    /// <summary>
+    /// Users who have this tenant as their active tenant.
+    /// </summary>
+    public ICollection<User> ActiveUsers { get; set; } = new List<User>();
+
+    /// <summary>
+    /// All user memberships for this tenant. Users can belong to multiple tenants.
+    /// </summary>
+    public ICollection<TenantUser> TenantUsers { get; set; } = new List<TenantUser>();
+
     public ICollection<Category> Categories { get; set; } = new List<Category>();
     public ICollection<Collection> Collections { get; set; } = new List<Collection>();
 }

@@ -62,10 +62,16 @@ public class CollectionsControllerTests : IntegrationTestBase
             context.Users.Add(new User
             {
                 Id = user2Id,
-                TenantId = tenant2Id,
+                ActiveTenantId = tenant2Id,
                 Email = "user1002@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "test-user-1002"
+            });
+            context.TenantUsers.Add(new TenantUser
+            {
+                UserId = user2Id,
+                TenantId = tenant2Id,
+                TenantRole = TenantRole.TenantAdmin
             });
             context.Collections.Add(new Collection
             {
@@ -340,10 +346,16 @@ public class CollectionsControllerTests : IntegrationTestBase
             context.Users.Add(new User
             {
                 Id = isolatedUserId,
-                TenantId = isolatedTenantId,
+                ActiveTenantId = isolatedTenantId,
                 Email = "isolated@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "isolated-user"
+            });
+            context.TenantUsers.Add(new TenantUser
+            {
+                UserId = isolatedUserId,
+                TenantId = isolatedTenantId,
+                TenantRole = TenantRole.TenantAdmin
             });
             context.Collections.Add(new Collection
             {

@@ -80,10 +80,17 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
         context.Users.Add(new User
         {
             Id = DefaultUserId,
-            TenantId = DefaultTenantId,
+            ActiveTenantId = DefaultTenantId,
             Email = DefaultEmail,
             IdentityProvider = IdentityProvider.Microsoft,
-            ProviderSubjectId = "test-user-1",
+            ProviderSubjectId = "test-user-1"
+        });
+
+        // Create TenantUser membership
+        context.TenantUsers.Add(new TenantUser
+        {
+            UserId = DefaultUserId,
+            TenantId = DefaultTenantId,
             TenantRole = TenantRole.TenantAdmin
         });
 

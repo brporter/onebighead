@@ -567,6 +567,27 @@ namespace OneBigHead.Server.Migrations
                     b.ToTable("Tenants");
                 });
 
+            modelBuilder.Entity("OneBigHead.Server.Models.TenantUser", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TenantRole")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "TenantId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("TenantUsers");
+                });
+
             modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -577,6 +598,9 @@ namespace OneBigHead.Server.Migrations
 
                     b.Property<DateTime?>("AcceptedTermsAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("ActiveTenantId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -596,17 +620,11 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<int>("TenantId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TenantRole")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("Email");
+                    b.HasIndex("ActiveTenantId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("Email");
 
                     b.HasIndex("IdentityProvider", "ProviderSubjectId")
                         .IsUnique()
@@ -825,15 +843,34 @@ namespace OneBigHead.Server.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.TenantUser", b =>
                 {
                     b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
-                        .WithMany("Users")
+                        .WithMany("TenantUsers")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("OneBigHead.Server.Models.User", "User")
+                        .WithMany("TenantMemberships")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Tenant");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
+                {
+                    b.HasOne("OneBigHead.Server.Models.Tenant", "ActiveTenant")
+                        .WithMany("ActiveUsers")
+                        .HasForeignKey("ActiveTenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ActiveTenant");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.Category", b =>
@@ -875,11 +912,18 @@ namespace OneBigHead.Server.Migrations
 
             modelBuilder.Entity("OneBigHead.Server.Models.Tenant", b =>
                 {
+                    b.Navigation("ActiveUsers");
+
                     b.Navigation("Categories");
 
                     b.Navigation("Collections");
 
-                    b.Navigation("Users");
+                    b.Navigation("TenantUsers");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
+                {
+                    b.Navigation("TenantMemberships");
                 });
 #pragma warning restore 612, 618
         }

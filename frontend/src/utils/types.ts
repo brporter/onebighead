@@ -92,9 +92,21 @@ export interface Tenant {
   owner: string;
 }
 
+export interface TenantMembership {
+  tenantId: number;
+  tenantName: string;
+  tenantRole: TenantRole;
+  hasCompletedWelcome: boolean;
+}
+
 export interface CurrentUser {
   userId: number;
   email: string;
+  // Active tenant info (new structure)
+  activeTenant: TenantMembership;
+  // All tenant memberships
+  tenants: TenantMembership[];
+  // Legacy fields for backwards compatibility
   tenantId: number;
   tenantName: string;
   hasCompletedWelcome: boolean;

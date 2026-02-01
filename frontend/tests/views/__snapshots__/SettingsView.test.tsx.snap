@@ -126,6 +126,22 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
               <span
                 class="settings-nav__icon"
               >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
                 💬
               </span>
               <span
@@ -393,6 +409,22 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
               <span
                 class="settings-nav__icon"
               >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
                 💬
               </span>
               <span
@@ -529,6 +561,22 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
                 class="settings-nav__label"
               >
                 Collections
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
               </span>
             </button>
           </li>
@@ -786,6 +834,22 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
           </li>
           <li>
             <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
               class="settings-nav__item settings-nav__item--active"
             >
               <span
@@ -954,6 +1018,22 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
                 class="settings-nav__label"
               >
                 Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
               </span>
             </button>
           </li>
@@ -1140,6 +1220,22 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
               <span
                 class="settings-nav__icon"
               >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
                 💬
               </span>
               <span
@@ -1290,6 +1386,22 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
                 class="settings-nav__label"
               >
                 Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
               </span>
             </button>
           </li>
@@ -1585,6 +1697,22 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
               <span
                 class="settings-nav__icon"
               >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
                 💬
               </span>
               <span
@@ -1739,6 +1867,22 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
                 class="settings-nav__label"
               >
                 Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
               </span>
             </button>
           </li>
@@ -2029,6 +2173,22 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
                 class="settings-nav__label"
               >
                 Data Export
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="settings-nav__item "
+            >
+              <span
+                class="settings-nav__icon"
+              >
+                🏢
+              </span>
+              <span
+                class="settings-nav__label"
+              >
+                My Tenants
               </span>
             </button>
           </li>

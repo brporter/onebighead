@@ -15,6 +15,7 @@ public class AuthController : ControllerBase
     private readonly ITokenService _tokenService;
     private readonly IUserRepository _userRepository;
     private readonly ITenantRepository _tenantRepository;
+    private readonly ITenantUserRepository _tenantUserRepository;
     private readonly IOAuthService _oauthService;
     private readonly AuthenticationSettings _settings;
     private readonly ILogger<AuthController> _logger;
@@ -26,6 +27,7 @@ public class AuthController : ControllerBase
         ITokenService tokenService,
         IUserRepository userRepository,
         ITenantRepository tenantRepository,
+        ITenantUserRepository tenantUserRepository,
         IOAuthService oauthService,
         IOptions<AuthenticationSettings> settings,
         ILogger<AuthController> logger)
@@ -34,6 +36,7 @@ public class AuthController : ControllerBase
         _tokenService = tokenService;
         _userRepository = userRepository;
         _tenantRepository = tenantRepository;
+        _tenantUserRepository = tenantUserRepository;
         _oauthService = oauthService;
         _settings = settings.Value;
         _logger = logger;
@@ -169,14 +172,14 @@ public class AuthController : ControllerBase
         }
 
         // Look up or create user
-        var user = await GetOrCreateUser(identityProvider, validationResult);
+        var (user, tenantRole) = await GetOrCreateUser(identityProvider, validationResult);
         if (user == null)
         {
             return RedirectToError("Failed to create user account");
         }
 
         // Generate app-specific JWT and set HTTP-only cookie
-        var appToken = _tokenService.GenerateAppToken(user);
+        var appToken = _tokenService.GenerateAppToken(user, tenantRole);
         SetAuthCookie(appToken);
 
         // Get return URL and redirect
@@ -187,13 +190,14 @@ public class AuthController : ControllerBase
         return Redirect(returnUrl);
     }
 
-    private async Task<User?> GetOrCreateUser(IdentityProvider provider, OidcValidationResult validationResult)
+    private async Task<(User? user, TenantRole tenantRole)> GetOrCreateUser(IdentityProvider provider, OidcValidationResult validationResult)
     {
         // 1. Check for existing linked user by provider ID
         var user = await _userRepository.GetByProviderIdAsync(provider, validationResult.Subject!);
         if (user != null)
         {
-            return user;
+            var membership = await _tenantUserRepository.GetMembershipAsync(user.Id, user.ActiveTenantId);
+            return (user, membership?.TenantRole ?? TenantRole.Normal);
         }
 
         // 2. Check for pending user by email (email linking)
@@ -202,23 +206,32 @@ public class AuthController : ControllerBase
         {
             // Link pending user to this OAuth identity
             _logger.LogInformation("Linking pending user {Email} to {Provider}", validationResult.Email, provider);
-            return await _userRepository.LinkUserAsync(
+            var linkedUser = await _userRepository.LinkUserAsync(
                 pendingUser.Id, provider, validationResult.Subject!);
+            if (linkedUser != null)
+            {
+                var membership = await _tenantUserRepository.GetMembershipAsync(linkedUser.Id, linkedUser.ActiveTenantId);
+                return (linkedUser, membership?.TenantRole ?? TenantRole.Normal);
+            }
+            return (null, TenantRole.Normal);
         }
 
         if (pendingUser != null)
         {
             // User exists with same email but different provider (already linked)
             _logger.LogInformation("User {Email} authenticated with different provider", validationResult.Email);
-            return pendingUser;
+            var membership = await _tenantUserRepository.GetMembershipAsync(pendingUser.Id, pendingUser.ActiveTenantId);
+            return (pendingUser, membership?.TenantRole ?? TenantRole.Normal);
         }
 
         // 3. Auto-provision new user with new tenant (first-time signup)
         _logger.LogInformation("Auto-provisioning new user with email {Email}", validationResult.Email);
-        return await _userRepository.CreateWithNewTenantAsync(
+        var newUser = await _userRepository.CreateWithNewTenantAsync(
             validationResult.Email!,
             provider,
             validationResult.Subject!);
+        // New users are TenantAdmin of their own tenant
+        return (newUser, TenantRole.TenantAdmin);
     }
 
     private void SetAuthCookie(string token)
@@ -263,22 +276,22 @@ public class AuthController : ControllerBase
         }
 
         // Look up or create user
-        var user = await GetOrCreateUser(provider, validationResult);
+        var (user, tenantRole) = await GetOrCreateUser(provider, validationResult);
         if (user == null)
         {
             return StatusCode(500, new { error = "Failed to create user account" });
         }
 
         // Generate app-specific JWT and set cookie
-        var appToken = _tokenService.GenerateAppToken(user);
+        var appToken = _tokenService.GenerateAppToken(user, tenantRole);
         SetAuthCookie(appToken);
 
         return Ok(new AuthCallbackResponse
         {
             Success = true,
             Email = user.Email,
-            TenantId = user.TenantId,
-            TenantName = user.Tenant?.Name ?? string.Empty
+            TenantId = user.ActiveTenantId,
+            TenantName = user.ActiveTenant?.Name ?? string.Empty
         });
     }
 
@@ -315,17 +328,40 @@ public class AuthController : ControllerBase
         var tenant = await _tenantRepository.GetByIdAsync(tenantId);
         var user = await _userRepository.GetByIdAsync(userId);
 
+        // Get all tenant memberships for this user
+        var memberships = await _tenantUserRepository.GetByUserIdAsync(userId);
+        var tenantMemberships = memberships.Select(m => new TenantMembershipResponse
+        {
+            TenantId = m.TenantId,
+            TenantName = m.Tenant.Name,
+            TenantRole = m.TenantRole,
+            HasCompletedWelcome = m.Tenant.HasCompletedWelcome
+        }).ToList();
+
+        var activeTenantRole = tenantRoleClaim ?? "Normal";
+
         return Ok(new
         {
             userId = userId,
             email = emailClaim,
+            // Active tenant info
+            activeTenant = new TenantMembershipResponse
+            {
+                TenantId = tenantId,
+                TenantName = tenant?.Name ?? string.Empty,
+                TenantRole = Enum.Parse<TenantRole>(activeTenantRole),
+                HasCompletedWelcome = tenant?.HasCompletedWelcome ?? false
+            },
+            // All tenant memberships
+            tenants = tenantMemberships,
+            // Legacy fields for backwards compatibility
             tenantId = tenantId,
             tenantName = tenant?.Name ?? string.Empty,
             hasCompletedWelcome = tenant?.HasCompletedWelcome ?? false,
             hasAcceptedTerms = user?.HasAcceptedTerms ?? false,
             isSystemAdministrator = isAdmin,
-            tenantRole = tenantRoleClaim ?? "Normal",
-            isTenantAdmin = tenantRoleClaim == "TenantAdmin"
+            tenantRole = activeTenantRole,
+            isTenantAdmin = activeTenantRole == "TenantAdmin"
         });
     }
 

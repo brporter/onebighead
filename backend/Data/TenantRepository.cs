@@ -22,4 +22,10 @@ public class TenantRepository : ITenantRepository
         _context.Tenants.Update(tenant);
         await _context.SaveChangesAsync();
     }
+
+    public async Task CreateAsync(Tenant tenant)
+    {
+        _context.Tenants.Add(tenant);
+        await _context.SaveChangesAsync();
+    }
 }

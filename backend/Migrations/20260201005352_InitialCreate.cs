@@ -141,22 +141,23 @@ namespace OneBigHead.Server.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    TenantId = table.Column<int>(type: "int", nullable: false),
+                    ActiveTenantId = table.Column<int>(type: "int", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
                     IdentityProvider = table.Column<int>(type: "int", nullable: false),
-                    ProviderSubjectId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    ProviderSubjectId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     IsSystemAdministrator = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AcceptedTermsAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Users_Tenants_TenantId",
-                        column: x => x.TenantId,
+                        name: "FK_Users_Tenants_ActiveTenantId",
+                        column: x => x.ActiveTenantId,
                         principalTable: "Tenants",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -320,6 +321,32 @@ namespace OneBigHead.Server.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TenantUsers",
+                columns: table => new
+                {
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    TenantId = table.Column<int>(type: "int", nullable: false),
+                    TenantRole = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TenantUsers", x => new { x.UserId, x.TenantId });
+                    table.ForeignKey(
+                        name: "FK_TenantUsers_Tenants_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "Tenants",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TenantUsers_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -580,6 +607,16 @@ namespace OneBigHead.Server.Migrations
                 column: "Name");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TenantUsers_TenantId",
+                table: "TenantUsers",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_ActiveTenantId",
+                table: "Users",
+                column: "ActiveTenantId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
                 table: "Users",
                 column: "Email");
@@ -588,12 +625,8 @@ namespace OneBigHead.Server.Migrations
                 name: "IX_Users_IdentityProvider_ProviderSubjectId",
                 table: "Users",
                 columns: new[] { "IdentityProvider", "ProviderSubjectId" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_TenantId",
-                table: "Users",
-                column: "TenantId");
+                unique: true,
+                filter: "[ProviderSubjectId] IS NOT NULL");
         }
 
         /// <inheritdoc />
@@ -625,6 +658,9 @@ namespace OneBigHead.Server.Migrations
 
             migrationBuilder.DropTable(
                 name: "SupportReplies");
+
+            migrationBuilder.DropTable(
+                name: "TenantUsers");
 
             migrationBuilder.DropTable(
                 name: "CollectionThemes");

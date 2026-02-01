@@ -27,6 +27,7 @@ public class AppDbContext : DbContext
     public DbSet<CollectionThemeCategory> CollectionThemeCategories => Set<CollectionThemeCategory>();
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
     public DbSet<SupportReply> SupportReplies => Set<SupportReply>();
+    public DbSet<TenantUser> TenantUsers => Set<TenantUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,14 +42,31 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(u => u.Id);
-            
+
             entity.HasIndex(u => u.Email);
             entity.HasIndex(u => new { u.IdentityProvider, u.ProviderSubjectId }).IsUnique();
 
-            entity.HasOne(u => u.Tenant)
-                .WithMany(t => t.Users)
-                .HasForeignKey(u => u.TenantId)
+            entity.HasOne(u => u.ActiveTenant)
+                .WithMany(t => t.ActiveUsers)
+                .HasForeignKey(u => u.ActiveTenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TenantUser>(entity =>
+        {
+            entity.HasKey(tu => new { tu.UserId, tu.TenantId });
+
+            entity.HasOne(tu => tu.User)
+                .WithMany(u => u.TenantMemberships)
+                .HasForeignKey(tu => tu.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(tu => tu.Tenant)
+                .WithMany(t => t.TenantUsers)
+                .HasForeignKey(tu => tu.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(tu => tu.TenantId);
         });
 
         modelBuilder.Entity<Collection>(entity =>

@@ -8,7 +8,11 @@ public class User
     [Key]
     public int Id { get; set; }
 
-    public int TenantId { get; set; }
+    /// <summary>
+    /// The user's currently active tenant. This determines which tenant's data
+    /// they see and work with in the application.
+    /// </summary>
+    public int ActiveTenantId { get; set; }
 
     [Required]
     [MaxLength(320)]
@@ -21,8 +25,6 @@ public class User
 
     public bool IsSystemAdministrator { get; set; }
 
-    public TenantRole TenantRole { get; set; } = TenantRole.Normal;
-
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
@@ -31,8 +33,13 @@ public class User
     /// </summary>
     public DateTime? AcceptedTermsAt { get; set; }
 
-    [ForeignKey(nameof(TenantId))]
-    public Tenant? Tenant { get; set; }
+    [ForeignKey(nameof(ActiveTenantId))]
+    public Tenant? ActiveTenant { get; set; }
+
+    /// <summary>
+    /// All tenant memberships for this user. A user can belong to multiple tenants.
+    /// </summary>
+    public ICollection<TenantUser> TenantMemberships { get; set; } = new List<TenantUser>();
 
     [NotMapped]
     public bool IsLinked => !string.IsNullOrEmpty(ProviderSubjectId);

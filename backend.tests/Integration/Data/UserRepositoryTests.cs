@@ -10,6 +10,7 @@ public class UserRepositoryTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly UserRepository _repository;
+    private readonly TenantUserRepository _tenantUserRepository;
 
     public UserRepositoryTests()
     {
@@ -20,6 +21,7 @@ public class UserRepositoryTests : IDisposable
 
         _context = new AppDbContext(options);
         _repository = new UserRepository(_context);
+        _tenantUserRepository = new TenantUserRepository(_context);
     }
 
     public void Dispose()
@@ -39,6 +41,30 @@ public class UserRepositoryTests : IDisposable
         return tenant;
     }
 
+    private async Task<User> CreateTestUserAsync(Tenant tenant, string email, TenantRole role = TenantRole.Normal)
+    {
+        var user = new User
+        {
+            ActiveTenantId = tenant.Id,
+            Email = email,
+            IdentityProvider = IdentityProvider.Microsoft,
+            ProviderSubjectId = $"ms-{email}"
+        };
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        var tenantUser = new TenantUser
+        {
+            UserId = user.Id,
+            TenantId = tenant.Id,
+            TenantRole = role
+        };
+        _context.TenantUsers.Add(tenantUser);
+        await _context.SaveChangesAsync();
+
+        return user;
+    }
+
     #region GetByEmailAsync Tests
 
     [Fact]
@@ -46,15 +72,7 @@ public class UserRepositoryTests : IDisposable
     {
         // Arrange
         var tenant = await CreateTestTenantAsync();
-        var user = new User
-        {
-            TenantId = tenant.Id,
-            Email = "test@example.com",
-            IdentityProvider = IdentityProvider.Microsoft,
-            ProviderSubjectId = "ms-123"
-        };
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        var user = await CreateTestUserAsync(tenant, "test@example.com");
 
         // Act
         var result = await _repository.GetByEmailAsync("test@example.com");
@@ -62,7 +80,7 @@ public class UserRepositoryTests : IDisposable
         // Assert
         Assert.NotNull(result);
         Assert.Equal("test@example.com", result.Email);
-        Assert.NotNull(result.Tenant);
+        Assert.NotNull(result.ActiveTenant);
     }
 
     [Fact]
@@ -86,7 +104,7 @@ public class UserRepositoryTests : IDisposable
         var tenant = await CreateTestTenantAsync();
         var user = new User
         {
-            TenantId = tenant.Id,
+            ActiveTenantId = tenant.Id,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Google,
             ProviderSubjectId = "google-sub-123"
@@ -110,7 +128,7 @@ public class UserRepositoryTests : IDisposable
         var tenant = await CreateTestTenantAsync();
         var user = new User
         {
-            TenantId = tenant.Id,
+            ActiveTenantId = tenant.Id,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Google,
             ProviderSubjectId = "google-sub-123"
@@ -134,15 +152,7 @@ public class UserRepositoryTests : IDisposable
     {
         // Arrange
         var tenant = await CreateTestTenantAsync();
-        var user = new User
-        {
-            TenantId = tenant.Id,
-            Email = "test@example.com",
-            IdentityProvider = IdentityProvider.Apple,
-            ProviderSubjectId = "apple-123"
-        };
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        var user = await CreateTestUserAsync(tenant, "test@example.com");
 
         // Act
         var result = await _repository.GetByIdAsync(user.Id);
@@ -179,8 +189,8 @@ public class UserRepositoryTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal("newuser@example.com", result.Email);
         Assert.Equal(IdentityProvider.Microsoft, result.IdentityProvider);
-        Assert.NotNull(result.Tenant);
-        Assert.Equal("example.com", result.Tenant.Name);
+        Assert.NotNull(result.ActiveTenant);
+        Assert.Equal("example.com", result.ActiveTenant.Name);
     }
 
     [Fact]
@@ -193,8 +203,8 @@ public class UserRepositoryTests : IDisposable
             "google-123");
 
         // Assert
-        Assert.NotNull(result.Tenant);
-        Assert.Equal("contoso.com", result.Tenant.Name);
+        Assert.NotNull(result.ActiveTenant);
+        Assert.Equal("contoso.com", result.ActiveTenant.Name);
     }
 
     [Fact]
@@ -222,7 +232,7 @@ public class UserRepositoryTests : IDisposable
             "ms-789");
 
         // Assert
-        var savedTenant = await _context.Tenants.FindAsync(result.TenantId);
+        var savedTenant = await _context.Tenants.FindAsync(result.ActiveTenantId);
         Assert.NotNull(savedTenant);
         Assert.Equal("newdomain.com", savedTenant.Name);
     }
@@ -239,9 +249,9 @@ public class UserRepositoryTests : IDisposable
 
         // Assert - no collections should be created
         var collections = await _context.Collections
-            .Where(c => c.TenantId == result.TenantId)
+            .Where(c => c.TenantId == result.ActiveTenantId)
             .ToListAsync();
-        
+
         Assert.Empty(collections);
     }
 
@@ -257,7 +267,7 @@ public class UserRepositoryTests : IDisposable
 
         // Assert - no categories should exist
         var categories = await _context.Categories
-            .Where(c => c.TenantId == result.TenantId)
+            .Where(c => c.TenantId == result.ActiveTenantId)
             .ToListAsync();
         Assert.Empty(categories);
     }
@@ -275,7 +285,7 @@ public class UserRepositoryTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal("localuser", result.Email);
 
-        var tenant = await _context.Tenants.FindAsync(result.TenantId);
+        var tenant = await _context.Tenants.FindAsync(result.ActiveTenantId);
         Assert.NotNull(tenant);
         Assert.Equal("localuser", tenant.Name);
     }
@@ -289,9 +299,11 @@ public class UserRepositoryTests : IDisposable
             IdentityProvider.Microsoft,
             "ms-first-user");
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(TenantRole.TenantAdmin, result.TenantRole);
+        // Assert - check TenantUser record for role
+        var tenantUser = await _context.TenantUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == result.Id && tu.TenantId == result.ActiveTenantId);
+        Assert.NotNull(tenantUser);
+        Assert.Equal(TenantRole.TenantAdmin, tenantUser.TenantRole);
     }
 
     #endregion
@@ -303,25 +315,8 @@ public class UserRepositoryTests : IDisposable
     {
         // Arrange
         var tenant = await CreateTestTenantAsync();
-        _context.Users.AddRange(
-            new User
-            {
-                TenantId = tenant.Id,
-                Email = "user1@example.com",
-                IdentityProvider = IdentityProvider.Microsoft,
-                ProviderSubjectId = "ms-user-1",
-                TenantRole = TenantRole.TenantAdmin
-            },
-            new User
-            {
-                TenantId = tenant.Id,
-                Email = "user2@example.com",
-                IdentityProvider = IdentityProvider.Google,
-                ProviderSubjectId = "google-user-2",
-                TenantRole = TenantRole.Normal
-            }
-        );
-        await _context.SaveChangesAsync();
+        await CreateTestUserAsync(tenant, "user1@example.com", TenantRole.TenantAdmin);
+        await CreateTestUserAsync(tenant, "user2@example.com", TenantRole.Normal);
 
         // Act
         var result = await _repository.GetByTenantIdAsync(tenant.Id);
@@ -359,10 +354,15 @@ public class UserRepositoryTests : IDisposable
         // Assert
         Assert.NotNull(result);
         Assert.Equal("pending@example.com", result.Email);
-        Assert.Equal(TenantRole.Normal, result.TenantRole);
         Assert.Equal(IdentityProvider.None, result.IdentityProvider);
         Assert.Null(result.ProviderSubjectId);
         Assert.False(result.IsLinked);
+
+        // Verify TenantUser membership
+        var tenantUser = await _context.TenantUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == result.Id && tu.TenantId == tenant.Id);
+        Assert.NotNull(tenantUser);
+        Assert.Equal(TenantRole.Normal, tenantUser.TenantRole);
     }
 
     [Fact]
@@ -376,7 +376,12 @@ public class UserRepositoryTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(TenantRole.TenantAdmin, result.TenantRole);
+
+        // Verify TenantUser membership has admin role
+        var tenantUser = await _context.TenantUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == result.Id && tu.TenantId == tenant.Id);
+        Assert.NotNull(tenantUser);
+        Assert.Equal(TenantRole.TenantAdmin, tenantUser.TenantRole);
     }
 
     #endregion
@@ -413,68 +418,34 @@ public class UserRepositoryTests : IDisposable
 
     #endregion
 
-    #region UpdateRoleAsync Tests
+    #region TenantUserRepository - UpdateRoleAsync Tests
 
     [Fact]
-    public async Task UpdateRoleAsync_UpdatesRole()
+    public async Task TenantUserRepository_UpdateRoleAsync_UpdatesRole()
     {
         // Arrange
         var tenant = await CreateTestTenantAsync();
-        var user = new User
-        {
-            TenantId = tenant.Id,
-            Email = "rolechange@example.com",
-            IdentityProvider = IdentityProvider.Microsoft,
-            ProviderSubjectId = "ms-role-change",
-            TenantRole = TenantRole.Normal
-        };
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        var user = await CreateTestUserAsync(tenant, "rolechange@example.com", TenantRole.Normal);
 
         // Act
-        var result = await _repository.UpdateRoleAsync(user.Id, tenant.Id, TenantRole.TenantAdmin);
+        var result = await _tenantUserRepository.UpdateRoleAsync(user.Id, tenant.Id, TenantRole.TenantAdmin);
 
         // Assert
         Assert.True(result);
-        var updatedUser = await _context.Users.FindAsync(user.Id);
-        Assert.Equal(TenantRole.TenantAdmin, updatedUser!.TenantRole);
+        var tenantUser = await _context.TenantUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == user.Id && tu.TenantId == tenant.Id);
+        Assert.NotNull(tenantUser);
+        Assert.Equal(TenantRole.TenantAdmin, tenantUser.TenantRole);
     }
 
     [Fact]
-    public async Task UpdateRoleAsync_ReturnsFalse_WhenUserNotFound()
+    public async Task TenantUserRepository_UpdateRoleAsync_ReturnsFalse_WhenMembershipNotFound()
     {
         // Arrange
         var tenant = await CreateTestTenantAsync();
 
         // Act
-        var result = await _repository.UpdateRoleAsync(999, tenant.Id, TenantRole.TenantAdmin);
-
-        // Assert
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task UpdateRoleAsync_ReturnsFalse_WhenWrongTenant()
-    {
-        // Arrange
-        var tenant1 = await CreateTestTenantAsync();
-        var tenant2 = new Tenant { Name = "other.com" };
-        _context.Tenants.Add(tenant2);
-        await _context.SaveChangesAsync();
-
-        var user = new User
-        {
-            TenantId = tenant1.Id,
-            Email = "wrongtenant@example.com",
-            IdentityProvider = IdentityProvider.Microsoft,
-            ProviderSubjectId = "ms-wrong-tenant",
-            TenantRole = TenantRole.Normal
-        };
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        // Act - Try to update with wrong tenant ID
-        var result = await _repository.UpdateRoleAsync(user.Id, tenant2.Id, TenantRole.TenantAdmin);
+        var result = await _tenantUserRepository.UpdateRoleAsync(999, tenant.Id, TenantRole.TenantAdmin);
 
         // Assert
         Assert.False(result);
@@ -485,32 +456,73 @@ public class UserRepositoryTests : IDisposable
     #region DeleteByIdAndTenantAsync Tests
 
     [Fact]
-    public async Task DeleteByIdAndTenantAsync_DeletesUser()
+    public async Task DeleteByIdAndTenantAsync_DeletesMembership()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
+        var tenant1 = await CreateTestTenantAsync();
+        var tenant2 = new Tenant { Name = "second.com" };
+        _context.Tenants.Add(tenant2);
+        await _context.SaveChangesAsync();
+
+        // Create user with memberships in both tenants
         var user = new User
         {
-            TenantId = tenant.Id,
+            ActiveTenantId = tenant1.Id,
             Email = "deleteme@example.com",
             IdentityProvider = IdentityProvider.Microsoft,
             ProviderSubjectId = "ms-delete-me"
         };
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        _context.TenantUsers.AddRange(
+            new TenantUser { UserId = user.Id, TenantId = tenant1.Id, TenantRole = TenantRole.Normal },
+            new TenantUser { UserId = user.Id, TenantId = tenant2.Id, TenantRole = TenantRole.Normal }
+        );
+        await _context.SaveChangesAsync();
+
+        // Act - delete from tenant1, user should remain because they're still in tenant2
+        var result = await _repository.DeleteByIdAndTenantAsync(user.Id, tenant1.Id);
+
+        // Assert
+        Assert.True(result);
+
+        // User should still exist
+        var existingUser = await _context.Users.FindAsync(user.Id);
+        Assert.NotNull(existingUser);
+
+        // But membership in tenant1 should be gone
+        var membership1 = await _context.TenantUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == user.Id && tu.TenantId == tenant1.Id);
+        Assert.Null(membership1);
+
+        // Membership in tenant2 should still exist
+        var membership2 = await _context.TenantUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == user.Id && tu.TenantId == tenant2.Id);
+        Assert.NotNull(membership2);
+    }
+
+    [Fact]
+    public async Task DeleteByIdAndTenantAsync_DeletesUserWhenLastMembership()
+    {
+        // Arrange
+        var tenant = await CreateTestTenantAsync();
+        var user = await CreateTestUserAsync(tenant, "deleteme@example.com");
         var userId = user.Id;
 
-        // Act
+        // Act - delete only membership
         var result = await _repository.DeleteByIdAndTenantAsync(userId, tenant.Id);
 
         // Assert
         Assert.True(result);
+
+        // User should be deleted since it was their only membership
         var deletedUser = await _context.Users.FindAsync(userId);
         Assert.Null(deletedUser);
     }
 
     [Fact]
-    public async Task DeleteByIdAndTenantAsync_ReturnsFalse_WhenUserNotFound()
+    public async Task DeleteByIdAndTenantAsync_ReturnsFalse_WhenMembershipNotFound()
     {
         // Arrange
         var tenant = await CreateTestTenantAsync();
@@ -522,106 +534,45 @@ public class UserRepositoryTests : IDisposable
         Assert.False(result);
     }
 
-    [Fact]
-    public async Task DeleteByIdAndTenantAsync_ReturnsFalse_WhenWrongTenant()
-    {
-        // Arrange
-        var tenant1 = await CreateTestTenantAsync();
-        var tenant2 = new Tenant { Name = "other2.com" };
-        _context.Tenants.Add(tenant2);
-        await _context.SaveChangesAsync();
-
-        var user = new User
-        {
-            TenantId = tenant1.Id,
-            Email = "cantdelete@example.com",
-            IdentityProvider = IdentityProvider.Microsoft,
-            ProviderSubjectId = "ms-cant-delete"
-        };
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        // Act - Try to delete with wrong tenant ID
-        var result = await _repository.DeleteByIdAndTenantAsync(user.Id, tenant2.Id);
-
-        // Assert
-        Assert.False(result);
-        // Verify user still exists
-        var stillExists = await _context.Users.FindAsync(user.Id);
-        Assert.NotNull(stillExists);
-    }
-
     #endregion
 
-    #region CountAdminsInTenantAsync Tests
+    #region TenantUserRepository - CountAdminsInTenantAsync Tests
 
     [Fact]
-    public async Task CountAdminsInTenantAsync_CountsAdmins()
+    public async Task TenantUserRepository_CountAdminsInTenantAsync_CountsAdmins()
     {
         // Arrange
         var tenant = await CreateTestTenantAsync();
-        _context.Users.AddRange(
-            new User
-            {
-                TenantId = tenant.Id,
-                Email = "admin1@example.com",
-                IdentityProvider = IdentityProvider.Microsoft,
-                ProviderSubjectId = "ms-admin-1",
-                TenantRole = TenantRole.TenantAdmin
-            },
-            new User
-            {
-                TenantId = tenant.Id,
-                Email = "admin2@example.com",
-                IdentityProvider = IdentityProvider.Google,
-                ProviderSubjectId = "google-admin-2",
-                TenantRole = TenantRole.TenantAdmin
-            },
-            new User
-            {
-                TenantId = tenant.Id,
-                Email = "normal@example.com",
-                IdentityProvider = IdentityProvider.Apple,
-                ProviderSubjectId = "apple-normal",
-                TenantRole = TenantRole.Normal
-            }
-        );
-        await _context.SaveChangesAsync();
+        await CreateTestUserAsync(tenant, "admin1@example.com", TenantRole.TenantAdmin);
+        await CreateTestUserAsync(tenant, "admin2@example.com", TenantRole.TenantAdmin);
+        await CreateTestUserAsync(tenant, "normal@example.com", TenantRole.Normal);
 
         // Act
-        var count = await _repository.CountAdminsInTenantAsync(tenant.Id);
+        var count = await _tenantUserRepository.CountAdminsInTenantAsync(tenant.Id);
 
         // Assert
         Assert.Equal(2, count);
     }
 
     [Fact]
-    public async Task CountAdminsInTenantAsync_ReturnsZero_WhenNoAdmins()
+    public async Task TenantUserRepository_CountAdminsInTenantAsync_ReturnsZero_WhenNoAdmins()
     {
         // Arrange
         var tenant = await CreateTestTenantAsync();
-        _context.Users.Add(new User
-        {
-            TenantId = tenant.Id,
-            Email = "onlynormal@example.com",
-            IdentityProvider = IdentityProvider.Microsoft,
-            ProviderSubjectId = "ms-only-normal",
-            TenantRole = TenantRole.Normal
-        });
-        await _context.SaveChangesAsync();
+        await CreateTestUserAsync(tenant, "onlynormal@example.com", TenantRole.Normal);
 
         // Act
-        var count = await _repository.CountAdminsInTenantAsync(tenant.Id);
+        var count = await _tenantUserRepository.CountAdminsInTenantAsync(tenant.Id);
 
         // Assert
         Assert.Equal(0, count);
     }
 
     [Fact]
-    public async Task CountAdminsInTenantAsync_ReturnsZero_ForNonExistentTenant()
+    public async Task TenantUserRepository_CountAdminsInTenantAsync_ReturnsZero_ForNonExistentTenant()
     {
         // Act
-        var count = await _repository.CountAdminsInTenantAsync(999);
+        var count = await _tenantUserRepository.CountAdminsInTenantAsync(999);
 
         // Assert
         Assert.Equal(0, count);
@@ -629,4 +580,3 @@ public class UserRepositoryTests : IDisposable
 
     #endregion
 }
-

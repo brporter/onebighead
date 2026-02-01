@@ -19,6 +19,7 @@ public class AuthControllerTests
     private readonly Mock<ITokenService> _mockTokenService;
     private readonly Mock<IUserRepository> _mockUserRepository;
     private readonly Mock<ITenantRepository> _mockTenantRepository;
+    private readonly Mock<ITenantUserRepository> _mockTenantUserRepository;
     private readonly Mock<IOAuthService> _mockOAuthService;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
     private readonly AuthenticationSettings _settings;
@@ -30,6 +31,7 @@ public class AuthControllerTests
         _mockTokenService = new Mock<ITokenService>();
         _mockUserRepository = new Mock<IUserRepository>();
         _mockTenantRepository = new Mock<ITenantRepository>();
+        _mockTenantUserRepository = new Mock<ITenantUserRepository>();
         _mockOAuthService = new Mock<IOAuthService>();
         _mockLogger = new Mock<ILogger<AuthController>>();
 
@@ -71,6 +73,7 @@ public class AuthControllerTests
             _mockTokenService.Object,
             _mockUserRepository.Object,
             _mockTenantRepository.Object,
+            _mockTenantUserRepository.Object,
             _mockOAuthService.Object,
             options,
             _mockLogger.Object);
@@ -273,7 +276,8 @@ public class AuthControllerTests
     public async Task CallbackGet_RedirectsToApp_WhenSuccessful()
     {
         // Arrange
-        var user = new User { Id = 1, TenantId = 1, Email = "test@example.com" };
+        var user = new User { Id = 1, ActiveTenantId = 1, Email = "test@example.com" };
+        var membership = new TenantUser { UserId = 1, TenantId = 1, TenantRole = TenantRole.Normal };
 
         _mockOAuthService.Setup(s => s.ValidateState(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
         _mockOAuthService.Setup(s => s.ExchangeCodeForTokensAsync("code", IdentityProvider.Google))
@@ -282,7 +286,9 @@ public class AuthControllerTests
             .ReturnsAsync(new OidcValidationResult { IsValid = true, Email = "test@example.com", Subject = "sub123" });
         _mockUserRepository.Setup(r => r.GetByProviderIdAsync(IdentityProvider.Google, "sub123"))
             .ReturnsAsync(user);
-        _mockTokenService.Setup(t => t.GenerateAppToken(user)).Returns("app-token");
+        _mockTenantUserRepository.Setup(r => r.GetMembershipAsync(1, 1))
+            .ReturnsAsync(membership);
+        _mockTokenService.Setup(t => t.GenerateAppToken(user, TenantRole.Normal)).Returns("app-token");
 
         // Act
         var result = await _controller.CallbackGet("google", code: "code", state: "state");
@@ -296,7 +302,7 @@ public class AuthControllerTests
     public async Task CallbackGet_CreatesNewUser_WhenNotFound()
     {
         // Arrange
-        var newUser = new User { Id = 1, TenantId = 1, Email = "new@example.com" };
+        var newUser = new User { Id = 1, ActiveTenantId = 1, Email = "new@example.com" };
 
         _mockOAuthService.Setup(s => s.ValidateState(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
         _mockOAuthService.Setup(s => s.ExchangeCodeForTokensAsync("code", IdentityProvider.Google))
@@ -309,7 +315,7 @@ public class AuthControllerTests
             .ReturnsAsync((User?)null);
         _mockUserRepository.Setup(r => r.CreateWithNewTenantAsync("new@example.com", IdentityProvider.Google, "sub123"))
             .ReturnsAsync(newUser);
-        _mockTokenService.Setup(t => t.GenerateAppToken(newUser)).Returns("app-token");
+        _mockTokenService.Setup(t => t.GenerateAppToken(newUser, TenantRole.TenantAdmin)).Returns("app-token");
 
         // Act
         var result = await _controller.CallbackGet("google", code: "code", state: "state");
@@ -382,13 +388,16 @@ public class AuthControllerTests
     {
         // Arrange
         var request = new AuthCallbackRequest { Token = "valid-token", Provider = "google" };
-        var user = new User { Id = 1, TenantId = 1, Email = "test@example.com", Tenant = new Tenant { Name = "Test Tenant" } };
+        var user = new User { Id = 1, ActiveTenantId = 1, Email = "test@example.com", ActiveTenant = new Tenant { Name = "Test Tenant" } };
+        var membership = new TenantUser { UserId = 1, TenantId = 1, TenantRole = TenantRole.Normal };
 
         _mockTokenValidator.Setup(v => v.ValidateTokenAsync("valid-token", IdentityProvider.Google))
             .ReturnsAsync(new OidcValidationResult { IsValid = true, Email = "test@example.com", Subject = "sub123" });
         _mockUserRepository.Setup(r => r.GetByProviderIdAsync(IdentityProvider.Google, "sub123"))
             .ReturnsAsync(user);
-        _mockTokenService.Setup(t => t.GenerateAppToken(user)).Returns("app-token");
+        _mockTenantUserRepository.Setup(r => r.GetMembershipAsync(1, 1))
+            .ReturnsAsync(membership);
+        _mockTokenService.Setup(t => t.GenerateAppToken(user, TenantRole.Normal)).Returns("app-token");
 
         // Act
         var result = await _controller.Callback(request);

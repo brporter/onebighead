@@ -12,11 +12,16 @@ namespace OneBigHead.Server.Controllers;
 public class UsersController : ApiControllerBase
 {
     private readonly IUserRepository _userRepository;
+    private readonly ITenantUserRepository _tenantUserRepository;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(IUserRepository userRepository, ILogger<UsersController> logger)
+    public UsersController(
+        IUserRepository userRepository,
+        ITenantUserRepository tenantUserRepository,
+        ILogger<UsersController> logger)
     {
         _userRepository = userRepository;
+        _tenantUserRepository = tenantUserRepository;
         _logger = logger;
     }
 
@@ -28,8 +33,8 @@ public class UsersController : ApiControllerBase
     public async Task<ActionResult<IEnumerable<TenantUserResponse>>> GetUsers()
     {
         var tenantId = GetTenantId();
-        var users = await _userRepository.GetByTenantIdAsync(tenantId);
-        var response = users.Select(TenantUserResponse.FromUser);
+        var memberships = await _tenantUserRepository.GetByTenantIdAsync(tenantId);
+        var response = memberships.Select(TenantUserResponse.FromTenantUser);
         return Ok(response);
     }
 
@@ -47,19 +52,26 @@ public class UsersController : ApiControllerBase
         var existingUser = await _userRepository.GetByEmailAsync(request.Email);
         if (existingUser != null)
         {
-            if (existingUser.TenantId == tenantId)
+            // Check if they're already a member of this tenant
+            var existingMembership = await _tenantUserRepository.GetMembershipAsync(existingUser.Id, tenantId);
+            if (existingMembership != null)
             {
                 return Conflict(new { error = "A user with this email already exists in your team" });
             }
-            return Conflict(new { error = "This email is already associated with another account" });
+            // User exists but not in this tenant - add them as a member
+            var newMembership = await _tenantUserRepository.CreateAsync(existingUser.Id, tenantId, request.Role);
+            _logger.LogInformation("Added existing user {Email} to tenant {TenantId} with role {Role}",
+                request.Email, tenantId, request.Role);
+            return CreatedAtAction(nameof(GetUsers), null, TenantUserResponse.FromTenantUser(newMembership));
         }
 
-        _logger.LogInformation("Inviting user {Email} to tenant {TenantId} with role {Role}",
+        _logger.LogInformation("Inviting new user {Email} to tenant {TenantId} with role {Role}",
             request.Email, tenantId, request.Role);
 
         var user = await _userRepository.CreatePendingUserAsync(tenantId, request.Email, request.Role);
+        var membership = await _tenantUserRepository.GetMembershipAsync(user.Id, tenantId);
 
-        return CreatedAtAction(nameof(GetUsers), null, TenantUserResponse.FromUser(user));
+        return CreatedAtAction(nameof(GetUsers), null, TenantUserResponse.FromUser(user, membership?.TenantRole ?? request.Role));
     }
 
     /// <summary>
@@ -78,19 +90,24 @@ public class UsersController : ApiControllerBase
             return BadRequest(new { error = "You cannot change your own role" });
         }
 
-        // If demoting to Normal, ensure at least one admin remains
-        if (request.Role == TenantRole.Normal)
+        // Get current membership
+        var membership = await _tenantUserRepository.GetMembershipAsync(id, tenantId);
+        if (membership == null)
         {
-            var adminCount = await _userRepository.CountAdminsInTenantAsync(tenantId);
-            var targetUser = await _userRepository.GetByIdAsync(id);
+            return NotFound(new { error = "User not found in this tenant" });
+        }
 
-            if (targetUser?.TenantRole == TenantRole.TenantAdmin && adminCount <= 1)
+        // If demoting to Normal, ensure at least one admin remains
+        if (request.Role == TenantRole.Normal && membership.TenantRole == TenantRole.TenantAdmin)
+        {
+            var adminCount = await _tenantUserRepository.CountAdminsInTenantAsync(tenantId);
+            if (adminCount <= 1)
             {
                 return BadRequest(new { error = "Cannot demote the last admin. Promote another user first." });
             }
         }
 
-        var updated = await _userRepository.UpdateRoleAsync(id, tenantId, request.Role);
+        var updated = await _tenantUserRepository.UpdateRoleAsync(id, tenantId, request.Role);
         if (!updated)
         {
             return NotFound(new { error = "User not found" });
@@ -118,11 +135,17 @@ public class UsersController : ApiControllerBase
             return BadRequest(new { error = "You cannot remove yourself from the team" });
         }
 
-        // Check if removing an admin would leave no admins
-        var targetUser = await _userRepository.GetByIdAsync(id);
-        if (targetUser?.TenantRole == TenantRole.TenantAdmin)
+        // Get membership
+        var membership = await _tenantUserRepository.GetMembershipAsync(id, tenantId);
+        if (membership == null)
         {
-            var adminCount = await _userRepository.CountAdminsInTenantAsync(tenantId);
+            return NotFound(new { error = "User not found in this tenant" });
+        }
+
+        // Check if removing an admin would leave no admins
+        if (membership.TenantRole == TenantRole.TenantAdmin)
+        {
+            var adminCount = await _tenantUserRepository.CountAdminsInTenantAsync(tenantId);
             if (adminCount <= 1)
             {
                 return BadRequest(new { error = "Cannot remove the last admin. Promote another user first." });

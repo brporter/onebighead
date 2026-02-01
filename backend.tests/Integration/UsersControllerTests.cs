@@ -86,8 +86,11 @@ public class UsersControllerTests : IntegrationTestBase
         using var context = GetDbContext();
         var dbUser = context.Users.FirstOrDefault(u => u.Email == "newmember@example.com");
         Assert.NotNull(dbUser);
-        Assert.Equal(TenantRole.Normal, dbUser.TenantRole);
         Assert.Null(dbUser.ProviderSubjectId);
+        // Verify TenantUser membership has the correct role
+        var tenantUser = context.TenantUsers.FirstOrDefault(tu => tu.UserId == dbUser.Id && tu.TenantId == DefaultTenantId);
+        Assert.NotNull(tenantUser);
+        Assert.Equal(TenantRole.Normal, tenantUser.TenantRole);
     }
 
     [Fact]
@@ -259,19 +262,29 @@ public class UsersControllerTests : IntegrationTestBase
             context.Users.Add(new User
             {
                 Id = isolatedUserId,
-                TenantId = isolatedTenantId,
+                ActiveTenantId = isolatedTenantId,
                 Email = "admin@isolated.com",
                 IdentityProvider = IdentityProvider.Microsoft,
-                ProviderSubjectId = "isolated-admin",
+                ProviderSubjectId = "isolated-admin"
+            });
+            context.TenantUsers.Add(new TenantUser
+            {
+                UserId = isolatedUserId,
+                TenantId = isolatedTenantId,
                 TenantRole = TenantRole.TenantAdmin
             });
             context.Users.Add(new User
             {
                 Id = secondUserId,
-                TenantId = isolatedTenantId,
+                ActiveTenantId = isolatedTenantId,
                 Email = "secondadmin@isolated.com",
                 IdentityProvider = IdentityProvider.Microsoft,
-                ProviderSubjectId = "isolated-second-admin",
+                ProviderSubjectId = "isolated-second-admin"
+            });
+            context.TenantUsers.Add(new TenantUser
+            {
+                UserId = secondUserId,
+                TenantId = isolatedTenantId,
                 TenantRole = TenantRole.TenantAdmin
             });
         });
@@ -378,19 +391,29 @@ public class UsersControllerTests : IntegrationTestBase
             context.Users.Add(new User
             {
                 Id = adminUserId,
-                TenantId = isolatedTenantId,
+                ActiveTenantId = isolatedTenantId,
                 Email = "onlyadmin@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
-                ProviderSubjectId = "only-admin",
+                ProviderSubjectId = "only-admin"
+            });
+            context.TenantUsers.Add(new TenantUser
+            {
+                UserId = adminUserId,
+                TenantId = isolatedTenantId,
                 TenantRole = TenantRole.TenantAdmin
             });
             context.Users.Add(new User
             {
                 Id = otherAdminUserId,
-                TenantId = isolatedTenantId,
+                ActiveTenantId = isolatedTenantId,
                 Email = "otheradmin@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
-                ProviderSubjectId = "other-admin-6001",
+                ProviderSubjectId = "other-admin-6001"
+            });
+            context.TenantUsers.Add(new TenantUser
+            {
+                UserId = otherAdminUserId,
+                TenantId = isolatedTenantId,
                 TenantRole = TenantRole.TenantAdmin
             });
         });

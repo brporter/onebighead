@@ -151,12 +151,18 @@ public class SupportControllerTests : IntegrationTestBase
             var otherUser = new User
             {
                 Id = 999,
-                TenantId = DefaultTenantId,
+                ActiveTenantId = DefaultTenantId,
                 Email = "other@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "other-user"
             };
             context.Users.Add(otherUser);
+            context.TenantUsers.Add(new TenantUser
+            {
+                UserId = 999,
+                TenantId = DefaultTenantId,
+                TenantRole = TenantRole.Normal
+            });
 
             var request = new SupportRequest
             {

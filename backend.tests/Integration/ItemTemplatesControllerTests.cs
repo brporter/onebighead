@@ -310,12 +310,18 @@ public class ItemTemplatesControllerTests : IntegrationTestBase
             var user2 = new User
             {
                 Id = 40,
-                TenantId = 40,
+                ActiveTenantId = 40,
                 Email = "user2@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "user2"
             };
             context.Users.Add(user2);
+            context.TenantUsers.Add(new TenantUser
+            {
+                UserId = 40,
+                TenantId = 40,
+                TenantRole = TenantRole.TenantAdmin
+            });
         });
 
         using var tenant2Client = CreateClientForTenant(40, 40, "user2@example.com");

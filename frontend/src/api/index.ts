@@ -24,4 +24,5 @@ export { adminApi } from './admin';
 export { exportApi } from './export';
 export { themesApi } from './themes';
 export { usersApi } from './users';
+export { tenantsApi, type CreateTenantRequest, type CreateTenantResponse, type SwitchTenantResponse, type LeaveTenantResponse } from './tenants';
 export * from './support';
