@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    volumes:
+      - ../..:/workspaces:cached
+    network_mode: service:sqlserver
+    command: sleep infinity
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=localhost;Database=onebighead;User Id=sa;Password=DevPassword123!;TrustServerCertificate=True;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  sqlserver:
+    # Uses configuration from ../docker-compose.yml
+    # This extends the SQL Server service with any devcontainer-specific needs

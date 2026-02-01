@@ -1,0 +1,83 @@
+{
+  "name": "OneBigHead Development",
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.devcontainer.yml"],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/onebighead",
+  "shutdownAction": "stopCompose",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "10.0",
+      "installUsingApt": false
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22",
+      "nodeGypDependencies": true,
+      "nvmVersion": "latest"
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-typescript-next",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "eamodio.gitlens",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[csharp]": {
+          "editor.defaultFormatter": "ms-dotnettools.csharp"
+        },
+        "dotnet.defaultSolution": "onebighead.slnx",
+        "typescript.tsdk": "frontend/node_modules/typescript/lib",
+        "eslint.workingDirectories": [
+          {
+            "directory": "./frontend",
+            "changeProcessCWD": true
+          }
+        ]
+      }
+    }
+  },
+
+  "forwardPorts": [5149, 5173, 1433],
+  "portsAttributes": {
+    "5149": {
+      "label": "Backend API",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "Frontend Dev Server",
+      "onAutoForward": "openBrowser"
+    },
+    "1433": {
+      "label": "SQL Server",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  
+  "remoteEnv": {
+    "ASPNETCORE_ENVIRONMENT": "Development",
+    "DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "true"
+  },
+
+  "remoteUser": "vscode"
+}
