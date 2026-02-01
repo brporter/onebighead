@@ -10,6 +10,7 @@
             <a asp-page="/Index" class="landing__logo">OneBigHead</a>
             <nav class="landing__nav">
                 <a asp-page="/About" class="landing__nav-link">About</a>
+                <a asp-page="/Terms" class="landing__nav-link">Terms of Service</a>
                 <a asp-page="/Privacy" class="landing__nav-link">Privacy Policy</a>
                 @if (Model.IsAuthenticated)
                 {
@@ -82,6 +83,7 @@
             <p>&copy; 2026 OneBigHead. All rights reserved.</p>
             <nav class="landing__footer-nav">
                 <a asp-page="/About">About</a>
+                <a asp-page="/Terms">Terms of Service</a>
                 <a asp-page="/Privacy">Privacy Policy</a>
             </nav>
         </div>
