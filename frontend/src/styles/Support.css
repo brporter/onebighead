@@ -219,6 +219,28 @@
   font-size: 1.1rem;
 }
 
+.support-link--icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.support-link--icon:hover {
+  background: var(--color-surface-alt);
+  border-color: var(--color-text-muted);
+}
+
+.support-link--icon .support-link__icon {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
 /* Unread badge */
 .support-badge {
   display: inline-flex;

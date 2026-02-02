@@ -63,9 +63,8 @@ function App() {
         title={isCollectionsList ? 'Collections' : undefined}
         subtitle={isCollectionsList ? 'Select a collection to view its items' : undefined}
       >
-        <button className="support-link" onClick={handleOpenSupport}>
+        <button className="support-link support-link--icon" onClick={handleOpenSupport} title="Support" aria-label="Support">
           <span className="support-link__icon">?</span>
-          Support
         </button>
         <UserButton />
       </SiteHeader>

@@ -2306,6 +2306,22 @@
   margin: var(--space-xs) 0 0;
 }
 
+.site-header__back {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  text-align: left;
+}
+
+.site-header__back:hover {
+  color: var(--color-primary-hover);
+}
+
 .site-header__spacer {
   flex: 1;
 }
@@ -2313,7 +2329,7 @@
 .site-header__actions {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   flex-shrink: 0;
 }
 

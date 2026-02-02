@@ -5,7 +5,8 @@
 }
 
 .userButton {
-  padding: var(--space-sm) var(--space-md);
+  height: 36px;
+  padding: 0 var(--space-md);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -18,6 +19,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .userButton:hover {
@@ -37,23 +41,31 @@
   border-color: var(--color-primary);
 }
 
-.userButton--signout {
-  background: transparent;
-  border-color: transparent;
-  color: var(--color-text-muted);
+.userButton--icon {
+  width: 36px;
+  padding: 0;
+  max-width: none;
 }
 
-.userButton--signout:hover {
-  color: var(--color-text);
-  background: var(--color-surface-alt);
-  border-color: var(--color-border);
+.userButton__icon {
+  font-size: 1.4rem;
+  line-height: 1;
 }
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
   .userButton {
-    padding: var(--space-md) var(--space-lg);
-    min-height: 44px;
+    height: 44px;
+    padding: 0 var(--space-lg);
     max-width: 160px;
+  }
+
+  .userButton--icon {
+    width: 44px;
+    padding: 0;
+  }
+
+  .userButton__icon {
+    font-size: 1.5rem;
   }
 }

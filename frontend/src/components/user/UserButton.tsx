@@ -38,10 +38,10 @@ function UserButton({ onClick }: UserButtonProps) {
           Admin
         </button>
       )}
-      <button className="userButton" onClick={handleSettingsClick} type="button">
-        {user.email}
+      <button className="userButton userButton--icon" onClick={handleSettingsClick} type="button" title="Settings" aria-label="Settings">
+        <span className="userButton__icon">⚙</span>
       </button>
-      <button className="userButton userButton--signout" onClick={handleSignOut} type="button">
+      <button className="userButton" onClick={handleSignOut} type="button">
         Sign Out
       </button>
     </div>

@@ -100,6 +100,50 @@ public class TenantsController : ApiControllerBase
     }
 
     /// <summary>
+    /// Update a tenant's details (requires TenantAdmin role)
+    /// </summary>
+    [HttpPut("{tenantId}")]
+    public async Task<IActionResult> UpdateTenant(int tenantId, [FromBody] UpdateTenantRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return BadRequest(new { error = "Tenant name is required" });
+        }
+
+        var userId = GetUserId();
+
+        // Verify user is a member of this tenant and has TenantAdmin role
+        var membership = await _tenantUserRepository.GetMembershipAsync(userId, tenantId);
+        if (membership == null)
+        {
+            return NotFound(new { error = "Tenant not found" });
+        }
+
+        if (membership.TenantRole != TenantRole.TenantAdmin)
+        {
+            return Forbid();
+        }
+
+        // Get and update the tenant
+        var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+        if (tenant == null)
+        {
+            return NotFound(new { error = "Tenant not found" });
+        }
+
+        tenant.Name = request.Name.Trim();
+        await _tenantRepository.UpdateAsync(tenant);
+
+        _logger.LogInformation("User {UserId} updated tenant {TenantId} name to {TenantName}", userId, tenantId, tenant.Name);
+
+        return Ok(new UpdateTenantResponse
+        {
+            TenantId = tenant.Id,
+            TenantName = tenant.Name
+        });
+    }
+
+    /// <summary>
     /// Switch the current user's active tenant
     /// </summary>
     [HttpPost("{tenantId}/switch")]

@@ -25,6 +25,15 @@ export interface LeaveTenantResponse {
   success: boolean;
 }
 
+export interface UpdateTenantRequest {
+  name: string;
+}
+
+export interface UpdateTenantResponse {
+  tenantId: number;
+  tenantName: string;
+}
+
 export const tenantsApi = {
   /**
    * Get all tenant memberships for the current user
@@ -52,5 +61,12 @@ export const tenantsApi = {
    */
   leave(tenantId: number): Promise<LeaveTenantResponse> {
     return api.delete<LeaveTenantResponse>(`/tenants/${tenantId}/membership`);
+  },
+
+  /**
+   * Update a tenant's details (requires TenantAdmin)
+   */
+  update(tenantId: number, request: UpdateTenantRequest): Promise<UpdateTenantResponse> {
+    return api.put<UpdateTenantResponse>(`/tenants/${tenantId}`, request);
   },
 };

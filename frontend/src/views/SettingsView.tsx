@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import '../styles/App.css';
 import '../styles/SettingsView.css';
 import { useData } from '../contexts/DataContext';
 import { useUser } from '../contexts/UserContext';
@@ -11,6 +12,8 @@ import CollectionSetupWizard from '../components/collection/CollectionSetupWizar
 import { SupportSection } from '../components/support/SupportSection';
 import { UserButton, UserManagement } from '../components/user';
 import { SupportModal } from '../components/support/SupportModal';
+import { TenantEditModal } from '../components/tenant';
+import { SiteHeader, SiteFooter } from '../components/common';
 import type { Collection, TenantMembership } from '../utils/types';
 import { Visibility, TenantRole } from '../utils/types';
 
@@ -33,6 +36,7 @@ function SettingsView() {
   const [newTenantName, setNewTenantName] = useState('');
   const [tenantError, setTenantError] = useState<string | null>(null);
   const [isLeavingTenant, setIsLeavingTenant] = useState<number | null>(null);
+  const [editingTenant, setEditingTenant] = useState<TenantMembership | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -570,6 +574,14 @@ function SettingsView() {
                   )}
                 </div>
                 <div className="settings-tenant-card__actions">
+                  {tenant.tenantRole === TenantRole.TenantAdmin && (
+                    <button
+                      className="settings-tenant-card__button"
+                      onClick={() => setEditingTenant(tenant)}
+                    >
+                      Edit
+                    </button>
+                  )}
                   {tenant.tenantId !== activeTenant?.tenantId && (
                     <button
                       className="settings-tenant-card__button"
@@ -657,55 +669,60 @@ function SettingsView() {
   }, [user?.isTenantAdmin]);
 
   return (
-    <div className="settings-page">
-      <header className="settings-page__header">
-        <div className="settings-page__headerContent">
-          <div className="settings-page__headerLeft">
-            <button 
-              className="settings-page__back" 
-              onClick={() => confirmAndNavigate('/collections')}
-            >
-              ← Back to Collections
-            </button>
-            <h1 className="settings-page__title">Settings</h1>
-          </div>
-          <div className="settings-page__headerRight">
-            <button className="support-link" onClick={() => setIsSupportOpen(true)}>
-              <span className="support-link__icon">?</span>
-              Support
-            </button>
-            <UserButton />
-          </div>
-        </div>
-      </header>
+    <div className="app">
+      <SiteHeader>
+        <button className="support-link support-link--icon" onClick={() => setIsSupportOpen(true)} title="Support" aria-label="Support">
+          <span className="support-link__icon">?</span>
+        </button>
+        <UserButton />
+      </SiteHeader>
 
-      <div className="settings-page__layout">
-        <nav className="settings-nav">
-          <ul className="settings-nav__list">
-            {navItems.map((item) => (
-              <li key={item.id}>
-                <button
-                  className={`settings-nav__item ${activeSection === item.id ? 'settings-nav__item--active' : ''}`}
-                  onClick={() => handleSectionChange(item.id)}
-                >
-                  <span className="settings-nav__icon">{item.icon}</span>
-                  <span className="settings-nav__label">{item.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+      <div className="app__layout">
+        <nav className="app__sidebar" aria-label="Settings navigation">
+          <div className="settings-nav">
+            <ul className="settings-nav__list">
+              {navItems.map((item) => (
+                <li key={item.id}>
+                  <button
+                    className={`settings-nav__item ${activeSection === item.id ? 'settings-nav__item--active' : ''}`}
+                    onClick={() => handleSectionChange(item.id)}
+                  >
+                    <span className="settings-nav__icon">{item.icon}</span>
+                    <span className="settings-nav__label">{item.label}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </nav>
 
-        <main className="settings-page__content">
-          {renderContent()}
+        <main className="app__content settings-content">
+          <div className="settings-title-bar">
+            <h1 className="settings-title-bar__title">Settings</h1>
+            <button className="settings-title-bar__back" onClick={() => confirmAndNavigate('/collections')}>
+              Back to Collections →
+            </button>
+          </div>
+          <div className="settings-panel">
+            {renderContent()}
+          </div>
         </main>
       </div>
+
+      <SiteFooter />
 
       <SupportModal
         isOpen={isSupportOpen}
         onClose={() => setIsSupportOpen(false)}
         onSuccess={() => setSupportRefreshKey((k) => k + 1)}
         userEmail={user?.email}
+      />
+
+      <TenantEditModal
+        tenant={editingTenant}
+        isOpen={editingTenant !== null}
+        onClose={() => setEditingTenant(null)}
+        onSaved={() => window.location.reload()}
       />
     </div>
   );

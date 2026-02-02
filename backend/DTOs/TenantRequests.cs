@@ -37,3 +37,16 @@ public class LeaveTenantResponse
 {
     public bool Success { get; set; }
 }
+
+public class UpdateTenantRequest
+{
+    [Required]
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+}
+
+public class UpdateTenantResponse
+{
+    public int TenantId { get; set; }
+    public string TenantName { get; set; } = string.Empty;
+}

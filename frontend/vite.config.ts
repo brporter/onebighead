@@ -1,16 +1,19 @@
 import { defineConfig, type Plugin } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
-// Redirect /collections to /collections/ to match base URL
-function trailingSlashRedirect(): Plugin {
+// SPA fallback middleware - serves index.html for client-side routes
+function spaFallback(): Plugin {
   return {
-    name: 'trailing-slash-redirect',
+    name: 'spa-fallback',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (req.url === '/collections') {
-          res.writeHead(301, { Location: '/collections/' });
-          res.end();
-          return;
+        const url = req.url || '';
+        // Client-side routes that should serve index.html
+        const spaRoutes = ['/collections', '/settings', '/setup', '/welcome', '/terms'];
+        const isSpaRoute = spaRoutes.some(route => url === route || url.startsWith(route + '/') || url.startsWith(route + '?'));
+
+        if (isSpaRoute && !url.includes('.')) {
+          req.url = '/index.html';
         }
         next();
       });
@@ -20,8 +23,8 @@ function trailingSlashRedirect(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), trailingSlashRedirect()],
-  base: '/collections/',
+  plugins: [react(), spaFallback()],
+  base: '/',
   server: {
     proxy: {
       '/api': {
@@ -60,11 +63,6 @@ export default defineConfig({
         secure: false
       },
       '/css': {
-        target: 'http://localhost:5148',
-        changeOrigin: true,
-        secure: false
-      },
-      '/admin': {
         target: 'http://localhost:5148',
         changeOrigin: true,
         secure: false

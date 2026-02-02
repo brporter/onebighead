@@ -5,13 +5,18 @@ interface SiteHeaderProps {
   subtitle?: string;
   children?: React.ReactNode;
   showTenantSwitcher?: boolean;
+  backLink?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 export function SiteHeader({
   title,
   subtitle,
   children,
-  showTenantSwitcher = true
+  showTenantSwitcher = true,
+  backLink
 }: SiteHeaderProps) {
   return (
     <header className="site-header">
@@ -20,13 +25,18 @@ export function SiteHeader({
           <a href="/" className="site-header__logo">OneBigHead</a>
           {showTenantSwitcher && <TenantSwitcher />}
         </div>
-        {title && (
+        {(title || backLink) && (
           <div className="site-header__title-area">
-            <h1 className="site-header__title">{title}</h1>
+            {backLink && (
+              <button className="site-header__back" onClick={backLink.onClick}>
+                ← {backLink.label}
+              </button>
+            )}
+            {title && <h1 className="site-header__title">{title}</h1>}
             {subtitle && <p className="site-header__subtitle">{subtitle}</p>}
           </div>
         )}
-        {!title && <div className="site-header__spacer" />}
+        {!title && !backLink && <div className="site-header__spacer" />}
         <div className="site-header__actions">
           {children}
         </div>
