@@ -160,13 +160,26 @@ if (!app.Environment.IsDevelopment())
     {
         var fileProvider = new PhysicalFileProvider(collectionsPath);
 
+        // Rewrite /assets/* to /collections/assets/* for frontend build compatibility
+        // (allows frontend to use base: '/' for better dev experience while still serving from /collections in prod)
+        app.Use(async (context, next) =>
+        {
+            var path = context.Request.Path.Value ?? "";
+            if (path.StartsWith("/assets/", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Request.Path = "/collections" + path;
+            }
+            await next();
+        });
+
         // SPA fallback for top-level routes: rewrite /settings, /setup, /admin, /welcome to index.html
         app.Use(async (context, next) =>
         {
             var path = context.Request.Path.Value ?? "";
 
             // Top-level SPA routes that need fallback to index.html
-            if (path.Equals("/settings", StringComparison.OrdinalIgnoreCase) ||
+            if (path.Equals("/", StringComparison.Ordinal) ||
+                path.Equals("/settings", StringComparison.OrdinalIgnoreCase) ||
                 path.StartsWith("/settings/", StringComparison.OrdinalIgnoreCase) ||
                 path.Equals("/setup", StringComparison.OrdinalIgnoreCase) ||
                 path.StartsWith("/setup/", StringComparison.OrdinalIgnoreCase) ||
