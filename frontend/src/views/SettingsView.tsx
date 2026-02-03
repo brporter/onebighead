@@ -9,6 +9,7 @@ import ItemTemplateEditor from '../components/template/ItemTemplateEditor';
 import CollectionTemplateEditor from '../components/collection/CollectionTemplateEditor';
 import VisibilityToggle from '../components/common/VisibilityToggle';
 import CollectionSetupWizard from '../components/collection/CollectionSetupWizard';
+import TenantSetupWizard from '../components/wizard/TenantSetupWizard';
 import { SupportSection } from '../components/support/SupportSection';
 import { UserButton, UserManagement } from '../components/user';
 import { SupportModal } from '../components/support/SupportModal';
@@ -33,7 +34,6 @@ function SettingsView() {
 
   // Tenant management state
   const [isCreatingTenant, setIsCreatingTenant] = useState(false);
-  const [newTenantName, setNewTenantName] = useState('');
   const [tenantError, setTenantError] = useState<string | null>(null);
   const [isLeavingTenant, setIsLeavingTenant] = useState<number | null>(null);
   const [editingTenant, setEditingTenant] = useState<TenantMembership | null>(null);
@@ -434,23 +434,14 @@ function SettingsView() {
     </div>
   );
 
-  const handleCreateTenant = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTenantName.trim()) {
-      setTenantError('Tenant name is required');
-      return;
-    }
+  const handleTenantSetupComplete = () => {
+    setIsCreatingTenant(false);
+    // Reload to refresh user context with new tenant, returning to My Tenants section
+    window.location.href = '/settings?section=tenants';
+  };
 
-    setTenantError(null);
-    try {
-      await tenantsApi.create({ name: newTenantName.trim() });
-      setNewTenantName('');
-      setIsCreatingTenant(false);
-      // Reload to refresh user context with new tenant
-      window.location.reload();
-    } catch (err) {
-      setTenantError(err instanceof Error ? err.message : 'Failed to create tenant');
-    }
+  const handleTenantSetupCancel = () => {
+    setIsCreatingTenant(false);
   };
 
   const handleLeaveTenant = async (tenant: TenantMembership) => {
@@ -482,13 +473,24 @@ function SettingsView() {
   const renderTenantsSection = () => {
     const tenants = user?.tenants || [];
     const activeTenant = user?.activeTenant;
-    const canCreateTenant = tenants.length === 1;
     const canLeaveTenant = (tenant: TenantMembership) => {
       // Cannot leave if it's the only tenant
       if (tenants.length <= 1) return false;
       // Cannot leave if you're the only admin (would need to check server-side, but we'll let API handle it)
       return true;
     };
+
+    // Show the tenant setup wizard
+    if (isCreatingTenant) {
+      return (
+        <TenantSetupWizard
+          showTerms={false}
+          isWelcome={false}
+          onComplete={handleTenantSetupComplete}
+          onCancel={handleTenantSetupCancel}
+        />
+      );
+    }
 
     return (
       <div className="settings-section">
@@ -499,111 +501,66 @@ function SettingsView() {
               Manage your tenant memberships. You can belong to multiple tenants and switch between them.
             </p>
           </div>
-          {canCreateTenant && !isCreatingTenant && (
-            <button
-              className="settings-section__addButton"
-              onClick={() => setIsCreatingTenant(true)}
-            >
-              + Create New Tenant
-            </button>
-          )}
+          <button
+            className="settings-section__addButton"
+            onClick={() => setIsCreatingTenant(true)}
+          >
+            + Create New Workspace
+          </button>
         </div>
 
         {tenantError && <div className="settings-section__error">{tenantError}</div>}
 
-        {isCreatingTenant && (
-          <form className="settings-form" onSubmit={handleCreateTenant}>
-            <h3 className="settings-form__title">Create New Tenant</h3>
-            <p className="settings-form__hint" style={{ marginBottom: 'var(--space-md)' }}>
-              You're currently a member of "{activeTenant?.tenantName}". Create your own space where you have complete control.
-            </p>
-            <div className="settings-form__field">
-              <label className="settings-form__label">
-                Tenant Name <span className="settings-form__required">*</span>
-              </label>
-              <input
-                type="text"
-                className="settings-form__input"
-                value={newTenantName}
-                onChange={(e) => setNewTenantName(e.target.value)}
-                placeholder="My New Workspace"
-                autoFocus
-              />
-            </div>
-            <div className="settings-form__actions">
-              <button
-                type="submit"
-                className="settings-form__button settings-form__button--primary"
-              >
-                Create Tenant
-              </button>
-              <button
-                type="button"
-                className="settings-form__button settings-form__button--secondary"
-                onClick={() => {
-                  setIsCreatingTenant(false);
-                  setNewTenantName('');
-                  setTenantError(null);
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
-
-        {!isCreatingTenant && (
-          <div className="settings-tenant-list">
-            {tenants.map((tenant) => (
-              <div
-                key={tenant.tenantId}
-                className={`settings-tenant-card ${tenant.tenantId === activeTenant?.tenantId ? 'settings-tenant-card--active' : ''}`}
-              >
-                <div className="settings-tenant-card__content">
-                  <div className="settings-tenant-card__header">
-                    <h3 className="settings-tenant-card__name">{tenant.tenantName}</h3>
-                    {tenant.tenantId === activeTenant?.tenantId && (
-                      <span className="settings-tenant-card__badge settings-tenant-card__badge--current">Current</span>
-                    )}
-                    <span className={`settings-tenant-card__badge ${tenant.tenantRole === TenantRole.TenantAdmin ? 'settings-tenant-card__badge--admin' : ''}`}>
-                      {tenant.tenantRole === TenantRole.TenantAdmin ? 'Admin' : 'Member'}
-                    </span>
-                  </div>
-                  {!tenant.hasCompletedWelcome && (
-                    <p className="settings-tenant-card__status">Setup not completed</p>
+        <div className="settings-tenant-list">
+          {tenants.map((tenant) => (
+            <div
+              key={tenant.tenantId}
+              className={`settings-tenant-card ${tenant.tenantId === activeTenant?.tenantId ? 'settings-tenant-card--active' : ''}`}
+            >
+              <div className="settings-tenant-card__content">
+                <div className="settings-tenant-card__header">
+                  <h3 className="settings-tenant-card__name">{tenant.tenantName}</h3>
+                  {tenant.tenantId === activeTenant?.tenantId && (
+                    <span className="settings-tenant-card__badge settings-tenant-card__badge--current">Current</span>
                   )}
+                  <span className={`settings-tenant-card__badge ${tenant.tenantRole === TenantRole.TenantAdmin ? 'settings-tenant-card__badge--admin' : ''}`}>
+                    {tenant.tenantRole === TenantRole.TenantAdmin ? 'Admin' : 'Member'}
+                  </span>
                 </div>
-                <div className="settings-tenant-card__actions">
-                  {tenant.tenantRole === TenantRole.TenantAdmin && (
-                    <button
-                      className="settings-tenant-card__button"
-                      onClick={() => setEditingTenant(tenant)}
-                    >
-                      Edit
-                    </button>
-                  )}
-                  {tenant.tenantId !== activeTenant?.tenantId && (
-                    <button
-                      className="settings-tenant-card__button"
-                      onClick={() => handleSwitchTenant(tenant)}
-                    >
-                      Switch
-                    </button>
-                  )}
-                  {canLeaveTenant(tenant) && (
-                    <button
-                      className="settings-tenant-card__button settings-tenant-card__button--danger"
-                      onClick={() => handleLeaveTenant(tenant)}
-                      disabled={isLeavingTenant === tenant.tenantId}
-                    >
-                      {isLeavingTenant === tenant.tenantId ? 'Leaving...' : 'Leave'}
-                    </button>
-                  )}
-                </div>
+                {!tenant.hasCompletedWelcome && (
+                  <p className="settings-tenant-card__status">Setup not completed</p>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+              <div className="settings-tenant-card__actions">
+                {tenant.tenantRole === TenantRole.TenantAdmin && (
+                  <button
+                    className="settings-tenant-card__button"
+                    onClick={() => setEditingTenant(tenant)}
+                  >
+                    Edit
+                  </button>
+                )}
+                {tenant.tenantId !== activeTenant?.tenantId && (
+                  <button
+                    className="settings-tenant-card__button"
+                    onClick={() => handleSwitchTenant(tenant)}
+                  >
+                    Switch
+                  </button>
+                )}
+                {canLeaveTenant(tenant) && (
+                  <button
+                    className="settings-tenant-card__button settings-tenant-card__button--danger"
+                    onClick={() => handleLeaveTenant(tenant)}
+                    disabled={isLeavingTenant === tenant.tenantId}
+                  >
+                    {isLeavingTenant === tenant.tenantId ? 'Leaving...' : 'Leave'}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };

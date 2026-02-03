@@ -1,34 +1,53 @@
 import { useState, useEffect, useRef } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { useData } from '../../contexts/DataContext';
-import { authApi } from '../../api';
-import type { CollectionTheme } from '../../utils/types';
+import { authApi, tenantsApi } from '../../api';
+import type { CollectionTheme, SetupCollectionRequest } from '../../utils/types';
 import ThemeCard from '../collection/ThemeCard';
 import ThemePreview from '../collection/ThemePreview';
 import { TermsAcceptance } from '../common';
 
-interface WelcomeWizardProps {
-  onComplete: (collectionId: number) => void;
-  onSkip: () => void;
+export interface TenantSetupResult {
+  tenantId: number;
+  tenantName: string;
+  collectionId: number;
+  collectionName: string;
 }
 
-type StepId = 'terms' | 'welcome' | 'theme' | 'preview';
+interface TenantSetupWizardProps {
+  /** Whether to show the terms acceptance step */
+  showTerms?: boolean;
+  /** Whether this is the initial welcome wizard (vs creating additional tenant) */
+  isWelcome?: boolean;
+  /** Called when setup is complete */
+  onComplete: (result: TenantSetupResult) => void;
+  /** Called when user cancels (only shown if not isWelcome) */
+  onCancel?: () => void;
+  /** Called when user skips setup (only for welcome wizard) */
+  onSkip?: () => void;
+}
 
-const STEPS: { id: StepId; label: string }[] = [
-  { id: 'terms', label: 'Terms' },
-  { id: 'welcome', label: 'Welcome' },
-  { id: 'theme', label: 'Theme' },
-  { id: 'preview', label: 'Preview' },
-];
+type StepId = 'terms' | 'details' | 'theme' | 'preview';
 
-function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
+function TenantSetupWizard({
+  showTerms = false,
+  isWelcome = false,
+  onComplete,
+  onCancel,
+  onSkip,
+}: TenantSetupWizardProps) {
   const { user, refetch: refetchUser } = useUser();
   const { themes, themesLoading, loadThemes, setupCollection } = useData();
 
-  // Start at terms step if user hasn't accepted terms, otherwise skip to welcome
-  const [activeStep, setActiveStep] = useState<StepId>(() =>
-    user?.hasAcceptedTerms ? 'welcome' : 'terms'
-  );
+  // Determine initial step
+  const getInitialStep = (): StepId => {
+    if (showTerms && !user?.hasAcceptedTerms) {
+      return 'terms';
+    }
+    return 'details';
+  };
+
+  const [activeStep, setActiveStep] = useState<StepId>(getInitialStep);
   const [termsAccepted, setTermsAccepted] = useState(user?.hasAcceptedTerms ?? false);
   const [tenantName, setTenantName] = useState('');
   const hasPrefilledTenantName = useRef(false);
@@ -38,22 +57,33 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Build steps array based on whether terms should be shown
+  const steps: { id: StepId; label: string }[] = [];
+  if (showTerms) {
+    steps.push({ id: 'terms', label: 'Terms' });
+  }
+  steps.push(
+    { id: 'details', label: isWelcome ? 'Welcome' : 'Details' },
+    { id: 'theme', label: 'Theme' },
+    { id: 'preview', label: 'Preview' }
+  );
+
   useEffect(() => {
     loadThemes();
   }, [loadThemes]);
 
-  // Pre-fill tenant name with email (only once)
+  // Pre-fill tenant name with email for welcome wizard (only once)
   useEffect(() => {
-    if (user?.email && !hasPrefilledTenantName.current) {
+    if (isWelcome && user?.email && !hasPrefilledTenantName.current) {
       hasPrefilledTenantName.current = true;
       setTenantName(user.email);
     }
-  }, [user?.email]);
+  }, [isWelcome, user?.email]);
 
   // Auto-select General theme as default
   useEffect(() => {
     if (themes.length > 0 && selectedThemeId === null) {
-      const generalTheme = themes.find(t => t.name === 'General');
+      const generalTheme = themes.find((t) => t.name === 'General');
       if (generalTheme) {
         setSelectedThemeId(generalTheme.themeId);
       }
@@ -61,21 +91,21 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
   }, [themes, selectedThemeId]);
 
   const selectedTheme: CollectionTheme | null = selectedThemeId
-    ? themes.find(t => t.themeId === selectedThemeId) ?? null
+    ? themes.find((t) => t.themeId === selectedThemeId) ?? null
     : null;
 
   const handleTermsAccepted = async () => {
     setTermsAccepted(true);
     await refetchUser();
-    setActiveStep('welcome');
+    setActiveStep('details');
   };
 
   const canProceed = (step: StepId): boolean => {
     switch (step) {
       case 'terms':
         return termsAccepted;
-      case 'welcome':
-        return tenantName.trim().length > 0 && collectionName.trim().length > 0;
+      case 'details':
+        return tenantName.trim().length > 0;
       case 'theme':
         return selectedThemeId !== null;
       case 'preview':
@@ -85,27 +115,34 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
     }
   };
 
-  const currentStepIndex = STEPS.findIndex(s => s.id === activeStep);
+  const currentStepIndex = steps.findIndex((s) => s.id === activeStep);
 
   const handleNext = () => {
-    if (currentStepIndex < STEPS.length - 1) {
-      setActiveStep(STEPS[currentStepIndex + 1].id);
+    if (currentStepIndex < steps.length - 1) {
+      setActiveStep(steps[currentStepIndex + 1].id);
     }
   };
 
   const handlePrevious = () => {
     if (currentStepIndex > 0) {
-      setActiveStep(STEPS[currentStepIndex - 1].id);
+      // Don't go back to terms if already accepted
+      const prevStep = steps[currentStepIndex - 1];
+      if (prevStep.id === 'terms' && termsAccepted) {
+        return;
+      }
+      setActiveStep(prevStep.id);
     }
   };
 
   const handleSkip = async () => {
+    if (!isWelcome || !onSkip) return;
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Complete welcome without a tenant name (backend will use email)
-      await authApi.completeWelcome(undefined);
+      // Complete welcome without full setup
+      await authApi.completeWelcome(tenantName.trim() || undefined);
       await refetchUser();
       onSkip();
     } catch (err) {
@@ -125,18 +162,42 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
     setError(null);
 
     try {
-      // First complete the welcome with tenant name
-      await authApi.completeWelcome(tenantName.trim());
-      await refetchUser();
+      if (isWelcome) {
+        // For welcome wizard: complete welcome then create collection
+        await authApi.completeWelcome(tenantName.trim());
 
-      // Then create the collection
-      const collection = await setupCollection({
-        name: collectionName.trim(),
-        description: collectionDescription.trim(),
-        themeId: selectedThemeId,
-      });
+        const collection = await setupCollection({
+          name: collectionName.trim() || 'My Collection',
+          description: collectionDescription.trim(),
+          themeId: selectedThemeId,
+        });
 
-      onComplete(collection.collectionId);
+        await refetchUser();
+
+        onComplete({
+          tenantId: user?.tenantId ?? 0,
+          tenantName: tenantName.trim(),
+          collectionId: collection.collectionId,
+          collectionName: collection.name,
+        });
+      } else {
+        // For settings: use the new setup endpoint
+        const result = await tenantsApi.setup({
+          tenantName: tenantName.trim(),
+          collectionName: collectionName.trim() || undefined,
+          collectionDescription: collectionDescription.trim() || undefined,
+          themeId: selectedThemeId,
+        });
+
+        await refetchUser();
+
+        onComplete({
+          tenantId: result.tenantId,
+          tenantName: result.tenantName,
+          collectionId: result.collectionId,
+          collectionName: result.collectionName,
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete setup');
     } finally {
@@ -153,19 +214,23 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
           </div>
         );
 
-      case 'welcome':
+      case 'details':
         return (
           <div className="setupWizard__content">
-            <div className="welcomeWizard__intro">
-              <h2 className="welcomeWizard__greeting">Welcome to OneBigHead!</h2>
-              <p className="welcomeWizard__description">
-                Let's get you set up. First, tell us a bit about yourself and your first collection.
-              </p>
-            </div>
+            {isWelcome && (
+              <div className="welcomeWizard__intro">
+                <h2 className="welcomeWizard__greeting">Welcome to OneBigHead!</h2>
+                <p className="welcomeWizard__description">
+                  Let's get you set up. First, tell us a bit about yourself and your first
+                  collection.
+                </p>
+              </div>
+            )}
 
             <div className="setupWizard__field">
               <label htmlFor="tenant-name" className="setupWizard__label">
-                Organization / Workspace Name <span className="setupWizard__required">*</span>
+                {isWelcome ? 'Organization / Workspace Name' : 'New Workspace Name'}{' '}
+                <span className="setupWizard__required">*</span>
               </label>
               <input
                 id="tenant-name"
@@ -173,17 +238,15 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
                 className="setupWizard__input"
                 value={tenantName}
                 onChange={(e) => setTenantName(e.target.value)}
-                placeholder="Your name, company, or workspace"
+                placeholder={isWelcome ? 'Your name, company, or workspace' : 'Enter workspace name'}
                 autoFocus
               />
-              <p className="setupWizard__hint">
-                This is how your workspace will be identified.
-              </p>
+              <p className="setupWizard__hint">This is how your workspace will be identified.</p>
             </div>
 
             <div className="setupWizard__field">
               <label htmlFor="collection-name" className="setupWizard__label">
-                First Collection Name <span className="setupWizard__required">*</span>
+                {isWelcome ? 'First Collection Name' : 'Collection Name'}
               </label>
               <input
                 id="collection-name"
@@ -191,7 +254,7 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
                 className="setupWizard__input"
                 value={collectionName}
                 onChange={(e) => setCollectionName(e.target.value)}
-                placeholder="e.g., My Book Collection"
+                placeholder="e.g., My Book Collection (defaults to 'My Collection')"
               />
             </div>
 
@@ -215,8 +278,8 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
         return (
           <div className="setupWizard__content">
             <p className="setupWizard__hint">
-              Choose a theme to get started with pre-configured templates and categories.
-              You can always customize these later.
+              Choose a theme to get started with pre-configured templates and categories. You can
+              always customize these later.
             </p>
             {themesLoading ? (
               <p className="setupWizard__loading">Loading themes...</p>
@@ -246,7 +309,7 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
                     <dt>Workspace Name</dt>
                     <dd>{tenantName}</dd>
                     <dt>Collection Name</dt>
-                    <dd>{collectionName}</dd>
+                    <dd>{collectionName || 'My Collection'}</dd>
                     {collectionDescription && (
                       <>
                         <dt>Description</dt>
@@ -267,14 +330,27 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
     }
   };
 
+  const showSkipButton = isWelcome && onSkip && activeStep !== 'terms';
+  const showCancelButton = !isWelcome && onCancel;
+
   return (
-    <div className="setupWizard">
+    <div className={`setupWizard ${!isWelcome ? 'setupWizard--modal' : ''}`}>
       <div className="setupWizard__container">
         <div className="setupWizard__header">
-          <h1 className="setupWizard__title">Get Started</h1>
+          <h1 className="setupWizard__title">
+            {isWelcome ? 'Get Started' : 'Create New Workspace'}
+          </h1>
           <div className="setupWizard__headerActions">
-            {/* Hide skip button on terms step - terms must be accepted */}
-            {activeStep !== 'terms' && (
+            {showCancelButton && (
+              <button
+                className="setupWizard__cancelBtn"
+                onClick={onCancel}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+            )}
+            {showSkipButton && (
               <button
                 className="setupWizard__skipBtn"
                 onClick={handleSkip}
@@ -287,12 +363,19 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
         </div>
 
         <nav className="setupWizard__tabs">
-          {STEPS.map((step, index) => (
+          {steps.map((step, index) => (
             <button
               key={step.id}
               className={`setupWizard__tab ${activeStep === step.id ? 'setupWizard__tab--active' : ''}`}
-              onClick={() => setActiveStep(step.id)}
-              disabled={index > 0 && !canProceed(STEPS[index - 1].id)}
+              onClick={() => {
+                // Allow clicking only if previous steps are complete
+                if (index === 0 || canProceed(steps[index - 1].id)) {
+                  // Don't allow going back to terms if already accepted
+                  if (step.id === 'terms' && termsAccepted) return;
+                  setActiveStep(step.id);
+                }
+              }}
+              disabled={index > 0 && !canProceed(steps[index - 1].id)}
             >
               <span className="setupWizard__tabNumber">{index + 1}</span>
               {step.label}
@@ -314,7 +397,11 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
             <button
               className="setupWizard__btn setupWizard__btn--secondary"
               onClick={handlePrevious}
-              disabled={currentStepIndex === 0 || activeStep === 'welcome' || isSubmitting}
+              disabled={
+                currentStepIndex === 0 ||
+                (steps[currentStepIndex - 1]?.id === 'terms' && termsAccepted) ||
+                isSubmitting
+              }
             >
               Previous
             </button>
@@ -323,9 +410,9 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
               <button
                 className="setupWizard__btn setupWizard__btn--primary"
                 onClick={handleSubmit}
-                disabled={!canProceed('welcome') || !canProceed('theme') || isSubmitting}
+                disabled={!canProceed('details') || !canProceed('theme') || isSubmitting}
               >
-                {isSubmitting ? 'Creating...' : 'Get Started'}
+                {isSubmitting ? 'Creating...' : isWelcome ? 'Get Started' : 'Create Workspace'}
               </button>
             ) : (
               <button
@@ -343,4 +430,4 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
   );
 }
 
-export default WelcomeWizard;
+export default TenantSetupWizard;

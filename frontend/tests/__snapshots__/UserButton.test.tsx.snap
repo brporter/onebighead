@@ -12,13 +12,19 @@ exports[`UserButton > snapshots > should match snapshot for admin user 1`] = `
       Admin
     </button>
     <button
-      class="userButton"
+      aria-label="Settings"
+      class="userButton userButton--icon"
+      title="Settings"
       type="button"
     >
-      admin@example.com
+      <span
+        class="userButton__icon"
+      >
+        ⚙
+      </span>
     </button>
     <button
-      class="userButton userButton--signout"
+      class="userButton"
       type="button"
     >
       Sign Out
@@ -33,13 +39,19 @@ exports[`UserButton > snapshots > should match snapshot for regular user 1`] = `
     class="userButton__container"
   >
     <button
-      class="userButton"
+      aria-label="Settings"
+      class="userButton userButton--icon"
+      title="Settings"
       type="button"
     >
-      user@example.com
+      <span
+        class="userButton__icon"
+      >
+        ⚙
+      </span>
     </button>
     <button
-      class="userButton userButton--signout"
+      class="userButton"
       type="button"
     >
       Sign Out

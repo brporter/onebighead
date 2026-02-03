@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import ItemDetail from '../components/item/ItemDetail';
 import ItemEditor from '../components/item/ItemEditor';
-import BackNav from '../components/common/BackNav';
+import { BackNav, Loading } from '../components/common';
 import CategoryTree from '../components/category/CategoryTree';
 import TemplateSelector from '../components/template/TemplateSelector';
 import { createEmptyItem } from '../utils/itemUtils';
@@ -183,15 +183,15 @@ function ItemView() {
   const showBackToCollections = collections.length > 1;
 
   if (isLoading || collectionsLoading) {
-    return <div className="app__loading">Loading...</div>;
+    return <Loading message="Loading..." />;
   }
 
   if (!currentCollection) {
-    return <div className="app__loading">Collection not found</div>;
+    return <Loading message="Collection not found" />;
   }
 
   if (!isNewItem && !selectedItem) {
-    return <div className="app__loading">Item not found</div>;
+    return <Loading message="Item not found" />;
   }
 
   // For new items, show template selector first
@@ -209,7 +209,7 @@ function ItemView() {
 
   // For new items, wait until template is selected (or skipped)
   if (isNewItem && selectedTemplateProperties === null) {
-    return <div className="app__loading">Loading...</div>;
+    return <Loading message="Loading..." />;
   }
 
   return (

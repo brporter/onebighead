@@ -12,6 +12,10 @@
   --color-border: #e5e7eb;
   --color-border-light: #f3f4f6;
   --color-border-strong: #d1d5db;
+  --color-border-hover: #9ca3af;
+
+  --color-surface-raised: #fff;
+  --color-surface-raised-hover: #f9fafb;
 
   --color-text: #111827;
   --color-text-secondary: #374151;
@@ -48,6 +52,12 @@
   --color-active-bg: #111827;
   --color-active-text: #fff;
 
+  /* Semantic Status Colors */
+  --color-want: #ef4444;
+  --color-want-dark: #dc2626;
+  --color-trade: #14b8a6;
+  --color-trade-dark: #0d9488;
+
   /* Spacing - matched to homepage (site.css) */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -75,6 +85,10 @@
     --color-border: #374151;
     --color-border-light: #374151;
     --color-border-strong: #4b5563;
+    --color-border-hover: #6b7280;
+
+    --color-surface-raised: #374151;
+    --color-surface-raised-hover: #4b5563;
 
     --color-text: #f9fafb;
     --color-text-secondary: #f3f4f6;
@@ -353,6 +367,230 @@
 .gallery__button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   Unified Button Utility Classes
+   Use these for consistent button styling across the application
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Button Variants */
+.btn--primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.btn--secondary {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border-hover);
+}
+
+.btn--success {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-text-inverse);
+}
+
+.btn--success:hover:not(:disabled) {
+  background: var(--color-success-hover);
+  border-color: var(--color-success-hover);
+}
+
+.btn--danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.btn--link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+}
+
+.btn--link:hover:not(:disabled) {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+/* Button Sizes */
+.btn--sm {
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.85rem;
+}
+
+.btn--lg {
+  padding: var(--space-md) var(--space-xl);
+  font-size: 1rem;
+}
+
+/* Button Modifiers */
+.btn--full {
+  width: 100%;
+}
+
+.btn--icon {
+  padding: var(--space-sm);
+  aspect-ratio: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Loading Spinner
+   -------------------------------------------------------------------------- */
+
+.spinner {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner--sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 1.5px;
+}
+
+.spinner--lg {
+  width: 2rem;
+  height: 2rem;
+  border-width: 3px;
+}
+
+.spinner--light {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: var(--color-text-inverse);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading Container */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-xxl);
+  color: var(--color-text-muted);
+}
+
+.loading__text {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.loading--inline {
+  display: inline-flex;
+  flex-direction: row;
+  padding: 0;
+  gap: var(--space-sm);
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-alt) 25%,
+    var(--color-surface-hover) 50%,
+    var(--color-surface-alt) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton--text {
+  height: 1rem;
+  width: 100%;
+}
+
+.skeleton--title {
+  height: 1.5rem;
+  width: 60%;
+}
+
+.skeleton--avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.skeleton--card {
+  height: 120px;
+  border-radius: var(--radius-lg);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -1086,15 +1324,15 @@
 }
 
 .itemFlagRibbon--want .itemFlagRibbon__text {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-want) 0%, var(--color-want-dark) 100%);
+  color: var(--color-text-inverse);
   border-top: 1px dashed rgba(255, 255, 255, 0.4);
   border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
 }
 
 .itemFlagRibbon--trade .itemFlagRibbon__text {
-  background: linear-gradient(135deg, #4ecdc4 0%, #44b3ab 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-trade) 0%, var(--color-trade-dark) 100%);
+  color: var(--color-text-inverse);
   border-top: 1px dashed rgba(255, 255, 255, 0.4);
   border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
 }

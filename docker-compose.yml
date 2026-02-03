@@ -10,14 +10,9 @@ services:
       - MSSQL_SA_PASSWORD=DevPassword123!
     ports:
       - "1433:1433"
-    volumes:
-      - sqlserver-data:/var/opt/mssql
     healthcheck:
       test: ["CMD-SHELL", "(cat < /dev/null > /dev/tcp/localhost/1433) 2>/dev/null && exit 0 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
-
-volumes:
-  sqlserver-data:

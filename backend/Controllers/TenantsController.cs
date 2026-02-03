@@ -5,16 +5,21 @@ using OneBigHead.Server.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System.Text.RegularExpressions;
 
 namespace OneBigHead.Server.Controllers;
 
 [Route("api/[controller]")]
 [Authorize]
-public class TenantsController : ApiControllerBase
+public partial class TenantsController : ApiControllerBase
 {
     private readonly ITenantRepository _tenantRepository;
     private readonly ITenantUserRepository _tenantUserRepository;
     private readonly IUserRepository _userRepository;
+    private readonly ICollectionRepository _collectionRepository;
+    private readonly ICategoryRepository _categoryRepository;
+    private readonly IItemTemplateRepository _itemTemplateRepository;
+    private readonly IThemeRepository _themeRepository;
     private readonly ITokenService _tokenService;
     private readonly AuthenticationSettings _settings;
     private readonly ILogger<TenantsController> _logger;
@@ -23,6 +28,10 @@ public class TenantsController : ApiControllerBase
         ITenantRepository tenantRepository,
         ITenantUserRepository tenantUserRepository,
         IUserRepository userRepository,
+        ICollectionRepository collectionRepository,
+        ICategoryRepository categoryRepository,
+        IItemTemplateRepository itemTemplateRepository,
+        IThemeRepository themeRepository,
         ITokenService tokenService,
         IOptions<AuthenticationSettings> settings,
         ILogger<TenantsController> logger)
@@ -30,6 +39,10 @@ public class TenantsController : ApiControllerBase
         _tenantRepository = tenantRepository;
         _tenantUserRepository = tenantUserRepository;
         _userRepository = userRepository;
+        _collectionRepository = collectionRepository;
+        _categoryRepository = categoryRepository;
+        _itemTemplateRepository = itemTemplateRepository;
+        _themeRepository = themeRepository;
         _tokenService = tokenService;
         _settings = settings.Value;
         _logger = logger;
@@ -56,7 +69,8 @@ public class TenantsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Create a new tenant and add the current user as TenantAdmin
+    /// Create a new tenant and add the current user as TenantAdmin.
+    /// Note: This creates a tenant without a collection. For full setup with collection, use SetupTenant.
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> CreateTenant([FromBody] CreateTenantRequest request)
@@ -67,13 +81,6 @@ public class TenantsController : ApiControllerBase
         }
 
         var userId = GetUserId();
-
-        // Check if user has exactly 1 tenant (business rule)
-        var membershipCount = await _tenantUserRepository.CountUserMembershipsAsync(userId);
-        if (membershipCount != 1)
-        {
-            return BadRequest(new { error = "You can only create a new tenant if you have exactly one existing membership" });
-        }
 
         // Create the new tenant
         var tenant = new Tenant
@@ -98,6 +105,183 @@ public class TenantsController : ApiControllerBase
             HasCompletedWelcome = false
         });
     }
+
+    /// <summary>
+    /// Set up a new tenant with an initial collection.
+    /// This is the recommended way to create a new tenant as it includes all necessary setup.
+    /// </summary>
+    [HttpPost("setup")]
+    public async Task<IActionResult> SetupTenant([FromBody] SetupTenantRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.TenantName))
+        {
+            return BadRequest(new { error = "Tenant name is required" });
+        }
+
+        var userId = GetUserId();
+
+        // Create the new tenant
+        var tenant = new Tenant
+        {
+            Name = request.TenantName.Trim(),
+            HasCompletedWelcome = true, // Mark as complete since we're setting up fully
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _tenantRepository.CreateAsync(tenant);
+
+        // Add user as TenantAdmin of the new tenant
+        await _tenantUserRepository.CreateAsync(userId, tenant.Id, TenantRole.TenantAdmin);
+
+        _logger.LogInformation("User {UserId} created new tenant {TenantId} ({TenantName}) via setup", userId, tenant.Id, tenant.Name);
+
+        // Determine collection name (default to "My Collection" if not provided)
+        var collectionName = string.IsNullOrWhiteSpace(request.CollectionName)
+            ? "My Collection"
+            : request.CollectionName.Trim();
+
+        // Get the theme (default to General if not provided or invalid)
+        CollectionTheme? theme = null;
+        if (request.ThemeId.HasValue)
+        {
+            theme = await _themeRepository.GetByIdAsync(request.ThemeId.Value);
+        }
+        if (theme == null)
+        {
+            // Find the General theme as default
+            var themes = await _themeRepository.GetAllAsync();
+            theme = themes.FirstOrDefault(t => t.Name == "General") ?? themes.FirstOrDefault();
+        }
+
+        // Create the collection
+        var slug = GenerateSlug(collectionName);
+        var existing = await _collectionRepository.GetBySlugAsync(slug, tenant.Id);
+        if (existing != null)
+        {
+            slug = $"{slug}-{DateTime.UtcNow.Ticks}";
+        }
+
+        var collection = new Collection
+        {
+            TenantId = tenant.Id,
+            Name = collectionName,
+            Description = request.CollectionDescription?.Trim() ?? string.Empty,
+            Slug = slug,
+            Visibility = Visibility.Private
+        };
+
+        var createdCollection = await _collectionRepository.CreateAsync(collection);
+
+        // Create "Unassigned Items" system category
+        var unassignedCategory = new Category
+        {
+            TenantId = tenant.Id,
+            CollectionId = createdCollection.Id,
+            Name = "Unassigned Items",
+            Description = "Items that have not been assigned to a category",
+            IsSystem = true
+        };
+        await _categoryRepository.CreateAsync(unassignedCategory);
+
+        // Apply theme if available
+        if (theme != null)
+        {
+            // Associate theme templates with collection
+            foreach (var themeTemplate in theme.ThemeTemplates)
+            {
+                await _itemTemplateRepository.AssociateWithCollectionAsync(themeTemplate.ItemTemplateId, createdCollection.Id);
+            }
+
+            // Create categories from theme
+            await CreateThemeCategoriesAsync(theme, tenant.Id, createdCollection.Id);
+        }
+
+        _logger.LogInformation("Created collection {CollectionId} ({CollectionName}) for new tenant {TenantId}",
+            createdCollection.Id, createdCollection.Name, tenant.Id);
+
+        // Switch user to the new tenant
+        await _userRepository.UpdateActiveTenantAsync(userId, tenant.Id);
+
+        // Generate new JWT with the new tenant
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user != null)
+        {
+            var appToken = _tokenService.GenerateAppToken(user, TenantRole.TenantAdmin);
+            SetAuthCookie(appToken);
+        }
+
+        return Ok(new SetupTenantResponse
+        {
+            TenantId = tenant.Id,
+            TenantName = tenant.Name,
+            TenantRole = TenantRole.TenantAdmin,
+            CollectionId = createdCollection.Id,
+            CollectionName = createdCollection.Name
+        });
+    }
+
+    private async Task CreateThemeCategoriesAsync(CollectionTheme theme, int tenantId, int collectionId)
+    {
+        if (theme.ThemeCategories == null || !theme.ThemeCategories.Any())
+            return;
+
+        // Map theme category names to created category IDs
+        var categoryNameToIdMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        // Sort by parent to ensure parents are created first
+        // Use iterative approach to handle arbitrary nesting depth
+        var pendingCategories = theme.ThemeCategories.OrderBy(c => c.SortOrder).ToList();
+        var maxIterations = pendingCategories.Count * 2; // Safety limit
+        var iterations = 0;
+
+        while (pendingCategories.Count > 0 && iterations < maxIterations)
+        {
+            iterations++;
+            var categoriesToProcess = pendingCategories
+                .Where(tc => string.IsNullOrEmpty(tc.ParentName) || categoryNameToIdMap.ContainsKey(tc.ParentName))
+                .ToList();
+
+            if (!categoriesToProcess.Any())
+            {
+                _logger.LogWarning("Theme {ThemeId} has orphaned categories that couldn't be created", theme.Id);
+                break;
+            }
+
+            foreach (var themeCategory in categoriesToProcess)
+            {
+                int? parentCategoryId = null;
+                if (!string.IsNullOrEmpty(themeCategory.ParentName) && categoryNameToIdMap.TryGetValue(themeCategory.ParentName, out var parentId))
+                {
+                    parentCategoryId = parentId;
+                }
+
+                var category = new Category
+                {
+                    TenantId = tenantId,
+                    CollectionId = collectionId,
+                    ParentCategoryId = parentCategoryId,
+                    Name = themeCategory.Name,
+                    Description = themeCategory.Description ?? string.Empty,
+                    IsSystem = false
+                };
+
+                var created = await _categoryRepository.CreateAsync(category);
+                categoryNameToIdMap[themeCategory.Name] = created.Id;
+                pendingCategories.Remove(themeCategory);
+            }
+        }
+    }
+
+    private static string GenerateSlug(string name)
+    {
+        var slug = name.ToLowerInvariant();
+        slug = SlugRegex().Replace(slug, "-");
+        slug = slug.Trim('-');
+        return string.IsNullOrEmpty(slug) ? "collection" : slug;
+    }
+
+    [GeneratedRegex(@"[^a-z0-9]+")]
+    private static partial Regex SlugRegex();
 
     /// <summary>
     /// Update a tenant's details (requires TenantAdmin role)

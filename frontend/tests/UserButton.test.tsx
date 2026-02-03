@@ -67,9 +67,19 @@ describe('UserButton', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('should render email when user is logged in', () => {
+  const createMockUser = (overrides = {}) => ({
+    userId: 1,
+    email: 'test@example.com',
+    tenantId: 1,
+    isSystemAdministrator: false,
+    tenants: [{ tenantId: 1, tenantName: 'Test Tenant', tenantRole: 'TenantAdmin', hasCompletedWelcome: true }],
+    activeTenant: { tenantId: 1, tenantName: 'Test Tenant', tenantRole: 'TenantAdmin', hasCompletedWelcome: true },
+    ...overrides,
+  });
+
+  it('should render settings and sign out buttons when user is logged in', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: { userId: 1, email: 'test@example.com', tenantId: 1, isSystemAdministrator: false },
+      user: createMockUser(),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -77,12 +87,13 @@ describe('UserButton', () => {
     });
 
     renderWithRouter(<UserButton onClick={mockOnClick} />);
-    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByText('Sign Out')).toBeInTheDocument();
   });
 
   it('should show Admin button only for system administrators', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: { userId: 1, email: 'admin@example.com', tenantId: 1, isSystemAdministrator: true },
+      user: createMockUser({ email: 'admin@example.com', isSystemAdministrator: true }),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -95,7 +106,7 @@ describe('UserButton', () => {
 
   it('should not show Admin button for non-administrators', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: { userId: 1, email: 'user@example.com', tenantId: 1, isSystemAdministrator: false },
+      user: createMockUser({ email: 'user@example.com' }),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -108,7 +119,7 @@ describe('UserButton', () => {
 
   it('should call logout on Sign Out click', async () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: { userId: 1, email: 'test@example.com', tenantId: 1, isSystemAdministrator: false },
+      user: createMockUser(),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -116,7 +127,7 @@ describe('UserButton', () => {
     });
 
     renderWithRouter(<UserButton onClick={mockOnClick} />);
-    
+
     const signOutButton = screen.getByText('Sign Out');
     await fireEvent.click(signOutButton);
 
@@ -126,7 +137,7 @@ describe('UserButton', () => {
 
   it('should navigate to /admin when Admin button clicked', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: { userId: 1, email: 'admin@example.com', tenantId: 1, isSystemAdministrator: true },
+      user: createMockUser({ email: 'admin@example.com', isSystemAdministrator: true }),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -144,7 +155,7 @@ describe('UserButton', () => {
   describe('snapshots', () => {
     it('should match snapshot for regular user', () => {
       vi.mocked(UserContext.useUser).mockReturnValue({
-        user: { userId: 1, email: 'user@example.com', tenantId: 1, isSystemAdministrator: false },
+        user: createMockUser({ email: 'user@example.com' }),
         loading: false,
         error: null,
         refetch: vi.fn(),
@@ -157,7 +168,7 @@ describe('UserButton', () => {
 
     it('should match snapshot for admin user', () => {
       vi.mocked(UserContext.useUser).mockReturnValue({
-        user: { userId: 1, email: 'admin@example.com', tenantId: 1, isSystemAdministrator: true },
+        user: createMockUser({ email: 'admin@example.com', isSystemAdministrator: true }),
         loading: false,
         error: null,
         refetch: vi.fn(),

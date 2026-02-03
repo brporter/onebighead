@@ -54,6 +54,15 @@ vi.mock('../../src/components/collection/CollectionSetupWizard', () => ({
   ),
 }));
 
+vi.mock('../../src/components/wizard/TenantSetupWizard', () => ({
+  default: ({ onComplete, onCancel }: { onComplete: () => void; onCancel?: () => void }) => (
+    <div data-testid="tenant-setup-wizard">
+      <button onClick={onComplete}>Complete Tenant Setup</button>
+      {onCancel && <button onClick={onCancel}>Cancel Tenant Setup</button>}
+    </div>
+  ),
+}));
+
 vi.mock('../../src/components/support/SupportSection', () => ({
   SupportSection: ({ isFullPage }: { isFullPage: boolean }) => (
     <div data-testid="support-section">Support Section (fullPage: {isFullPage.toString()})</div>
@@ -80,6 +89,15 @@ vi.mock('../../src/components/support/SupportModal', () => ({
     ) : null,
 }));
 
+vi.mock('../../src/components/tenant', () => ({
+  TenantEditModal: ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) =>
+    isOpen ? (
+      <div data-testid="tenant-edit-modal">
+        <button onClick={onClose}>Close Tenant Modal</button>
+      </div>
+    ) : null,
+}));
+
 vi.mock('../../src/components/common/VisibilityToggle', () => ({
   default: ({ label, visibility, onChange }: { label: string; visibility: string; onChange: (v: string) => void }) => (
     <div data-testid="visibility-toggle">
@@ -91,6 +109,20 @@ vi.mock('../../src/components/common/VisibilityToggle', () => ({
     </div>
   ),
 }));
+
+vi.mock('../../src/components/common', async () => {
+  const actual = await vi.importActual('../../src/components/common');
+  return {
+    ...actual,
+    SiteHeader: ({ children }: { children?: React.ReactNode }) => (
+      <header data-testid="site-header">
+        <span>Site Header</span>
+        {children}
+      </header>
+    ),
+    SiteFooter: () => <footer data-testid="site-footer">Site Footer</footer>,
+  };
+});
 
 // Mock window.confirm
 const mockConfirm = vi.fn();
@@ -107,15 +139,32 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('SettingsView', () => {
+  const mockTenantMembership = {
+    tenantId: 1,
+    tenantName: 'Test Tenant',
+    tenantRole: TenantRole.TenantAdmin,
+    hasCompletedWelcome: true,
+  };
+
   const mockAdminUser = {
     userId: 1,
     email: 'admin@example.com',
     tenantId: 1,
     tenantName: 'Test Tenant',
     hasCompletedWelcome: true,
+    hasAcceptedTerms: true,
     isSystemAdministrator: false,
     tenantRole: TenantRole.TenantAdmin,
     isTenantAdmin: true,
+    activeTenant: mockTenantMembership,
+    tenants: [mockTenantMembership],
+  };
+
+  const mockNormalUserTenant = {
+    tenantId: 1,
+    tenantName: 'Test Tenant',
+    tenantRole: TenantRole.Normal,
+    hasCompletedWelcome: true,
   };
 
   const mockNormalUser = {
@@ -124,9 +173,12 @@ describe('SettingsView', () => {
     tenantId: 1,
     tenantName: 'Test Tenant',
     hasCompletedWelcome: true,
+    hasAcceptedTerms: true,
     isSystemAdministrator: false,
     tenantRole: TenantRole.Normal,
     isTenantAdmin: false,
+    activeTenant: mockNormalUserTenant,
+    tenants: [mockNormalUserTenant],
   };
 
   const mockCollections: Collection[] = [
@@ -215,7 +267,7 @@ describe('SettingsView', () => {
       renderWithRouter();
 
       expect(screen.getByText('Settings')).toBeInTheDocument();
-      expect(screen.getByText('← Back to Collections')).toBeInTheDocument();
+      expect(screen.getByText('Back to Collections →')).toBeInTheDocument();
       expect(screen.getByTestId('user-button')).toBeInTheDocument();
     });
 
@@ -261,7 +313,7 @@ describe('SettingsView', () => {
       const user = userEvent.setup();
       renderWithRouter();
 
-      await user.click(screen.getByText('← Back to Collections'));
+      await user.click(screen.getByText('Back to Collections →'));
 
       expect(mockNavigate).toHaveBeenCalledWith('/collections');
     });
@@ -280,7 +332,7 @@ describe('SettingsView', () => {
       await user.type(nameInput, 'Modified Name');
 
       // Try to navigate back
-      await user.click(screen.getByText('← Back to Collections'));
+      await user.click(screen.getByText('Back to Collections →'));
 
       expect(mockConfirm).toHaveBeenCalledWith('You have unsaved changes. Discard them?');
     });
@@ -298,7 +350,7 @@ describe('SettingsView', () => {
       await user.type(nameInput, 'Modified Name');
 
       // Try to navigate back
-      await user.click(screen.getByText('← Back to Collections'));
+      await user.click(screen.getByText('Back to Collections →'));
 
       expect(mockNavigate).not.toHaveBeenCalled();
     });
@@ -608,7 +660,11 @@ describe('SettingsView', () => {
       const editButtons = screen.getAllByText('Edit');
       await user.click(editButtons[0]);
 
-      await user.click(screen.getByText('Cancel'));
+      // Find the form and get its Cancel button within
+      const form = document.querySelector('.settings-form');
+      expect(form).toBeInTheDocument();
+      const formCancelButton = within(form as HTMLElement).getByText('Cancel');
+      await user.click(formCancelButton);
 
       expect(screen.queryByText('Edit Collection')).not.toBeInTheDocument();
       expect(screen.getByText('Test Collection 1')).toBeInTheDocument();
@@ -625,7 +681,11 @@ describe('SettingsView', () => {
       await user.clear(nameInput);
       await user.type(nameInput, 'Modified Name');
 
-      await user.click(screen.getByText('Cancel'));
+      // Find the form and get its Cancel button within
+      const form = document.querySelector('.settings-form');
+      expect(form).toBeInTheDocument();
+      const formCancelButton = within(form as HTMLElement).getByText('Cancel');
+      await user.click(formCancelButton);
 
       expect(mockConfirm).toHaveBeenCalledWith('You have unsaved changes. Discard them?');
     });
@@ -834,8 +894,8 @@ describe('SettingsView', () => {
       const user = userEvent.setup();
       renderWithRouter();
 
-      // The header has a support link with class "support-link"
-      const supportLink = screen.getByRole('button', { name: /\?/ });
+      // The header has a support link button with aria-label="Support"
+      const supportLink = screen.getByRole('button', { name: 'Support' });
       await user.click(supportLink);
 
       expect(screen.getByTestId('support-modal')).toBeInTheDocument();
@@ -845,9 +905,9 @@ describe('SettingsView', () => {
       const user = userEvent.setup();
       renderWithRouter();
 
-      // Open modal
-      const supportButtons = screen.getAllByText('Support');
-      await user.click(supportButtons[0]); // Header support button
+      // Open modal using the header support button
+      const supportLink = screen.getByRole('button', { name: 'Support' });
+      await user.click(supportLink);
 
       // Close modal
       await user.click(screen.getByText('Close Support Modal'));

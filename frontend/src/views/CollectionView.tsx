@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import CollectionList from '../components/collection/CollectionList';
+import { Loading } from '../components/common';
 
 function CollectionView() {
   const navigate = useNavigate();
@@ -29,11 +30,11 @@ function CollectionView() {
   }, [collections, collectionsLoading, navigate]);
 
   if (collectionsLoading) {
-    return <div className="app__loading">Loading collections...</div>;
+    return <Loading message="Loading collections..." />;
   }
 
   if (collections.length === 0) {
-    return <div className="app__loading">Redirecting to setup...</div>;
+    return <Loading message="Redirecting to setup..." />;
   }
 
   return (

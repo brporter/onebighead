@@ -34,6 +34,21 @@ export interface UpdateTenantResponse {
   tenantName: string;
 }
 
+export interface SetupTenantRequest {
+  tenantName: string;
+  collectionName?: string;
+  collectionDescription?: string;
+  themeId?: number;
+}
+
+export interface SetupTenantResponse {
+  tenantId: number;
+  tenantName: string;
+  tenantRole: string;
+  collectionId: number;
+  collectionName: string;
+}
+
 export const tenantsApi = {
   /**
    * Get all tenant memberships for the current user
@@ -68,5 +83,13 @@ export const tenantsApi = {
    */
   update(tenantId: number, request: UpdateTenantRequest): Promise<UpdateTenantResponse> {
     return api.put<UpdateTenantResponse>(`/tenants/${tenantId}`, request);
+  },
+
+  /**
+   * Set up a new tenant with an initial collection.
+   * This is the recommended way to create a new tenant.
+   */
+  setup(request: SetupTenantRequest): Promise<SetupTenantResponse> {
+    return api.post<SetupTenantResponse>('/tenants/setup', request);
   },
 };

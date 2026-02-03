@@ -4,7 +4,7 @@ import { useData } from '../contexts/DataContext';
 import CategoryTree from '../components/category/CategoryTree';
 import ItemList from '../components/item/ItemList';
 import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
-import BackNav from '../components/common/BackNav';
+import { BackNav, Loading } from '../components/common';
 import { getCategoryAndDescendantIds } from '../utils/categoryUtils';
 
 function CategoryView() {
@@ -116,11 +116,11 @@ function CategoryView() {
   }
 
   if (isLoading || collectionsLoading) {
-    return <div className="app__loading">Loading...</div>;
+    return <Loading message="Loading..." />;
   }
 
   if (!currentCollection) {
-    return <div className="app__loading">Collection not found</div>;
+    return <Loading message="Collection not found" />;
   }
 
   // Show error state if categories or items failed to load
@@ -201,7 +201,7 @@ function CategoryView() {
             />
           )}
           {itemsLoading && filteredItems.length === 0 ? (
-            <div className="app__loading">Loading items...</div>
+            <Loading message="Loading items..." />
           ) : (
             <ItemList
               items={filteredItems}

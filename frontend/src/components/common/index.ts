@@ -1,6 +1,7 @@
 export { default as BackNav } from './BackNav';
 export { default as ImageEditor } from './ImageEditor';
 export { default as ImageGallery } from './ImageGallery';
+export { Loading } from './Loading';
 export { default as RequireAuth } from './RequireAuth';
 export { default as SiteFooter } from './SiteFooter';
 export { default as SiteHeader } from './SiteHeader';
