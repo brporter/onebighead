@@ -11,14 +11,14 @@ import VisibilityToggle from '../components/common/VisibilityToggle';
 import CollectionSetupWizard from '../components/collection/CollectionSetupWizard';
 import TenantSetupWizard from '../components/wizard/TenantSetupWizard';
 import { SupportSection } from '../components/support/SupportSection';
-import { UserButton, UserManagement } from '../components/user';
+import { AccountDeletionSection, UserButton, UserManagement } from '../components/user';
 import { SupportModal } from '../components/support/SupportModal';
-import { TenantEditModal } from '../components/tenant';
+import { TenantEditModal, TenantDeletionSection } from '../components/tenant';
 import { SiteHeader, SiteFooter } from '../components/common';
 import type { Collection, TenantMembership } from '../utils/types';
 import { Visibility, TenantRole } from '../utils/types';
 
-type SettingsSection = 'collections' | 'templates' | 'team' | 'tenants' | 'export' | 'support';
+type SettingsSection = 'collections' | 'templates' | 'team' | 'tenants' | 'export' | 'support' | 'account';
 
 function SettingsView() {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ function SettingsView() {
   // Initialize section from URL query param or default to collections
   const initialSection = (searchParams.get('section') as SettingsSection) || 'collections';
   const [activeSection, setActiveSection] = useState<SettingsSection>(
-    ['collections', 'templates', 'team', 'tenants', 'export', 'support'].includes(initialSection) ? initialSection : 'collections'
+    ['collections', 'templates', 'team', 'tenants', 'export', 'support', 'account'].includes(initialSection) ? initialSection : 'collections'
   );
 
   // Tenant management state
@@ -548,7 +548,7 @@ function SettingsView() {
                     Switch
                   </button>
                 )}
-                {canLeaveTenant(tenant) && (
+                {canLeaveTenant(tenant) && tenant.tenantRole !== TenantRole.TenantAdmin && (
                   <button
                     className="settings-tenant-card__button settings-tenant-card__button--danger"
                     onClick={() => handleLeaveTenant(tenant)}
@@ -556,6 +556,12 @@ function SettingsView() {
                   >
                     {isLeavingTenant === tenant.tenantId ? 'Leaving...' : 'Leave'}
                   </button>
+                )}
+                {tenant.tenantRole === TenantRole.TenantAdmin && (
+                  <TenantDeletionSection
+                    tenant={tenant}
+                    onDeleted={() => window.location.reload()}
+                  />
                 )}
               </div>
             </div>
@@ -583,6 +589,30 @@ function SettingsView() {
     </div>
   );
 
+  const renderAccountSection = () => (
+    <div className="settings-section">
+      <div className="settings-section__header">
+        <div>
+          <h2 className="settings-section__title">Account</h2>
+          <p className="settings-section__description">
+            Manage your account settings and preferences.
+          </p>
+        </div>
+      </div>
+
+      <div className="settings-account-info">
+        <div className="settings-account-info__row">
+          <span className="settings-account-info__label">Email:</span>
+          <span className="settings-account-info__value">{user?.email}</span>
+        </div>
+      </div>
+
+      <div className="settings-section__divider" />
+
+      <AccountDeletionSection />
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeSection) {
       case 'collections':
@@ -597,6 +627,8 @@ function SettingsView() {
         return renderExportSection();
       case 'support':
         return renderSupportSection();
+      case 'account':
+        return renderAccountSection();
       default:
         return renderCollectionsSection();
     }
@@ -621,6 +653,9 @@ function SettingsView() {
 
     // Support is always visible
     items.push({ id: 'support', label: 'Support', icon: '💬' });
+
+    // Account is always visible
+    items.push({ id: 'account', label: 'Account', icon: '👤' });
 
     return items;
   }, [user?.isTenantAdmin]);

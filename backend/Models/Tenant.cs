@@ -16,6 +16,18 @@ public class Tenant
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
+    /// Soft delete flag. Deleted tenants are not permanently removed.
+    /// </summary>
+    public bool IsDeleted { get; set; } = false;
+
+    public DateTime? DeletedAt { get; set; }
+
+    /// <summary>
+    /// The user who soft-deleted this tenant.
+    /// </summary>
+    public int? DeletedByUserId { get; set; }
+
+    /// <summary>
     /// Users who have this tenant as their active tenant.
     /// </summary>
     public ICollection<User> ActiveUsers { get; set; } = new List<User>();

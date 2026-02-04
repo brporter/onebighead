@@ -1,8 +1,11 @@
+using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
+using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace OneBigHead.Server.Controllers;
 
@@ -13,15 +16,21 @@ public class UsersController : ApiControllerBase
 {
     private readonly IUserRepository _userRepository;
     private readonly ITenantUserRepository _tenantUserRepository;
+    private readonly IUserDeletionService _userDeletionService;
+    private readonly AuthenticationSettings _authSettings;
     private readonly ILogger<UsersController> _logger;
 
     public UsersController(
         IUserRepository userRepository,
         ITenantUserRepository tenantUserRepository,
+        IUserDeletionService userDeletionService,
+        IOptions<AuthenticationSettings> authSettings,
         ILogger<UsersController> logger)
     {
         _userRepository = userRepository;
         _tenantUserRepository = tenantUserRepository;
+        _userDeletionService = userDeletionService;
+        _authSettings = authSettings.Value;
         _logger = logger;
     }
 
@@ -148,5 +157,59 @@ public class UsersController : ApiControllerBase
         _logger.LogInformation("Removed user {UserId} from tenant {TenantId}", id, tenantId);
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Gets deletion info for the current user's account.
+    /// Returns information about tenants that require action before account can be deleted.
+    /// </summary>
+    [HttpGet("me/deletion-info")]
+    public async Task<ActionResult<UserDeletionInfoResponse>> GetDeletionInfo()
+    {
+        var userId = GetUserId();
+        var deletionInfo = await _userDeletionService.GetDeletionInfoAsync(userId);
+
+        if (deletionInfo == null)
+        {
+            return NotFound(new { error = "User not found" });
+        }
+
+        return Ok(deletionInfo);
+    }
+
+    /// <summary>
+    /// Deletes the current user's account.
+    /// Requires email confirmation and resolution of any blocking tenants.
+    /// </summary>
+    [HttpDelete("me")]
+    public async Task<ActionResult<DeleteUserResponse>> DeleteAccount([FromBody] DeleteUserRequest request)
+    {
+        var userId = GetUserId();
+
+        var result = await _userDeletionService.DeleteUserAccountAsync(userId, request);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        // Clear the auth cookie to log out the user
+        ClearAuthCookie();
+
+        return Ok(result);
+    }
+
+    private void ClearAuthCookie()
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = _authSettings.Cookie.Secure,
+            SameSite = Enum.Parse<SameSiteMode>(_authSettings.Cookie.SameSite, true),
+            Expires = DateTimeOffset.UtcNow.AddDays(-1),
+            Path = "/"
+        };
+
+        Response.Cookies.Append(_authSettings.Cookie.Name, "", cookieOptions);
     }
 }

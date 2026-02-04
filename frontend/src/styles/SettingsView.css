@@ -796,3 +796,347 @@
     justify-content: flex-end;
   }
 }
+
+/* Account section */
+.settings-account-info {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+
+.settings-account-info__row {
+  display: flex;
+  gap: var(--space-md);
+  align-items: baseline;
+}
+
+.settings-account-info__label {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.settings-account-info__value {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.settings-section__divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--space-xl) 0;
+}
+
+/* Account deletion section */
+.account-deletion-section {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+
+.account-deletion-section__header {
+  margin-bottom: var(--space-lg);
+}
+
+.account-deletion-section__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-danger);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.account-deletion-section__description {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.account-deletion-section__button {
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.account-deletion-section__button:hover:not(:disabled) {
+  background: var(--color-surface-alt);
+}
+
+.account-deletion-section__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.account-deletion-section__button--danger {
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
+}
+
+.account-deletion-section__button--danger:hover:not(:disabled) {
+  background: var(--color-danger-bg);
+}
+
+/* Deletion Stats Grid */
+.deletion-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: var(--space-md);
+  margin: var(--space-md) 0;
+}
+
+.deletion-stats-grid__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.deletion-stats-grid__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.deletion-stats-grid__label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Deletion Confirmation Modal */
+.deletion-modal {
+  max-width: 520px;
+}
+
+.deletion-modal__warning {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+.deletion-modal__warning-icon {
+  font-size: 1.5rem;
+  color: var(--color-danger);
+  flex-shrink: 0;
+}
+
+.deletion-modal__warning-content {
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.deletion-modal__warning-content strong {
+  color: var(--color-danger);
+}
+
+.deletion-modal__warning-content p {
+  margin: var(--space-xs) 0 0 0;
+  color: var(--color-text-secondary);
+}
+
+.deletion-modal__stats {
+  margin-bottom: var(--space-lg);
+}
+
+.deletion-modal__stats-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.deletion-modal__export {
+  padding: var(--space-md);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+  text-align: center;
+}
+
+.deletion-modal__export p {
+  margin: 0 0 var(--space-md) 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.deletion-modal__export-button {
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.deletion-modal__export-button:hover:not(:disabled) {
+  background: var(--color-primary-subtle);
+}
+
+.deletion-modal__export-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.deletion-modal__blockers {
+  margin-bottom: var(--space-lg);
+}
+
+.deletion-modal__blockers-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.deletion-modal__blocker {
+  padding: var(--space-md);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-warning-border, var(--color-border));
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+}
+
+.deletion-modal__blocker--resolved {
+  background: var(--color-success-bg, #f0fdf4);
+  border-color: var(--color-success-border, #86efac);
+}
+
+.deletion-modal__blocker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.deletion-modal__blocker-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.deletion-modal__blocker-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-success, #22c55e);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.deletion-modal__blocker-content {
+  margin-top: var(--space-sm);
+}
+
+.deletion-modal__blocker-description {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.deletion-modal__blocker-action {
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.deletion-modal__blocker-action:hover {
+  background: var(--color-primary-subtle);
+}
+
+.deletion-modal__blocker-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.deletion-modal__blocker-label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.deletion-modal__blocker-dropdown {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.deletion-modal__confirmation {
+  padding: var(--space-md);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
+.deletion-modal__checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-size: 0.9rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.deletion-modal__checkbox-label input {
+  margin-top: 3px;
+}
+
+.deletion-modal__text-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.deletion-modal__text-label {
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.deletion-modal__text-input {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.deletion-modal__text-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.deletion-modal__error {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-md);
+}

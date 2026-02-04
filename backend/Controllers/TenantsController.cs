@@ -2,6 +2,7 @@ using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
+using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -21,6 +22,7 @@ public partial class TenantsController : ApiControllerBase
     private readonly IItemTemplateRepository _itemTemplateRepository;
     private readonly IThemeRepository _themeRepository;
     private readonly ITokenService _tokenService;
+    private readonly ITenantDeletionService _tenantDeletionService;
     private readonly AuthenticationSettings _settings;
     private readonly ILogger<TenantsController> _logger;
 
@@ -33,6 +35,7 @@ public partial class TenantsController : ApiControllerBase
         IItemTemplateRepository itemTemplateRepository,
         IThemeRepository themeRepository,
         ITokenService tokenService,
+        ITenantDeletionService tenantDeletionService,
         IOptions<AuthenticationSettings> settings,
         ILogger<TenantsController> logger)
     {
@@ -44,6 +47,7 @@ public partial class TenantsController : ApiControllerBase
         _itemTemplateRepository = itemTemplateRepository;
         _themeRepository = themeRepository;
         _tokenService = tokenService;
+        _tenantDeletionService = tenantDeletionService;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -57,13 +61,16 @@ public partial class TenantsController : ApiControllerBase
         var userId = GetUserId();
         var memberships = await _tenantUserRepository.GetByUserIdAsync(userId);
 
-        var response = memberships.Select(m => new TenantMembershipResponse
-        {
-            TenantId = m.TenantId,
-            TenantName = m.Tenant.Name,
-            TenantRole = m.TenantRole,
-            HasCompletedWelcome = m.Tenant.HasCompletedWelcome
-        }).ToList();
+        // Filter out deleted tenants
+        var response = memberships
+            .Where(m => m.Tenant != null && !m.Tenant.IsDeleted)
+            .Select(m => new TenantMembershipResponse
+            {
+                TenantId = m.TenantId,
+                TenantName = m.Tenant!.Name,
+                TenantRole = m.TenantRole,
+                HasCompletedWelcome = m.Tenant.HasCompletedWelcome
+            }).ToList();
 
         return Ok(response);
     }
@@ -432,6 +439,121 @@ public partial class TenantsController : ApiControllerBase
         }
 
         return Ok(new LeaveTenantResponse { Success = true });
+    }
+
+    /// <summary>
+    /// Get deletion statistics for a tenant (requires TenantAdmin role)
+    /// </summary>
+    [HttpGet("{tenantId}/stats")]
+    public async Task<IActionResult> GetTenantStats(int tenantId)
+    {
+        var userId = GetUserId();
+
+        // Verify user is a member of this tenant and has TenantAdmin role
+        var membership = await _tenantUserRepository.GetMembershipAsync(userId, tenantId);
+        if (membership == null)
+        {
+            return NotFound(new { error = "Tenant not found" });
+        }
+
+        if (membership.TenantRole != TenantRole.TenantAdmin)
+        {
+            return Forbid();
+        }
+
+        var stats = await _tenantDeletionService.GetTenantStatsAsync(tenantId);
+        if (stats == null)
+        {
+            return NotFound(new { error = "Tenant not found" });
+        }
+
+        return Ok(stats);
+    }
+
+    /// <summary>
+    /// Soft-delete a tenant (requires TenantAdmin role)
+    /// </summary>
+    [HttpDelete("{tenantId}")]
+    public async Task<IActionResult> DeleteTenant(int tenantId)
+    {
+        var userId = GetUserId();
+
+        // Verify user is a member of this tenant and has TenantAdmin role
+        var membership = await _tenantUserRepository.GetMembershipAsync(userId, tenantId);
+        if (membership == null)
+        {
+            return NotFound(new { error = "Tenant not found" });
+        }
+
+        if (membership.TenantRole != TenantRole.TenantAdmin)
+        {
+            return Forbid();
+        }
+
+        var result = await _tenantDeletionService.SoftDeleteTenantAsync(tenantId, userId);
+        if (!result.Success)
+        {
+            return BadRequest(new { error = "Failed to delete tenant" });
+        }
+
+        // If user was switched to another tenant, update their token
+        if (result.NewActiveTenantId.HasValue)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            var newMembership = await _tenantUserRepository.GetMembershipAsync(userId, result.NewActiveTenantId.Value);
+            if (user != null && newMembership != null)
+            {
+                var appToken = _tokenService.GenerateAppToken(user, newMembership.TenantRole);
+                SetAuthCookie(appToken);
+            }
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Transfer admin role to another user (requires TenantAdmin role)
+    /// </summary>
+    [HttpPost("{tenantId}/transfer-admin")]
+    public async Task<IActionResult> TransferAdmin(int tenantId, [FromBody] TransferAdminRequest request)
+    {
+        var userId = GetUserId();
+
+        // Verify user is a member of this tenant and has TenantAdmin role
+        var membership = await _tenantUserRepository.GetMembershipAsync(userId, tenantId);
+        if (membership == null)
+        {
+            return NotFound(new { error = "Tenant not found" });
+        }
+
+        if (membership.TenantRole != TenantRole.TenantAdmin)
+        {
+            return Forbid();
+        }
+
+        // Verify target user is a member of this tenant
+        var targetMembership = await _tenantUserRepository.GetMembershipAsync(request.NewAdminUserId, tenantId);
+        if (targetMembership == null)
+        {
+            return BadRequest(new { error = "Target user is not a member of this tenant" });
+        }
+
+        // Promote target user and demote current user
+        await _tenantUserRepository.UpdateRoleAsync(request.NewAdminUserId, tenantId, TenantRole.TenantAdmin);
+        await _tenantUserRepository.UpdateRoleAsync(userId, tenantId, TenantRole.Normal);
+
+        _logger.LogInformation("User {UserId} transferred admin role to user {NewAdminUserId} in tenant {TenantId}",
+            userId, request.NewAdminUserId, tenantId);
+
+        // Update the current user's token with their new role
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user != null && user.ActiveTenantId == tenantId)
+        {
+            var appToken = _tokenService.GenerateAppToken(user, TenantRole.Normal);
+            SetAuthCookie(appToken);
+        }
+
+        return Ok(new TransferAdminResponse { Success = true });
     }
 
     private void SetAuthCookie(string token)

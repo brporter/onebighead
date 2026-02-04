@@ -17,6 +17,7 @@ public class ExportControllerTests
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
     private readonly Mock<IItemRepository> _mockItemRepository;
+    private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
     private readonly ExportController _controller;
     private const int TestTenantId = 1;
     private const int TestUserId = 1;
@@ -26,10 +27,12 @@ public class ExportControllerTests
         _mockCollectionRepository = new Mock<ICollectionRepository>();
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockItemRepository = new Mock<IItemRepository>();
+        _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
         _controller = new ExportController(
             _mockCollectionRepository.Object,
             _mockCategoryRepository.Object,
-            _mockItemRepository.Object);
+            _mockItemRepository.Object,
+            _mockItemTemplateRepository.Object);
 
         var claims = new List<Claim>
         {
@@ -59,6 +62,8 @@ public class ExportControllerTests
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Item>());
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         var result = await _controller.ExportData();
@@ -80,6 +85,8 @@ public class ExportControllerTests
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Item>());
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         var result = await _controller.ExportData();
@@ -104,6 +111,8 @@ public class ExportControllerTests
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Item>());
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         var result = await _controller.ExportData();
@@ -150,6 +159,8 @@ public class ExportControllerTests
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Item>());
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         var result = await _controller.ExportData();
@@ -204,6 +215,8 @@ public class ExportControllerTests
             .ReturnsAsync(categories);
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Item>());
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         var result = await _controller.ExportData();
@@ -270,6 +283,8 @@ public class ExportControllerTests
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(items);
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         var result = await _controller.ExportData();
@@ -307,6 +322,8 @@ public class ExportControllerTests
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Item>());
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         await _controller.ExportData();
@@ -328,6 +345,8 @@ public class ExportControllerTests
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Item>());
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         var result = await _controller.ExportData();
@@ -355,6 +374,8 @@ public class ExportControllerTests
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Item>());
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         var result = await _controller.ExportData();
@@ -390,6 +411,8 @@ public class ExportControllerTests
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
             .ReturnsAsync(new List<Item>());
+        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+            .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         var result = await _controller.ExportData();

@@ -1,4 +1,6 @@
 export { default as BackNav } from './BackNav';
+export { DeletionConfirmationModal, type TenantBlocker } from './DeletionConfirmationModal';
+export { DeletionStatsGrid } from './DeletionStatsGrid';
 export { default as ImageEditor } from './ImageEditor';
 export { default as ImageGallery } from './ImageGallery';
 export { Loading } from './Loading';

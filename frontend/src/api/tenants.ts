@@ -49,6 +49,31 @@ export interface SetupTenantResponse {
   collectionName: string;
 }
 
+export interface TenantStats {
+  tenantId: number;
+  tenantName: string;
+  collectionCount: number;
+  categoryCount: number;
+  itemCount: number;
+  imageCount: number;
+  userCount: number;
+  adminCount: number;
+}
+
+export interface TenantDeletionResponse {
+  success: boolean;
+  newActiveTenantId?: number;
+}
+
+export interface TransferAdminRequest {
+  newAdminUserId: number;
+}
+
+export interface TransferAdminResponse {
+  success: boolean;
+  error?: string;
+}
+
 export const tenantsApi = {
   /**
    * Get all tenant memberships for the current user
@@ -91,5 +116,26 @@ export const tenantsApi = {
    */
   setup(request: SetupTenantRequest): Promise<SetupTenantResponse> {
     return api.post<SetupTenantResponse>('/tenants/setup', request);
+  },
+
+  /**
+   * Get deletion statistics for a tenant (requires TenantAdmin)
+   */
+  getStats(tenantId: number): Promise<TenantStats> {
+    return api.get<TenantStats>(`/tenants/${tenantId}/stats`);
+  },
+
+  /**
+   * Soft-delete a tenant (requires TenantAdmin)
+   */
+  deleteTenant(tenantId: number): Promise<TenantDeletionResponse> {
+    return api.delete<TenantDeletionResponse>(`/tenants/${tenantId}`);
+  },
+
+  /**
+   * Transfer admin role to another user (requires TenantAdmin)
+   */
+  transferAdmin(tenantId: number, request: TransferAdminRequest): Promise<TransferAdminResponse> {
+    return api.post<TransferAdminResponse>(`/tenants/${tenantId}/transfer-admin`, request);
   },
 };

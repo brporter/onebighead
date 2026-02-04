@@ -16,6 +16,9 @@ public class ExportData
 
     [JsonPropertyName("items")]
     public List<ItemExport> Items { get; set; } = new();
+
+    [JsonPropertyName("itemTemplates")]
+    public List<ItemTemplateExport> ItemTemplates { get; set; } = new();
 }
 
 public class CollectionExport
@@ -80,9 +83,39 @@ public class ItemExport
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 
+    [JsonPropertyName("userFlag")]
+    public UserFlag UserFlag { get; set; } = UserFlag.None;
+
     [JsonPropertyName("properties")]
     public List<ItemProperty> Properties { get; set; } = new();
 
     [JsonPropertyName("images")]
     public List<ItemImage> Images { get; set; } = new();
+}
+
+public class ItemTemplateExport
+{
+    [JsonPropertyName("itemTemplateId")]
+    public int ItemTemplateId { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("properties")]
+    public List<ItemTemplatePropertyExport> Properties { get; set; } = new();
+}
+
+public class ItemTemplatePropertyExport
+{
+    [JsonPropertyName("category")]
+    public string Category { get; set; } = string.Empty;
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("sortOrder")]
+    public int SortOrder { get; set; }
 }

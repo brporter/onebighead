@@ -24,5 +24,6 @@ export { adminApi } from './admin';
 export { exportApi } from './export';
 export { themesApi } from './themes';
 export { usersApi } from './users';
-export { tenantsApi, type CreateTenantRequest, type CreateTenantResponse, type SwitchTenantResponse, type LeaveTenantResponse } from './tenants';
+export { tenantsApi, type CreateTenantRequest, type CreateTenantResponse, type SwitchTenantResponse, type LeaveTenantResponse, type TenantStats, type TenantDeletionResponse, type TransferAdminRequest, type TransferAdminResponse } from './tenants';
+export { accountApi, type UserDeletionInfo, type TenantMembershipDeletionInfo, type DeleteAccountRequest, type DeleteAccountResponse, TenantActionType, DeletionBlockerReason } from './account';
 export * from './support';
