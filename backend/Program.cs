@@ -2,6 +2,7 @@ using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Middleware;
 using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.Seeding;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -123,9 +124,13 @@ if (app.Environment.IsDevelopment())
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     context.Database.Migrate();
 
-    // Seed database with system data
-    var seeder = new DatabaseSeeder(context);
-    await seeder.SeedAsync();
+    // Seed database with system data from JSON files
+    var seedsPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "seeds");
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+    var seederLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+        .CreateLogger<JsonDatabaseSeeder>();
+    var seeder = new JsonDatabaseSeeder(seedsPath, seederLogger);
+    await seeder.SeedAsync(connectionString);
 }
 
 // Configure the HTTP request pipeline.

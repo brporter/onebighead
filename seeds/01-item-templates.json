@@ -1,0 +1,257 @@
+{
+  "tables": [
+    {
+      "name": "ItemTemplates",
+      "checkColumn": "Name",
+      "identityInsert": true,
+      "rows": [
+        {
+          "Id": 1,
+          "Name": "Book",
+          "Description": "A template for books with author, publisher, and ISBN fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 2,
+          "Name": "Video Game",
+          "Description": "A template for video games with platform, publisher, and genre fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 3,
+          "Name": "Artwork",
+          "Description": "A template for artwork with artist, medium, and dimensions fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 4,
+          "Name": "Music Album",
+          "Description": "A template for music albums with artist, label, and track count fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 5,
+          "Name": "Coin",
+          "Description": "A template for coins with denomination, mint, and year fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 6,
+          "Name": "General Item",
+          "Description": "A general-purpose template for any collectible item",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 7,
+          "Name": "Comic Book",
+          "Description": "A template for comic book collections with publisher, issue, and grading fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 8,
+          "Name": "Knife",
+          "Description": "A template for knife collections with blade, handle, and maker fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 9,
+          "Name": "Firearm",
+          "Description": "A template for firearm collections with caliber, manufacturer, and specifications",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 10,
+          "Name": "Baseball Card",
+          "Description": "A template for baseball card collections with player, year, and grading fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 11,
+          "Name": "Trading Card",
+          "Description": "A template for TCG collections like Pokemon, MTG, and Yu-Gi-Oh",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 12,
+          "Name": "Computer",
+          "Description": "A template for vintage computer collections with specifications and provenance",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "Id": 13,
+          "Name": "Toy",
+          "Description": "A template for toy collections with manufacturer, packaging, and condition fields",
+          "CreatedAt": "2026-01-01T00:00:00Z",
+          "UpdatedAt": "2026-01-01T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "name": "ItemTemplateProperties",
+      "checkColumn": "Name",
+      "identityInsert": true,
+      "rows": [
+        { "Id": 1, "ItemTemplateId": 1, "Category": "Details", "Name": "Author", "SortOrder": 1 },
+        { "Id": 2, "ItemTemplateId": 1, "Category": "Details", "Name": "Publisher", "SortOrder": 2 },
+        { "Id": 3, "ItemTemplateId": 1, "Category": "Details", "Name": "ISBN", "SortOrder": 3 },
+        { "Id": 4, "ItemTemplateId": 1, "Category": "Details", "Name": "Year Published", "SortOrder": 4 },
+        { "Id": 5, "ItemTemplateId": 1, "Category": "Details", "Name": "Genre", "SortOrder": 5 },
+        { "Id": 6, "ItemTemplateId": 1, "Category": "Physical", "Name": "Pages", "SortOrder": 6 },
+        { "Id": 7, "ItemTemplateId": 1, "Category": "Physical", "Name": "Format", "SortOrder": 7 },
+
+        { "Id": 10, "ItemTemplateId": 2, "Category": "Details", "Name": "Platform", "SortOrder": 1 },
+        { "Id": 11, "ItemTemplateId": 2, "Category": "Details", "Name": "Publisher", "SortOrder": 2 },
+        { "Id": 12, "ItemTemplateId": 2, "Category": "Details", "Name": "Developer", "SortOrder": 3 },
+        { "Id": 13, "ItemTemplateId": 2, "Category": "Details", "Name": "Release Year", "SortOrder": 4 },
+        { "Id": 14, "ItemTemplateId": 2, "Category": "Details", "Name": "Genre", "SortOrder": 5 },
+        { "Id": 15, "ItemTemplateId": 2, "Category": "Condition", "Name": "Complete In Box", "SortOrder": 6 },
+        { "Id": 16, "ItemTemplateId": 2, "Category": "Condition", "Name": "Region", "SortOrder": 7 },
+
+        { "Id": 20, "ItemTemplateId": 3, "Category": "Details", "Name": "Artist", "SortOrder": 1 },
+        { "Id": 21, "ItemTemplateId": 3, "Category": "Details", "Name": "Medium", "SortOrder": 2 },
+        { "Id": 22, "ItemTemplateId": 3, "Category": "Details", "Name": "Year Created", "SortOrder": 3 },
+        { "Id": 23, "ItemTemplateId": 3, "Category": "Details", "Name": "Style", "SortOrder": 4 },
+        { "Id": 24, "ItemTemplateId": 3, "Category": "Physical", "Name": "Dimensions", "SortOrder": 5 },
+        { "Id": 25, "ItemTemplateId": 3, "Category": "Physical", "Name": "Framed", "SortOrder": 6 },
+        { "Id": 26, "ItemTemplateId": 3, "Category": "Provenance", "Name": "Edition", "SortOrder": 7 },
+
+        { "Id": 30, "ItemTemplateId": 4, "Category": "Details", "Name": "Artist", "SortOrder": 1 },
+        { "Id": 31, "ItemTemplateId": 4, "Category": "Details", "Name": "Label", "SortOrder": 2 },
+        { "Id": 32, "ItemTemplateId": 4, "Category": "Details", "Name": "Release Year", "SortOrder": 3 },
+        { "Id": 33, "ItemTemplateId": 4, "Category": "Details", "Name": "Genre", "SortOrder": 4 },
+        { "Id": 34, "ItemTemplateId": 4, "Category": "Physical", "Name": "Format", "SortOrder": 5 },
+        { "Id": 35, "ItemTemplateId": 4, "Category": "Physical", "Name": "Track Count", "SortOrder": 6 },
+        { "Id": 36, "ItemTemplateId": 4, "Category": "Condition", "Name": "Pressing", "SortOrder": 7 },
+
+        { "Id": 40, "ItemTemplateId": 5, "Category": "Details", "Name": "Denomination", "SortOrder": 1 },
+        { "Id": 41, "ItemTemplateId": 5, "Category": "Details", "Name": "Country", "SortOrder": 2 },
+        { "Id": 42, "ItemTemplateId": 5, "Category": "Details", "Name": "Year", "SortOrder": 3 },
+        { "Id": 43, "ItemTemplateId": 5, "Category": "Details", "Name": "Mint", "SortOrder": 4 },
+        { "Id": 44, "ItemTemplateId": 5, "Category": "Physical", "Name": "Composition", "SortOrder": 5 },
+        { "Id": 45, "ItemTemplateId": 5, "Category": "Grading", "Name": "Grade", "SortOrder": 6 },
+        { "Id": 46, "ItemTemplateId": 5, "Category": "Grading", "Name": "Certified", "SortOrder": 7 },
+
+        { "Id": 50, "ItemTemplateId": 6, "Category": "Details", "Name": "Type", "SortOrder": 1 },
+        { "Id": 51, "ItemTemplateId": 6, "Category": "Details", "Name": "Brand", "SortOrder": 2 },
+        { "Id": 52, "ItemTemplateId": 6, "Category": "Details", "Name": "Year", "SortOrder": 3 },
+        { "Id": 53, "ItemTemplateId": 6, "Category": "Condition", "Name": "Condition", "SortOrder": 4 },
+
+        { "Id": 60, "ItemTemplateId": 7, "Category": "Details", "Name": "Title", "SortOrder": 1 },
+        { "Id": 61, "ItemTemplateId": 7, "Category": "Details", "Name": "Issue Number", "SortOrder": 2 },
+        { "Id": 62, "ItemTemplateId": 7, "Category": "Details", "Name": "Publisher", "SortOrder": 3 },
+        { "Id": 63, "ItemTemplateId": 7, "Category": "Details", "Name": "Writer", "SortOrder": 4 },
+        { "Id": 64, "ItemTemplateId": 7, "Category": "Details", "Name": "Artist", "SortOrder": 5 },
+        { "Id": 65, "ItemTemplateId": 7, "Category": "Details", "Name": "Cover Date", "SortOrder": 6 },
+        { "Id": 66, "ItemTemplateId": 7, "Category": "Details", "Name": "Variant", "SortOrder": 7 },
+        { "Id": 67, "ItemTemplateId": 7, "Category": "Classification", "Name": "Genre", "SortOrder": 8 },
+        { "Id": 68, "ItemTemplateId": 7, "Category": "Grading", "Name": "Grade", "SortOrder": 9 },
+        { "Id": 69, "ItemTemplateId": 7, "Category": "Grading", "Name": "Grading Service", "SortOrder": 10 },
+        { "Id": 70, "ItemTemplateId": 7, "Category": "Grading", "Name": "Certification Number", "SortOrder": 11 },
+        { "Id": 71, "ItemTemplateId": 7, "Category": "Grading", "Name": "Label Type", "SortOrder": 12 },
+        { "Id": 72, "ItemTemplateId": 7, "Category": "Physical", "Name": "Condition", "SortOrder": 13 },
+        { "Id": 73, "ItemTemplateId": 7, "Category": "Value", "Name": "Estimated Value", "SortOrder": 14 },
+
+        { "Id": 80, "ItemTemplateId": 8, "Category": "Details", "Name": "Maker/Brand", "SortOrder": 1 },
+        { "Id": 81, "ItemTemplateId": 8, "Category": "Details", "Name": "Model", "SortOrder": 2 },
+        { "Id": 82, "ItemTemplateId": 8, "Category": "Details", "Name": "Year", "SortOrder": 3 },
+        { "Id": 83, "ItemTemplateId": 8, "Category": "Details", "Name": "Country of Origin", "SortOrder": 4 },
+        { "Id": 84, "ItemTemplateId": 8, "Category": "Blade", "Name": "Blade Steel", "SortOrder": 5 },
+        { "Id": 85, "ItemTemplateId": 8, "Category": "Blade", "Name": "Blade Length", "SortOrder": 6 },
+        { "Id": 86, "ItemTemplateId": 8, "Category": "Blade", "Name": "Blade Style", "SortOrder": 7 },
+        { "Id": 87, "ItemTemplateId": 8, "Category": "Handle", "Name": "Handle Material", "SortOrder": 8 },
+        { "Id": 88, "ItemTemplateId": 8, "Category": "Handle", "Name": "Handle Color", "SortOrder": 9 },
+        { "Id": 89, "ItemTemplateId": 8, "Category": "Physical", "Name": "Overall Length", "SortOrder": 10 },
+        { "Id": 90, "ItemTemplateId": 8, "Category": "Physical", "Name": "Locking Mechanism", "SortOrder": 11 },
+        { "Id": 91, "ItemTemplateId": 8, "Category": "Physical", "Name": "Condition", "SortOrder": 12 },
+        { "Id": 92, "ItemTemplateId": 8, "Category": "Value", "Name": "Estimated Value", "SortOrder": 13 },
+
+        { "Id": 100, "ItemTemplateId": 9, "Category": "Details", "Name": "Manufacturer", "SortOrder": 1 },
+        { "Id": 101, "ItemTemplateId": 9, "Category": "Details", "Name": "Model", "SortOrder": 2 },
+        { "Id": 102, "ItemTemplateId": 9, "Category": "Details", "Name": "Serial Number", "SortOrder": 3 },
+        { "Id": 103, "ItemTemplateId": 9, "Category": "Details", "Name": "Year Manufactured", "SortOrder": 4 },
+        { "Id": 104, "ItemTemplateId": 9, "Category": "Details", "Name": "Country of Origin", "SortOrder": 5 },
+        { "Id": 105, "ItemTemplateId": 9, "Category": "Specifications", "Name": "Caliber/Gauge", "SortOrder": 6 },
+        { "Id": 106, "ItemTemplateId": 9, "Category": "Specifications", "Name": "Action Type", "SortOrder": 7 },
+        { "Id": 107, "ItemTemplateId": 9, "Category": "Specifications", "Name": "Barrel Length", "SortOrder": 8 },
+        { "Id": 108, "ItemTemplateId": 9, "Category": "Specifications", "Name": "Capacity", "SortOrder": 9 },
+        { "Id": 109, "ItemTemplateId": 9, "Category": "Physical", "Name": "Finish", "SortOrder": 10 },
+        { "Id": 110, "ItemTemplateId": 9, "Category": "Physical", "Name": "Stock/Grip Material", "SortOrder": 11 },
+        { "Id": 111, "ItemTemplateId": 9, "Category": "Physical", "Name": "Condition", "SortOrder": 12 },
+        { "Id": 112, "ItemTemplateId": 9, "Category": "Provenance", "Name": "C&R Eligible", "SortOrder": 13 },
+        { "Id": 113, "ItemTemplateId": 9, "Category": "Value", "Name": "Purchase Price", "SortOrder": 14 },
+        { "Id": 114, "ItemTemplateId": 9, "Category": "Value", "Name": "Estimated Value", "SortOrder": 15 },
+
+        { "Id": 120, "ItemTemplateId": 10, "Category": "Details", "Name": "Player Name", "SortOrder": 1 },
+        { "Id": 121, "ItemTemplateId": 10, "Category": "Details", "Name": "Team", "SortOrder": 2 },
+        { "Id": 122, "ItemTemplateId": 10, "Category": "Details", "Name": "Year", "SortOrder": 3 },
+        { "Id": 123, "ItemTemplateId": 10, "Category": "Details", "Name": "Brand", "SortOrder": 4 },
+        { "Id": 124, "ItemTemplateId": 10, "Category": "Details", "Name": "Set Name", "SortOrder": 5 },
+        { "Id": 125, "ItemTemplateId": 10, "Category": "Details", "Name": "Card Number", "SortOrder": 6 },
+        { "Id": 126, "ItemTemplateId": 10, "Category": "Classification", "Name": "Card Type", "SortOrder": 7 },
+        { "Id": 127, "ItemTemplateId": 10, "Category": "Classification", "Name": "Parallel/Variation", "SortOrder": 8 },
+        { "Id": 128, "ItemTemplateId": 10, "Category": "Grading", "Name": "Grade", "SortOrder": 9 },
+        { "Id": 129, "ItemTemplateId": 10, "Category": "Grading", "Name": "Grading Service", "SortOrder": 10 },
+        { "Id": 130, "ItemTemplateId": 10, "Category": "Grading", "Name": "Certification Number", "SortOrder": 11 },
+        { "Id": 131, "ItemTemplateId": 10, "Category": "Physical", "Name": "Condition", "SortOrder": 12 },
+        { "Id": 132, "ItemTemplateId": 10, "Category": "Value", "Name": "Estimated Value", "SortOrder": 13 },
+
+        { "Id": 140, "ItemTemplateId": 11, "Category": "Details", "Name": "Card Name", "SortOrder": 1 },
+        { "Id": 141, "ItemTemplateId": 11, "Category": "Details", "Name": "Set/Expansion", "SortOrder": 2 },
+        { "Id": 142, "ItemTemplateId": 11, "Category": "Details", "Name": "Card Number", "SortOrder": 3 },
+        { "Id": 143, "ItemTemplateId": 11, "Category": "Details", "Name": "Year", "SortOrder": 4 },
+        { "Id": 144, "ItemTemplateId": 11, "Category": "Details", "Name": "Game/TCG", "SortOrder": 5 },
+        { "Id": 145, "ItemTemplateId": 11, "Category": "Classification", "Name": "Rarity", "SortOrder": 6 },
+        { "Id": 146, "ItemTemplateId": 11, "Category": "Classification", "Name": "Card Type", "SortOrder": 7 },
+        { "Id": 147, "ItemTemplateId": 11, "Category": "Classification", "Name": "Foil Type", "SortOrder": 8 },
+        { "Id": 148, "ItemTemplateId": 11, "Category": "Grading", "Name": "Grade", "SortOrder": 9 },
+        { "Id": 149, "ItemTemplateId": 11, "Category": "Grading", "Name": "Grading Service", "SortOrder": 10 },
+        { "Id": 150, "ItemTemplateId": 11, "Category": "Grading", "Name": "Certification Number", "SortOrder": 11 },
+        { "Id": 151, "ItemTemplateId": 11, "Category": "Physical", "Name": "Condition", "SortOrder": 12 },
+        { "Id": 152, "ItemTemplateId": 11, "Category": "Physical", "Name": "Language", "SortOrder": 13 },
+        { "Id": 153, "ItemTemplateId": 11, "Category": "Physical", "Name": "Edition", "SortOrder": 14 },
+        { "Id": 154, "ItemTemplateId": 11, "Category": "Value", "Name": "Estimated Value", "SortOrder": 15 },
+
+        { "Id": 160, "ItemTemplateId": 12, "Category": "Details", "Name": "Manufacturer", "SortOrder": 1 },
+        { "Id": 161, "ItemTemplateId": 12, "Category": "Details", "Name": "Model", "SortOrder": 2 },
+        { "Id": 162, "ItemTemplateId": 12, "Category": "Details", "Name": "Year", "SortOrder": 3 },
+        { "Id": 163, "ItemTemplateId": 12, "Category": "Details", "Name": "Serial Number", "SortOrder": 4 },
+        { "Id": 164, "ItemTemplateId": 12, "Category": "Specifications", "Name": "Processor", "SortOrder": 5 },
+        { "Id": 165, "ItemTemplateId": 12, "Category": "Specifications", "Name": "RAM", "SortOrder": 6 },
+        { "Id": 166, "ItemTemplateId": 12, "Category": "Specifications", "Name": "Storage", "SortOrder": 7 },
+        { "Id": 167, "ItemTemplateId": 12, "Category": "Specifications", "Name": "Display", "SortOrder": 8 },
+        { "Id": 168, "ItemTemplateId": 12, "Category": "Specifications", "Name": "Operating System", "SortOrder": 9 },
+        { "Id": 169, "ItemTemplateId": 12, "Category": "Physical", "Name": "Form Factor", "SortOrder": 10 },
+        { "Id": 170, "ItemTemplateId": 12, "Category": "Physical", "Name": "Condition", "SortOrder": 11 },
+        { "Id": 171, "ItemTemplateId": 12, "Category": "Physical", "Name": "Working Status", "SortOrder": 12 },
+        { "Id": 172, "ItemTemplateId": 12, "Category": "Provenance", "Name": "Original Owner", "SortOrder": 13 },
+        { "Id": 173, "ItemTemplateId": 12, "Category": "Value", "Name": "Estimated Value", "SortOrder": 14 },
+
+        { "Id": 180, "ItemTemplateId": 13, "Category": "Details", "Name": "Name", "SortOrder": 1 },
+        { "Id": 181, "ItemTemplateId": 13, "Category": "Details", "Name": "Toy Line", "SortOrder": 2 },
+        { "Id": 182, "ItemTemplateId": 13, "Category": "Details", "Name": "Manufacturer", "SortOrder": 3 },
+        { "Id": 183, "ItemTemplateId": 13, "Category": "Details", "Name": "Year", "SortOrder": 4 },
+        { "Id": 184, "ItemTemplateId": 13, "Category": "Details", "Name": "Country of Origin", "SortOrder": 5 },
+        { "Id": 185, "ItemTemplateId": 13, "Category": "Classification", "Name": "Character/Subject", "SortOrder": 6 },
+        { "Id": 186, "ItemTemplateId": 13, "Category": "Classification", "Name": "Scale", "SortOrder": 7 },
+        { "Id": 187, "ItemTemplateId": 13, "Category": "Classification", "Name": "Material", "SortOrder": 8 },
+        { "Id": 188, "ItemTemplateId": 13, "Category": "Packaging", "Name": "Packaging Status", "SortOrder": 9 },
+        { "Id": 189, "ItemTemplateId": 13, "Category": "Packaging", "Name": "Package Condition", "SortOrder": 10 },
+        { "Id": 190, "ItemTemplateId": 13, "Category": "Physical", "Name": "Condition", "SortOrder": 11 },
+        { "Id": 191, "ItemTemplateId": 13, "Category": "Physical", "Name": "Completeness", "SortOrder": 12 },
+        { "Id": 192, "ItemTemplateId": 13, "Category": "Value", "Name": "Estimated Value", "SortOrder": 13 }
+      ]
+    }
+  ]
+}

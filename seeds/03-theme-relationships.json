@@ -1,0 +1,114 @@
+{
+  "tables": [
+    {
+      "name": "CollectionThemeTemplates",
+      "checkColumns": ["ThemeId", "ItemTemplateId"],
+      "rows": [
+        { "ThemeId": 1, "ItemTemplateId": 1, "SortOrder": 1 },
+        { "ThemeId": 2, "ItemTemplateId": 2, "SortOrder": 1 },
+        { "ThemeId": 3, "ItemTemplateId": 3, "SortOrder": 1 },
+        { "ThemeId": 4, "ItemTemplateId": 4, "SortOrder": 1 },
+        { "ThemeId": 5, "ItemTemplateId": 5, "SortOrder": 1 },
+        { "ThemeId": 6, "ItemTemplateId": 6, "SortOrder": 1 },
+        { "ThemeId": 7, "ItemTemplateId": 7, "SortOrder": 1 },
+        { "ThemeId": 8, "ItemTemplateId": 8, "SortOrder": 1 },
+        { "ThemeId": 9, "ItemTemplateId": 9, "SortOrder": 1 },
+        { "ThemeId": 10, "ItemTemplateId": 10, "SortOrder": 1 },
+        { "ThemeId": 11, "ItemTemplateId": 11, "SortOrder": 1 },
+        { "ThemeId": 12, "ItemTemplateId": 12, "SortOrder": 1 },
+        { "ThemeId": 13, "ItemTemplateId": 13, "SortOrder": 1 }
+      ]
+    },
+    {
+      "name": "CollectionThemeCategories",
+      "checkColumn": "Name",
+      "identityInsert": true,
+      "rows": [
+        { "Id": 1, "ThemeId": 1, "Name": "Fiction", "Description": "Fictional works", "ParentName": null, "SortOrder": 1 },
+        { "Id": 2, "ThemeId": 1, "Name": "Non-Fiction", "Description": "Non-fiction works", "ParentName": null, "SortOrder": 2 },
+        { "Id": 3, "ThemeId": 1, "Name": "Comics & Graphic Novels", "Description": "Visual storytelling", "ParentName": null, "SortOrder": 3 },
+
+        { "Id": 4, "ThemeId": 2, "Name": "Console", "Description": "Console games", "ParentName": null, "SortOrder": 1 },
+        { "Id": 5, "ThemeId": 2, "Name": "PC", "Description": "PC games", "ParentName": null, "SortOrder": 2 },
+        { "Id": 6, "ThemeId": 2, "Name": "Handheld", "Description": "Handheld games", "ParentName": null, "SortOrder": 3 },
+        { "Id": 7, "ThemeId": 2, "Name": "Retro", "Description": "Retro and vintage games", "ParentName": null, "SortOrder": 4 },
+
+        { "Id": 8, "ThemeId": 3, "Name": "Paintings", "Description": "Painted works", "ParentName": null, "SortOrder": 1 },
+        { "Id": 9, "ThemeId": 3, "Name": "Sculptures", "Description": "Three-dimensional art", "ParentName": null, "SortOrder": 2 },
+        { "Id": 10, "ThemeId": 3, "Name": "Prints", "Description": "Printed reproductions", "ParentName": null, "SortOrder": 3 },
+        { "Id": 11, "ThemeId": 3, "Name": "Photography", "Description": "Photographic art", "ParentName": null, "SortOrder": 4 },
+
+        { "Id": 12, "ThemeId": 4, "Name": "Vinyl Records", "Description": "Vinyl LP and singles", "ParentName": null, "SortOrder": 1 },
+        { "Id": 13, "ThemeId": 4, "Name": "CDs", "Description": "Compact discs", "ParentName": null, "SortOrder": 2 },
+        { "Id": 14, "ThemeId": 4, "Name": "Cassettes", "Description": "Audio cassettes", "ParentName": null, "SortOrder": 3 },
+        { "Id": 15, "ThemeId": 4, "Name": "Memorabilia", "Description": "Music memorabilia", "ParentName": null, "SortOrder": 4 },
+
+        { "Id": 16, "ThemeId": 5, "Name": "US Coins", "Description": "United States coinage", "ParentName": null, "SortOrder": 1 },
+        { "Id": 17, "ThemeId": 5, "Name": "World Coins", "Description": "International coinage", "ParentName": null, "SortOrder": 2 },
+        { "Id": 18, "ThemeId": 5, "Name": "Ancient Coins", "Description": "Ancient and medieval coins", "ParentName": null, "SortOrder": 3 },
+        { "Id": 19, "ThemeId": 5, "Name": "Paper Currency", "Description": "Banknotes and paper money", "ParentName": null, "SortOrder": 4 },
+
+        { "Id": 20, "ThemeId": 6, "Name": "Uncategorized", "Description": "Items without a category", "ParentName": null, "SortOrder": 1 },
+
+        { "Id": 21, "ThemeId": 7, "Name": "DC Comics", "Description": "DC Comics publications", "ParentName": null, "SortOrder": 1 },
+        { "Id": 22, "ThemeId": 7, "Name": "Marvel", "Description": "Marvel Comics publications", "ParentName": null, "SortOrder": 2 },
+        { "Id": 23, "ThemeId": 7, "Name": "Image", "Description": "Image Comics publications", "ParentName": null, "SortOrder": 3 },
+        { "Id": 24, "ThemeId": 7, "Name": "Dark Horse", "Description": "Dark Horse Comics publications", "ParentName": null, "SortOrder": 4 },
+        { "Id": 25, "ThemeId": 7, "Name": "Indie/Other", "Description": "Independent and other publishers", "ParentName": null, "SortOrder": 5 },
+        { "Id": 26, "ThemeId": 7, "Name": "Golden Age", "Description": "Comics from 1938-1956", "ParentName": null, "SortOrder": 6 },
+        { "Id": 27, "ThemeId": 7, "Name": "Silver Age", "Description": "Comics from 1956-1970", "ParentName": null, "SortOrder": 7 },
+        { "Id": 28, "ThemeId": 7, "Name": "Bronze Age", "Description": "Comics from 1970-1985", "ParentName": null, "SortOrder": 8 },
+        { "Id": 29, "ThemeId": 7, "Name": "Modern Age", "Description": "Comics from 1985-present", "ParentName": null, "SortOrder": 9 },
+
+        { "Id": 30, "ThemeId": 8, "Name": "Folding Knives", "Description": "Knives with folding blades", "ParentName": null, "SortOrder": 1 },
+        { "Id": 31, "ThemeId": 8, "Name": "Fixed Blade", "Description": "Knives with fixed blades", "ParentName": null, "SortOrder": 2 },
+        { "Id": 32, "ThemeId": 8, "Name": "Pocket Knives", "Description": "Traditional pocket knives", "ParentName": null, "SortOrder": 3 },
+        { "Id": 33, "ThemeId": 8, "Name": "Hunting", "Description": "Hunting knives", "ParentName": null, "SortOrder": 4 },
+        { "Id": 34, "ThemeId": 8, "Name": "Tactical", "Description": "Tactical and military knives", "ParentName": null, "SortOrder": 5 },
+        { "Id": 35, "ThemeId": 8, "Name": "Kitchen", "Description": "Kitchen and culinary knives", "ParentName": null, "SortOrder": 6 },
+        { "Id": 36, "ThemeId": 8, "Name": "Custom/Handmade", "Description": "Custom and handmade knives", "ParentName": null, "SortOrder": 7 },
+        { "Id": 37, "ThemeId": 8, "Name": "Vintage/Antique", "Description": "Vintage and antique knives", "ParentName": null, "SortOrder": 8 },
+
+        { "Id": 38, "ThemeId": 9, "Name": "Handguns", "Description": "Pistols and revolvers", "ParentName": null, "SortOrder": 1 },
+        { "Id": 39, "ThemeId": 9, "Name": "Rifles", "Description": "Rifles of all types", "ParentName": null, "SortOrder": 2 },
+        { "Id": 40, "ThemeId": 9, "Name": "Shotguns", "Description": "Shotguns of all types", "ParentName": null, "SortOrder": 3 },
+        { "Id": 41, "ThemeId": 9, "Name": "Antique/C&R", "Description": "Antique and Curio & Relic firearms", "ParentName": null, "SortOrder": 4 },
+        { "Id": 42, "ThemeId": 9, "Name": "Military Surplus", "Description": "Military surplus firearms", "ParentName": null, "SortOrder": 5 },
+        { "Id": 43, "ThemeId": 9, "Name": "Sporting", "Description": "Sporting and competition firearms", "ParentName": null, "SortOrder": 6 },
+        { "Id": 44, "ThemeId": 9, "Name": "Self Defense", "Description": "Self defense and concealed carry", "ParentName": null, "SortOrder": 7 },
+
+        { "Id": 45, "ThemeId": 10, "Name": "Vintage (Pre-1980)", "Description": "Cards from before 1980", "ParentName": null, "SortOrder": 1 },
+        { "Id": 46, "ThemeId": 10, "Name": "Modern (1980+)", "Description": "Cards from 1980 to present", "ParentName": null, "SortOrder": 2 },
+        { "Id": 47, "ThemeId": 10, "Name": "Rookies", "Description": "Rookie cards", "ParentName": null, "SortOrder": 3 },
+        { "Id": 48, "ThemeId": 10, "Name": "Hall of Famers", "Description": "Hall of Fame player cards", "ParentName": null, "SortOrder": 4 },
+        { "Id": 49, "ThemeId": 10, "Name": "Autographs", "Description": "Autographed cards", "ParentName": null, "SortOrder": 5 },
+        { "Id": 50, "ThemeId": 10, "Name": "Memorabilia Cards", "Description": "Cards with game-used memorabilia", "ParentName": null, "SortOrder": 6 },
+        { "Id": 51, "ThemeId": 10, "Name": "Complete Sets", "Description": "Complete card sets", "ParentName": null, "SortOrder": 7 },
+
+        { "Id": 52, "ThemeId": 11, "Name": "Pokémon", "Description": "Pokémon Trading Card Game", "ParentName": null, "SortOrder": 1 },
+        { "Id": 53, "ThemeId": 11, "Name": "Magic: The Gathering", "Description": "Magic: The Gathering cards", "ParentName": null, "SortOrder": 2 },
+        { "Id": 54, "ThemeId": 11, "Name": "Yu-Gi-Oh!", "Description": "Yu-Gi-Oh! Trading Card Game", "ParentName": null, "SortOrder": 3 },
+        { "Id": 55, "ThemeId": 11, "Name": "Sports Cards", "Description": "Non-baseball sports cards", "ParentName": null, "SortOrder": 4 },
+        { "Id": 56, "ThemeId": 11, "Name": "Other TCG", "Description": "Other trading card games", "ParentName": null, "SortOrder": 5 },
+
+        { "Id": 57, "ThemeId": 12, "Name": "Apple/Macintosh", "Description": "Apple and Macintosh computers", "ParentName": null, "SortOrder": 1 },
+        { "Id": 58, "ThemeId": 12, "Name": "IBM PC Compatible", "Description": "IBM PC and compatible systems", "ParentName": null, "SortOrder": 2 },
+        { "Id": 59, "ThemeId": 12, "Name": "Commodore", "Description": "Commodore computers", "ParentName": null, "SortOrder": 3 },
+        { "Id": 60, "ThemeId": 12, "Name": "Atari", "Description": "Atari computers", "ParentName": null, "SortOrder": 4 },
+        { "Id": 61, "ThemeId": 12, "Name": "Gaming Consoles", "Description": "Video game consoles", "ParentName": null, "SortOrder": 5 },
+        { "Id": 62, "ThemeId": 12, "Name": "Mainframes/Minicomputers", "Description": "Large-scale computing systems", "ParentName": null, "SortOrder": 6 },
+        { "Id": 63, "ThemeId": 12, "Name": "Peripherals", "Description": "Computer peripherals and accessories", "ParentName": null, "SortOrder": 7 },
+        { "Id": 64, "ThemeId": 12, "Name": "Software", "Description": "Vintage software and media", "ParentName": null, "SortOrder": 8 },
+
+        { "Id": 65, "ThemeId": 13, "Name": "Action Figures", "Description": "Action figures and articulated toys", "ParentName": null, "SortOrder": 1 },
+        { "Id": 66, "ThemeId": 13, "Name": "Dolls", "Description": "Dolls and fashion toys", "ParentName": null, "SortOrder": 2 },
+        { "Id": 67, "ThemeId": 13, "Name": "LEGO", "Description": "LEGO sets and bricks", "ParentName": null, "SortOrder": 3 },
+        { "Id": 68, "ThemeId": 13, "Name": "Die-Cast/Vehicles", "Description": "Die-cast and vehicle toys", "ParentName": null, "SortOrder": 4 },
+        { "Id": 69, "ThemeId": 13, "Name": "Board Games", "Description": "Board games and puzzles", "ParentName": null, "SortOrder": 5 },
+        { "Id": 70, "ThemeId": 13, "Name": "Plush/Stuffed", "Description": "Plush and stuffed toys", "ParentName": null, "SortOrder": 6 },
+        { "Id": 71, "ThemeId": 13, "Name": "Vintage", "Description": "Vintage and antique toys", "ParentName": null, "SortOrder": 7 },
+        { "Id": 72, "ThemeId": 13, "Name": "Modern", "Description": "Modern collectible toys", "ParentName": null, "SortOrder": 8 }
+      ]
+    }
+  ]
+}

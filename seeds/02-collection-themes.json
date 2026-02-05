@@ -1,0 +1,102 @@
+{
+  "tables": [
+    {
+      "name": "CollectionThemes",
+      "checkColumn": "Name",
+      "identityInsert": true,
+      "rows": [
+        {
+          "Id": 1,
+          "Name": "Books",
+          "Description": "For book collections including novels, textbooks, comics, and more",
+          "IconName": "book",
+          "SortOrder": 1
+        },
+        {
+          "Id": 2,
+          "Name": "Video Games",
+          "Description": "For video game collections across all platforms",
+          "IconName": "gamepad",
+          "SortOrder": 2
+        },
+        {
+          "Id": 3,
+          "Name": "Art",
+          "Description": "For art collections including paintings, sculptures, and prints",
+          "IconName": "palette",
+          "SortOrder": 3
+        },
+        {
+          "Id": 4,
+          "Name": "Music",
+          "Description": "For music collections including vinyl, CDs, and memorabilia",
+          "IconName": "music",
+          "SortOrder": 4
+        },
+        {
+          "Id": 5,
+          "Name": "Coins & Currency",
+          "Description": "For numismatic collections including coins, banknotes, and tokens",
+          "IconName": "coins",
+          "SortOrder": 5
+        },
+        {
+          "Id": 6,
+          "Name": "General",
+          "Description": "A flexible theme for any type of collection",
+          "IconName": "box",
+          "SortOrder": 99
+        },
+        {
+          "Id": 7,
+          "Name": "Comic Books",
+          "Description": "For comic book collections organized by publisher and era",
+          "IconName": "book-open",
+          "SortOrder": 6
+        },
+        {
+          "Id": 8,
+          "Name": "Knives",
+          "Description": "For knife collections including folding, fixed blade, and custom knives",
+          "IconName": "scissors",
+          "SortOrder": 7
+        },
+        {
+          "Id": 9,
+          "Name": "Firearms",
+          "Description": "For firearm collections organized by type and purpose",
+          "IconName": "target",
+          "SortOrder": 8
+        },
+        {
+          "Id": 10,
+          "Name": "Baseball Cards",
+          "Description": "For baseball card collections organized by era and type",
+          "IconName": "id-card",
+          "SortOrder": 9
+        },
+        {
+          "Id": 11,
+          "Name": "Trading Cards",
+          "Description": "For TCG collections like Pokemon, Magic, and Yu-Gi-Oh",
+          "IconName": "layers",
+          "SortOrder": 10
+        },
+        {
+          "Id": 12,
+          "Name": "Computers",
+          "Description": "For vintage and retro computer collections",
+          "IconName": "monitor",
+          "SortOrder": 11
+        },
+        {
+          "Id": 13,
+          "Name": "Toys",
+          "Description": "For toy collections including action figures, dolls, and vehicles",
+          "IconName": "puzzle-piece",
+          "SortOrder": 12
+        }
+      ]
+    }
+  ]
+}

@@ -164,8 +164,8 @@ jobs:
         run: |
           dotnet publish tools/dbreset/dbreset.csproj -c Release -r linux-x64 -o publish
           dotnet publish tools/dbseed/dbseed.csproj -c Release -r linux-x64 -o publish
-          # Copy seed data files
-          cp -r tools/dbseed/seeds publish/seeds
+          # Copy seed data files from central location
+          cp -r seeds publish/seeds
 
       # Generate migration assets
       - name: Generate migration script and bundle

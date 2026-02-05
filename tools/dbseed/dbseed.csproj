@@ -12,12 +12,14 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
   </ItemGroup>
 
+  <!-- Link shared seeding code from backend -->
   <ItemGroup>
-    <None Update="seeds\**\*.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <Compile Include="..\..\backend\Services\Seeding\SeedModels.cs" Link="Seeding\SeedModels.cs" />
+    <Compile Include="..\..\backend\Services\Seeding\JsonDatabaseSeeder.cs" Link="Seeding\JsonDatabaseSeeder.cs" />
   </ItemGroup>
 
 </Project>
