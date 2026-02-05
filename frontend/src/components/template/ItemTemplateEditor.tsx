@@ -1,13 +1,40 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '../../contexts/DataContext';
+import { SortablePropertyList, type BaseProperty, type FieldConfig } from '../common';
 import '../../styles/ItemTemplateEditor.css';
 import type { ItemTemplate, ItemTemplateProperty } from '../../utils/types';
+
+interface PropertyFormData extends BaseProperty {
+  id: string;
+  category: string;
+  name: string;
+}
 
 interface ItemTemplateEditorProps {
   onClose: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
   isFullPage?: boolean;
 }
+
+// Generate unique ID for drag-and-drop
+let propertyIdCounter = 0;
+const generatePropertyId = () => `prop-${++propertyIdCounter}`;
+
+const FIELD_CONFIG: FieldConfig[] = [
+  { field: 'category', placeholder: 'e.g., Specs, Details' },
+  { field: 'name', placeholder: 'e.g., CPU, Author' },
+];
+
+const CLASS_NAMES = {
+  list: 'template-form__propertyList',
+  categoryGroup: 'template-form__categoryGroup',
+  categoryHeader: 'template-form__categoryHeader',
+  row: 'template-form__propertyRow',
+  rowDragging: 'template-form__propertyRow--dragging',
+  rowOverlay: 'template-form__propertyRow--overlay',
+  input: 'template-form__input',
+  removeButton: 'template-form__removeBtn',
+};
 
 function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: ItemTemplateEditorProps) {
   const {
@@ -25,12 +52,12 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    properties: [] as { category: string; name: string }[],
+    properties: [] as PropertyFormData[],
   });
   const [originalFormData, setOriginalFormData] = useState({
     name: '',
     description: '',
-    properties: [] as { category: string; name: string }[],
+    properties: [] as PropertyFormData[],
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,7 +86,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
   }, [filter, loadItemTemplates]);
 
   const handleAddClick = () => {
-    const initial = { name: '', description: '', properties: [] as { category: string; name: string }[] };
+    const initial = { name: '', description: '', properties: [] as PropertyFormData[] };
     setFormData(initial);
     setOriginalFormData(initial);
     setIsAdding(true);
@@ -71,7 +98,11 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
     const initial = {
       name: template.name,
       description: template.description,
-      properties: template.properties.map((p) => ({ category: p.category, name: p.name })),
+      properties: template.properties.map((p) => ({
+        id: generatePropertyId(),
+        category: p.category,
+        name: p.name,
+      })),
     };
     setFormData(initial);
     setOriginalFormData(JSON.parse(JSON.stringify(initial)));
@@ -89,21 +120,28 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
   const handleAddProperty = () => {
     setFormData((prev) => ({
       ...prev,
-      properties: [...prev.properties, { category: '', name: '' }],
+      properties: [...prev.properties, { id: generatePropertyId(), category: '', name: '' }],
     }));
   };
 
-  const handleRemoveProperty = (index: number) => {
+  const handleRemoveProperty = (id: string) => {
     setFormData((prev) => ({
       ...prev,
-      properties: prev.properties.filter((_, i) => i !== index),
+      properties: prev.properties.filter((p) => p.id !== id),
     }));
   };
 
-  const handlePropertyChange = (index: number, field: 'category' | 'name', value: string) => {
+  const handleFieldChange = (id: string, field: keyof PropertyFormData, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      properties: prev.properties.map((p, i) => (i === index ? { ...p, [field]: value } : p)),
+      properties: prev.properties.map((p) => (p.id === id ? { ...p, [field]: value } : p)),
+    }));
+  };
+
+  const handlePropertiesReorder = (newProperties: PropertyFormData[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      properties: newProperties,
     }));
   };
 
@@ -229,7 +267,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
           <p className="template-form__sectionHint">
             Define the fields that items using this template will have. Group related properties under the same category.
           </p>
-          
+
           <div className="template-form__properties">
             {formData.properties.length === 0 ? (
               <div className="template-form__emptyProperties">
@@ -238,41 +276,24 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
                 <p className="template-form__emptyHint">Add properties to define what data items will store</p>
               </div>
             ) : (
-              <div className="template-form__propertyList">
+              <>
                 <div className="template-form__propertyHeader">
+                  <span></span>
                   <span>Category</span>
                   <span>Property Name</span>
                   <span></span>
                 </div>
-                {formData.properties.map((prop, index) => (
-                  <div key={index} className="template-form__propertyRow">
-                    <input
-                      type="text"
-                      className="template-form__input"
-                      value={prop.category}
-                      onChange={(e) => handlePropertyChange(index, 'category', e.target.value)}
-                      placeholder="e.g., Specs, Details"
-                    />
-                    <input
-                      type="text"
-                      className="template-form__input"
-                      value={prop.name}
-                      onChange={(e) => handlePropertyChange(index, 'name', e.target.value)}
-                      placeholder="e.g., CPU, Author"
-                    />
-                    <button
-                      type="button"
-                      className="template-form__removeBtn"
-                      onClick={() => handleRemoveProperty(index)}
-                      aria-label="Remove property"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
+                <SortablePropertyList
+                  properties={formData.properties}
+                  fields={FIELD_CONFIG}
+                  classNames={CLASS_NAMES}
+                  onPropertiesChange={handlePropertiesReorder}
+                  onFieldChange={handleFieldChange}
+                  onRemove={handleRemoveProperty}
+                />
+              </>
             )}
-            
+
             <button
               type="button"
               className="template-form__addProperty"
@@ -311,18 +332,18 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
   const renderTemplateCard = (template: ItemTemplate, isSystem: boolean) => {
     const grouped = groupPropertiesByCategory(template.properties);
     const categoryCount = Object.keys(grouped).length;
-    
+
     return (
       <div key={template.itemTemplateId} className="template-card">
         <div className="template-card__header">
           <h4 className="template-card__name">{template.name}</h4>
           {isSystem && <span className="template-card__badge">System</span>}
         </div>
-        
+
         {template.description && (
           <p className="template-card__description">{template.description}</p>
         )}
-        
+
         <div className="template-card__stats">
           <span className="template-card__stat">
             <strong>{template.properties.length}</strong> properties
@@ -331,7 +352,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
             <strong>{categoryCount}</strong> {categoryCount === 1 ? 'category' : 'categories'}
           </span>
         </div>
-        
+
         {template.properties.length > 0 && (
           <div className="template-card__preview">
             {Object.entries(grouped).slice(0, 3).map(([category, props]) => (
@@ -350,7 +371,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
             )}
           </div>
         )}
-        
+
         <div className="template-card__actions">
           {isSystem ? (
             <button
@@ -457,7 +478,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
             </div>
           )}
 
-          {itemTemplates.length > 0 && 
+          {itemTemplates.length > 0 &&
            ((filter === 'workspace' && workspaceTemplates.length === 0) ||
             (filter === 'system' && systemTemplates.length === 0)) && (
             <div className="template-editor__empty">

@@ -68,12 +68,14 @@ public class UpdateItemTemplateRequest
             Description = Description
         };
 
+        var sortOrder = 0;
         foreach (var prop in Properties)
         {
             template.Properties.Add(new ItemTemplateProperty
             {
                 Category = prop.Category,
-                Name = prop.Name
+                Name = prop.Name,
+                SortOrder = sortOrder++
             });
         }
 

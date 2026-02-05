@@ -1,4 +1,7 @@
 export { default as BackNav } from './BackNav';
+export { DragHandle } from './DragHandle';
+export { SortablePropertyList } from './SortablePropertyList';
+export type { BaseProperty, PropertyWithValue, FieldConfig } from './SortablePropertyList';
 export { DeletionConfirmationModal, type WorkspaceBlocker } from './DeletionConfirmationModal';
 export { DeletionStatsGrid } from './DeletionStatsGrid';
 export { default as ImageEditor } from './ImageEditor';
