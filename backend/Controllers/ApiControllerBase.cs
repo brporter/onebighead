@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using OneBigHead.Server.Authentication;
 using System.Security.Claims;
 
 namespace OneBigHead.Server.Controllers;
@@ -34,7 +35,7 @@ public abstract class ApiControllerBase : ControllerBase
     /// <exception cref="UnauthorizedAccessException">Thrown when workspace_id claim is missing or invalid.</exception>
     protected int GetWorkspaceId()
     {
-        var workspaceIdClaim = User.FindFirst("workspace_id")?.Value;
+        var workspaceIdClaim = User.FindFirst(ClaimNames.WorkspaceId)?.Value;
         if (string.IsNullOrEmpty(workspaceIdClaim) || !int.TryParse(workspaceIdClaim, out var workspaceId))
         {
             throw new UnauthorizedAccessException("Workspace ID not found in token");
@@ -48,7 +49,7 @@ public abstract class ApiControllerBase : ControllerBase
     /// <returns>The workspace ID if present and valid; otherwise, null.</returns>
     protected int? TryGetWorkspaceId()
     {
-        var workspaceIdClaim = User.FindFirst("workspace_id")?.Value;
+        var workspaceIdClaim = User.FindFirst(ClaimNames.WorkspaceId)?.Value;
         if (string.IsNullOrEmpty(workspaceIdClaim) || !int.TryParse(workspaceIdClaim, out var workspaceId))
         {
             return null;

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Services;
 
 namespace OneBigHead.Server.Middleware;
@@ -150,7 +151,7 @@ public class WorkspaceActiveMiddleware
         }
 
         // Get workspace ID from claims
-        var workspaceIdClaim = context.User.FindFirst("workspace_id")?.Value;
+        var workspaceIdClaim = context.User.FindFirst(ClaimNames.WorkspaceId)?.Value;
         if (string.IsNullOrEmpty(workspaceIdClaim) || !int.TryParse(workspaceIdClaim, out var workspaceId))
         {
             // No workspace in token, let the request proceed (will likely fail auth)

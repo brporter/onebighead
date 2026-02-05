@@ -2,7 +2,7 @@
  * Workspaces API
  */
 import { api } from './client';
-import type { WorkspaceMembership } from '../utils/types';
+import { WorkspaceRole, type WorkspaceMembership } from '../utils/types';
 
 export interface CreateWorkspaceRequest {
   name: string;
@@ -11,7 +11,7 @@ export interface CreateWorkspaceRequest {
 export interface CreateWorkspaceResponse {
   workspaceId: number;
   workspaceName: string;
-  workspaceRole: string;
+  workspaceRole: WorkspaceRole;
   hasCompletedWelcome: boolean;
 }
 
@@ -44,7 +44,7 @@ export interface SetupWorkspaceRequest {
 export interface SetupWorkspaceResponse {
   workspaceId: number;
   workspaceName: string;
-  workspaceRole: string;
+  workspaceRole: WorkspaceRole;
   collectionId: number;
   collectionName: string;
 }

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using OneBigHead.Server.Authentication;
 
 namespace OneBigHead.Server.Middleware;
 
@@ -58,7 +59,7 @@ public class AuditLoggingMiddleware
 
         // Extract user info from claims
         var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
-        var workspaceId = context.User.FindFirst("workspace_id")?.Value ?? "none";
+        var workspaceId = context.User.FindFirst(ClaimNames.WorkspaceId)?.Value ?? "none";
         var email = context.User.FindFirst(ClaimTypes.Email)?.Value ?? "unknown";
 
         // Log before execution

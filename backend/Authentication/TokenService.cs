@@ -30,9 +30,9 @@ public class TokenService : ITokenService
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Email, user.Email),
-            new("workspace_id", user.ActiveWorkspaceId.ToString()),
-            new("provider", user.IdentityProvider.ToString()),
-            new("workspace_role", workspaceRole.ToString()),
+            new(ClaimNames.WorkspaceId, user.ActiveWorkspaceId.ToString()),
+            new(ClaimNames.Provider, user.IdentityProvider.ToString()),
+            new(ClaimNames.WorkspaceRole, workspaceRole.ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 

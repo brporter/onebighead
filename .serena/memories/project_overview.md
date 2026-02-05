@@ -1,7 +1,7 @@
 # OneBigHead Project Overview
 
 ## Purpose
-OneBigHead is a multi-tenant collection management SaaS application. Users can create collections of items organized into hierarchical categories, with support for custom item templates, image uploads, and public/private visibility controls.
+OneBigHead is a multi-workspace collection management SaaS application. Users can create collections of items organized into hierarchical categories, with support for custom item templates, image uploads, and public/private visibility controls.
 
 ## Tech Stack
 - **Backend**: .NET 10.0 with ASP.NET Core, Entity Framework Core
@@ -13,8 +13,8 @@ OneBigHead is a multi-tenant collection management SaaS application. Users can c
 ## Architecture
 
 ### Backend Structure
-- `Controllers/` - API endpoints inheriting from `ApiControllerBase` (provides tenant context)
-- `Models/` - EF Core entities (Collection, Category, Item, ItemTemplate, User, Tenant, etc.)
+- `Controllers/` - API endpoints inheriting from `ApiControllerBase` (provides workspace context)
+- `Models/` - EF Core entities (Collection, Category, Item, ItemTemplate, User, Workspace, etc.)
 - `Data/` - Repository pattern with interfaces (I*Repository) and implementations, plus AppDbContext
 - `DTOs/` - Data transfer objects for API requests/responses
 - `Services/` - Business logic (ImageProvider, VisibilityService, etc.)
@@ -30,14 +30,14 @@ OneBigHead is a multi-tenant collection management SaaS application. Users can c
 - `tests/` - Component and integration tests
 
 ### Key Patterns
-- Multi-tenancy: All data access scoped by TenantId via repository methods
+- Multi-workspace: All data access scoped by WorkspaceId via repository methods
 - Repository Pattern: All database access through repository interfaces
 - Context API: React state management via DataContext and UserContext
 - Lazy Loading: Routes use React.lazy() and Suspense
 - BEM CSS: Naming convention like `setupWizard__container`
 
 ### Domain Model
-- **Tenant**: Multi-tenant container, has Users and Collections
+- **Workspace**: Multi-workspace container, has Users and Collections
 - **Collection**: Top-level container, has Categories and Items
 - **Category**: Hierarchical (parent/child), can have ItemTemplates assigned
 - **Item**: Belongs to Collection and optionally Category, has Properties and Images

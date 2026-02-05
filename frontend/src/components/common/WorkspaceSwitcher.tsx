@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { workspacesApi } from '../../api';
-import type { WorkspaceMembership } from '../../utils/types';
+import { WorkspaceRole, type WorkspaceMembership } from '../../utils/types';
 
 import './WorkspaceSwitcher.css';
 
@@ -70,7 +70,7 @@ export function WorkspaceSwitcher() {
             <div className="workspace-switcher__item workspace-switcher__item--active">
               <span className="workspace-switcher__item-name">{activeWorkspace.workspaceName}</span>
               <span className="workspace-switcher__item-role">
-                {activeWorkspace.workspaceRole === 'WorkspaceAdmin' ? 'Admin' : 'Member'}
+                {activeWorkspace.workspaceRole === WorkspaceRole.WorkspaceAdmin ? 'Admin' : 'Member'}
               </span>
             </div>
           </div>
@@ -88,7 +88,7 @@ export function WorkspaceSwitcher() {
                 >
                   <span className="workspace-switcher__item-name">{workspace.workspaceName}</span>
                   <span className="workspace-switcher__item-role">
-                    {workspace.workspaceRole === 'WorkspaceAdmin' ? 'Admin' : 'Member'}
+                    {workspace.workspaceRole === WorkspaceRole.WorkspaceAdmin ? 'Admin' : 'Member'}
                   </span>
                 </button>
               ))}

@@ -345,10 +345,10 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var workspaceIdClaim = User.FindFirst("workspace_id")?.Value;
+        var workspaceIdClaim = User.FindFirst(ClaimNames.WorkspaceId)?.Value;
         var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
         var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var workspaceRoleClaim = User.FindFirst("workspace_role")?.Value;
+        var workspaceRoleClaim = User.FindFirst(ClaimNames.WorkspaceRole)?.Value;
         var isAdmin = User.IsInRole("SystemAdministrator");
 
         if (string.IsNullOrEmpty(workspaceIdClaim) || string.IsNullOrEmpty(userIdClaim) ||
@@ -430,7 +430,7 @@ public class AuthController : ControllerBase
     [HttpPost("complete-welcome")]
     public async Task<IActionResult> CompleteWelcome([FromBody] CompleteWelcomeRequest request)
     {
-        var workspaceIdClaim = User.FindFirst("workspace_id")?.Value;
+        var workspaceIdClaim = User.FindFirst(ClaimNames.WorkspaceId)?.Value;
         var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
 
         if (string.IsNullOrEmpty(workspaceIdClaim) || !int.TryParse(workspaceIdClaim, out var workspaceId))

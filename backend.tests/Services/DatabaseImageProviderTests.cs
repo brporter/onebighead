@@ -91,7 +91,7 @@ public class DatabaseImageProviderTests : IDisposable
     #region RetrieveAsync Tests
 
     [Fact]
-    public async Task RetrieveAsync_ReturnsImage_WhenExistsAndBelongsToTenant()
+    public async Task RetrieveAsync_ReturnsImage_WhenExistsAndBelongsToWorkspace()
     {
         // Arrange
         var imageData = new byte[] { 0xFF, 0xD8, 0xFF };
@@ -137,9 +137,9 @@ public class DatabaseImageProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task RetrieveAsync_EnforcesTenantIsolation()
+    public async Task RetrieveAsync_EnforcesWorkspaceIsolation()
     {
-        // Arrange - Store images for two different tenants
+        // Arrange - Store images for two different workspaces
         var imageData1 = new byte[] { 0xFF, 0xD8, 0xFF };
         var imageData2 = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
         
@@ -158,7 +158,7 @@ public class DatabaseImageProviderTests : IDisposable
         Assert.NotNull(workspace2Image);
         Assert.Equal(imageData2, workspace2Image.Data);
 
-        // Cross-tenant access should fail
+        // Cross-workspace access should fail
         Assert.Null(await _provider.RetrieveAsync(result1.Key, OtherWorkspaceId));
         Assert.Null(await _provider.RetrieveAsync(result2.Key, TestWorkspaceId));
     }
@@ -168,7 +168,7 @@ public class DatabaseImageProviderTests : IDisposable
     #region DeleteAsync Tests
 
     [Fact]
-    public async Task DeleteAsync_RemovesImage_WhenExistsAndBelongsToTenant()
+    public async Task DeleteAsync_RemovesImage_WhenExistsAndBelongsToWorkspace()
     {
         // Arrange
         var imageData = new byte[] { 0xFF, 0xD8, 0xFF };
@@ -210,17 +210,17 @@ public class DatabaseImageProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteAsync_EnforcesTenantIsolation()
+    public async Task DeleteAsync_EnforcesWorkspaceIsolation()
     {
         // Arrange
         var imageData = new byte[] { 0xFF, 0xD8, 0xFF };
         using var stream = new MemoryStream(imageData);
         var storeResult = await _provider.StoreAsync(TestWorkspaceId, "test.jpg", "image/jpeg", stream);
 
-        // Act - Malicious workspace tries to delete another workspace's image
+        // Act - Another workspace tries to delete a different workspace's image
         await _provider.DeleteAsync(storeResult.Key, OtherWorkspaceId);
 
-        // Assert - Image should still exist (tenant isolation protected it)
+        // Assert - Image should still exist (workspace isolation protected it)
         var retrievedImage = await _provider.RetrieveAsync(storeResult.Key, TestWorkspaceId);
         Assert.NotNull(retrievedImage);
     }

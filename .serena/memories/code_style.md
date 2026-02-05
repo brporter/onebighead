@@ -4,7 +4,7 @@
 
 ### Naming
 - Classes/Methods: PascalCase (e.g., `CollectionRepository`, `GetByIdAsync`)
-- Parameters/Variables: camelCase (e.g., `collectionId`, `tenantId`)
+- Parameters/Variables: camelCase (e.g., `collectionId`, `workspaceId`)
 - Interfaces: Prefix with I (e.g., `ICollectionRepository`)
 - Async methods: Suffix with Async (e.g., `CreateAsync`)
 
