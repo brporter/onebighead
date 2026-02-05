@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DeletionConfirmationModal, type TenantBlocker } from '../common';
+import { DeletionConfirmationModal, type WorkspaceBlocker } from '../common';
 import {
   accountApi,
   DeletionBlockerReason,
-  TenantActionType,
+  WorkspaceActionType,
   type UserDeletionInfo,
-  type TenantActionRequest
+  type WorkspaceActionRequest
 } from '../../api/account';
 import { useUser } from '../../contexts/UserContext';
 
@@ -19,7 +19,7 @@ export function AccountDeletionSection({ onDeleted }: AccountDeletionSectionProp
   const [deletionInfo, setDeletionInfo] = useState<UserDeletionInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [blockers, setBlockers] = useState<TenantBlocker[]>([]);
+  const [blockers, setBlockers] = useState<WorkspaceBlocker[]>([]);
 
   const loadDeletionInfo = useCallback(async () => {
     setIsLoading(true);
@@ -29,17 +29,17 @@ export function AccountDeletionSection({ onDeleted }: AccountDeletionSectionProp
       setDeletionInfo(info);
 
       // Convert to blockers format
-      const tenantBlockers: TenantBlocker[] = info.tenantMemberships
+      const workspaceBlockers: WorkspaceBlocker[] = info.workspaceMemberships
         .filter(m => !m.canLeave)
         .map(m => ({
-          tenantId: m.tenantId,
-          tenantName: m.tenantName,
+          workspaceId: m.workspaceId,
+          workspaceName: m.workspaceName,
           reason: m.blockerReason,
           users: m.otherUsers,
           resolved: false,
         }));
 
-      setBlockers(tenantBlockers);
+      setBlockers(workspaceBlockers);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load account information');
     } finally {
@@ -52,9 +52,9 @@ export function AccountDeletionSection({ onDeleted }: AccountDeletionSectionProp
     setIsModalOpen(true);
   };
 
-  const handleResolveBlocker = (tenantId: number, action: TenantActionType, userId?: number) => {
+  const handleResolveBlocker = (workspaceId: number, action: WorkspaceActionType, userId?: number) => {
     setBlockers(prev => prev.map(b => {
-      if (b.tenantId !== tenantId) return b;
+      if (b.workspaceId !== workspaceId) return b;
       return {
         ...b,
         resolved: true,
@@ -67,18 +67,18 @@ export function AccountDeletionSection({ onDeleted }: AccountDeletionSectionProp
   const handleConfirmDelete = useCallback(async () => {
     if (!deletionInfo) return;
 
-    // Build tenant actions from resolved blockers
-    const tenantActions: TenantActionRequest[] = blockers
+    // Build workspace actions from resolved blockers
+    const workspaceActions: WorkspaceActionRequest[] = blockers
       .filter(b => b.resolved && b.action)
       .map(b => ({
-        tenantId: b.tenantId,
+        workspaceId: b.workspaceId,
         action: b.action!,
         transferToUserId: b.transferToUserId,
       }));
 
     const result = await accountApi.deleteAccount({
       confirmEmail: deletionInfo.email,
-      tenantActions,
+      workspaceActions,
     });
 
     if (!result.success) {
@@ -98,16 +98,16 @@ export function AccountDeletionSection({ onDeleted }: AccountDeletionSectionProp
     setIsModalOpen(false);
     // Reset blockers when closing
     if (deletionInfo) {
-      const tenantBlockers: TenantBlocker[] = deletionInfo.tenantMemberships
+      const workspaceBlockers: WorkspaceBlocker[] = deletionInfo.workspaceMemberships
         .filter(m => !m.canLeave)
         .map(m => ({
-          tenantId: m.tenantId,
-          tenantName: m.tenantName,
+          workspaceId: m.workspaceId,
+          workspaceName: m.workspaceName,
           reason: m.blockerReason,
           users: m.otherUsers,
           resolved: false,
         }));
-      setBlockers(tenantBlockers);
+      setBlockers(workspaceBlockers);
     }
   };
 

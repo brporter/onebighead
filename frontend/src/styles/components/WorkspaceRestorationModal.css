@@ -1,0 +1,122 @@
+.restoration-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.restoration-modal {
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.restoration-modal__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.restoration-modal__description {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-secondary);
+}
+
+.restoration-modal__error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.restoration-modal__loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-secondary);
+}
+
+.restoration-modal__options {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.restoration-modal__option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.restoration-modal__workspaces {
+  margin-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.75rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.restoration-modal__workspace {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.restoration-modal__workspace:hover {
+  background: var(--color-surface-alt);
+}
+
+.restoration-modal__workspace-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.restoration-modal__workspace-name {
+  font-weight: 500;
+}
+
+.restoration-modal__workspace-stats {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.restoration-modal__workspace-countdown {
+  font-size: 0.75rem;
+  color: var(--color-warning);
+}
+
+.restoration-modal__button {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.restoration-modal__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.restoration-modal__button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}

@@ -4,12 +4,12 @@ namespace OneBigHead.Server.Data;
 
 public interface ICollectionRepository
 {
-    Task<IEnumerable<Collection>> GetAllAsync(int tenantId);
-    Task<Collection?> GetByIdAsync(int id, int tenantId);
-    Task<Collection?> GetBySlugAsync(string slug, int tenantId);
-    Task<Collection?> GetByTenantIdAsync(int tenantId);
+    Task<IEnumerable<Collection>> GetAllAsync(int workspaceId);
+    Task<Collection?> GetByIdAsync(int id, int workspaceId);
+    Task<Collection?> GetBySlugAsync(string slug, int workspaceId);
+    Task<Collection?> GetByWorkspaceIdAsync(int workspaceId);
     Task<Collection> CreateAsync(Collection collection);
-    Task<Collection?> UpdateAsync(int id, Collection collection, int tenantId);
-    Task<bool> DeleteAsync(int id, int tenantId);
-    Task<int> GetCountAsync(int tenantId);
+    Task<Collection?> UpdateAsync(int id, Collection collection, int workspaceId);
+    Task<bool> DeleteAsync(int id, int workspaceId);
+    Task<int> GetCountAsync(int workspaceId);
 }

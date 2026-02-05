@@ -15,13 +15,13 @@ public class DtoValidationTests
         return validationResults;
     }
 
-    #region TenantRequests Tests
+    #region WorkspaceRequests Tests
 
     [Fact]
-    public void CreateTenantRequest_RequiresName()
+    public void CreateWorkspaceRequest_RequiresName()
     {
         // Arrange
-        var request = new CreateTenantRequest { Name = "" };
+        var request = new CreateWorkspaceRequest { Name = "" };
 
         // Act
         var results = ValidateModel(request);
@@ -31,10 +31,10 @@ public class DtoValidationTests
     }
 
     [Fact]
-    public void CreateTenantRequest_ValidatesMaxLength()
+    public void CreateWorkspaceRequest_ValidatesMaxLength()
     {
         // Arrange
-        var request = new CreateTenantRequest { Name = new string('A', 201) };
+        var request = new CreateWorkspaceRequest { Name = new string('A', 201) };
 
         // Act
         var results = ValidateModel(request);
@@ -44,10 +44,10 @@ public class DtoValidationTests
     }
 
     [Fact]
-    public void CreateTenantRequest_ValidWithProperName()
+    public void CreateWorkspaceRequest_ValidWithProperName()
     {
         // Arrange
-        var request = new CreateTenantRequest { Name = "My Tenant" };
+        var request = new CreateWorkspaceRequest { Name = "My Workspace" };
 
         // Act
         var results = ValidateModel(request);
@@ -57,46 +57,46 @@ public class DtoValidationTests
     }
 
     [Fact]
-    public void TenantMembershipResponse_SetsDefaultValues()
+    public void WorkspaceMembershipResponse_SetsDefaultValues()
     {
         // Arrange & Act
-        var response = new TenantMembershipResponse();
+        var response = new WorkspaceMembershipResponse();
 
         // Assert
-        Assert.Equal(0, response.TenantId);
-        Assert.Equal(string.Empty, response.TenantName);
-        Assert.Equal(default, response.TenantRole);
+        Assert.Equal(0, response.WorkspaceId);
+        Assert.Equal(string.Empty, response.WorkspaceName);
+        Assert.Equal(default, response.WorkspaceRole);
         Assert.False(response.HasCompletedWelcome);
     }
 
     [Fact]
-    public void CreateTenantResponse_SetsDefaultValues()
+    public void CreateWorkspaceResponse_SetsDefaultValues()
     {
         // Arrange & Act
-        var response = new CreateTenantResponse();
+        var response = new CreateWorkspaceResponse();
 
         // Assert
-        Assert.Equal(0, response.TenantId);
-        Assert.Equal(string.Empty, response.TenantName);
+        Assert.Equal(0, response.WorkspaceId);
+        Assert.Equal(string.Empty, response.WorkspaceName);
     }
 
     [Fact]
-    public void SwitchTenantResponse_SetsDefaultValues()
+    public void SwitchWorkspaceResponse_SetsDefaultValues()
     {
         // Arrange & Act
-        var response = new SwitchTenantResponse();
+        var response = new SwitchWorkspaceResponse();
 
         // Assert
         Assert.False(response.Success);
-        Assert.Equal(0, response.TenantId);
-        Assert.Equal(string.Empty, response.TenantName);
+        Assert.Equal(0, response.WorkspaceId);
+        Assert.Equal(string.Empty, response.WorkspaceName);
     }
 
     [Fact]
-    public void LeaveTenantResponse_SetsDefaultValues()
+    public void LeaveWorkspaceResponse_SetsDefaultValues()
     {
         // Arrange & Act
-        var response = new LeaveTenantResponse();
+        var response = new LeaveWorkspaceResponse();
 
         // Assert
         Assert.False(response.Success);
@@ -107,13 +107,13 @@ public class DtoValidationTests
     #region AdminRequests Tests
 
     [Fact]
-    public void TenantSummaryResponse_SetsDefaultValues()
+    public void WorkspaceSummaryResponse_SetsDefaultValues()
     {
         // Arrange & Act
-        var response = new TenantSummaryResponse();
+        var response = new WorkspaceSummaryResponse();
 
         // Assert
-        Assert.Equal(0, response.TenantId);
+        Assert.Equal(0, response.WorkspaceId);
         Assert.Equal(string.Empty, response.Name);
         Assert.Equal(0, response.UserCount);
         Assert.Equal(0, response.CollectionCount);
@@ -130,8 +130,8 @@ public class DtoValidationTests
         // Assert
         Assert.Equal(0, response.UserId);
         Assert.Equal(string.Empty, response.Email);
-        Assert.Equal(0, response.TenantId);
-        Assert.Equal(string.Empty, response.TenantName);
+        Assert.Equal(0, response.WorkspaceId);
+        Assert.Equal(string.Empty, response.WorkspaceName);
         Assert.Equal(string.Empty, response.IdentityProvider);
         Assert.False(response.IsSystemAdministrator);
     }

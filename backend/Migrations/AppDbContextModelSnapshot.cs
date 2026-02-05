@@ -50,12 +50,12 @@ namespace OneBigHead.Server.Migrations
                     b.Property<int?>("ParentCategoryId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TenantId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Visibility")
                         .HasColumnType("int")
                         .HasJsonPropertyName("visibility");
+
+                    b.Property<int>("WorkspaceId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -63,7 +63,7 @@ namespace OneBigHead.Server.Migrations
 
                     b.HasIndex("ParentCategoryId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("WorkspaceId");
 
                     b.ToTable("Categories");
                 });
@@ -119,18 +119,18 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("TenantId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Visibility")
                         .HasColumnType("int")
                         .HasJsonPropertyName("visibility");
 
+                    b.Property<int>("WorkspaceId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("WorkspaceId");
 
-                    b.HasIndex("TenantId", "Slug")
+                    b.HasIndex("WorkspaceId", "Slug")
                         .IsUnique();
 
                     b.ToTable("Collections");
@@ -283,10 +283,6 @@ namespace OneBigHead.Server.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasJsonPropertyName("summary");
 
-                    b.Property<int>("TenantId")
-                        .HasColumnType("int")
-                        .HasJsonPropertyName("tenantId");
-
                     b.Property<int>("UserFlag")
                         .HasColumnType("int")
                         .HasJsonPropertyName("userFlag");
@@ -295,17 +291,21 @@ namespace OneBigHead.Server.Migrations
                         .HasColumnType("int")
                         .HasJsonPropertyName("visibility");
 
+                    b.Property<int>("WorkspaceId")
+                        .HasColumnType("int")
+                        .HasJsonPropertyName("workspaceId");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("CollectionId");
 
-                    b.HasIndex("TenantId");
-
                     b.HasIndex("UserFlag");
 
-                    b.HasIndex("TenantId", "UserFlag");
+                    b.HasIndex("WorkspaceId");
+
+                    b.HasIndex("WorkspaceId", "UserFlag");
 
                     b.ToTable("Items");
                 });
@@ -332,15 +332,15 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int?>("TenantId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("WorkspaceId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("WorkspaceId");
 
                     b.ToTable("ItemTemplates");
                 });
@@ -388,9 +388,6 @@ namespace OneBigHead.Server.Migrations
                     b.Property<int>("CollectionId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TenantId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
@@ -399,9 +396,12 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("WorkspaceId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("WorkspaceId");
 
                     b.HasIndex("CollectionId", "Type");
 
@@ -434,12 +434,12 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<int>("TenantId")
+                    b.Property<int>("WorkspaceId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("WorkspaceId");
 
                     b.ToTable("StoredImages");
                 });
@@ -541,7 +541,58 @@ namespace OneBigHead.Server.Migrations
                     b.ToTable("SupportRequests");
                 });
 
-            modelBuilder.Entity("OneBigHead.Server.Models.Tenant", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AcceptedTermsAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ActiveWorkspaceId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<int>("IdentityProvider")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSystemAdministrator")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ProviderSubjectId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActiveWorkspaceId");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("IdentityProvider", "ProviderSubjectId")
+                        .IsUnique()
+                        .HasFilter("[ProviderSubjectId] IS NOT NULL");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.Workspace", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -575,79 +626,28 @@ namespace OneBigHead.Server.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("Tenants");
+                    b.ToTable("Workspaces");
                 });
 
-            modelBuilder.Entity("OneBigHead.Server.Models.TenantUser", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.WorkspaceUser", b =>
                 {
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TenantId")
+                    b.Property<int>("WorkspaceId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("TenantRole")
+                    b.Property<int>("WorkspaceRole")
                         .HasColumnType("int");
 
-                    b.HasKey("UserId", "TenantId");
+                    b.HasKey("UserId", "WorkspaceId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("WorkspaceId");
 
-                    b.ToTable("TenantUsers");
-                });
-
-            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("AcceptedTermsAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ActiveTenantId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(320)
-                        .HasColumnType("nvarchar(320)");
-
-                    b.Property<int>("IdentityProvider")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsSystemAdministrator")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ProviderSubjectId")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActiveTenantId");
-
-                    b.HasIndex("Email");
-
-                    b.HasIndex("IdentityProvider", "ProviderSubjectId")
-                        .IsUnique()
-                        .HasFilter("[ProviderSubjectId] IS NOT NULL");
-
-                    b.ToTable("Users");
+                    b.ToTable("WorkspaceUsers");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.Category", b =>
@@ -663,9 +663,9 @@ namespace OneBigHead.Server.Migrations
                         .HasForeignKey("ParentCategoryId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Workspace", "Workspace")
                         .WithMany("Categories")
-                        .HasForeignKey("TenantId")
+                        .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -673,7 +673,7 @@ namespace OneBigHead.Server.Migrations
 
                     b.Navigation("ParentCategory");
 
-                    b.Navigation("Tenant");
+                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.CategoryItemTemplate", b =>
@@ -697,13 +697,13 @@ namespace OneBigHead.Server.Migrations
 
             modelBuilder.Entity("OneBigHead.Server.Models.Collection", b =>
                 {
-                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Workspace", "Workspace")
                         .WithMany("Collections")
-                        .HasForeignKey("TenantId")
+                        .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Tenant");
+                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.CollectionItemTemplate", b =>
@@ -768,9 +768,9 @@ namespace OneBigHead.Server.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Workspace", "Workspace")
                         .WithMany()
-                        .HasForeignKey("TenantId")
+                        .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -778,17 +778,17 @@ namespace OneBigHead.Server.Migrations
 
                     b.Navigation("Collection");
 
-                    b.Navigation("Tenant");
+                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.ItemTemplate", b =>
                 {
-                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Workspace", "Workspace")
                         .WithMany()
-                        .HasForeignKey("TenantId")
+                        .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.Navigation("Tenant");
+                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.ItemTemplateProperty", b =>
@@ -810,26 +810,26 @@ namespace OneBigHead.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Workspace", "Workspace")
                         .WithMany()
-                        .HasForeignKey("TenantId")
+                        .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Collection");
 
-                    b.Navigation("Tenant");
+                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.StoredImage", b =>
                 {
-                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
+                    b.HasOne("OneBigHead.Server.Models.Workspace", "Workspace")
                         .WithMany()
-                        .HasForeignKey("TenantId")
+                        .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Tenant");
+                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.SupportReply", b =>
@@ -860,34 +860,34 @@ namespace OneBigHead.Server.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("OneBigHead.Server.Models.TenantUser", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
                 {
-                    b.HasOne("OneBigHead.Server.Models.Tenant", "Tenant")
-                        .WithMany("TenantUsers")
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("OneBigHead.Server.Models.Workspace", "ActiveWorkspace")
+                        .WithMany("ActiveUsers")
+                        .HasForeignKey("ActiveWorkspaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("ActiveWorkspace");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.WorkspaceUser", b =>
+                {
                     b.HasOne("OneBigHead.Server.Models.User", "User")
-                        .WithMany("TenantMemberships")
+                        .WithMany("WorkspaceMemberships")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Tenant");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
-                {
-                    b.HasOne("OneBigHead.Server.Models.Tenant", "ActiveTenant")
-                        .WithMany("ActiveUsers")
-                        .HasForeignKey("ActiveTenantId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("OneBigHead.Server.Models.Workspace", "Workspace")
+                        .WithMany("WorkspaceUsers")
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ActiveTenant");
+                    b.Navigation("User");
+
+                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.Category", b =>
@@ -927,7 +927,12 @@ namespace OneBigHead.Server.Migrations
                     b.Navigation("Replies");
                 });
 
-            modelBuilder.Entity("OneBigHead.Server.Models.Tenant", b =>
+            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
+                {
+                    b.Navigation("WorkspaceMemberships");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.Workspace", b =>
                 {
                     b.Navigation("ActiveUsers");
 
@@ -935,12 +940,7 @@ namespace OneBigHead.Server.Migrations
 
                     b.Navigation("Collections");
 
-                    b.Navigation("TenantUsers");
-                });
-
-            modelBuilder.Entity("OneBigHead.Server.Models.User", b =>
-                {
-                    b.Navigation("TenantMemberships");
+                    b.Navigation("WorkspaceUsers");
                 });
 #pragma warning restore 612, 618
         }

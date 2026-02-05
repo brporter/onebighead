@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import type { Item, ItemProperty, ItemImage, Category, CategoryNode, Collection, Tenant } from '../src/utils/types';
+import type { Item, ItemProperty, ItemImage, Category, CategoryNode, Collection, Workspace } from '../src/utils/types';
 
 describe('types', () => {
   describe('Item interface', () => {
     it('should accept valid Item object', () => {
       const item: Item = {
         id: 1,
-        tenantId: 1,
+        workspaceId: 1,
         categoryId: 1,
         name: 'Test Item',
         summary: 'Test summary',
@@ -22,7 +22,7 @@ describe('types', () => {
     it('should accept null id for new items', () => {
       const item: Item = {
         id: null,
-        tenantId: 1,
+        workspaceId: 1,
         categoryId: 1,
         name: 'New Item',
         summary: '',
@@ -37,7 +37,7 @@ describe('types', () => {
     it('should accept null categoryId', () => {
       const item: Item = {
         id: 1,
-        tenantId: 1,
+        workspaceId: 1,
         categoryId: null,
         name: 'Uncategorized Item',
         summary: '',
@@ -79,7 +79,7 @@ describe('types', () => {
   describe('Category interface', () => {
     it('should accept valid Category object', () => {
       const category: Category = {
-        tenantId: 1,
+        workspaceId: 1,
         categoryId: 1,
         name: 'Test Category',
         description: 'Test description',
@@ -93,7 +93,7 @@ describe('types', () => {
 
     it('should accept parentCategoryId as number', () => {
       const category: Category = {
-        tenantId: 1,
+        workspaceId: 1,
         categoryId: 2,
         name: 'Child Category',
         description: 'Child description',
@@ -108,7 +108,7 @@ describe('types', () => {
   describe('CategoryNode interface', () => {
     it('should extend Category with children array', () => {
       const node: CategoryNode = {
-        tenantId: 1,
+        workspaceId: 1,
         categoryId: 1,
         name: 'Parent',
         description: 'Parent desc',
@@ -116,7 +116,7 @@ describe('types', () => {
         isSystem: false,
         children: [
           {
-            tenantId: 1,
+            workspaceId: 1,
             categoryId: 2,
             name: 'Child',
             description: 'Child desc',
@@ -137,7 +137,7 @@ describe('types', () => {
       const collection: Collection = {
         collectionId: 1,
         name: 'My Collection',
-        tenantId: 1,
+        workspaceId: 1,
       };
 
       expect(collection.collectionId).toBe(1);
@@ -145,16 +145,16 @@ describe('types', () => {
     });
   });
 
-  describe('Tenant interface', () => {
-    it('should accept valid Tenant object', () => {
-      const tenant: Tenant = {
-        tenantId: 1,
-        name: 'Test Tenant',
+  describe('Workspace interface', () => {
+    it('should accept valid Workspace object', () => {
+      const workspace: Workspace = {
+        workspaceId: 1,
+        name: 'Test Workspace',
         owner: 'owner@example.com',
       };
 
-      expect(tenant.tenantId).toBe(1);
-      expect(tenant.owner).toBe('owner@example.com');
+      expect(workspace.workspaceId).toBe(1);
+      expect(workspace.owner).toBe('owner@example.com');
     });
   });
 });

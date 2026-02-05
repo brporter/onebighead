@@ -677,16 +677,16 @@
 }
 
 /* ==========================================================================
-   My Tenants Section
+   My Workspaces Section
    ========================================================================== */
 
-.settings-tenant-list {
+.settings-workspace-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
 }
 
-.settings-tenant-card {
+.settings-workspace-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -698,35 +698,35 @@
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.settings-tenant-card:hover {
+.settings-workspace-card:hover {
   border-color: var(--color-border-hover);
 }
 
-.settings-tenant-card--active {
+.settings-workspace-card--active {
   border-color: var(--color-primary);
   background: var(--color-surface-raised);
 }
 
-.settings-tenant-card__content {
+.settings-workspace-card__content {
   flex: 1;
   min-width: 0;
 }
 
-.settings-tenant-card__header {
+.settings-workspace-card__header {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
-.settings-tenant-card__name {
+.settings-workspace-card__name {
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
   color: var(--color-text);
 }
 
-.settings-tenant-card__badge {
+.settings-workspace-card__badge {
   font-size: 0.75rem;
   padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-sm);
@@ -734,29 +734,29 @@
   color: var(--color-text-muted);
 }
 
-.settings-tenant-card__badge--current {
+.settings-workspace-card__badge--current {
   background: var(--color-primary);
   color: var(--color-text-inverse);
 }
 
-.settings-tenant-card__badge--admin {
+.settings-workspace-card__badge--admin {
   background: var(--color-warning-bg);
   color: var(--color-warning);
 }
 
-.settings-tenant-card__status {
+.settings-workspace-card__status {
   margin: var(--space-xs) 0 0;
   font-size: 0.875rem;
   color: var(--color-text-muted);
 }
 
-.settings-tenant-card__actions {
+.settings-workspace-card__actions {
   display: flex;
   gap: var(--space-sm);
   flex-shrink: 0;
 }
 
-.settings-tenant-card__button {
+.settings-workspace-card__button {
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -767,53 +767,53 @@
   transition: all var(--transition-fast);
 }
 
-.settings-tenant-card__button:hover:not(:disabled) {
+.settings-workspace-card__button:hover:not(:disabled) {
   background: var(--color-surface-hover);
   border-color: var(--color-border-hover);
 }
 
-.settings-tenant-card__button:disabled {
+.settings-workspace-card__button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.settings-tenant-card__button--danger {
+.settings-workspace-card__button--danger {
   color: var(--color-danger);
   border-color: var(--color-danger-border);
 }
 
-.settings-tenant-card__button--danger:hover:not(:disabled) {
+.settings-workspace-card__button--danger:hover:not(:disabled) {
   background: var(--color-danger-bg);
 }
 
-.settings-tenant-card__button--primary {
+.settings-workspace-card__button--primary {
   background: var(--color-primary);
   color: var(--color-text-inverse);
   border-color: var(--color-primary);
 }
 
-.settings-tenant-card__button--primary:hover:not(:disabled) {
+.settings-workspace-card__button--primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
 }
 
-.settings-tenant-card--deleted {
+.settings-workspace-card--deleted {
   opacity: 0.8;
   border-style: dashed;
 }
 
-.settings-tenant-card__badge--deleted {
+.settings-workspace-card__badge--deleted {
   background: var(--color-warning-bg);
   color: var(--color-warning);
 }
 
-.settings-tenant-card__stats {
+.settings-workspace-card__stats {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
   margin: 0;
 }
 
-.settings-tenant-card__countdown {
+.settings-workspace-card__countdown {
   font-size: 0.75rem;
   color: var(--color-warning);
   margin: 0.25rem 0 0;
@@ -825,12 +825,12 @@
 }
 
 @media (max-width: 640px) {
-  .settings-tenant-card {
+  .settings-workspace-card {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .settings-tenant-card__actions {
+  .settings-workspace-card__actions {
     justify-content: flex-end;
   }
 }

@@ -38,8 +38,8 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICollectionRepository, CollectionRepository>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<ITenantRepository, TenantRepository>();
-builder.Services.AddScoped<ITenantUserRepository, TenantUserRepository>();
+builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+builder.Services.AddScoped<IWorkspaceUserRepository, WorkspaceUserRepository>();
 builder.Services.AddScoped<IPropertySuggestionRepository, PropertySuggestionRepository>();
 builder.Services.AddScoped<IItemTemplateRepository, ItemTemplateRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
@@ -52,7 +52,7 @@ builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
 builder.Services.AddScoped<IVisibilityService, VisibilityService>();
 
 // Register deletion services
-builder.Services.AddScoped<ITenantDeletionService, TenantDeletionService>();
+builder.Services.AddScoped<IWorkspaceDeletionService, WorkspaceDeletionService>();
 builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
 
 // Configure email service
@@ -71,8 +71,8 @@ builder.Services.AddAuthentication(CookieJwtAuthenticationExtensions.SchemeName)
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("TenantAdmin", policy =>
-        policy.RequireClaim("tenant_role", "TenantAdmin"));
+    options.AddPolicy("WorkspaceAdmin", policy =>
+        policy.RequireClaim("workspace_role", "WorkspaceAdmin"));
 });
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -149,7 +149,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseTenantActiveCheck();
+app.UseWorkspaceActiveCheck();
 app.UseAuditLogging();
 
 // Serve static assets from wwwroot (CSS, favicon, etc.)

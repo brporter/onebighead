@@ -5,17 +5,17 @@ import type { Item, Category, Collection } from '../src/utils/types';
 import { UserFlag, Visibility } from '../src/utils/types';
 
 const mockCollections: Collection[] = [
-  { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
+  { collectionId: 1, workspaceId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
 ];
 
 const mockCategories: Category[] = [
-  { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
-  { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
 ];
 
 const mockItems: Item[] = [
-  { id: 1, tenantId: 1, collectionId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.None },
-  { id: 2, tenantId: 1, collectionId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.Have },
+  { id: 1, workspaceId: 1, collectionId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.None },
+  { id: 2, workspaceId: 1, collectionId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.Have },
 ];
 
 // Test component to access context
@@ -52,7 +52,7 @@ describe('DataContext', () => {
 
       if (urlStr === '/api/collections' && method === 'POST') {
         const body = JSON.parse(options?.body as string);
-        const newCollection = { ...body, collectionId: mockCollectionIdCounter++, tenantId: 1, slug: 'new' };
+        const newCollection = { ...body, collectionId: mockCollectionIdCounter++, workspaceId: 1, slug: 'new' };
         return Promise.resolve({
           ok: true,
           json: async () => newCollection,
@@ -366,7 +366,7 @@ describe('DataContext', () => {
 
       const newItem: Item = {
         id: null,
-        tenantId: 1,
+        workspaceId: 1,
         collectionId: 1,
         categoryId: 1,
         name: 'New Item',
@@ -463,7 +463,7 @@ describe('DataContext', () => {
 
       const newItem: Item = {
         id: null,
-        tenantId: 1,
+        workspaceId: 1,
         collectionId: 1,
         categoryId: 1,
         name: 'New Item with Flag',

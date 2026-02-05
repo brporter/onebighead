@@ -16,11 +16,11 @@ vi.mock('../src/contexts/DataContext', async () => {
 
 describe('CategoryTree', () => {
   const mockCategories: Category[] = [
-    { tenantId: 1, categoryId: 1, name: 'Root 1', description: 'Root 1 desc', parentCategoryId: null, isSystem: false },
-    { tenantId: 1, categoryId: 2, name: 'Child 1-1', description: 'Child 1-1 desc', parentCategoryId: 1, isSystem: false },
-    { tenantId: 1, categoryId: 3, name: 'Child 1-2', description: 'Child 1-2 desc', parentCategoryId: 1, isSystem: false },
-    { tenantId: 1, categoryId: 4, name: 'Grandchild 1-1-1', description: 'Grandchild desc', parentCategoryId: 2, isSystem: false },
-    { tenantId: 1, categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null, isSystem: false },
+    { workspaceId: 1, categoryId: 1, name: 'Root 1', description: 'Root 1 desc', parentCategoryId: null, isSystem: false },
+    { workspaceId: 1, categoryId: 2, name: 'Child 1-1', description: 'Child 1-1 desc', parentCategoryId: 1, isSystem: false },
+    { workspaceId: 1, categoryId: 3, name: 'Child 1-2', description: 'Child 1-2 desc', parentCategoryId: 1, isSystem: false },
+    { workspaceId: 1, categoryId: 4, name: 'Grandchild 1-1-1', description: 'Grandchild desc', parentCategoryId: 2, isSystem: false },
+    { workspaceId: 1, categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null, isSystem: false },
   ];
 
   // Shared expanded state for tests that need to verify toggle behavior
@@ -47,7 +47,7 @@ describe('CategoryTree', () => {
       collectionsLoading: false,
       collectionsError: null,
       loadCollections: vi.fn(async () => {}),
-      addCollection: vi.fn(async () => ({ collectionId: 1, tenantId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
+      addCollection: vi.fn(async () => ({ collectionId: 1, workspaceId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
       updateCollection: vi.fn(async () => {}),
       deleteCollection: vi.fn(async () => {}),
       categories: mockCategories,
@@ -188,7 +188,7 @@ describe('CategoryTree', () => {
         collectionsLoading: false,
         collectionsError: null,
         loadCollections: vi.fn(async () => {}),
-        addCollection: vi.fn(async () => ({ collectionId: 1, tenantId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
+        addCollection: vi.fn(async () => ({ collectionId: 1, workspaceId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
         updateCollection: vi.fn(async () => {}),
         deleteCollection: vi.fn(async () => {}),
         categories: mockCategories,
@@ -272,8 +272,8 @@ describe('CategoryTree', () => {
 
     it('should handle categories with orphaned parent references', () => {
       const orphanedCategories: Category[] = [
-        { tenantId: 1, categoryId: 1, name: 'Root', description: 'Desc', parentCategoryId: null, isSystem: false },
-        { tenantId: 1, categoryId: 2, name: 'Orphan', description: 'Desc', parentCategoryId: 999, isSystem: false }, // Non-existent parent
+        { workspaceId: 1, categoryId: 1, name: 'Root', description: 'Desc', parentCategoryId: null, isSystem: false },
+        { workspaceId: 1, categoryId: 2, name: 'Orphan', description: 'Desc', parentCategoryId: 999, isSystem: false }, // Non-existent parent
       ];
 
       render(
@@ -323,7 +323,7 @@ describe('CategoryTree', () => {
         collectionsLoading: false,
         collectionsError: null,
         loadCollections: vi.fn(async () => {}),
-        addCollection: vi.fn(async () => ({ collectionId: 1, tenantId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
+        addCollection: vi.fn(async () => ({ collectionId: 1, workspaceId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
         updateCollection: vi.fn(async () => {}),
         deleteCollection: vi.fn(async () => {}),
         categories: [],
@@ -369,7 +369,7 @@ describe('CategoryTree', () => {
         collectionsLoading: false,
         collectionsError: null,
         loadCollections: vi.fn(async () => {}),
-        addCollection: vi.fn(async () => ({ collectionId: 1, tenantId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
+        addCollection: vi.fn(async () => ({ collectionId: 1, workspaceId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
         updateCollection: vi.fn(async () => {}),
         deleteCollection: vi.fn(async () => {}),
         categories: [],

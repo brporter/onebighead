@@ -33,18 +33,18 @@ function renderWithRouter(initialRoute = '/collections') {
 
 describe('App with Router', () => {
   const mockCollections: Collection[] = [
-    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
+    { collectionId: 1, workspaceId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
   ];
 
   const mockCategories: Category[] = [
-    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
-    { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockItems: Item[] = [
     {
       id: 1,
-      tenantId: 1,
+      workspaceId: 1,
       collectionId: 1,
       categoryId: 1,
       name: 'Test Item 1',
@@ -58,7 +58,7 @@ describe('App with Router', () => {
     },
     {
       id: 2,
-      tenantId: 1,
+      workspaceId: 1,
       collectionId: 1,
       categoryId: 1,
       name: 'Test Item 2',
@@ -202,7 +202,7 @@ describe('App with Router', () => {
         ...mockDataContext,
         collections: [
           ...mockCollections,
-          { collectionId: 2, tenantId: 1, name: 'Second Collection', description: '', heroImageUrl: null, slug: 'second' },
+          { collectionId: 2, workspaceId: 1, name: 'Second Collection', description: '', heroImageUrl: null, slug: 'second' },
         ],
         currentCollection: mockCollections[0],
       });

@@ -6,7 +6,7 @@ using OneBigHead.Server.Models;
 namespace OneBigHead.Server.Tests.Integration;
 
 /// <summary>
-/// Tests that verify TenantAdmin authorization policies are properly enforced.
+/// Tests that verify WorkspaceAdmin authorization policies are properly enforced.
 /// Normal users should receive 403 Forbidden on admin-only endpoints.
 /// </summary>
 [Trait("Category", "Integration")]
@@ -351,7 +351,7 @@ public class AuthorizationTests : IntegrationTestBase
         var request = new InviteUserRequest
         {
             Email = "unauthorized@example.com",
-            Role = TenantRole.Normal
+            Role = WorkspaceRole.Normal
         };
 
         // Act
@@ -366,7 +366,7 @@ public class AuthorizationTests : IntegrationTestBase
     {
         // Arrange
         using var normalClient = CreateNormalUserClient();
-        var request = new UpdateUserRoleRequest { Role = TenantRole.TenantAdmin };
+        var request = new UpdateUserRoleRequest { Role = WorkspaceRole.WorkspaceAdmin };
 
         // Act
         var response = await PutJsonAsync(normalClient, "/api/users/1/role", request);

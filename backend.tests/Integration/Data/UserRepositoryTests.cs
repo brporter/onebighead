@@ -10,7 +10,7 @@ public class UserRepositoryTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly UserRepository _repository;
-    private readonly TenantUserRepository _tenantUserRepository;
+    private readonly WorkspaceUserRepository _workspaceUserRepository;
 
     public UserRepositoryTests()
     {
@@ -21,7 +21,7 @@ public class UserRepositoryTests : IDisposable
 
         _context = new AppDbContext(options);
         _repository = new UserRepository(_context);
-        _tenantUserRepository = new TenantUserRepository(_context);
+        _workspaceUserRepository = new WorkspaceUserRepository(_context);
     }
 
     public void Dispose()
@@ -29,23 +29,23 @@ public class UserRepositoryTests : IDisposable
         _context.Dispose();
     }
 
-    private async Task<Tenant> CreateTestTenantAsync()
+    private async Task<Workspace> CreateTestWorkspaceAsync()
     {
-        var tenant = new Tenant
+        var workspace = new Workspace
         {
             Name = "test.example.com",
             CreatedAt = DateTime.UtcNow
         };
-        _context.Tenants.Add(tenant);
+        _context.Workspaces.Add(workspace);
         await _context.SaveChangesAsync();
-        return tenant;
+        return workspace;
     }
 
-    private async Task<User> CreateTestUserAsync(Tenant tenant, string email, TenantRole role = TenantRole.Normal)
+    private async Task<User> CreateTestUserAsync(Workspace workspace, string email, WorkspaceRole role = WorkspaceRole.Normal)
     {
         var user = new User
         {
-            ActiveTenantId = tenant.Id,
+            ActiveWorkspaceId = workspace.Id,
             Email = email,
             IdentityProvider = IdentityProvider.Microsoft,
             ProviderSubjectId = $"ms-{email}"
@@ -53,13 +53,13 @@ public class UserRepositoryTests : IDisposable
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        var tenantUser = new TenantUser
+        var workspaceUser = new WorkspaceUser
         {
             UserId = user.Id,
-            TenantId = tenant.Id,
-            TenantRole = role
+            WorkspaceId = workspace.Id,
+            WorkspaceRole = role
         };
-        _context.TenantUsers.Add(tenantUser);
+        _context.WorkspaceUsers.Add(workspaceUser);
         await _context.SaveChangesAsync();
 
         return user;
@@ -71,8 +71,8 @@ public class UserRepositoryTests : IDisposable
     public async Task GetByEmailAsync_ReturnsUser_WhenExists()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
-        var user = await CreateTestUserAsync(tenant, "test@example.com");
+        var workspace = await CreateTestWorkspaceAsync();
+        var user = await CreateTestUserAsync(workspace, "test@example.com");
 
         // Act
         var result = await _repository.GetByEmailAsync("test@example.com");
@@ -80,7 +80,7 @@ public class UserRepositoryTests : IDisposable
         // Assert
         Assert.NotNull(result);
         Assert.Equal("test@example.com", result.Email);
-        Assert.NotNull(result.ActiveTenant);
+        Assert.NotNull(result.ActiveWorkspace);
     }
 
     [Fact]
@@ -101,10 +101,10 @@ public class UserRepositoryTests : IDisposable
     public async Task GetByProviderIdAsync_ReturnsUser_WhenExists()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
+        var workspace = await CreateTestWorkspaceAsync();
         var user = new User
         {
-            ActiveTenantId = tenant.Id,
+            ActiveWorkspaceId = workspace.Id,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Google,
             ProviderSubjectId = "google-sub-123"
@@ -125,10 +125,10 @@ public class UserRepositoryTests : IDisposable
     public async Task GetByProviderIdAsync_ReturnsNull_WhenProviderMismatch()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
+        var workspace = await CreateTestWorkspaceAsync();
         var user = new User
         {
-            ActiveTenantId = tenant.Id,
+            ActiveWorkspaceId = workspace.Id,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Google,
             ProviderSubjectId = "google-sub-123"
@@ -151,8 +151,8 @@ public class UserRepositoryTests : IDisposable
     public async Task GetByIdAsync_ReturnsUser_WhenExists()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
-        var user = await CreateTestUserAsync(tenant, "test@example.com");
+        var workspace = await CreateTestWorkspaceAsync();
+        var user = await CreateTestUserAsync(workspace, "test@example.com");
 
         // Act
         var result = await _repository.GetByIdAsync(user.Id);
@@ -174,13 +174,13 @@ public class UserRepositoryTests : IDisposable
 
     #endregion
 
-    #region CreateWithNewTenantAsync Tests
+    #region CreateWithNewWorkspaceAsync Tests
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_CreatesUserAndTenant()
+    public async Task CreateWithNewWorkspaceAsync_CreatesUserAndWorkspace()
     {
         // Act
-        var result = await _repository.CreateWithNewTenantAsync(
+        var result = await _repository.CreateWithNewWorkspaceAsync(
             "newuser@example.com",
             IdentityProvider.Microsoft,
             "ms-new-user-123");
@@ -189,29 +189,29 @@ public class UserRepositoryTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal("newuser@example.com", result.Email);
         Assert.Equal(IdentityProvider.Microsoft, result.IdentityProvider);
-        Assert.NotNull(result.ActiveTenant);
-        Assert.Equal("example.com", result.ActiveTenant.Name);
+        Assert.NotNull(result.ActiveWorkspace);
+        Assert.Equal("example.com", result.ActiveWorkspace.Name);
     }
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_UsesDomainAsTenantName()
+    public async Task CreateWithNewWorkspaceAsync_UsesDomainAsWorkspaceName()
     {
         // Act
-        var result = await _repository.CreateWithNewTenantAsync(
+        var result = await _repository.CreateWithNewWorkspaceAsync(
             "john@contoso.com",
             IdentityProvider.Google,
             "google-123");
 
         // Assert
-        Assert.NotNull(result.ActiveTenant);
-        Assert.Equal("contoso.com", result.ActiveTenant.Name);
+        Assert.NotNull(result.ActiveWorkspace);
+        Assert.Equal("contoso.com", result.ActiveWorkspace.Name);
     }
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_SavesUserToDatabase()
+    public async Task CreateWithNewWorkspaceAsync_SavesUserToDatabase()
     {
         // Act
-        var result = await _repository.CreateWithNewTenantAsync(
+        var result = await _repository.CreateWithNewWorkspaceAsync(
             "test@domain.com",
             IdentityProvider.Apple,
             "apple-456");
@@ -223,60 +223,60 @@ public class UserRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_SavesTenantToDatabase()
+    public async Task CreateWithNewWorkspaceAsync_SavesWorkspaceToDatabase()
     {
         // Act
-        var result = await _repository.CreateWithNewTenantAsync(
+        var result = await _repository.CreateWithNewWorkspaceAsync(
             "user@newdomain.com",
             IdentityProvider.Microsoft,
             "ms-789");
 
         // Assert
-        var savedTenant = await _context.Tenants.FindAsync(result.ActiveTenantId);
-        Assert.NotNull(savedTenant);
-        Assert.Equal("newdomain.com", savedTenant.Name);
+        var savedWorkspace = await _context.Workspaces.FindAsync(result.ActiveWorkspaceId);
+        Assert.NotNull(savedWorkspace);
+        Assert.Equal("newdomain.com", savedWorkspace.Name);
     }
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_DoesNotCreateDefaultCollection()
+    public async Task CreateWithNewWorkspaceAsync_DoesNotCreateDefaultCollection()
     {
         // New behavior: collections are created through setup wizard, not auto-created
         // Act
-        var result = await _repository.CreateWithNewTenantAsync(
+        var result = await _repository.CreateWithNewWorkspaceAsync(
             "user@test.com",
             IdentityProvider.Microsoft,
             "ms-collection-test");
 
         // Assert - no collections should be created
         var collections = await _context.Collections
-            .Where(c => c.TenantId == result.ActiveTenantId)
+            .Where(c => c.WorkspaceId == result.ActiveWorkspaceId)
             .ToListAsync();
 
         Assert.Empty(collections);
     }
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_DoesNotCreateUnassignedCategory()
+    public async Task CreateWithNewWorkspaceAsync_DoesNotCreateUnassignedCategory()
     {
         // New behavior: unassigned category is created per collection during setup wizard
         // Act
-        var result = await _repository.CreateWithNewTenantAsync(
+        var result = await _repository.CreateWithNewWorkspaceAsync(
             "user@category-test.com",
             IdentityProvider.Google,
             "google-category-test");
 
         // Assert - no categories should exist
         var categories = await _context.Categories
-            .Where(c => c.TenantId == result.ActiveTenantId)
+            .Where(c => c.WorkspaceId == result.ActiveWorkspaceId)
             .ToListAsync();
         Assert.Empty(categories);
     }
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_UsesWholeEmail_WhenNoAtSign()
+    public async Task CreateWithNewWorkspaceAsync_UsesWholeEmail_WhenNoAtSign()
     {
         // Act
-        var result = await _repository.CreateWithNewTenantAsync(
+        var result = await _repository.CreateWithNewWorkspaceAsync(
             "localuser",
             IdentityProvider.Apple,
             "apple-local-test");
@@ -285,41 +285,41 @@ public class UserRepositoryTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal("localuser", result.Email);
 
-        var tenant = await _context.Tenants.FindAsync(result.ActiveTenantId);
-        Assert.NotNull(tenant);
-        Assert.Equal("localuser", tenant.Name);
+        var workspace = await _context.Workspaces.FindAsync(result.ActiveWorkspaceId);
+        Assert.NotNull(workspace);
+        Assert.Equal("localuser", workspace.Name);
     }
 
     [Fact]
-    public async Task CreateWithNewTenantAsync_SetsFirstUserAsTenantAdmin()
+    public async Task CreateWithNewWorkspaceAsync_SetsFirstUserAsWorkspaceAdmin()
     {
         // Act
-        var result = await _repository.CreateWithNewTenantAsync(
+        var result = await _repository.CreateWithNewWorkspaceAsync(
             "admin@newdomain.com",
             IdentityProvider.Microsoft,
             "ms-first-user");
 
-        // Assert - check TenantUser record for role
-        var tenantUser = await _context.TenantUsers
-            .FirstOrDefaultAsync(tu => tu.UserId == result.Id && tu.TenantId == result.ActiveTenantId);
-        Assert.NotNull(tenantUser);
-        Assert.Equal(TenantRole.TenantAdmin, tenantUser.TenantRole);
+        // Assert - check WorkspaceUser record for role
+        var workspaceUser = await _context.WorkspaceUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == result.Id && tu.WorkspaceId == result.ActiveWorkspaceId);
+        Assert.NotNull(workspaceUser);
+        Assert.Equal(WorkspaceRole.WorkspaceAdmin, workspaceUser.WorkspaceRole);
     }
 
     #endregion
 
-    #region GetByTenantIdAsync Tests
+    #region GetByWorkspaceIdAsync Tests
 
     [Fact]
-    public async Task GetByTenantIdAsync_ReturnsAllTenantUsers()
+    public async Task GetByWorkspaceIdAsync_ReturnsAllWorkspaceUsers()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
-        await CreateTestUserAsync(tenant, "user1@example.com", TenantRole.TenantAdmin);
-        await CreateTestUserAsync(tenant, "user2@example.com", TenantRole.Normal);
+        var workspace = await CreateTestWorkspaceAsync();
+        await CreateTestUserAsync(workspace, "user1@example.com", WorkspaceRole.WorkspaceAdmin);
+        await CreateTestUserAsync(workspace, "user2@example.com", WorkspaceRole.Normal);
 
         // Act
-        var result = await _repository.GetByTenantIdAsync(tenant.Id);
+        var result = await _repository.GetByWorkspaceIdAsync(workspace.Id);
 
         // Assert
         var users = result.ToList();
@@ -329,10 +329,10 @@ public class UserRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetByTenantIdAsync_ReturnsEmptyForNonExistentTenant()
+    public async Task GetByWorkspaceIdAsync_ReturnsEmptyForNonExistentWorkspace()
     {
         // Act
-        var result = await _repository.GetByTenantIdAsync(999);
+        var result = await _repository.GetByWorkspaceIdAsync(999);
 
         // Assert
         Assert.Empty(result);
@@ -346,10 +346,10 @@ public class UserRepositoryTests : IDisposable
     public async Task CreatePendingUserAsync_CreatesPendingUser()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
+        var workspace = await CreateTestWorkspaceAsync();
 
         // Act
-        var result = await _repository.CreatePendingUserAsync(tenant.Id, "pending@example.com", TenantRole.Normal);
+        var result = await _repository.CreatePendingUserAsync(workspace.Id, "pending@example.com", WorkspaceRole.Normal);
 
         // Assert
         Assert.NotNull(result);
@@ -358,30 +358,30 @@ public class UserRepositoryTests : IDisposable
         Assert.Null(result.ProviderSubjectId);
         Assert.False(result.IsLinked);
 
-        // Verify TenantUser membership
-        var tenantUser = await _context.TenantUsers
-            .FirstOrDefaultAsync(tu => tu.UserId == result.Id && tu.TenantId == tenant.Id);
-        Assert.NotNull(tenantUser);
-        Assert.Equal(TenantRole.Normal, tenantUser.TenantRole);
+        // Verify WorkspaceUser membership
+        var workspaceUser = await _context.WorkspaceUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == result.Id && tu.WorkspaceId == workspace.Id);
+        Assert.NotNull(workspaceUser);
+        Assert.Equal(WorkspaceRole.Normal, workspaceUser.WorkspaceRole);
     }
 
     [Fact]
     public async Task CreatePendingUserAsync_CanCreateAsAdmin()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
+        var workspace = await CreateTestWorkspaceAsync();
 
         // Act
-        var result = await _repository.CreatePendingUserAsync(tenant.Id, "pendingadmin@example.com", TenantRole.TenantAdmin);
+        var result = await _repository.CreatePendingUserAsync(workspace.Id, "pendingadmin@example.com", WorkspaceRole.WorkspaceAdmin);
 
         // Assert
         Assert.NotNull(result);
 
-        // Verify TenantUser membership has admin role
-        var tenantUser = await _context.TenantUsers
-            .FirstOrDefaultAsync(tu => tu.UserId == result.Id && tu.TenantId == tenant.Id);
-        Assert.NotNull(tenantUser);
-        Assert.Equal(TenantRole.TenantAdmin, tenantUser.TenantRole);
+        // Verify WorkspaceUser membership has admin role
+        var workspaceUser = await _context.WorkspaceUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == result.Id && tu.WorkspaceId == workspace.Id);
+        Assert.NotNull(workspaceUser);
+        Assert.Equal(WorkspaceRole.WorkspaceAdmin, workspaceUser.WorkspaceRole);
     }
 
     #endregion
@@ -392,8 +392,8 @@ public class UserRepositoryTests : IDisposable
     public async Task LinkUserAsync_LinksPendingUser()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
-        var pendingUser = await _repository.CreatePendingUserAsync(tenant.Id, "tolink@example.com", TenantRole.Normal);
+        var workspace = await CreateTestWorkspaceAsync();
+        var pendingUser = await _repository.CreatePendingUserAsync(workspace.Id, "tolink@example.com", WorkspaceRole.Normal);
         Assert.False(pendingUser.IsLinked);
 
         // Act
@@ -418,34 +418,34 @@ public class UserRepositoryTests : IDisposable
 
     #endregion
 
-    #region TenantUserRepository - UpdateRoleAsync Tests
+    #region WorkspaceUserRepository - UpdateRoleAsync Tests
 
     [Fact]
-    public async Task TenantUserRepository_UpdateRoleAsync_UpdatesRole()
+    public async Task WorkspaceUserRepository_UpdateRoleAsync_UpdatesRole()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
-        var user = await CreateTestUserAsync(tenant, "rolechange@example.com", TenantRole.Normal);
+        var workspace = await CreateTestWorkspaceAsync();
+        var user = await CreateTestUserAsync(workspace, "rolechange@example.com", WorkspaceRole.Normal);
 
         // Act
-        var result = await _tenantUserRepository.UpdateRoleAsync(user.Id, tenant.Id, TenantRole.TenantAdmin);
+        var result = await _workspaceUserRepository.UpdateRoleAsync(user.Id, workspace.Id, WorkspaceRole.WorkspaceAdmin);
 
         // Assert
         Assert.True(result);
-        var tenantUser = await _context.TenantUsers
-            .FirstOrDefaultAsync(tu => tu.UserId == user.Id && tu.TenantId == tenant.Id);
-        Assert.NotNull(tenantUser);
-        Assert.Equal(TenantRole.TenantAdmin, tenantUser.TenantRole);
+        var workspaceUser = await _context.WorkspaceUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == user.Id && tu.WorkspaceId == workspace.Id);
+        Assert.NotNull(workspaceUser);
+        Assert.Equal(WorkspaceRole.WorkspaceAdmin, workspaceUser.WorkspaceRole);
     }
 
     [Fact]
-    public async Task TenantUserRepository_UpdateRoleAsync_ReturnsFalse_WhenMembershipNotFound()
+    public async Task WorkspaceUserRepository_UpdateRoleAsync_ReturnsFalse_WhenMembershipNotFound()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
+        var workspace = await CreateTestWorkspaceAsync();
 
         // Act
-        var result = await _tenantUserRepository.UpdateRoleAsync(999, tenant.Id, TenantRole.TenantAdmin);
+        var result = await _workspaceUserRepository.UpdateRoleAsync(999, workspace.Id, WorkspaceRole.WorkspaceAdmin);
 
         // Assert
         Assert.False(result);
@@ -453,21 +453,21 @@ public class UserRepositoryTests : IDisposable
 
     #endregion
 
-    #region DeleteByIdAndTenantAsync Tests
+    #region DeleteByIdAndWorkspaceAsync Tests
 
     [Fact]
-    public async Task DeleteByIdAndTenantAsync_DeletesMembership()
+    public async Task DeleteByIdAndWorkspaceAsync_DeletesMembership()
     {
         // Arrange
-        var tenant1 = await CreateTestTenantAsync();
-        var tenant2 = new Tenant { Name = "second.com" };
-        _context.Tenants.Add(tenant2);
+        var workspace1 = await CreateTestWorkspaceAsync();
+        var workspace2 = new Workspace { Name = "second.com" };
+        _context.Workspaces.Add(workspace2);
         await _context.SaveChangesAsync();
 
-        // Create user with memberships in both tenants
+        // Create user with memberships in both workspaces
         var user = new User
         {
-            ActiveTenantId = tenant1.Id,
+            ActiveWorkspaceId = workspace1.Id,
             Email = "deleteme@example.com",
             IdentityProvider = IdentityProvider.Microsoft,
             ProviderSubjectId = "ms-delete-me"
@@ -475,14 +475,14 @@ public class UserRepositoryTests : IDisposable
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        _context.TenantUsers.AddRange(
-            new TenantUser { UserId = user.Id, TenantId = tenant1.Id, TenantRole = TenantRole.Normal },
-            new TenantUser { UserId = user.Id, TenantId = tenant2.Id, TenantRole = TenantRole.Normal }
+        _context.WorkspaceUsers.AddRange(
+            new WorkspaceUser { UserId = user.Id, WorkspaceId = workspace1.Id, WorkspaceRole = WorkspaceRole.Normal },
+            new WorkspaceUser { UserId = user.Id, WorkspaceId = workspace2.Id, WorkspaceRole = WorkspaceRole.Normal }
         );
         await _context.SaveChangesAsync();
 
-        // Act - delete from tenant1, user should remain because they're still in tenant2
-        var result = await _repository.DeleteByIdAndTenantAsync(user.Id, tenant1.Id);
+        // Act - delete from workspace1, user should remain because they're still in workspace2
+        var result = await _repository.DeleteByIdAndWorkspaceAsync(user.Id, workspace1.Id);
 
         // Assert
         Assert.True(result);
@@ -491,27 +491,27 @@ public class UserRepositoryTests : IDisposable
         var existingUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(existingUser);
 
-        // But membership in tenant1 should be gone
-        var membership1 = await _context.TenantUsers
-            .FirstOrDefaultAsync(tu => tu.UserId == user.Id && tu.TenantId == tenant1.Id);
+        // But membership in workspace1 should be gone
+        var membership1 = await _context.WorkspaceUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == user.Id && tu.WorkspaceId == workspace1.Id);
         Assert.Null(membership1);
 
-        // Membership in tenant2 should still exist
-        var membership2 = await _context.TenantUsers
-            .FirstOrDefaultAsync(tu => tu.UserId == user.Id && tu.TenantId == tenant2.Id);
+        // Membership in workspace2 should still exist
+        var membership2 = await _context.WorkspaceUsers
+            .FirstOrDefaultAsync(tu => tu.UserId == user.Id && tu.WorkspaceId == workspace2.Id);
         Assert.NotNull(membership2);
     }
 
     [Fact]
-    public async Task DeleteByIdAndTenantAsync_DeletesUserWhenLastMembership()
+    public async Task DeleteByIdAndWorkspaceAsync_DeletesUserWhenLastMembership()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
-        var user = await CreateTestUserAsync(tenant, "deleteme@example.com");
+        var workspace = await CreateTestWorkspaceAsync();
+        var user = await CreateTestUserAsync(workspace, "deleteme@example.com");
         var userId = user.Id;
 
         // Act - delete only membership
-        var result = await _repository.DeleteByIdAndTenantAsync(userId, tenant.Id);
+        var result = await _repository.DeleteByIdAndWorkspaceAsync(userId, workspace.Id);
 
         // Assert
         Assert.True(result);
@@ -522,13 +522,13 @@ public class UserRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteByIdAndTenantAsync_ReturnsFalse_WhenMembershipNotFound()
+    public async Task DeleteByIdAndWorkspaceAsync_ReturnsFalse_WhenMembershipNotFound()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
+        var workspace = await CreateTestWorkspaceAsync();
 
         // Act
-        var result = await _repository.DeleteByIdAndTenantAsync(999, tenant.Id);
+        var result = await _repository.DeleteByIdAndWorkspaceAsync(999, workspace.Id);
 
         // Assert
         Assert.False(result);
@@ -536,43 +536,43 @@ public class UserRepositoryTests : IDisposable
 
     #endregion
 
-    #region TenantUserRepository - CountAdminsInTenantAsync Tests
+    #region WorkspaceUserRepository - CountAdminsInWorkspaceAsync Tests
 
     [Fact]
-    public async Task TenantUserRepository_CountAdminsInTenantAsync_CountsAdmins()
+    public async Task WorkspaceUserRepository_CountAdminsInWorkspaceAsync_CountsAdmins()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
-        await CreateTestUserAsync(tenant, "admin1@example.com", TenantRole.TenantAdmin);
-        await CreateTestUserAsync(tenant, "admin2@example.com", TenantRole.TenantAdmin);
-        await CreateTestUserAsync(tenant, "normal@example.com", TenantRole.Normal);
+        var workspace = await CreateTestWorkspaceAsync();
+        await CreateTestUserAsync(workspace, "admin1@example.com", WorkspaceRole.WorkspaceAdmin);
+        await CreateTestUserAsync(workspace, "admin2@example.com", WorkspaceRole.WorkspaceAdmin);
+        await CreateTestUserAsync(workspace, "normal@example.com", WorkspaceRole.Normal);
 
         // Act
-        var count = await _tenantUserRepository.CountAdminsInTenantAsync(tenant.Id);
+        var count = await _workspaceUserRepository.CountAdminsInWorkspaceAsync(workspace.Id);
 
         // Assert
         Assert.Equal(2, count);
     }
 
     [Fact]
-    public async Task TenantUserRepository_CountAdminsInTenantAsync_ReturnsZero_WhenNoAdmins()
+    public async Task WorkspaceUserRepository_CountAdminsInWorkspaceAsync_ReturnsZero_WhenNoAdmins()
     {
         // Arrange
-        var tenant = await CreateTestTenantAsync();
-        await CreateTestUserAsync(tenant, "onlynormal@example.com", TenantRole.Normal);
+        var workspace = await CreateTestWorkspaceAsync();
+        await CreateTestUserAsync(workspace, "onlynormal@example.com", WorkspaceRole.Normal);
 
         // Act
-        var count = await _tenantUserRepository.CountAdminsInTenantAsync(tenant.Id);
+        var count = await _workspaceUserRepository.CountAdminsInWorkspaceAsync(workspace.Id);
 
         // Assert
         Assert.Equal(0, count);
     }
 
     [Fact]
-    public async Task TenantUserRepository_CountAdminsInTenantAsync_ReturnsZero_ForNonExistentTenant()
+    public async Task WorkspaceUserRepository_CountAdminsInWorkspaceAsync_ReturnsZero_ForNonExistentWorkspace()
     {
         // Act
-        var count = await _tenantUserRepository.CountAdminsInTenantAsync(999);
+        var count = await _workspaceUserRepository.CountAdminsInWorkspaceAsync(999);
 
         // Assert
         Assert.Equal(0, count);

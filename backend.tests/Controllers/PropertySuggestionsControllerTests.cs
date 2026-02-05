@@ -15,7 +15,7 @@ public class PropertySuggestionsControllerTests
     private readonly Mock<IPropertySuggestionRepository> _mockSuggestionRepository;
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
     private readonly PropertySuggestionsController _controller;
-    private const int TestTenantId = 1;
+    private const int TestWorkspaceId = 1;
     private const int TestUserId = 1;
 
     public PropertySuggestionsControllerTests()
@@ -28,7 +28,7 @@ public class PropertySuggestionsControllerTests
 
         var claims = new List<Claim>
         {
-            new("tenant_id", TestTenantId.ToString()),
+            new("workspace_id", TestWorkspaceId.ToString()),
             new("sub", TestUserId.ToString()),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")
@@ -49,15 +49,15 @@ public class PropertySuggestionsControllerTests
     {
         // Arrange
         var collectionId = 1;
-        var collection = new Collection { Id = collectionId, TenantId = TestTenantId, Name = "Test Collection", Slug = "test-collection" };
+        var collection = new Collection { Id = collectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
         var categories = new List<string> { "Category1", "Category2" };
         var names = new List<string> { "Name1", "Name2", "Name3" };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(categories);
-        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(names);
 
         // Act
@@ -77,13 +77,13 @@ public class PropertySuggestionsControllerTests
     {
         // Arrange
         var collectionId = 1;
-        var collection = new Collection { Id = collectionId, TenantId = TestTenantId, Name = "Test Collection", Slug = "test-collection" };
+        var collection = new Collection { Id = collectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(new List<string>());
-        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(new List<string>());
 
         // Act
@@ -101,7 +101,7 @@ public class PropertySuggestionsControllerTests
     {
         // Arrange
         var collectionId = 999;
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -113,12 +113,12 @@ public class PropertySuggestionsControllerTests
     }
 
     [Fact]
-    public async Task GetSuggestions_ReturnsNotFound_WhenCollectionBelongsToDifferentTenant()
+    public async Task GetSuggestions_ReturnsNotFound_WhenCollectionBelongsToDifferentWorkspace()
     {
         // Arrange
         var collectionId = 1;
-        // Collection exists but belongs to a different tenant, so GetByIdAsync returns null for our tenant
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        // Collection exists but belongs to a different workspace, so GetByIdAsync returns null for our workspace
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -134,22 +134,22 @@ public class PropertySuggestionsControllerTests
     {
         // Arrange
         var collectionId = 5;
-        var collection = new Collection { Id = collectionId, TenantId = TestTenantId, Name = "Test Collection", Slug = "test-collection" };
+        var collection = new Collection { Id = collectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(new List<string>());
-        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(new List<string>());
 
         // Act
         await _controller.GetSuggestions(collectionId);
 
         // Assert
-        _mockCollectionRepository.Verify(repo => repo.GetByIdAsync(collectionId, TestTenantId), Times.Once);
-        _mockSuggestionRepository.Verify(repo => repo.GetCategoriesAsync(collectionId, TestTenantId), Times.Once);
-        _mockSuggestionRepository.Verify(repo => repo.GetNamesAsync(collectionId, TestTenantId), Times.Once);
+        _mockCollectionRepository.Verify(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId), Times.Once);
+        _mockSuggestionRepository.Verify(repo => repo.GetCategoriesAsync(collectionId, TestWorkspaceId), Times.Once);
+        _mockSuggestionRepository.Verify(repo => repo.GetNamesAsync(collectionId, TestWorkspaceId), Times.Once);
     }
 
     #endregion
@@ -161,17 +161,17 @@ public class PropertySuggestionsControllerTests
     {
         // Arrange
         var collectionId = 1;
-        var collection = new Collection { Id = collectionId, TenantId = TestTenantId, Name = "Test Collection", Slug = "test-collection" };
+        var collection = new Collection { Id = collectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
         var categories = new List<string> { "SyncedCategory1", "SyncedCategory2" };
         var names = new List<string> { "SyncedName1" };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockSuggestionRepository.Setup(repo => repo.SyncSuggestionsAsync(collectionId, TestTenantId, It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()))
+        _mockSuggestionRepository.Setup(repo => repo.SyncSuggestionsAsync(collectionId, TestWorkspaceId, It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()))
             .Returns(Task.CompletedTask);
-        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(categories);
-        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(names);
 
         // Act
@@ -191,7 +191,7 @@ public class PropertySuggestionsControllerTests
     {
         // Arrange
         var collectionId = 999;
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -203,12 +203,12 @@ public class PropertySuggestionsControllerTests
     }
 
     [Fact]
-    public async Task SyncSuggestions_ReturnsNotFound_WhenCollectionBelongsToDifferentTenant()
+    public async Task SyncSuggestions_ReturnsNotFound_WhenCollectionBelongsToDifferentWorkspace()
     {
         // Arrange
         var collectionId = 1;
-        // Collection exists but belongs to a different tenant, so GetByIdAsync returns null for our tenant
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        // Collection exists but belongs to a different workspace, so GetByIdAsync returns null for our workspace
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -224,18 +224,18 @@ public class PropertySuggestionsControllerTests
     {
         // Arrange
         var collectionId = 1;
-        var collection = new Collection { Id = collectionId, TenantId = TestTenantId, Name = "Test Collection", Slug = "test-collection" };
+        var collection = new Collection { Id = collectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
         var callOrder = new List<string>();
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockSuggestionRepository.Setup(repo => repo.SyncSuggestionsAsync(collectionId, TestTenantId, It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()))
+        _mockSuggestionRepository.Setup(repo => repo.SyncSuggestionsAsync(collectionId, TestWorkspaceId, It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()))
             .Callback(() => callOrder.Add("Sync"))
             .Returns(Task.CompletedTask);
-        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestWorkspaceId))
             .Callback(() => callOrder.Add("GetCategories"))
             .ReturnsAsync(new List<string>());
-        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestWorkspaceId))
             .Callback(() => callOrder.Add("GetNames"))
             .ReturnsAsync(new List<string>());
 
@@ -252,25 +252,25 @@ public class PropertySuggestionsControllerTests
     {
         // Arrange
         var collectionId = 7;
-        var collection = new Collection { Id = collectionId, TenantId = TestTenantId, Name = "Test Collection", Slug = "test-collection" };
+        var collection = new Collection { Id = collectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockSuggestionRepository.Setup(repo => repo.SyncSuggestionsAsync(collectionId, TestTenantId, It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()))
+        _mockSuggestionRepository.Setup(repo => repo.SyncSuggestionsAsync(collectionId, TestWorkspaceId, It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()))
             .Returns(Task.CompletedTask);
-        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetCategoriesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(new List<string>());
-        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestTenantId))
+        _mockSuggestionRepository.Setup(repo => repo.GetNamesAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync(new List<string>());
 
         // Act
         await _controller.SyncSuggestions(collectionId);
 
         // Assert
-        _mockCollectionRepository.Verify(repo => repo.GetByIdAsync(collectionId, TestTenantId), Times.Once);
-        _mockSuggestionRepository.Verify(repo => repo.SyncSuggestionsAsync(collectionId, TestTenantId, It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()), Times.Once);
-        _mockSuggestionRepository.Verify(repo => repo.GetCategoriesAsync(collectionId, TestTenantId), Times.Once);
-        _mockSuggestionRepository.Verify(repo => repo.GetNamesAsync(collectionId, TestTenantId), Times.Once);
+        _mockCollectionRepository.Verify(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId), Times.Once);
+        _mockSuggestionRepository.Verify(repo => repo.SyncSuggestionsAsync(collectionId, TestWorkspaceId, It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()), Times.Once);
+        _mockSuggestionRepository.Verify(repo => repo.GetCategoriesAsync(collectionId, TestWorkspaceId), Times.Once);
+        _mockSuggestionRepository.Verify(repo => repo.GetNamesAsync(collectionId, TestWorkspaceId), Times.Once);
     }
 
     [Fact]
@@ -278,7 +278,7 @@ public class PropertySuggestionsControllerTests
     {
         // Arrange
         var collectionId = 999;
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(collectionId, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act

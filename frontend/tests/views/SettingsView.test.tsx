@@ -6,7 +6,7 @@ import SettingsView from '../../src/views/SettingsView';
 import * as UserContext from '../../src/contexts/UserContext';
 import * as DataContext from '../../src/contexts/DataContext';
 import * as exportApiModule from '../../src/api/export';
-import { TenantRole, Visibility } from '../../src/utils/types';
+import { WorkspaceRole, Visibility } from '../../src/utils/types';
 import type { Collection } from '../../src/utils/types';
 
 // Mock the contexts
@@ -54,11 +54,11 @@ vi.mock('../../src/components/collection/CollectionSetupWizard', () => ({
   ),
 }));
 
-vi.mock('../../src/components/wizard/TenantSetupWizard', () => ({
+vi.mock('../../src/components/wizard/WorkspaceSetupWizard', () => ({
   default: ({ onComplete, onCancel }: { onComplete: () => void; onCancel?: () => void }) => (
-    <div data-testid="tenant-setup-wizard">
-      <button onClick={onComplete}>Complete Tenant Setup</button>
-      {onCancel && <button onClick={onCancel}>Cancel Tenant Setup</button>}
+    <div data-testid="workspace-setup-wizard">
+      <button onClick={onComplete}>Complete Workspace Setup</button>
+      {onCancel && <button onClick={onCancel}>Cancel Workspace Setup</button>}
     </div>
   ),
 }));
@@ -89,11 +89,11 @@ vi.mock('../../src/components/support/SupportModal', () => ({
     ) : null,
 }));
 
-vi.mock('../../src/components/tenant', () => ({
-  TenantEditModal: ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) =>
+vi.mock('../../src/components/workspace', () => ({
+  WorkspaceEditModal: ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) =>
     isOpen ? (
-      <div data-testid="tenant-edit-modal">
-        <button onClick={onClose}>Close Tenant Modal</button>
+      <div data-testid="workspace-edit-modal">
+        <button onClick={onClose}>Close Workspace Modal</button>
       </div>
     ) : null,
 }));
@@ -139,46 +139,46 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('SettingsView', () => {
-  const mockTenantMembership = {
-    tenantId: 1,
-    tenantName: 'Test Tenant',
-    tenantRole: TenantRole.TenantAdmin,
+  const mockWorkspaceMembership = {
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
+    workspaceRole: WorkspaceRole.WorkspaceAdmin,
     hasCompletedWelcome: true,
   };
 
   const mockAdminUser = {
     userId: 1,
     email: 'admin@example.com',
-    tenantId: 1,
-    tenantName: 'Test Tenant',
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
     hasCompletedWelcome: true,
     hasAcceptedTerms: true,
     isSystemAdministrator: false,
-    tenantRole: TenantRole.TenantAdmin,
-    isTenantAdmin: true,
-    activeTenant: mockTenantMembership,
-    tenants: [mockTenantMembership],
+    workspaceRole: WorkspaceRole.WorkspaceAdmin,
+    isWorkspaceAdmin: true,
+    activeWorkspace: mockWorkspaceMembership,
+    workspaces: [mockWorkspaceMembership],
   };
 
-  const mockNormalUserTenant = {
-    tenantId: 1,
-    tenantName: 'Test Tenant',
-    tenantRole: TenantRole.Normal,
+  const mockNormalUserWorkspace = {
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
+    workspaceRole: WorkspaceRole.Normal,
     hasCompletedWelcome: true,
   };
 
   const mockNormalUser = {
     userId: 2,
     email: 'member@example.com',
-    tenantId: 1,
-    tenantName: 'Test Tenant',
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
     hasCompletedWelcome: true,
     hasAcceptedTerms: true,
     isSystemAdministrator: false,
-    tenantRole: TenantRole.Normal,
-    isTenantAdmin: false,
-    activeTenant: mockNormalUserTenant,
-    tenants: [mockNormalUserTenant],
+    workspaceRole: WorkspaceRole.Normal,
+    isWorkspaceAdmin: false,
+    activeWorkspace: mockNormalUserWorkspace,
+    workspaces: [mockNormalUserWorkspace],
   };
 
   const mockCollections: Collection[] = [

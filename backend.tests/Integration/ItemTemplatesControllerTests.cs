@@ -16,7 +16,7 @@ public class ItemTemplatesControllerTests : IntegrationTestBase
     #region GET /api/itemtemplates
 
     [Fact]
-    public async Task GetTemplates_ReturnsSystemAndTenantTemplates()
+    public async Task GetTemplates_ReturnsSystemAndWorkspaceTemplates()
     {
         // Act
         var response = await Client.GetAsync("/api/itemtemplates");
@@ -34,11 +34,11 @@ public class ItemTemplatesControllerTests : IntegrationTestBase
     [Fact]
     public async Task GetTemplates_WithSystemFilter_ReturnsOnlySystemTemplates()
     {
-        // Arrange - First create a tenant template
+        // Arrange - First create a workspace template
         var createRequest = new CreateItemTemplateRequest
         {
-            Name = "Tenant Template",
-            Description = "A tenant template"
+            Name = "Workspace Template",
+            Description = "A workspace template"
         };
         await Client.PostAsJsonAsync("/api/itemtemplates", createRequest);
 
@@ -53,9 +53,9 @@ public class ItemTemplatesControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task GetTemplates_WithTenantFilter_ReturnsOnlyTenantTemplates()
+    public async Task GetTemplates_WithWorkspaceFilter_ReturnsOnlyWorkspaceTemplates()
     {
-        // Arrange - First create a tenant template
+        // Arrange - First create a workspace template
         var createRequest = new CreateItemTemplateRequest
         {
             Name = "My Template",
@@ -64,7 +64,7 @@ public class ItemTemplatesControllerTests : IntegrationTestBase
         await Client.PostAsJsonAsync("/api/itemtemplates", createRequest);
 
         // Act
-        var response = await Client.GetAsync("/api/itemtemplates?filter=tenant");
+        var response = await Client.GetAsync("/api/itemtemplates?filter=workspace");
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -206,7 +206,7 @@ public class ItemTemplatesControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task UpdateTemplate_SystemTemplate_CreatesTenantCopy()
+    public async Task UpdateTemplate_SystemTemplate_CreatesWorkspaceCopy()
     {
         // Arrange
         var updateRequest = new UpdateItemTemplateRequest
@@ -223,24 +223,24 @@ public class ItemTemplatesControllerTests : IntegrationTestBase
         var updated = await DeserializeResponseAsync<ItemTemplateResponse>(response);
         Assert.NotNull(updated);
         Assert.Equal("My Custom Book Template", updated.Name);
-        Assert.False(updated.IsSystem); // Now a tenant copy
+        Assert.False(updated.IsSystem); // Now a workspace copy
         Assert.NotEqual(2, updated.ItemTemplateId); // Different ID
     }
 
     [Fact]
-    public async Task UpdateTemplate_OtherTenantTemplate_ReturnsNotFound()
+    public async Task UpdateTemplate_OtherWorkspaceTemplate_ReturnsNotFound()
     {
-        // Arrange - Create template in another tenant
+        // Arrange - Create template in another workspace
         await Factory.SeedDatabaseAsync(context =>
         {
-            var tenant = new Tenant { Id = 30, Name = "Other" };
-            context.Tenants.Add(tenant);
+            var workspace = new Workspace { Id = 30, Name = "Other" };
+            context.Workspaces.Add(workspace);
 
             var template = new ItemTemplate
             {
                 Id = 3000,
-                TenantId = 30,
-                Name = "Other Tenant Template"
+                WorkspaceId = 30,
+                Name = "Other Workspace Template"
             };
             context.ItemTemplates.Add(template);
         });
@@ -292,47 +292,47 @@ public class ItemTemplatesControllerTests : IntegrationTestBase
     #region Multi-Tenancy Tests
 
     [Fact]
-    public async Task GetTemplates_DifferentTenant_DoesNotSeeOtherTenantTemplates()
+    public async Task GetTemplates_DifferentWorkspace_DoesNotSeeOtherWorkspaceTemplates()
     {
-        // Arrange - Create a template for tenant 1
+        // Arrange - Create a template for workspace 1
         var createRequest = new CreateItemTemplateRequest
         {
-            Name = "Tenant 1 Only Template"
+            Name = "Workspace 1 Only Template"
         };
         await Client.PostAsJsonAsync("/api/itemtemplates", createRequest);
 
-        // Create tenant 2
+        // Create workspace 2
         await Factory.SeedDatabaseAsync(context =>
         {
-            var tenant2 = new Tenant { Id = 40, Name = "Tenant 2" };
-            context.Tenants.Add(tenant2);
+            var workspace2 = new Workspace { Id = 40, Name = "Workspace 2" };
+            context.Workspaces.Add(workspace2);
 
             var user2 = new User
             {
                 Id = 40,
-                ActiveTenantId = 40,
+                ActiveWorkspaceId = 40,
                 Email = "user2@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "user2"
             };
             context.Users.Add(user2);
-            context.TenantUsers.Add(new TenantUser
+            context.WorkspaceUsers.Add(new WorkspaceUser
             {
                 UserId = 40,
-                TenantId = 40,
-                TenantRole = TenantRole.TenantAdmin
+                WorkspaceId = 40,
+                WorkspaceRole = WorkspaceRole.WorkspaceAdmin
             });
         });
 
-        using var tenant2Client = CreateClientForTenant(40, 40, "user2@example.com");
+        using var workspace2Client = CreateClientForWorkspace(40, 40, "user2@example.com");
 
         // Act
-        var response = await tenant2Client.GetAsync("/api/itemtemplates");
+        var response = await workspace2Client.GetAsync("/api/itemtemplates");
 
         // Assert
         response.EnsureSuccessStatusCode();
         var templates = await DeserializeResponseAsync<List<ItemTemplateResponse>>(response);
-        Assert.DoesNotContain(templates!, t => t.Name == "Tenant 1 Only Template");
+        Assert.DoesNotContain(templates!, t => t.Name == "Workspace 1 Only Template");
     }
 
     #endregion

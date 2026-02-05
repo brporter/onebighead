@@ -36,7 +36,7 @@ public class SupportControllerTests
     {
         var claims = new List<Claim>
         {
-            new("tenant_id", "1"),
+            new("workspace_id", "1"),
             new("sub", userId.ToString()),
             new(ClaimTypes.NameIdentifier, userId.ToString()),
             new(ClaimTypes.Email, email)

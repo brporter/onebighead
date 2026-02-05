@@ -1,35 +1,35 @@
 /**
- * API module for tenant user management.
+ * API module for workspace user management.
  */
 
 import { api } from './client';
-import type { TenantUser, InviteUserRequest, UpdateUserRoleRequest, TenantRole } from '../utils/types';
+import type { WorkspaceUser, InviteUserRequest, UpdateUserRoleRequest, WorkspaceRole } from '../utils/types';
 
 export const usersApi = {
   /**
-   * Get all users in the current tenant.
+   * Get all users in the current workspace.
    */
-  getUsers(): Promise<TenantUser[]> {
-    return api.get<TenantUser[]>('/users');
+  getUsers(): Promise<WorkspaceUser[]> {
+    return api.get<WorkspaceUser[]>('/users');
   },
 
   /**
-   * Invite a new user to the tenant by email.
+   * Invite a new user to the workspace by email.
    */
-  inviteUser(request: InviteUserRequest): Promise<TenantUser> {
-    return api.post<TenantUser>('/users', request);
+  inviteUser(request: InviteUserRequest): Promise<WorkspaceUser> {
+    return api.post<WorkspaceUser>('/users', request);
   },
 
   /**
    * Update a user's role.
    */
-  updateUserRole(userId: number, role: TenantRole): Promise<void> {
+  updateUserRole(userId: number, role: WorkspaceRole): Promise<void> {
     const request: UpdateUserRoleRequest = { role };
     return api.put<void>(`/users/${userId}/role`, request);
   },
 
   /**
-   * Remove a user from the tenant.
+   * Remove a user from the workspace.
    */
   removeUser(userId: number): Promise<void> {
     return api.delete<void>(`/users/${userId}`);

@@ -27,11 +27,11 @@ public class CreateItemRequest
 
     public UserFlag UserFlag { get; set; } = UserFlag.None;
 
-    public Item ToItem(int tenantId)
+    public Item ToItem(int workspaceId)
     {
         return new Item
         {
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             CollectionId = CollectionId,
             CategoryId = CategoryId,
             Name = Name,
@@ -69,12 +69,12 @@ public class UpdateItemRequest
 
     public UserFlag UserFlag { get; set; } = UserFlag.None;
 
-    public Item ToItem(int id, int tenantId)
+    public Item ToItem(int id, int workspaceId)
     {
         return new Item
         {
             Id = id,
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             CollectionId = CollectionId,
             CategoryId = CategoryId,
             Name = Name,

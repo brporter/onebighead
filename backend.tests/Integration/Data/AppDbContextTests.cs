@@ -34,7 +34,7 @@ public class AppDbContextTests : IDisposable
     public async Task CanAddAndRetrieveCategory()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = 1, Name = "Test", Description = "Test Desc" };
+        var category = new Category { Id = 1, WorkspaceId = 1, Name = "Test", Description = "Test Desc" };
 
         // Act
         _context.Categories.Add(category);
@@ -50,8 +50,8 @@ public class AppDbContextTests : IDisposable
     public async Task ParentChildRelationship_Works()
     {
         // Arrange
-        var parent = new Category { Id = 1, TenantId = 1, Name = "Parent", Description = "Parent Desc" };
-        var child = new Category { Id = 2, TenantId = 1, Name = "Child", Description = "Child Desc", ParentCategoryId = 1 };
+        var parent = new Category { Id = 1, WorkspaceId = 1, Name = "Parent", Description = "Parent Desc" };
+        var child = new Category { Id = 2, WorkspaceId = 1, Name = "Child", Description = "Child Desc", ParentCategoryId = 1 };
 
         // Act
         _context.Categories.Add(parent);
@@ -72,9 +72,9 @@ public class AppDbContextTests : IDisposable
     public async Task ChildCategories_NavigationProperty_Works()
     {
         // Arrange
-        var parent = new Category { Id = 1, TenantId = 1, Name = "Parent", Description = "Parent Desc" };
-        var child1 = new Category { Id = 2, TenantId = 1, Name = "Child 1", Description = "Child 1 Desc", ParentCategoryId = 1 };
-        var child2 = new Category { Id = 3, TenantId = 1, Name = "Child 2", Description = "Child 2 Desc", ParentCategoryId = 1 };
+        var parent = new Category { Id = 1, WorkspaceId = 1, Name = "Parent", Description = "Parent Desc" };
+        var child1 = new Category { Id = 2, WorkspaceId = 1, Name = "Child 1", Description = "Child 1 Desc", ParentCategoryId = 1 };
+        var child2 = new Category { Id = 3, WorkspaceId = 1, Name = "Child 2", Description = "Child 2 Desc", ParentCategoryId = 1 };
 
         // Act
         _context.Categories.AddRange(parent, child1, child2);
@@ -93,8 +93,8 @@ public class AppDbContextTests : IDisposable
     public async Task DeleteParent_LeavesChildrenOrphanedWithRestrict()
     {
         // Arrange - Category self-referencing FK uses Restrict to avoid SQL Server cycles
-        var parent = new Category { Id = 1, TenantId = 1, Name = "Parent", Description = "Parent Desc" };
-        var child = new Category { Id = 2, TenantId = 1, Name = "Child", Description = "Child Desc", ParentCategoryId = 1 };
+        var parent = new Category { Id = 1, WorkspaceId = 1, Name = "Parent", Description = "Parent Desc" };
+        var child = new Category { Id = 2, WorkspaceId = 1, Name = "Child", Description = "Child Desc", ParentCategoryId = 1 };
 
         _context.Categories.AddRange(parent, child);
         await _context.SaveChangesAsync();

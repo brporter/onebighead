@@ -34,7 +34,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'system' | 'tenant'>('all');
+  const [filter, setFilter] = useState<'all' | 'system' | 'workspace'>('all');
 
   const hasUnsavedChanges = useCallback(() => {
     if (!isAdding && editingTemplate === null) return false;
@@ -161,7 +161,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
   };
 
   const isEditing = isAdding || editingTemplate !== null;
-  const tenantTemplates = itemTemplates.filter((t) => !t.isSystem);
+  const workspaceTemplates = itemTemplates.filter((t) => !t.isSystem);
   const systemTemplates = itemTemplates.filter((t) => t.isSystem);
 
   // Group properties by category for display
@@ -409,10 +409,10 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
           <select
             className="template-editor__filterSelect"
             value={filter}
-            onChange={(e) => setFilter(e.target.value as 'all' | 'system' | 'tenant')}
+            onChange={(e) => setFilter(e.target.value as 'all' | 'system' | 'workspace')}
           >
             <option value="all">All Templates</option>
-            <option value="tenant">My Templates</option>
+            <option value="workspace">My Templates</option>
             <option value="system">System Templates</option>
           </select>
         </div>
@@ -428,11 +428,11 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
         </div>
       ) : (
         <div className="template-editor__content">
-          {(filter === 'all' || filter === 'tenant') && tenantTemplates.length > 0 && (
+          {(filter === 'all' || filter === 'workspace') && workspaceTemplates.length > 0 && (
             <section className="template-editor__section">
               <h3 className="template-editor__sectionTitle">My Templates</h3>
               <div className="template-editor__grid">
-                {tenantTemplates.map((t) => renderTemplateCard(t, false))}
+                {workspaceTemplates.map((t) => renderTemplateCard(t, false))}
               </div>
             </section>
           )}
@@ -458,10 +458,10 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
           )}
 
           {itemTemplates.length > 0 && 
-           ((filter === 'tenant' && tenantTemplates.length === 0) ||
+           ((filter === 'workspace' && workspaceTemplates.length === 0) ||
             (filter === 'system' && systemTemplates.length === 0)) && (
             <div className="template-editor__empty">
-              <p>No {filter === 'tenant' ? 'custom' : 'system'} templates found.</p>
+              <p>No {filter === 'workspace' ? 'custom' : 'system'} templates found.</p>
             </div>
           )}
         </div>

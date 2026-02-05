@@ -16,7 +16,7 @@ public class CollectionsControllerTests : IntegrationTestBase
     #region GET /api/collections
 
     [Fact]
-    public async Task GetCollections_ReturnsAllTenantCollections()
+    public async Task GetCollections_ReturnsAllWorkspaceCollections()
     {
         // Act
         var response = await Client.GetAsync("/api/collections");
@@ -27,8 +27,8 @@ public class CollectionsControllerTests : IntegrationTestBase
         Assert.NotNull(collections);
         // Should have at least one collection
         Assert.NotEmpty(collections);
-        // All collections should belong to the default tenant
-        Assert.All(collections, c => Assert.Equal(DefaultTenantId, c.TenantId));
+        // All collections should belong to the default workspace
+        Assert.All(collections, c => Assert.Equal(DefaultWorkspaceId, c.WorkspaceId));
     }
 
     [Fact]
@@ -45,54 +45,54 @@ public class CollectionsControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task GetCollections_DifferentTenant_ReturnsOnlyOwnCollections()
+    public async Task GetCollections_DifferentWorkspace_ReturnsOnlyOwnCollections()
     {
-        // Arrange - Create a second tenant with their own collection (use high IDs to avoid conflicts)
-        const int tenant2Id = 1002;
+        // Arrange - Create a second workspace with their own collection (use high IDs to avoid conflicts)
+        const int workspace2Id = 1002;
         const int user2Id = 1002;
         const int collection2Id = 1002;
 
         await Factory.SeedDatabaseAsync(context =>
         {
             // Skip if already seeded
-            if (context.Tenants.Any(t => t.Id == tenant2Id))
+            if (context.Workspaces.Any(t => t.Id == workspace2Id))
                 return;
 
-            context.Tenants.Add(new Tenant { Id = tenant2Id, Name = "Tenant 1002" });
+            context.Workspaces.Add(new Workspace { Id = workspace2Id, Name = "Workspace 1002" });
             context.Users.Add(new User
             {
                 Id = user2Id,
-                ActiveTenantId = tenant2Id,
+                ActiveWorkspaceId = workspace2Id,
                 Email = "user1002@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "test-user-1002"
             });
-            context.TenantUsers.Add(new TenantUser
+            context.WorkspaceUsers.Add(new WorkspaceUser
             {
                 UserId = user2Id,
-                TenantId = tenant2Id,
-                TenantRole = TenantRole.TenantAdmin
+                WorkspaceId = workspace2Id,
+                WorkspaceRole = WorkspaceRole.WorkspaceAdmin
             });
             context.Collections.Add(new Collection
             {
                 Id = collection2Id,
-                TenantId = tenant2Id,
-                Name = "Tenant 1002 Collection",
-                Slug = "tenant-1002-collection"
+                WorkspaceId = workspace2Id,
+                Name = "Workspace 1002 Collection",
+                Slug = "workspace-1002-collection"
             });
         });
 
-        using var tenant2Client = CreateClientForTenant(tenant2Id, user2Id, "user1002@example.com");
+        using var workspace2Client = CreateClientForWorkspace(workspace2Id, user2Id, "user1002@example.com");
 
         // Act
-        var response = await tenant2Client.GetAsync("/api/collections");
+        var response = await workspace2Client.GetAsync("/api/collections");
 
         // Assert
         response.EnsureSuccessStatusCode();
         var collections = await DeserializeResponseAsync<List<Collection>>(response);
         Assert.NotNull(collections);
         Assert.Single(collections);
-        Assert.Equal("Tenant 1002 Collection", collections[0].Name);
+        Assert.Equal("Workspace 1002 Collection", collections[0].Name);
     }
 
     #endregion
@@ -130,32 +130,32 @@ public class CollectionsControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task GetCollection_OtherTenantCollection_ReturnsNotFound()
+    public async Task GetCollection_OtherWorkspaceCollection_ReturnsNotFound()
     {
         // Arrange - use high IDs to avoid conflicts
-        const int otherTenantId = 3003;
+        const int otherWorkspaceId = 3003;
         const int otherCollectionId = 3003;
 
         await Factory.SeedDatabaseAsync(context =>
         {
-            // Skip if already seeded (check both tenant and collection)
+            // Skip if already seeded (check both workspace and collection)
             if (context.Collections.Any(c => c.Id == otherCollectionId))
                 return;
 
-            if (!context.Tenants.Any(t => t.Id == otherTenantId))
+            if (!context.Workspaces.Any(t => t.Id == otherWorkspaceId))
             {
-                context.Tenants.Add(new Tenant { Id = otherTenantId, Name = "Tenant 3003" });
+                context.Workspaces.Add(new Workspace { Id = otherWorkspaceId, Name = "Workspace 3003" });
             }
             context.Collections.Add(new Collection
             {
                 Id = otherCollectionId,
-                TenantId = otherTenantId,
-                Name = "Other Tenant Collection",
-                Slug = "other-tenant-3003"
+                WorkspaceId = otherWorkspaceId,
+                Name = "Other Workspace Collection",
+                Slug = "other-workspace-3003"
             });
         });
 
-        // Act - Try to access other tenant's collection from tenant 1
+        // Act - Try to access other workspace's collection from workspace 1
         var response = await Client.GetAsync($"/api/collections/{otherCollectionId}");
 
         // Assert
@@ -222,7 +222,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         Assert.Equal("new-collection", created.Slug);
         Assert.True(created.EffectiveIsPublic);
         Assert.Equal(Visibility.Public, created.Visibility);
-        Assert.Equal(DefaultTenantId, created.TenantId);
+        Assert.Equal(DefaultWorkspaceId, created.WorkspaceId);
 
         // Verify persisted in database
         using var context = GetDbContext();
@@ -332,43 +332,43 @@ public class CollectionsControllerTests : IntegrationTestBase
     [Fact]
     public async Task DeleteCollection_LastCollection_ReturnsBadRequest()
     {
-        // Arrange - Create a fresh tenant with only one collection
-        const int isolatedTenantId = 2000;
+        // Arrange - Create a fresh workspace with only one collection
+        const int isolatedWorkspaceId = 2000;
         const int isolatedUserId = 2000;
         const int isolatedCollectionId = 2000;
 
         await Factory.SeedDatabaseAsync(context =>
         {
-            if (context.Tenants.Any(t => t.Id == isolatedTenantId))
+            if (context.Workspaces.Any(t => t.Id == isolatedWorkspaceId))
                 return;
 
-            context.Tenants.Add(new Tenant { Id = isolatedTenantId, Name = "Isolated Tenant" });
+            context.Workspaces.Add(new Workspace { Id = isolatedWorkspaceId, Name = "Isolated Workspace" });
             context.Users.Add(new User
             {
                 Id = isolatedUserId,
-                ActiveTenantId = isolatedTenantId,
+                ActiveWorkspaceId = isolatedWorkspaceId,
                 Email = "isolated@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "isolated-user"
             });
-            context.TenantUsers.Add(new TenantUser
+            context.WorkspaceUsers.Add(new WorkspaceUser
             {
                 UserId = isolatedUserId,
-                TenantId = isolatedTenantId,
-                TenantRole = TenantRole.TenantAdmin
+                WorkspaceId = isolatedWorkspaceId,
+                WorkspaceRole = WorkspaceRole.WorkspaceAdmin
             });
             context.Collections.Add(new Collection
             {
                 Id = isolatedCollectionId,
-                TenantId = isolatedTenantId,
+                WorkspaceId = isolatedWorkspaceId,
                 Name = "Only Collection",
                 Slug = "only-collection"
             });
         });
 
-        using var isolatedClient = CreateClientForTenant(isolatedTenantId, isolatedUserId, "isolated@example.com");
+        using var isolatedClient = CreateClientForWorkspace(isolatedWorkspaceId, isolatedUserId, "isolated@example.com");
 
-        // Act - Try to delete the only collection for this tenant
+        // Act - Try to delete the only collection for this workspace
         var response = await isolatedClient.DeleteAsync($"/api/collections/{isolatedCollectionId}");
 
         // Assert
@@ -395,35 +395,51 @@ public class CollectionsControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task DeleteCollection_OtherTenantCollection_ReturnsNotFound()
+    public async Task DeleteCollection_OtherWorkspaceCollection_ReturnsNotFound()
     {
-        // Arrange - use high IDs to avoid conflicts
-        const int otherTenantId = 3004;
-        const int otherCollectionId = 3004;
+        // Arrange - use very high IDs to avoid conflicts with auto-generated IDs
+        const int otherWorkspaceId = 99990004;
+        const int otherCollectionId = 99990004;
+        const int extraCollectionId = 99990005;
 
         await Factory.SeedDatabaseAsync(context =>
         {
-            // Skip if already seeded (check collection)
-            if (context.Collections.Any(c => c.Id == otherCollectionId))
-                return;
-
-            if (!context.Tenants.Any(t => t.Id == otherTenantId))
+            // Add a second collection to workspace 1 so the "last collection" check passes
+            // (the controller checks count before ownership, so we need > 1 collection)
+            if (!context.Collections.Any(c => c.Id == extraCollectionId))
             {
-                context.Tenants.Add(new Tenant { Id = otherTenantId, Name = "Tenant 3004" });
+                context.Collections.Add(new Collection
+                {
+                    Id = extraCollectionId,
+                    WorkspaceId = DefaultWorkspaceId,
+                    Name = "Extra Collection for Delete Test",
+                    Slug = "extra-collection-delete-test"
+                });
             }
-            context.Collections.Add(new Collection
+
+            // Create the other workspace if not exists
+            if (!context.Workspaces.Any(t => t.Id == otherWorkspaceId))
             {
-                Id = otherCollectionId,
-                TenantId = otherTenantId,
-                Name = "Other Collection",
-                Slug = "other-collection-3004"
-            });
+                context.Workspaces.Add(new Workspace { Id = otherWorkspaceId, Name = "Other Workspace for Delete Test" });
+            }
+
+            // Create collection in the OTHER workspace (not workspace 1)
+            if (!context.Collections.Any(c => c.Id == otherCollectionId))
+            {
+                context.Collections.Add(new Collection
+                {
+                    Id = otherCollectionId,
+                    WorkspaceId = otherWorkspaceId,
+                    Name = "Other Workspace Collection",
+                    Slug = "other-workspace-collection-delete-test"
+                });
+            }
         });
 
-        // Act - Try to delete another tenant's collection
+        // Act - Try to delete another workspace's collection (should fail)
         var response = await Client.DeleteAsync($"/api/collections/{otherCollectionId}");
 
-        // Assert
+        // Assert - should get NotFound because collection belongs to different workspace
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 

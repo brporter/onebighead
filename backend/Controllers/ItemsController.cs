@@ -38,34 +38,34 @@ public class ItemsController : ApiControllerBase
         [FromQuery][Range(0, int.MaxValue)] int? skip = null,
         [FromQuery][Range(0, int.MaxValue)] int? take = null)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
         IEnumerable<Item> items;
         if (categoryId == null)
         {
-            items = await _itemRepository.GetAllAsync(tenantId);
+            items = await _itemRepository.GetAllAsync(workspaceId);
         }
         else
         {
             IEnumerable<int> categoryIds;
             if (includeDescendants)
             {
-                categoryIds = await GetCategoryAndDescendantIds(categoryId.Value, tenantId);
+                categoryIds = await GetCategoryAndDescendantIds(categoryId.Value, workspaceId);
             }
             else
             {
                 categoryIds = new[] { categoryId.Value };
             }
-            items = await _itemRepository.GetByCategoryIdsAsync(categoryIds, tenantId);
+            items = await _itemRepository.GetByCategoryIdsAsync(categoryIds, workspaceId);
         }
 
         var itemList = items.ToList();
         
         // Compute effective visibility
-        var collection = await _collectionRepository.GetByTenantIdAsync(tenantId);
+        var collection = await _collectionRepository.GetByWorkspaceIdAsync(workspaceId);
         if (collection != null)
         {
-            var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+            var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
             _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
             _visibilityService.ComputeEffectiveVisibility(itemList, collection, categoryList);
@@ -100,9 +100,9 @@ public class ItemsController : ApiControllerBase
         return Ok(itemList);
     }
 
-    private async Task<IEnumerable<int>> GetCategoryAndDescendantIds(int categoryId, int tenantId)
+    private async Task<IEnumerable<int>> GetCategoryAndDescendantIds(int categoryId, int workspaceId)
     {
-        var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+        var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
         var categoryList = allCategories.ToList();
 
         var result = new HashSet<int> { categoryId };
@@ -129,9 +129,9 @@ public class ItemsController : ApiControllerBase
     /// Loads categories for a collection with computed visibility.
     /// </summary>
     private async Task<(List<Category> Categories, Dictionary<int, Category> Lookup)> LoadCategoriesWithVisibility(
-        int collectionId, int tenantId, Collection collection)
+        int collectionId, int workspaceId, Collection collection)
     {
-        var categories = (await _categoryRepository.GetByCollectionAsync(collectionId, tenantId)).ToList();
+        var categories = (await _categoryRepository.GetByCollectionAsync(collectionId, workspaceId)).ToList();
         _visibilityService.ComputeEffectiveVisibility(categories, collection);
         var lookup = categories.ToDictionary(c => c.Id);
         return (categories, lookup);
@@ -169,18 +169,18 @@ public class ItemsController : ApiControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Item>> GetItem(int id)
     {
-        var tenantId = GetTenantId();
-        var item = await _itemRepository.GetByIdAsync(id, tenantId);
+        var workspaceId = GetWorkspaceId();
+        var item = await _itemRepository.GetByIdAsync(id, workspaceId);
         if (item is null)
         {
             return NotFound();
         }
         
         // Compute effective visibility
-        var collection = await _collectionRepository.GetByTenantIdAsync(tenantId);
+        var collection = await _collectionRepository.GetByWorkspaceIdAsync(workspaceId);
         if (collection != null)
         {
-            var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+            var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
             _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
             var category = item.CategoryId.HasValue 
@@ -195,24 +195,24 @@ public class ItemsController : ApiControllerBase
     [HttpPost]
     public async Task<ActionResult<Item>> CreateItem(CreateItemRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        // Validate CollectionId belongs to tenant
-        var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, tenantId);
+        // Validate CollectionId belongs to workspace
+        var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, workspaceId);
         if (collection is null)
         {
             return BadRequest("Invalid collection");
         }
 
         // Load categories and validate
-        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, tenantId, collection);
+        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
         var (_, error) = ValidateCategoryAndVisibility(request.CategoryId, request.Visibility, categoryLookup, collection);
         if (error != null)
         {
             return error;
         }
 
-        var item = request.ToItem(tenantId);
+        var item = request.ToItem(workspaceId);
         var created = await _itemRepository.CreateAsync(item);
         return CreatedAtAction(nameof(GetItem), new { id = created.Id }, created);
     }
@@ -220,25 +220,25 @@ public class ItemsController : ApiControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<Item>> UpdateItem(int id, UpdateItemRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        // Validate CollectionId belongs to tenant
-        var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, tenantId);
+        // Validate CollectionId belongs to workspace
+        var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, workspaceId);
         if (collection is null)
         {
             return BadRequest("Invalid collection");
         }
 
         // Load categories and validate
-        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, tenantId, collection);
+        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
         var (_, error) = ValidateCategoryAndVisibility(request.CategoryId, request.Visibility, categoryLookup, collection);
         if (error != null)
         {
             return error;
         }
 
-        var item = request.ToItem(id, tenantId);
-        var updated = await _itemRepository.UpdateAsync(id, item, tenantId);
+        var item = request.ToItem(id, workspaceId);
+        var updated = await _itemRepository.UpdateAsync(id, item, workspaceId);
         if (updated is null)
         {
             return NotFound();
@@ -249,8 +249,8 @@ public class ItemsController : ApiControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteItem(int id)
     {
-        var tenantId = GetTenantId();
-        var deleted = await _itemRepository.DeleteAsync(id, tenantId);
+        var workspaceId = GetWorkspaceId();
+        var deleted = await _itemRepository.DeleteAsync(id, workspaceId);
         if (!deleted)
         {
             return NotFound();

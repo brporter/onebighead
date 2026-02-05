@@ -9,7 +9,7 @@ namespace OneBigHead.Server.Authentication;
 
 public interface ITokenService
 {
-    string GenerateAppToken(User user, TenantRole tenantRole);
+    string GenerateAppToken(User user, WorkspaceRole workspaceRole);
     ClaimsPrincipal? ValidateAppToken(string token);
 }
 
@@ -24,15 +24,15 @@ public class TokenService : ITokenService
         _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Jwt.SigningKey));
     }
 
-    public string GenerateAppToken(User user, TenantRole tenantRole)
+    public string GenerateAppToken(User user, WorkspaceRole workspaceRole)
     {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Email, user.Email),
-            new("tenant_id", user.ActiveTenantId.ToString()),
+            new("workspace_id", user.ActiveWorkspaceId.ToString()),
             new("provider", user.IdentityProvider.ToString()),
-            new("tenant_role", tenantRole.ToString()),
+            new("workspace_role", workspaceRole.ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 

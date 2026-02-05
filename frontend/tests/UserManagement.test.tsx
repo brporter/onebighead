@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event';
 import UserManagement from '../src/components/user/UserManagement';
 import * as UserContext from '../src/contexts/UserContext';
 import * as usersApiModule from '../src/api/users';
-import type { TenantUser } from '../src/utils/types';
-import { TenantRole } from '../src/utils/types';
+import type { WorkspaceUser } from '../src/utils/types';
+import { WorkspaceRole } from '../src/utils/types';
 
 vi.mock('../src/contexts/UserContext', () => ({
   useUser: vi.fn(),
@@ -30,19 +30,19 @@ describe('UserManagement', () => {
   const mockCurrentUser = {
     userId: 1,
     email: 'admin@example.com',
-    tenantId: 1,
-    tenantName: 'Test Tenant',
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
     hasCompletedWelcome: true,
     isSystemAdministrator: false,
-    tenantRole: TenantRole.TenantAdmin,
-    isTenantAdmin: true,
+    workspaceRole: WorkspaceRole.WorkspaceAdmin,
+    isWorkspaceAdmin: true,
   };
 
-  const mockUsers: TenantUser[] = [
+  const mockUsers: WorkspaceUser[] = [
     {
       userId: 1,
       email: 'admin@example.com',
-      tenantRole: TenantRole.TenantAdmin,
+      workspaceRole: WorkspaceRole.WorkspaceAdmin,
       isLinked: true,
       identityProvider: 'Microsoft',
       createdAt: '2024-01-01T00:00:00Z',
@@ -50,7 +50,7 @@ describe('UserManagement', () => {
     {
       userId: 2,
       email: 'member@example.com',
-      tenantRole: TenantRole.Normal,
+      workspaceRole: WorkspaceRole.Normal,
       isLinked: true,
       identityProvider: 'Google',
       createdAt: '2024-01-02T00:00:00Z',
@@ -58,7 +58,7 @@ describe('UserManagement', () => {
     {
       userId: 3,
       email: 'pending@example.com',
-      tenantRole: TenantRole.Normal,
+      workspaceRole: WorkspaceRole.Normal,
       isLinked: false,
       identityProvider: null,
       createdAt: '2024-01-03T00:00:00Z',
@@ -83,7 +83,7 @@ describe('UserManagement', () => {
     vi.mocked(usersApiModule.usersApi.inviteUser).mockResolvedValue({
       userId: 4,
       email: 'new@example.com',
-      tenantRole: TenantRole.Normal,
+      workspaceRole: WorkspaceRole.Normal,
       isLinked: false,
       identityProvider: null,
       createdAt: '2024-01-04T00:00:00Z',
@@ -206,7 +206,7 @@ describe('UserManagement', () => {
       await waitFor(() => {
         expect(usersApiModule.usersApi.inviteUser).toHaveBeenCalledWith({
           email: 'new@example.com',
-          role: TenantRole.Normal,
+          role: WorkspaceRole.Normal,
         });
       });
     });
@@ -224,13 +224,13 @@ describe('UserManagement', () => {
       const inviteButton = screen.getByRole('button', { name: 'Invite' });
 
       await user.type(emailInput, 'newadmin@example.com');
-      await user.selectOptions(roleSelect, 'TenantAdmin');
+      await user.selectOptions(roleSelect, 'WorkspaceAdmin');
       await user.click(inviteButton);
 
       await waitFor(() => {
         expect(usersApiModule.usersApi.inviteUser).toHaveBeenCalledWith({
           email: 'newadmin@example.com',
-          role: TenantRole.TenantAdmin,
+          role: WorkspaceRole.WorkspaceAdmin,
         });
       });
     });
@@ -313,20 +313,20 @@ describe('UserManagement', () => {
       const roleSelects = screen.getAllByRole('combobox');
       const memberRoleSelect = roleSelects[2]; // Skip invite role and admin role
 
-      await user.selectOptions(memberRoleSelect, 'TenantAdmin');
+      await user.selectOptions(memberRoleSelect, 'WorkspaceAdmin');
 
       await waitFor(() => {
-        expect(usersApiModule.usersApi.updateUserRole).toHaveBeenCalledWith(2, TenantRole.TenantAdmin);
+        expect(usersApiModule.usersApi.updateUserRole).toHaveBeenCalledWith(2, WorkspaceRole.WorkspaceAdmin);
       });
     });
 
     it('should prevent demoting last admin', async () => {
       // Set up scenario with only one admin
-      const singleAdminUsers: TenantUser[] = [
+      const singleAdminUsers: WorkspaceUser[] = [
         {
           userId: 1,
           email: 'admin@example.com',
-          tenantRole: TenantRole.TenantAdmin,
+          workspaceRole: WorkspaceRole.WorkspaceAdmin,
           isLinked: true,
           identityProvider: 'Microsoft',
           createdAt: '2024-01-01T00:00:00Z',
@@ -334,7 +334,7 @@ describe('UserManagement', () => {
         {
           userId: 2,
           email: 'member@example.com',
-          tenantRole: TenantRole.Normal,
+          workspaceRole: WorkspaceRole.Normal,
           isLinked: true,
           identityProvider: 'Google',
           createdAt: '2024-01-02T00:00:00Z',
@@ -382,7 +382,7 @@ describe('UserManagement', () => {
       const roleSelects = screen.getAllByRole('combobox');
       const memberRoleSelect = roleSelects[2];
 
-      await user.selectOptions(memberRoleSelect, 'TenantAdmin');
+      await user.selectOptions(memberRoleSelect, 'WorkspaceAdmin');
 
       await waitFor(() => {
         expect(screen.getByText('Update failed')).toBeInTheDocument();
@@ -457,11 +457,11 @@ describe('UserManagement', () => {
 
     it('should prevent removing last admin', async () => {
       // Set up scenario with only one admin
-      const singleAdminUsers: TenantUser[] = [
+      const singleAdminUsers: WorkspaceUser[] = [
         {
           userId: 1,
           email: 'admin@example.com',
-          tenantRole: TenantRole.TenantAdmin,
+          workspaceRole: WorkspaceRole.WorkspaceAdmin,
           isLinked: true,
           identityProvider: 'Microsoft',
           createdAt: '2024-01-01T00:00:00Z',
@@ -557,11 +557,11 @@ describe('UserManagement', () => {
     });
 
     it('should match snapshot with pending user', async () => {
-      const pendingOnlyUsers: TenantUser[] = [
+      const pendingOnlyUsers: WorkspaceUser[] = [
         {
           userId: 1,
           email: 'pending@example.com',
-          tenantRole: TenantRole.Normal,
+          workspaceRole: WorkspaceRole.Normal,
           isLinked: false,
           identityProvider: null,
           createdAt: '2024-01-01T00:00:00Z',

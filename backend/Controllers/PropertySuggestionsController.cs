@@ -27,17 +27,17 @@ public class PropertySuggestionsController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<PropertySuggestionsResponse>> GetSuggestions(int collectionId)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        // Verify collection belongs to tenant
-        var collection = await _collectionRepository.GetByIdAsync(collectionId, tenantId);
+        // Verify collection belongs to workspace
+        var collection = await _collectionRepository.GetByIdAsync(collectionId, workspaceId);
         if (collection is null)
         {
             return NotFound("Collection not found");
         }
 
-        var categories = await _suggestionRepository.GetCategoriesAsync(collectionId, tenantId);
-        var names = await _suggestionRepository.GetNamesAsync(collectionId, tenantId);
+        var categories = await _suggestionRepository.GetCategoriesAsync(collectionId, workspaceId);
+        var names = await _suggestionRepository.GetNamesAsync(collectionId, workspaceId);
 
         return Ok(new PropertySuggestionsResponse
         {
@@ -54,21 +54,21 @@ public class PropertySuggestionsController : ApiControllerBase
     [HttpPost("sync")]
     public async Task<ActionResult<PropertySuggestionsResponse>> SyncSuggestions(int collectionId)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        // Verify collection belongs to tenant
-        var collection = await _collectionRepository.GetByIdAsync(collectionId, tenantId);
+        // Verify collection belongs to workspace
+        var collection = await _collectionRepository.GetByIdAsync(collectionId, workspaceId);
         if (collection is null)
         {
             return NotFound("Collection not found");
         }
 
         // Sync suggestions based on current items
-        await _suggestionRepository.SyncSuggestionsAsync(collectionId, tenantId, [], []);
+        await _suggestionRepository.SyncSuggestionsAsync(collectionId, workspaceId, [], []);
 
         // Return the updated suggestions
-        var categories = await _suggestionRepository.GetCategoriesAsync(collectionId, tenantId);
-        var names = await _suggestionRepository.GetNamesAsync(collectionId, tenantId);
+        var categories = await _suggestionRepository.GetCategoriesAsync(collectionId, workspaceId);
+        var names = await _suggestionRepository.GetNamesAsync(collectionId, workspaceId);
 
         return Ok(new PropertySuggestionsResponse
         {

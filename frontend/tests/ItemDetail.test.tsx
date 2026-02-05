@@ -8,7 +8,7 @@ import { UserFlag, Visibility } from '../src/utils/types';
 describe('ItemDetail', () => {
   const mockItem: Item = {
     id: 1,
-    tenantId: 1,
+    workspaceId: 1,
     collectionId: 1,
     categoryId: 2,
     name: 'Test Item',

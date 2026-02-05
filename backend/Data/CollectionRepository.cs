@@ -12,34 +12,34 @@ public class CollectionRepository : ICollectionRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Collection>> GetAllAsync(int tenantId)
+    public async Task<IEnumerable<Collection>> GetAllAsync(int workspaceId)
     {
         return await _context.Collections
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId)
+            .Where(c => c.WorkspaceId == workspaceId)
             .OrderBy(c => c.Name)
             .ToListAsync();
     }
 
-    public async Task<Collection?> GetByIdAsync(int id, int tenantId)
+    public async Task<Collection?> GetByIdAsync(int id, int workspaceId)
     {
         return await _context.Collections
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+            .FirstOrDefaultAsync(c => c.Id == id && c.WorkspaceId == workspaceId);
     }
 
-    public async Task<Collection?> GetBySlugAsync(string slug, int tenantId)
+    public async Task<Collection?> GetBySlugAsync(string slug, int workspaceId)
     {
         return await _context.Collections
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Slug == slug && c.TenantId == tenantId);
+            .FirstOrDefaultAsync(c => c.Slug == slug && c.WorkspaceId == workspaceId);
     }
 
-    public async Task<Collection?> GetByTenantIdAsync(int tenantId)
+    public async Task<Collection?> GetByWorkspaceIdAsync(int workspaceId)
     {
         return await _context.Collections
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.TenantId == tenantId);
+            .FirstOrDefaultAsync(c => c.WorkspaceId == workspaceId);
     }
 
     public async Task<Collection> CreateAsync(Collection collection)
@@ -49,10 +49,10 @@ public class CollectionRepository : ICollectionRepository
         return collection;
     }
 
-    public async Task<Collection?> UpdateAsync(int id, Collection collection, int tenantId)
+    public async Task<Collection?> UpdateAsync(int id, Collection collection, int workspaceId)
     {
         var existingCollection = await _context.Collections
-            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+            .FirstOrDefaultAsync(c => c.Id == id && c.WorkspaceId == workspaceId);
 
         if (existingCollection is null)
         {
@@ -69,10 +69,10 @@ public class CollectionRepository : ICollectionRepository
         return existingCollection;
     }
 
-    public async Task<bool> DeleteAsync(int id, int tenantId)
+    public async Task<bool> DeleteAsync(int id, int workspaceId)
     {
         var collection = await _context.Collections
-            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+            .FirstOrDefaultAsync(c => c.Id == id && c.WorkspaceId == workspaceId);
 
         if (collection is null)
         {
@@ -90,8 +90,8 @@ public class CollectionRepository : ICollectionRepository
         return true;
     }
 
-    public async Task<int> GetCountAsync(int tenantId)
+    public async Task<int> GetCountAsync(int workspaceId)
     {
-        return await _context.Collections.CountAsync(c => c.TenantId == tenantId);
+        return await _context.Collections.CountAsync(c => c.WorkspaceId == workspaceId);
     }
 }

@@ -13,7 +13,7 @@ public class DatabaseImageProvider : IImageProvider
         _context = context;
     }
 
-    public async Task<StoredImageInfo> StoreAsync(int tenantId, string fileName, string contentType, Stream data)
+    public async Task<StoredImageInfo> StoreAsync(int workspaceId, string fileName, string contentType, Stream data)
     {
         using var memoryStream = new MemoryStream();
         await data.CopyToAsync(memoryStream);
@@ -22,7 +22,7 @@ public class DatabaseImageProvider : IImageProvider
         var image = new StoredImage
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             FileName = fileName,
             ContentType = contentType,
             Data = imageData,
@@ -36,11 +36,11 @@ public class DatabaseImageProvider : IImageProvider
         return new StoredImageInfo(image.Id, url);
     }
 
-    public async Task<RetrievedImage?> RetrieveAsync(Guid key, int tenantId)
+    public async Task<RetrievedImage?> RetrieveAsync(Guid key, int workspaceId)
     {
         var image = await _context.StoredImages
             .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == key && i.TenantId == tenantId);
+            .FirstOrDefaultAsync(i => i.Id == key && i.WorkspaceId == workspaceId);
 
         if (image == null)
             return null;
@@ -48,10 +48,10 @@ public class DatabaseImageProvider : IImageProvider
         return new RetrievedImage(image.Data, image.ContentType, image.FileName);
     }
 
-    public async Task DeleteAsync(Guid key, int tenantId)
+    public async Task DeleteAsync(Guid key, int workspaceId)
     {
         var image = await _context.StoredImages
-            .FirstOrDefaultAsync(i => i.Id == key && i.TenantId == tenantId);
+            .FirstOrDefaultAsync(i => i.Id == key && i.WorkspaceId == workspaceId);
         
         if (image != null)
         {

@@ -1,13 +1,13 @@
 /**
  * Centralized API module
- * 
+ *
  * Usage:
  *   import { collectionsApi, itemsApi, api } from './api';
- *   
+ *
  *   // Use typed API methods
  *   const collections = await collectionsApi.getAll();
  *   const item = await itemsApi.getById(123);
- *   
+ *
  *   // Or use the raw client for custom requests
  *   const data = await api.get<CustomType>('/custom/endpoint');
  */
@@ -24,6 +24,6 @@ export { adminApi } from './admin';
 export { exportApi } from './export';
 export { themesApi } from './themes';
 export { usersApi } from './users';
-export { tenantsApi, type CreateTenantRequest, type CreateTenantResponse, type SwitchTenantResponse, type LeaveTenantResponse, type TenantStats, type TenantDeletionResponse, type TransferAdminRequest, type TransferAdminResponse } from './tenants';
-export { accountApi, type UserDeletionInfo, type TenantMembershipDeletionInfo, type DeleteAccountRequest, type DeleteAccountResponse, TenantActionType, DeletionBlockerReason } from './account';
+export { workspacesApi, type CreateWorkspaceRequest, type CreateWorkspaceResponse, type SwitchWorkspaceResponse, type LeaveWorkspaceResponse, type WorkspaceStats, type WorkspaceDeletionResponse, type TransferAdminRequest, type TransferAdminResponse } from './workspaces';
+export { accountApi, type UserDeletionInfo, type WorkspaceMembershipDeletionInfo, type DeleteAccountRequest, type DeleteAccountResponse, WorkspaceActionType, DeletionBlockerReason } from './account';
 export * from './support';

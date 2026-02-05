@@ -5,8 +5,8 @@ import { api } from './client';
 import type { CurrentUser } from '../utils/types';
 
 export interface CompleteWelcomeResponse {
-  tenantId: number;
-  tenantName: string;
+  workspaceId: number;
+  workspaceName: string;
   hasCompletedWelcome: boolean;
 }
 
@@ -33,8 +33,8 @@ export const authApi = {
     return `/api/auth/login/${provider}`;
   },
 
-  completeWelcome(tenantName?: string): Promise<CompleteWelcomeResponse> {
-    return api.post<CompleteWelcomeResponse>('/auth/complete-welcome', { tenantName });
+  completeWelcome(workspaceName?: string): Promise<CompleteWelcomeResponse> {
+    return api.post<CompleteWelcomeResponse>('/auth/complete-welcome', { workspaceName });
   },
 
   acceptTerms(): Promise<AcceptTermsResponse> {

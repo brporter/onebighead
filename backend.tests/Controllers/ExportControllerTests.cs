@@ -19,7 +19,7 @@ public class ExportControllerTests
     private readonly Mock<IItemRepository> _mockItemRepository;
     private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
     private readonly ExportController _controller;
-    private const int TestTenantId = 1;
+    private const int TestWorkspaceId = 1;
     private const int TestUserId = 1;
 
     public ExportControllerTests()
@@ -36,7 +36,7 @@ public class ExportControllerTests
 
         var claims = new List<Claim>
         {
-            new("tenant_id", TestTenantId.ToString()),
+            new("workspace_id", TestWorkspaceId.ToString()),
             new("sub", TestUserId.ToString()),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")
@@ -56,13 +56,13 @@ public class ExportControllerTests
     public async Task ExportData_ReturnsFileResult_WithCorrectContentType()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Collection>());
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
@@ -79,13 +79,13 @@ public class ExportControllerTests
     public async Task ExportData_ReturnsZipFile_ContainingExportJson()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Collection>());
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
@@ -105,13 +105,13 @@ public class ExportControllerTests
     public async Task ExportData_ReturnsEmptyCollections_WhenNoData()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Collection>());
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
@@ -135,7 +135,7 @@ public class ExportControllerTests
             new()
             {
                 Id = 1,
-                TenantId = TestTenantId,
+                WorkspaceId = TestWorkspaceId,
                 Name = "Collection 1",
                 Description = "Description 1",
                 HeroImageUrl = "https://example.com/image1.jpg",
@@ -145,7 +145,7 @@ public class ExportControllerTests
             new()
             {
                 Id = 2,
-                TenantId = TestTenantId,
+                WorkspaceId = TestWorkspaceId,
                 Name = "Collection 2",
                 Description = "Description 2",
                 HeroImageUrl = null,
@@ -153,13 +153,13 @@ public class ExportControllerTests
                 CreatedAt = new DateTime(2024, 2, 1, 12, 0, 0, DateTimeKind.Utc)
             }
         };
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(collections);
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
@@ -191,7 +191,7 @@ public class ExportControllerTests
             new()
             {
                 Id = 1,
-                TenantId = TestTenantId,
+                WorkspaceId = TestWorkspaceId,
                 CollectionId = 1,
                 Name = "Category 1",
                 Description = "Category Description 1",
@@ -201,7 +201,7 @@ public class ExportControllerTests
             new()
             {
                 Id = 2,
-                TenantId = TestTenantId,
+                WorkspaceId = TestWorkspaceId,
                 CollectionId = 1,
                 Name = "Category 2",
                 Description = "Category Description 2",
@@ -209,13 +209,13 @@ public class ExportControllerTests
                 ParentCategoryId = 1
             }
         };
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Collection>());
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(categories);
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
@@ -249,7 +249,7 @@ public class ExportControllerTests
             new()
             {
                 Id = 1,
-                TenantId = TestTenantId,
+                WorkspaceId = TestWorkspaceId,
                 CollectionId = 1,
                 CategoryId = 1,
                 Name = "Item 1",
@@ -267,7 +267,7 @@ public class ExportControllerTests
             new()
             {
                 Id = 2,
-                TenantId = TestTenantId,
+                WorkspaceId = TestWorkspaceId,
                 CollectionId = 1,
                 CategoryId = null,
                 Name = "Item 2",
@@ -277,13 +277,13 @@ public class ExportControllerTests
                 Images = new List<ItemImage>()
             }
         };
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Collection>());
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(items);
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
@@ -313,25 +313,25 @@ public class ExportControllerTests
     }
 
     [Fact]
-    public async Task ExportData_UsesTenantIdFromClaims()
+    public async Task ExportData_UsesWorkspaceIdFromClaims()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Collection>());
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
         await _controller.ExportData();
 
         // Assert
-        _mockCollectionRepository.Verify(repo => repo.GetAllAsync(TestTenantId), Times.Once);
-        _mockCategoryRepository.Verify(repo => repo.GetAllAsync(TestTenantId), Times.Once);
-        _mockItemRepository.Verify(repo => repo.GetAllAsync(TestTenantId), Times.Once);
+        _mockCollectionRepository.Verify(repo => repo.GetAllAsync(TestWorkspaceId), Times.Once);
+        _mockCategoryRepository.Verify(repo => repo.GetAllAsync(TestWorkspaceId), Times.Once);
+        _mockItemRepository.Verify(repo => repo.GetAllAsync(TestWorkspaceId), Times.Once);
     }
 
     [Fact]
@@ -339,13 +339,13 @@ public class ExportControllerTests
     {
         // Arrange
         var beforeExport = DateTime.UtcNow;
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Collection>());
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
@@ -366,15 +366,15 @@ public class ExportControllerTests
         // Arrange
         var collections = new List<Collection>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Test Collection", Slug = "test" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test" }
         };
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(collections);
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
@@ -403,15 +403,15 @@ public class ExportControllerTests
         // Arrange
         var collections = new List<Collection>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Test", Slug = "test", HeroImageUrl = "http://example.com/img.jpg" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test", HeroImageUrl = "http://example.com/img.jpg" }
         };
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(collections);
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
-        _mockItemTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
+        _mockItemTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act

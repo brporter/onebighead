@@ -4,12 +4,12 @@ using OneBigHead.Server.Models;
 namespace OneBigHead.Server.DTOs;
 
 /// <summary>
-/// Statistics about a tenant's data, used for deletion confirmation.
+/// Statistics about a workspace's data, used for deletion confirmation.
 /// </summary>
-public class TenantStatsResponse
+public class WorkspaceStatsResponse
 {
-    public int TenantId { get; set; }
-    public string TenantName { get; set; } = string.Empty;
+    public int WorkspaceId { get; set; }
+    public string WorkspaceName { get; set; } = string.Empty;
     public int CollectionCount { get; set; }
     public int CategoryCount { get; set; }
     public int ItemCount { get; set; }
@@ -19,17 +19,17 @@ public class TenantStatsResponse
 }
 
 /// <summary>
-/// Result of a tenant deletion operation.
+/// Result of a workspace deletion operation.
 /// </summary>
-public class TenantDeletionResponse
+public class WorkspaceDeletionResponse
 {
     public bool Success { get; set; }
     /// <summary>
-    /// The new active tenant ID for the user, if they were switched to another tenant.
+    /// The new active workspace ID for the user, if they were switched to another workspace.
     /// </summary>
-    public int? NewActiveTenantId { get; set; }
+    public int? NewActiveWorkspaceId { get; set; }
     /// <summary>
-    /// True if the user account was also soft-deleted (single-tenant admin scenario).
+    /// True if the user account was also soft-deleted (single-workspace admin scenario).
     /// Frontend should log out and redirect to homepage.
     /// </summary>
     public bool UserSoftDeleted { get; set; }
@@ -42,26 +42,26 @@ public class UserDeletionInfoResponse
 {
     public int UserId { get; set; }
     public string Email { get; set; } = string.Empty;
-    public List<TenantMembershipDeletionInfo> TenantMemberships { get; set; } = new();
-    public int TenantsRequiringAction { get; set; }
+    public List<WorkspaceMembershipDeletionInfo> WorkspaceMemberships { get; set; } = new();
+    public int WorkspacesRequiringAction { get; set; }
     public bool CanDeleteImmediately { get; set; }
 }
 
 /// <summary>
-/// Information about a specific tenant membership for deletion purposes.
+/// Information about a specific workspace membership for deletion purposes.
 /// </summary>
-public class TenantMembershipDeletionInfo
+public class WorkspaceMembershipDeletionInfo
 {
-    public int TenantId { get; set; }
-    public string TenantName { get; set; } = string.Empty;
-    public TenantRole Role { get; set; }
+    public int WorkspaceId { get; set; }
+    public string WorkspaceName { get; set; } = string.Empty;
+    public WorkspaceRole Role { get; set; }
     public bool IsOnlyUser { get; set; }
     public bool IsOnlyAdmin { get; set; }
     public int UserCount { get; set; }
     public bool CanLeave { get; set; }
     public DeletionBlockerReason BlockerReason { get; set; }
     /// <summary>
-    /// Other users in the tenant, for admin transfer selection.
+    /// Other users in the workspace, for admin transfer selection.
     /// </summary>
     public List<UserBasicInfo> OtherUsers { get; set; } = new();
 }
@@ -80,20 +80,20 @@ public class UserBasicInfo
 /// </summary>
 public enum DeletionBlockerReason
 {
-    /// <summary>No blocker - user can leave this tenant freely.</summary>
+    /// <summary>No blocker - user can leave this workspace freely.</summary>
     None,
-    /// <summary>User is the only member of this tenant.</summary>
+    /// <summary>User is the only member of this workspace.</summary>
     SoleUser,
-    /// <summary>User is the only admin in a tenant with other users.</summary>
+    /// <summary>User is the only admin in a workspace with other users.</summary>
     SoleAdmin
 }
 
 /// <summary>
-/// Types of actions a user can take on a tenant during account deletion.
+/// Types of actions a user can take on a workspace during account deletion.
 /// </summary>
-public enum TenantActionType
+public enum WorkspaceActionType
 {
-    /// <summary>Delete the tenant (when user is sole member).</summary>
+    /// <summary>Delete the workspace (when user is sole member).</summary>
     Delete,
     /// <summary>Transfer admin role to another user.</summary>
     Transfer
@@ -111,18 +111,18 @@ public class DeleteUserRequest
     public string ConfirmEmail { get; set; } = string.Empty;
 
     /// <summary>
-    /// Actions to take on each tenant that requires resolution.
+    /// Actions to take on each workspace that requires resolution.
     /// </summary>
-    public List<TenantActionRequest> TenantActions { get; set; } = new();
+    public List<WorkspaceActionRequest> WorkspaceActions { get; set; } = new();
 }
 
 /// <summary>
-/// Action to take on a specific tenant during account deletion.
+/// Action to take on a specific workspace during account deletion.
 /// </summary>
-public class TenantActionRequest
+public class WorkspaceActionRequest
 {
-    public int TenantId { get; set; }
-    public TenantActionType Action { get; set; }
+    public int WorkspaceId { get; set; }
+    public WorkspaceActionType Action { get; set; }
     /// <summary>
     /// User ID to transfer admin role to (required when Action is Transfer).
     /// </summary>

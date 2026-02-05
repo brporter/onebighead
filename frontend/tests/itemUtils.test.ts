@@ -8,7 +8,7 @@ describe('createEmptyItem', () => {
 
     expect(result).toEqual({
       id: null,
-      tenantId: 1,
+      workspaceId: 1,
       collectionId: 10,
       categoryId: 5,
       name: '',
@@ -22,12 +22,12 @@ describe('createEmptyItem', () => {
     });
   });
 
-  it('should create an empty item with different tenantId', () => {
+  it('should create an empty item with different workspaceId', () => {
     const result = createEmptyItem(10, 20, 2);
 
     expect(result).toEqual({
       id: null,
-      tenantId: 2,
+      workspaceId: 2,
       collectionId: 20,
       categoryId: 10,
       name: '',
@@ -46,7 +46,7 @@ describe('createEmptyItem', () => {
 
     expect(result).toEqual({
       id: null,
-      tenantId: 1,
+      workspaceId: 1,
       collectionId: 15,
       categoryId: null,
       name: '',

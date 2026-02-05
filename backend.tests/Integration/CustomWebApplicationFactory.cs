@@ -65,15 +65,15 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
     /// <summary>
     /// Creates a client that is authenticated with the specified claims.
-    /// Defaults to TenantAdmin role for backwards compatibility.
+    /// Defaults to WorkspaceAdmin role for backwards compatibility.
     /// </summary>
-    public HttpClient CreateAuthenticatedClient(int tenantId, int userId, string email = "test@example.com", string tenantRole = "TenantAdmin")
+    public HttpClient CreateAuthenticatedClient(int workspaceId, int userId, string email = "test@example.com", string workspaceRole = "WorkspaceAdmin")
     {
         var client = CreateClient();
-        client.DefaultRequestHeaders.Add(TestAuthHandler.TenantIdHeader, tenantId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.WorkspaceIdHeader, workspaceId.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.TenantRoleHeader, tenantRole);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.WorkspaceRoleHeader, workspaceRole);
         return client;
     }
 

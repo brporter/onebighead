@@ -13,7 +13,7 @@ public class ItemTests
 
         // Assert
         Assert.Null(item.Id);
-        Assert.Equal(0, item.TenantId);
+        Assert.Equal(0, item.WorkspaceId);
         Assert.Equal(0, item.CollectionId);
         Assert.Null(item.CategoryId);
         Assert.Equal(string.Empty, item.Name);
@@ -23,7 +23,7 @@ public class ItemTests
         Assert.Empty(item.Properties);
         Assert.NotNull(item.Images);
         Assert.Empty(item.Images);
-        Assert.Null(item.Tenant);
+        Assert.Null(item.Workspace);
         Assert.Null(item.Collection);
         Assert.Null(item.Category);
     }
@@ -32,7 +32,7 @@ public class ItemTests
     public void Item_Properties_CanBeSetAndGet()
     {
         // Arrange
-        var tenant = new Tenant { Id = 1, Name = "Test Tenant" };
+        var workspace = new Workspace { Id = 1, Name = "Test Workspace" };
         var collection = new Collection { Id = 1, Name = "Test Collection", Slug = "test" };
         var category = new Category { Id = 1, Name = "Test Category" };
         var properties = new List<ItemProperty> { new("Cat", "Name", "Value") };
@@ -42,7 +42,7 @@ public class ItemTests
         var item = new Item
         {
             Id = 1,
-            TenantId = 1,
+            WorkspaceId = 1,
             CollectionId = 1,
             CategoryId = 1,
             Name = "Test Item",
@@ -50,14 +50,14 @@ public class ItemTests
             Description = "Test Description",
             Properties = properties,
             Images = images,
-            Tenant = tenant,
+            Workspace = workspace,
             Collection = collection,
             Category = category
         };
 
         // Assert
         Assert.Equal(1, item.Id);
-        Assert.Equal(1, item.TenantId);
+        Assert.Equal(1, item.WorkspaceId);
         Assert.Equal(1, item.CollectionId);
         Assert.Equal(1, item.CategoryId);
         Assert.Equal("Test Item", item.Name);
@@ -65,7 +65,7 @@ public class ItemTests
         Assert.Equal("Test Description", item.Description);
         Assert.Same(properties, item.Properties);
         Assert.Same(images, item.Images);
-        Assert.Same(tenant, item.Tenant);
+        Assert.Same(workspace, item.Workspace);
         Assert.Same(collection, item.Collection);
         Assert.Same(category, item.Category);
     }
@@ -139,7 +139,7 @@ public class CollectionTests
 
         // Assert
         Assert.Equal(0, collection.Id);
-        Assert.Equal(0, collection.TenantId);
+        Assert.Equal(0, collection.WorkspaceId);
         Assert.Equal(string.Empty, collection.Name);
         Assert.Equal(string.Empty, collection.Description);
         Assert.Null(collection.HeroImageUrl);
@@ -148,14 +148,14 @@ public class CollectionTests
         Assert.Empty(collection.Categories);
         Assert.NotNull(collection.Items);
         Assert.Empty(collection.Items);
-        Assert.Null(collection.Tenant);
+        Assert.Null(collection.Workspace);
     }
 
     [Fact]
     public void Collection_Properties_CanBeSetAndGet()
     {
         // Arrange
-        var tenant = new Tenant { Id = 1, Name = "Test Tenant" };
+        var workspace = new Workspace { Id = 1, Name = "Test Workspace" };
         var categories = new List<Category> { new() { Name = "Cat1" } };
         var items = new List<Item> { new() { Name = "Item1" } };
         var createdAt = DateTime.UtcNow;
@@ -164,83 +164,83 @@ public class CollectionTests
         var collection = new Collection
         {
             Id = 1,
-            TenantId = 1,
+            WorkspaceId = 1,
             Name = "Test Collection",
             Description = "Test Description",
             HeroImageUrl = "https://example.com/hero.jpg",
             Slug = "test-collection",
             CreatedAt = createdAt,
-            Tenant = tenant,
+            Workspace = workspace,
             Categories = categories,
             Items = items
         };
 
         // Assert
         Assert.Equal(1, collection.Id);
-        Assert.Equal(1, collection.TenantId);
+        Assert.Equal(1, collection.WorkspaceId);
         Assert.Equal("Test Collection", collection.Name);
         Assert.Equal("Test Description", collection.Description);
         Assert.Equal("https://example.com/hero.jpg", collection.HeroImageUrl);
         Assert.Equal("test-collection", collection.Slug);
         Assert.Equal(createdAt, collection.CreatedAt);
-        Assert.Same(tenant, collection.Tenant);
+        Assert.Same(workspace, collection.Workspace);
         Assert.Same(categories, collection.Categories);
         Assert.Same(items, collection.Items);
     }
 }
 
 [Trait("Category", "Unit")]
-public class TenantTests
+public class WorkspaceTests
 {
     [Fact]
-    public void Tenant_DefaultValues_AreCorrect()
+    public void Workspace_DefaultValues_AreCorrect()
     {
         // Act
-        var tenant = new Tenant();
+        var workspace = new Workspace();
 
         // Assert
-        Assert.Equal(0, tenant.Id);
-        Assert.Equal(string.Empty, tenant.Name);
-        Assert.NotNull(tenant.ActiveUsers);
-        Assert.Empty(tenant.ActiveUsers);
-        Assert.NotNull(tenant.TenantUsers);
-        Assert.Empty(tenant.TenantUsers);
-        Assert.NotNull(tenant.Categories);
-        Assert.Empty(tenant.Categories);
-        Assert.NotNull(tenant.Collections);
-        Assert.Empty(tenant.Collections);
+        Assert.Equal(0, workspace.Id);
+        Assert.Equal(string.Empty, workspace.Name);
+        Assert.NotNull(workspace.ActiveUsers);
+        Assert.Empty(workspace.ActiveUsers);
+        Assert.NotNull(workspace.WorkspaceUsers);
+        Assert.Empty(workspace.WorkspaceUsers);
+        Assert.NotNull(workspace.Categories);
+        Assert.Empty(workspace.Categories);
+        Assert.NotNull(workspace.Collections);
+        Assert.Empty(workspace.Collections);
     }
 
     [Fact]
-    public void Tenant_Properties_CanBeSetAndGet()
+    public void Workspace_Properties_CanBeSetAndGet()
     {
         // Arrange
         var activeUsers = new List<User> { new() { Email = "test@example.com" } };
-        var tenantUsers = new List<TenantUser> { new() { UserId = 1, TenantId = 1, TenantRole = TenantRole.Normal } };
+        var workspaceUsers = new List<WorkspaceUser> { new() { UserId = 1, WorkspaceId = 1, WorkspaceRole = WorkspaceRole.Normal } };
         var categories = new List<Category> { new() { Name = "Cat1" } };
         var collections = new List<Collection> { new() { Name = "Col1", Slug = "col1" } };
         var createdAt = DateTime.UtcNow;
 
         // Act
-        var tenant = new Tenant
+        var workspace = new Workspace
         {
             Id = 1,
-            Name = "Test Tenant",
+            Name = "Test Workspace",
             CreatedAt = createdAt,
             ActiveUsers = activeUsers,
-            TenantUsers = tenantUsers,
+            WorkspaceUsers = workspaceUsers,
             Categories = categories,
             Collections = collections
         };
 
         // Assert
-        Assert.Equal(1, tenant.Id);
-        Assert.Equal("Test Tenant", tenant.Name);
-        Assert.Equal(createdAt, tenant.CreatedAt);
-        Assert.Same(activeUsers, tenant.ActiveUsers);
-        Assert.Same(tenantUsers, tenant.TenantUsers);
-        Assert.Same(categories, tenant.Categories);
-        Assert.Same(collections, tenant.Collections);
+        Assert.Equal(1, workspace.Id);
+        Assert.Equal("Test Workspace", workspace.Name);
+        Assert.Equal(createdAt, workspace.CreatedAt);
+        Assert.Same(activeUsers, workspace.ActiveUsers);
+        Assert.Same(workspaceUsers, workspace.WorkspaceUsers);
+        Assert.Same(categories, workspace.Categories);
+        Assert.Same(collections, workspace.Collections);
     }
 }
 
@@ -255,11 +255,11 @@ public class UserTests
 
         // Assert
         Assert.Equal(0, user.Id);
-        Assert.Equal(0, user.ActiveTenantId);
+        Assert.Equal(0, user.ActiveWorkspaceId);
         Assert.Equal(string.Empty, user.Email);
         Assert.Equal(IdentityProvider.None, user.IdentityProvider);
         Assert.Null(user.ProviderSubjectId);
-        Assert.Null(user.ActiveTenant);
+        Assert.Null(user.ActiveWorkspace);
         Assert.False(user.IsLinked);
     }
 
@@ -306,29 +306,29 @@ public class UserTests
     public void User_Properties_CanBeSetAndGet()
     {
         // Arrange
-        var tenant = new Tenant { Id = 1, Name = "Test Tenant" };
+        var workspace = new Workspace { Id = 1, Name = "Test Workspace" };
         var createdAt = DateTime.UtcNow;
 
         // Act
         var user = new User
         {
             Id = 1,
-            ActiveTenantId = 1,
+            ActiveWorkspaceId = 1,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Google,
             ProviderSubjectId = "google-sub-123",
             CreatedAt = createdAt,
-            ActiveTenant = tenant
+            ActiveWorkspace = workspace
         };
 
         // Assert
         Assert.Equal(1, user.Id);
-        Assert.Equal(1, user.ActiveTenantId);
+        Assert.Equal(1, user.ActiveWorkspaceId);
         Assert.Equal("test@example.com", user.Email);
         Assert.Equal(IdentityProvider.Google, user.IdentityProvider);
         Assert.Equal("google-sub-123", user.ProviderSubjectId);
         Assert.Equal(createdAt, user.CreatedAt);
-        Assert.Same(tenant, user.ActiveTenant);
+        Assert.Same(workspace, user.ActiveWorkspace);
     }
 
     [Theory]

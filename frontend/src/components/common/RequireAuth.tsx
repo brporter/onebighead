@@ -26,7 +26,7 @@ function RequireAuth({ children, skipWelcomeCheck = false, skipTermsCheck = fals
     skipWelcomeCheck,
     skipTermsCheck,
     hasCompletedWelcome: user?.hasCompletedWelcome,
-    tenantsCount: user?.tenants?.length
+    workspacesCount: user?.workspaces?.length
   });
 
   if (loading) {
@@ -40,12 +40,12 @@ function RequireAuth({ children, skipWelcomeCheck = false, skipTermsCheck = fals
     return null;
   }
 
-  // Check if user has any tenants
-  const hasAnyTenant = user.tenants && user.tenants.length > 0;
+  // Check if user has any workspaces
+  const hasAnyWorkspace = user.workspaces && user.workspaces.length > 0;
 
-  // If user has no tenants, let NoTenantHandler manage the flow
+  // If user has no workspaces, let NoWorkspaceHandler manage the flow
   // Don't redirect to welcome wizard in this case
-  if (!hasAnyTenant) {
+  if (!hasAnyWorkspace) {
     return <>{children}</>;
   }
 

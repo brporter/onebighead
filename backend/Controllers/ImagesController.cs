@@ -113,10 +113,10 @@ public class ImagesController : ApiControllerBase
     [RequestSizeLimit(MaxFileSize)]
     public async Task<ActionResult<ImageUploadResponse>> Upload(IFormFile file)
     {
-        var tenantId = TryGetTenantId();
-        if (tenantId == null)
+        var workspaceId = TryGetWorkspaceId();
+        if (workspaceId == null)
         {
-            return Unauthorized(new { error = "Invalid or missing tenant information" });
+            return Unauthorized(new { error = "Invalid or missing workspace information" });
         }
 
         if (file == null || file.Length == 0)
@@ -142,7 +142,7 @@ public class ImagesController : ApiControllerBase
         var sanitizedFileName = SanitizeFileName(file.FileName);
 
         using var dataStream = new MemoryStream(fileData);
-        var result = await _imageProvider.StoreAsync(tenantId.Value, sanitizedFileName, file.ContentType, dataStream);
+        var result = await _imageProvider.StoreAsync(workspaceId.Value, sanitizedFileName, file.ContentType, dataStream);
 
         return Ok(new ImageUploadResponse(result.Key, result.Url));
     }
@@ -151,13 +151,13 @@ public class ImagesController : ApiControllerBase
     [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any, VaryByHeader = "Authorization")]
     public async Task<IActionResult> Get(Guid key)
     {
-        var tenantId = TryGetTenantId();
-        if (tenantId == null)
+        var workspaceId = TryGetWorkspaceId();
+        if (workspaceId == null)
         {
-            return Unauthorized(new { error = "Invalid or missing tenant information" });
+            return Unauthorized(new { error = "Invalid or missing workspace information" });
         }
 
-        var image = await _imageProvider.RetrieveAsync(key, tenantId.Value);
+        var image = await _imageProvider.RetrieveAsync(key, workspaceId.Value);
         if (image == null)
         {
             return NotFound();
@@ -169,13 +169,13 @@ public class ImagesController : ApiControllerBase
     [HttpDelete("{key:guid}")]
     public async Task<IActionResult> Delete(Guid key)
     {
-        var tenantId = TryGetTenantId();
-        if (tenantId == null)
+        var workspaceId = TryGetWorkspaceId();
+        if (workspaceId == null)
         {
-            return Unauthorized(new { error = "Invalid or missing tenant information" });
+            return Unauthorized(new { error = "Invalid or missing workspace information" });
         }
 
-        await _imageProvider.DeleteAsync(key, tenantId.Value);
+        await _imageProvider.DeleteAsync(key, workspaceId.Value);
         return NoContent();
     }
 }

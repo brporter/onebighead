@@ -2,16 +2,16 @@
  * Admin API
  */
 import { api } from './client';
-import type { TenantSummary, UserSummary, ItemTemplate, CreateItemTemplateRequest } from '../utils/types';
+import type { WorkspaceSummary, UserSummary, ItemTemplate, CreateItemTemplateRequest } from '../utils/types';
 
 export const adminApi = {
-  // Tenants
-  getTenants(): Promise<TenantSummary[]> {
-    return api.get<TenantSummary[]>('/admin/tenants', { credentials: 'include' });
+  // Workspaces
+  getWorkspaces(): Promise<WorkspaceSummary[]> {
+    return api.get<WorkspaceSummary[]>('/admin/workspaces', { credentials: 'include' });
   },
 
-  deleteTenant(id: number): Promise<void> {
-    return api.delete(`/admin/tenants/${id}`, { credentials: 'include' });
+  deleteWorkspace(id: number): Promise<void> {
+    return api.delete(`/admin/workspaces/${id}`, { credentials: 'include' });
   },
 
   // Users

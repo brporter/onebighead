@@ -34,14 +34,14 @@ public class TokenServiceTests
         var user = new User
         {
             Id = 1,
-            ActiveTenantId = 42,
+            ActiveWorkspaceId = 42,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Microsoft,
             ProviderSubjectId = "provider-sub-123"
         };
 
         // Act
-        var token = _tokenService.GenerateAppToken(user, TenantRole.Normal);
+        var token = _tokenService.GenerateAppToken(user, WorkspaceRole.Normal);
 
         // Assert
         Assert.NotNull(token);
@@ -56,12 +56,12 @@ public class TokenServiceTests
         var user = new User
         {
             Id = 1,
-            ActiveTenantId = 42,
+            ActiveWorkspaceId = 42,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Google,
             ProviderSubjectId = "google-sub-456"
         };
-        var token = _tokenService.GenerateAppToken(user, TenantRole.Normal);
+        var token = _tokenService.GenerateAppToken(user, WorkspaceRole.Normal);
 
         // Act
         var principal = _tokenService.ValidateAppToken(token);
@@ -69,8 +69,8 @@ public class TokenServiceTests
         // Assert
         Assert.NotNull(principal);
 
-        var tenantIdClaim = principal.FindFirst("tenant_id")?.Value;
-        Assert.Equal("42", tenantIdClaim);
+        var workspaceIdClaim = principal.FindFirst("workspace_id")?.Value;
+        Assert.Equal("42", workspaceIdClaim);
 
         var emailClaim = principal.FindFirst(ClaimTypes.Email)?.Value;
         Assert.Equal("test@example.com", emailClaim);
@@ -96,12 +96,12 @@ public class TokenServiceTests
         var user = new User
         {
             Id = 1,
-            ActiveTenantId = 42,
+            ActiveWorkspaceId = 42,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Apple,
             ProviderSubjectId = "apple-sub-789"
         };
-        var token = _tokenService.GenerateAppToken(user, TenantRole.Normal);
+        var token = _tokenService.GenerateAppToken(user, WorkspaceRole.Normal);
         var tamperedToken = token + "tampered";
 
         // Act
@@ -118,14 +118,14 @@ public class TokenServiceTests
         var user = new User
         {
             Id = 1,
-            ActiveTenantId = 42,
+            ActiveWorkspaceId = 42,
             Email = "test@example.com",
             IdentityProvider = IdentityProvider.Microsoft,
             ProviderSubjectId = "ms-sub-123"
         };
 
         // Act
-        var token = _tokenService.GenerateAppToken(user, TenantRole.Normal);
+        var token = _tokenService.GenerateAppToken(user, WorkspaceRole.Normal);
         var principal = _tokenService.ValidateAppToken(token);
 
         // Assert

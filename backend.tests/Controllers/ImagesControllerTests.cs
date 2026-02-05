@@ -14,8 +14,8 @@ public class ImagesControllerTests
 {
     private readonly Mock<IImageProvider> _mockImageProvider;
     private readonly ImagesController _controller;
-    private const int TestTenantId = 1;
-    private const int OtherTenantId = 2;
+    private const int TestWorkspaceId = 1;
+    private const int OtherWorkspaceId = 2;
 
     // Valid file signatures for testing
     private static readonly byte[] JpegSignature = { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46 };
@@ -27,14 +27,14 @@ public class ImagesControllerTests
     {
         _mockImageProvider = new Mock<IImageProvider>();
         _controller = new ImagesController(_mockImageProvider.Object);
-        SetupAuthenticatedUser(TestTenantId);
+        SetupAuthenticatedUser(TestWorkspaceId);
     }
 
-    private void SetupAuthenticatedUser(int tenantId)
+    private void SetupAuthenticatedUser(int workspaceId)
     {
         var claims = new List<Claim>
         {
-            new("tenant_id", tenantId.ToString()),
+            new("workspace_id", workspaceId.ToString()),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")
         };
@@ -76,7 +76,7 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         var file = CreateMockFile(JpegSignature, "test.jpg", "image/jpeg");
-        _mockImageProvider.Setup(p => p.StoreAsync(TestTenantId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
         // Act
@@ -95,7 +95,7 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         var file = CreateMockFile(PngSignature, "test.png", "image/png");
-        _mockImageProvider.Setup(p => p.StoreAsync(TestTenantId, It.IsAny<string>(), "image/png", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/png", It.IsAny<Stream>()))
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
         // Act
@@ -112,7 +112,7 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         var file = CreateMockFile(GifSignature, "test.gif", "image/gif");
-        _mockImageProvider.Setup(p => p.StoreAsync(TestTenantId, It.IsAny<string>(), "image/gif", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/gif", It.IsAny<Stream>()))
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
         // Act
@@ -129,7 +129,7 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         var file = CreateMockFile(WebpSignature, "test.webp", "image/webp");
-        _mockImageProvider.Setup(p => p.StoreAsync(TestTenantId, It.IsAny<string>(), "image/webp", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/webp", It.IsAny<Stream>()))
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
         // Act
@@ -209,7 +209,7 @@ public class ImagesControllerTests
     }
 
     [Fact]
-    public async Task Upload_ReturnsUnauthorized_WhenTenantIdMissing()
+    public async Task Upload_ReturnsUnauthorized_WhenWorkspaceIdMissing()
     {
         // Arrange
         SetupUnauthenticatedUser();
@@ -228,7 +228,7 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         string? capturedFileName = null;
-        _mockImageProvider.Setup(p => p.StoreAsync(TestTenantId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
             .Callback<int, string, string, Stream>((_, fileName, _, _) => capturedFileName = fileName)
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
@@ -250,7 +250,7 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         string? capturedFileName = null;
-        _mockImageProvider.Setup(p => p.StoreAsync(TestTenantId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
             .Callback<int, string, string, Stream>((_, fileName, _, _) => capturedFileName = fileName)
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
@@ -272,7 +272,7 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         string? capturedFileName = null;
-        _mockImageProvider.Setup(p => p.StoreAsync(TestTenantId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
             .Callback<int, string, string, Stream>((_, fileName, _, _) => capturedFileName = fileName)
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
@@ -298,7 +298,7 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         var imageData = new byte[] { 0xFF, 0xD8, 0xFF };
-        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestTenantId))
+        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
             .ReturnsAsync(new RetrievedImage(imageData, "image/jpeg", "test.jpg"));
 
         // Act
@@ -316,7 +316,7 @@ public class ImagesControllerTests
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestTenantId))
+        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
             .ReturnsAsync((RetrievedImage?)null);
 
         // Act
@@ -327,12 +327,12 @@ public class ImagesControllerTests
     }
 
     [Fact]
-    public async Task Get_ReturnsNotFound_WhenImageBelongsToDifferentTenant()
+    public async Task Get_ReturnsNotFound_WhenImageBelongsToDifferentWorkspace()
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        // Image exists but belongs to different tenant - provider returns null due to tenant filter
-        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestTenantId))
+        // Image exists but belongs to different workspace - provider returns null due to workspace filter
+        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
             .ReturnsAsync((RetrievedImage?)null);
 
         // Act
@@ -343,7 +343,7 @@ public class ImagesControllerTests
     }
 
     [Fact]
-    public async Task Get_ReturnsUnauthorized_WhenTenantIdMissing()
+    public async Task Get_ReturnsUnauthorized_WhenWorkspaceIdMissing()
     {
         // Arrange
         SetupUnauthenticatedUser();
@@ -357,18 +357,18 @@ public class ImagesControllerTests
     }
 
     [Fact]
-    public async Task Get_PassesTenantIdToProvider()
+    public async Task Get_PassesWorkspaceIdToProvider()
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestTenantId))
+        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
             .ReturnsAsync(new RetrievedImage(new byte[] { 0xFF }, "image/jpeg", "test.jpg"));
 
         // Act
         await _controller.Get(imageKey);
 
         // Assert
-        _mockImageProvider.Verify(p => p.RetrieveAsync(imageKey, TestTenantId), Times.Once);
+        _mockImageProvider.Verify(p => p.RetrieveAsync(imageKey, TestWorkspaceId), Times.Once);
     }
 
     #endregion
@@ -380,7 +380,7 @@ public class ImagesControllerTests
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        _mockImageProvider.Setup(p => p.DeleteAsync(imageKey, TestTenantId))
+        _mockImageProvider.Setup(p => p.DeleteAsync(imageKey, TestWorkspaceId))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -391,7 +391,7 @@ public class ImagesControllerTests
     }
 
     [Fact]
-    public async Task Delete_ReturnsUnauthorized_WhenTenantIdMissing()
+    public async Task Delete_ReturnsUnauthorized_WhenWorkspaceIdMissing()
     {
         // Arrange
         SetupUnauthenticatedUser();
@@ -405,18 +405,18 @@ public class ImagesControllerTests
     }
 
     [Fact]
-    public async Task Delete_PassesTenantIdToProvider()
+    public async Task Delete_PassesWorkspaceIdToProvider()
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        _mockImageProvider.Setup(p => p.DeleteAsync(imageKey, TestTenantId))
+        _mockImageProvider.Setup(p => p.DeleteAsync(imageKey, TestWorkspaceId))
             .Returns(Task.CompletedTask);
 
         // Act
         await _controller.Delete(imageKey);
 
         // Assert
-        _mockImageProvider.Verify(p => p.DeleteAsync(imageKey, TestTenantId), Times.Once);
+        _mockImageProvider.Verify(p => p.DeleteAsync(imageKey, TestWorkspaceId), Times.Once);
     }
 
     #endregion

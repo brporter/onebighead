@@ -25,7 +25,7 @@ public class DatabaseSeeder
     private async Task SeedItemTemplatesAsync()
     {
         // Check if system templates already exist
-        if (await _context.ItemTemplates.AnyAsync(t => t.TenantId == null))
+        if (await _context.ItemTemplates.AnyAsync(t => t.WorkspaceId == null))
         {
             return;
         }
@@ -35,7 +35,7 @@ public class DatabaseSeeder
             // Book template
             new()
             {
-                TenantId = null,
+                WorkspaceId = null,
                 Name = "Book",
                 Description = "Template for cataloging books",
                 Properties = new List<ItemTemplateProperty>
@@ -54,7 +54,7 @@ public class DatabaseSeeder
             // Video Game template
             new()
             {
-                TenantId = null,
+                WorkspaceId = null,
                 Name = "Video Game",
                 Description = "Template for cataloging video games",
                 Properties = new List<ItemTemplateProperty>
@@ -72,7 +72,7 @@ public class DatabaseSeeder
             // Art & Collectibles template
             new()
             {
-                TenantId = null,
+                WorkspaceId = null,
                 Name = "Art & Collectible",
                 Description = "Template for cataloging art and collectibles",
                 Properties = new List<ItemTemplateProperty>
@@ -90,7 +90,7 @@ public class DatabaseSeeder
             // Music/Records template
             new()
             {
-                TenantId = null,
+                WorkspaceId = null,
                 Name = "Music Record",
                 Description = "Template for cataloging music and vinyl records",
                 Properties = new List<ItemTemplateProperty>
@@ -108,7 +108,7 @@ public class DatabaseSeeder
             // Coins & Stamps template
             new()
             {
-                TenantId = null,
+                WorkspaceId = null,
                 Name = "Coin or Stamp",
                 Description = "Template for cataloging coins and stamps",
                 Properties = new List<ItemTemplateProperty>
@@ -126,7 +126,7 @@ public class DatabaseSeeder
             // General template
             new()
             {
-                TenantId = null,
+                WorkspaceId = null,
                 Name = "General Item",
                 Description = "Basic template for any type of collectible",
                 Properties = new List<ItemTemplateProperty>
@@ -153,12 +153,12 @@ public class DatabaseSeeder
         }
 
         // Get the system templates we just created
-        var bookTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.TenantId == null && t.Name == "Book");
-        var gameTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.TenantId == null && t.Name == "Video Game");
-        var artTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.TenantId == null && t.Name == "Art & Collectible");
-        var musicTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.TenantId == null && t.Name == "Music Record");
-        var coinTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.TenantId == null && t.Name == "Coin or Stamp");
-        var generalTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.TenantId == null && t.Name == "General Item");
+        var bookTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.WorkspaceId == null && t.Name == "Book");
+        var gameTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.WorkspaceId == null && t.Name == "Video Game");
+        var artTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.WorkspaceId == null && t.Name == "Art & Collectible");
+        var musicTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.WorkspaceId == null && t.Name == "Music Record");
+        var coinTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.WorkspaceId == null && t.Name == "Coin or Stamp");
+        var generalTemplate = await _context.ItemTemplates.FirstOrDefaultAsync(t => t.WorkspaceId == null && t.Name == "General Item");
 
         var themes = new List<CollectionTheme>
         {

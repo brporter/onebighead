@@ -25,11 +25,11 @@ public class CreateItemTemplateRequest
 
     public List<ItemTemplatePropertyDto> Properties { get; set; } = new();
 
-    public ItemTemplate ToItemTemplate(int tenantId)
+    public ItemTemplate ToItemTemplate(int workspaceId)
     {
         var template = new ItemTemplate
         {
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             Name = Name,
             Description = Description
         };
@@ -98,7 +98,7 @@ public class ItemTemplateResponse
             ItemTemplateId = template.Id,
             Name = template.Name,
             Description = template.Description,
-            IsSystem = template.TenantId == null,
+            IsSystem = template.WorkspaceId == null,
             Properties = template.Properties
                 .OrderBy(p => p.SortOrder)
                 .Select(p => new ItemTemplatePropertyResponse

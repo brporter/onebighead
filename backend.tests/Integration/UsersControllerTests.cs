@@ -16,14 +16,14 @@ public class UsersControllerTests : IntegrationTestBase
     #region GET /api/users
 
     [Fact]
-    public async Task GetUsers_AsAdmin_ReturnsAllTenantUsers()
+    public async Task GetUsers_AsAdmin_ReturnsAllWorkspaceUsers()
     {
         // Act
         var response = await Client.GetAsync("/api/users");
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var users = await DeserializeResponseAsync<List<TenantUserResponse>>(response);
+        var users = await DeserializeResponseAsync<List<WorkspaceUserResponse>>(response);
         Assert.NotNull(users);
         Assert.NotEmpty(users);
         // Should include the default admin user
@@ -67,7 +67,7 @@ public class UsersControllerTests : IntegrationTestBase
         var request = new InviteUserRequest
         {
             Email = "newmember@example.com",
-            Role = TenantRole.Normal
+            Role = WorkspaceRole.Normal
         };
 
         // Act
@@ -75,10 +75,10 @@ public class UsersControllerTests : IntegrationTestBase
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var user = await DeserializeResponseAsync<TenantUserResponse>(response);
+        var user = await DeserializeResponseAsync<WorkspaceUserResponse>(response);
         Assert.NotNull(user);
         Assert.Equal("newmember@example.com", user.Email);
-        Assert.Equal(TenantRole.Normal, user.TenantRole);
+        Assert.Equal(WorkspaceRole.Normal, user.WorkspaceRole);
         Assert.False(user.IsLinked);
         Assert.Null(user.IdentityProvider);
 
@@ -87,10 +87,10 @@ public class UsersControllerTests : IntegrationTestBase
         var dbUser = context.Users.FirstOrDefault(u => u.Email == "newmember@example.com");
         Assert.NotNull(dbUser);
         Assert.Null(dbUser.ProviderSubjectId);
-        // Verify TenantUser membership has the correct role
-        var tenantUser = context.TenantUsers.FirstOrDefault(tu => tu.UserId == dbUser.Id && tu.TenantId == DefaultTenantId);
-        Assert.NotNull(tenantUser);
-        Assert.Equal(TenantRole.Normal, tenantUser.TenantRole);
+        // Verify WorkspaceUser membership has the correct role
+        var workspaceUser = context.WorkspaceUsers.FirstOrDefault(tu => tu.UserId == dbUser.Id && tu.WorkspaceId == DefaultWorkspaceId);
+        Assert.NotNull(workspaceUser);
+        Assert.Equal(WorkspaceRole.Normal, workspaceUser.WorkspaceRole);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class UsersControllerTests : IntegrationTestBase
         var request = new InviteUserRequest
         {
             Email = "newadmin@example.com",
-            Role = TenantRole.TenantAdmin
+            Role = WorkspaceRole.WorkspaceAdmin
         };
 
         // Act
@@ -108,9 +108,9 @@ public class UsersControllerTests : IntegrationTestBase
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var user = await DeserializeResponseAsync<TenantUserResponse>(response);
+        var user = await DeserializeResponseAsync<WorkspaceUserResponse>(response);
         Assert.NotNull(user);
-        Assert.Equal(TenantRole.TenantAdmin, user.TenantRole);
+        Assert.Equal(WorkspaceRole.WorkspaceAdmin, user.WorkspaceRole);
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public class UsersControllerTests : IntegrationTestBase
         var request = new InviteUserRequest
         {
             Email = "shouldfail@example.com",
-            Role = TenantRole.Normal
+            Role = WorkspaceRole.Normal
         };
 
         // Act
@@ -132,7 +132,7 @@ public class UsersControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task InviteUser_DuplicateEmailInTenant_ReturnsConflict()
+    public async Task InviteUser_DuplicateEmailInWorkspace_ReturnsConflict()
     {
         // Arrange - First invite a user
         var firstRequest = new InviteUserRequest { Email = "duplicate@example.com" };
@@ -169,12 +169,12 @@ public class UsersControllerTests : IntegrationTestBase
         var inviteRequest = new InviteUserRequest
         {
             Email = "promoteme@example.com",
-            Role = TenantRole.Normal
+            Role = WorkspaceRole.Normal
         };
         var inviteResponse = await PostJsonAsync("/api/users", inviteRequest);
-        var invitedUser = await DeserializeResponseAsync<TenantUserResponse>(inviteResponse);
+        var invitedUser = await DeserializeResponseAsync<WorkspaceUserResponse>(inviteResponse);
 
-        var updateRequest = new UpdateUserRoleRequest { Role = TenantRole.TenantAdmin };
+        var updateRequest = new UpdateUserRoleRequest { Role = WorkspaceRole.WorkspaceAdmin };
 
         // Act
         var response = await PutJsonAsync($"/api/users/{invitedUser!.UserId}/role", updateRequest);
@@ -184,9 +184,9 @@ public class UsersControllerTests : IntegrationTestBase
 
         // Verify the role was updated
         var getResponse = await Client.GetAsync("/api/users");
-        var users = await DeserializeResponseAsync<List<TenantUserResponse>>(getResponse);
+        var users = await DeserializeResponseAsync<List<WorkspaceUserResponse>>(getResponse);
         var updatedUser = users!.First(u => u.UserId == invitedUser.UserId);
-        Assert.Equal(TenantRole.TenantAdmin, updatedUser.TenantRole);
+        Assert.Equal(WorkspaceRole.WorkspaceAdmin, updatedUser.WorkspaceRole);
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public class UsersControllerTests : IntegrationTestBase
     {
         // Arrange
         using var normalClient = CreateNormalUserClient();
-        var updateRequest = new UpdateUserRoleRequest { Role = TenantRole.TenantAdmin };
+        var updateRequest = new UpdateUserRoleRequest { Role = WorkspaceRole.WorkspaceAdmin };
 
         // Act
         var response = await PutJsonAsync(normalClient, $"/api/users/{DefaultUserId}/role", updateRequest);
@@ -207,7 +207,7 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task UpdateUserRole_OwnRole_ReturnsBadRequest()
     {
         // Arrange - Try to change own role
-        var updateRequest = new UpdateUserRoleRequest { Role = TenantRole.Normal };
+        var updateRequest = new UpdateUserRoleRequest { Role = WorkspaceRole.Normal };
 
         // Act
         var response = await PutJsonAsync($"/api/users/{DefaultUserId}/role", updateRequest);
@@ -223,7 +223,7 @@ public class UsersControllerTests : IntegrationTestBase
         var inviteRequest = new InviteUserRequest
         {
             Email = "normaluser@example.com",
-            Role = TenantRole.Normal
+            Role = WorkspaceRole.Normal
         };
         await PostJsonAsync("/api/users", inviteRequest);
 
@@ -234,10 +234,10 @@ public class UsersControllerTests : IntegrationTestBase
         var secondAdminRequest = new InviteUserRequest
         {
             Email = "secondadmin@example.com",
-            Role = TenantRole.TenantAdmin
+            Role = WorkspaceRole.WorkspaceAdmin
         };
         var secondAdminResponse = await PostJsonAsync("/api/users", secondAdminRequest);
-        var secondAdmin = await DeserializeResponseAsync<TenantUserResponse>(secondAdminResponse);
+        var secondAdmin = await DeserializeResponseAsync<WorkspaceUserResponse>(secondAdminResponse);
 
         // Now create a client for the second admin and try to demote the first admin
         // But actually, the only admin in the test setup is DefaultUserId
@@ -248,50 +248,50 @@ public class UsersControllerTests : IntegrationTestBase
         // Actually this test is complex - let me simplify
 
         // Simpler test: when there's only one admin, demoting that admin should fail
-        // Create a new tenant with only one admin
-        const int isolatedTenantId = 5000;
+        // Create a new workspace with only one admin
+        const int isolatedWorkspaceId = 5000;
         const int isolatedUserId = 5000;
         const int secondUserId = 5001;
 
         await Factory.SeedDatabaseAsync(context =>
         {
-            if (context.Tenants.Any(t => t.Id == isolatedTenantId))
+            if (context.Workspaces.Any(t => t.Id == isolatedWorkspaceId))
                 return;
 
-            context.Tenants.Add(new Tenant { Id = isolatedTenantId, Name = "Isolated Tenant" });
+            context.Workspaces.Add(new Workspace { Id = isolatedWorkspaceId, Name = "Isolated Workspace" });
             context.Users.Add(new User
             {
                 Id = isolatedUserId,
-                ActiveTenantId = isolatedTenantId,
+                ActiveWorkspaceId = isolatedWorkspaceId,
                 Email = "admin@isolated.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "isolated-admin"
             });
-            context.TenantUsers.Add(new TenantUser
+            context.WorkspaceUsers.Add(new WorkspaceUser
             {
                 UserId = isolatedUserId,
-                TenantId = isolatedTenantId,
-                TenantRole = TenantRole.TenantAdmin
+                WorkspaceId = isolatedWorkspaceId,
+                WorkspaceRole = WorkspaceRole.WorkspaceAdmin
             });
             context.Users.Add(new User
             {
                 Id = secondUserId,
-                ActiveTenantId = isolatedTenantId,
+                ActiveWorkspaceId = isolatedWorkspaceId,
                 Email = "secondadmin@isolated.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "isolated-second-admin"
             });
-            context.TenantUsers.Add(new TenantUser
+            context.WorkspaceUsers.Add(new WorkspaceUser
             {
                 UserId = secondUserId,
-                TenantId = isolatedTenantId,
-                TenantRole = TenantRole.TenantAdmin
+                WorkspaceId = isolatedWorkspaceId,
+                WorkspaceRole = WorkspaceRole.WorkspaceAdmin
             });
         });
 
         // Use second admin to try to demote first admin to Normal
-        using var secondAdminClient = CreateClientForTenant(isolatedTenantId, secondUserId, "secondadmin@isolated.com", "TenantAdmin");
-        var demoteRequest = new UpdateUserRoleRequest { Role = TenantRole.Normal };
+        using var secondAdminClient = CreateClientForWorkspace(isolatedWorkspaceId, secondUserId, "secondadmin@isolated.com", "WorkspaceAdmin");
+        var demoteRequest = new UpdateUserRoleRequest { Role = WorkspaceRole.Normal };
 
         // Demote first admin - this should succeed because there are 2 admins
         var demoteResponse = await PutJsonAsync(secondAdminClient, $"/api/users/{isolatedUserId}/role", demoteRequest);
@@ -304,7 +304,7 @@ public class UsersControllerTests : IntegrationTestBase
 
         // Actually, the test should be: when trying to demote an admin that would leave no admins
         // Let me set up this scenario properly:
-        // 1. Tenant with 1 admin and 1 normal user
+        // 1. Workspace with 1 admin and 1 normal user
         // 2. Try to demote the admin from a different admin's perspective
         // But we can't because we can't have the same user make two requests
 
@@ -318,7 +318,7 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task UpdateUserRole_NonExistentUser_ReturnsNotFound()
     {
         // Arrange
-        var updateRequest = new UpdateUserRoleRequest { Role = TenantRole.TenantAdmin };
+        var updateRequest = new UpdateUserRoleRequest { Role = WorkspaceRole.WorkspaceAdmin };
 
         // Act
         var response = await PutJsonAsync("/api/users/99999/role", updateRequest);
@@ -337,7 +337,7 @@ public class UsersControllerTests : IntegrationTestBase
         // Arrange - Create a user first
         var inviteRequest = new InviteUserRequest { Email = "removeme@example.com" };
         var inviteResponse = await PostJsonAsync("/api/users", inviteRequest);
-        var invitedUser = await DeserializeResponseAsync<TenantUserResponse>(inviteResponse);
+        var invitedUser = await DeserializeResponseAsync<WorkspaceUserResponse>(inviteResponse);
 
         // Act
         var response = await Client.DeleteAsync($"/api/users/{invitedUser!.UserId}");
@@ -347,7 +347,7 @@ public class UsersControllerTests : IntegrationTestBase
 
         // Verify user is gone
         var getResponse = await Client.GetAsync("/api/users");
-        var users = await DeserializeResponseAsync<List<TenantUserResponse>>(getResponse);
+        var users = await DeserializeResponseAsync<List<WorkspaceUserResponse>>(getResponse);
         Assert.DoesNotContain(users!, u => u.Email == "removeme@example.com");
     }
 
@@ -377,49 +377,49 @@ public class UsersControllerTests : IntegrationTestBase
     [Fact]
     public async Task RemoveUser_LastAdmin_ReturnsBadRequest()
     {
-        // Arrange - Create a tenant with only one admin
-        const int isolatedTenantId = 6000;
+        // Arrange - Create a workspace with only one admin
+        const int isolatedWorkspaceId = 6000;
         const int adminUserId = 6000;
         const int otherAdminUserId = 6001;
 
         await Factory.SeedDatabaseAsync(context =>
         {
-            if (context.Tenants.Any(t => t.Id == isolatedTenantId))
+            if (context.Workspaces.Any(t => t.Id == isolatedWorkspaceId))
                 return;
 
-            context.Tenants.Add(new Tenant { Id = isolatedTenantId, Name = "Last Admin Tenant" });
+            context.Workspaces.Add(new Workspace { Id = isolatedWorkspaceId, Name = "Last Admin Workspace" });
             context.Users.Add(new User
             {
                 Id = adminUserId,
-                ActiveTenantId = isolatedTenantId,
+                ActiveWorkspaceId = isolatedWorkspaceId,
                 Email = "onlyadmin@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "only-admin"
             });
-            context.TenantUsers.Add(new TenantUser
+            context.WorkspaceUsers.Add(new WorkspaceUser
             {
                 UserId = adminUserId,
-                TenantId = isolatedTenantId,
-                TenantRole = TenantRole.TenantAdmin
+                WorkspaceId = isolatedWorkspaceId,
+                WorkspaceRole = WorkspaceRole.WorkspaceAdmin
             });
             context.Users.Add(new User
             {
                 Id = otherAdminUserId,
-                ActiveTenantId = isolatedTenantId,
+                ActiveWorkspaceId = isolatedWorkspaceId,
                 Email = "otheradmin@example.com",
                 IdentityProvider = IdentityProvider.Microsoft,
                 ProviderSubjectId = "other-admin-6001"
             });
-            context.TenantUsers.Add(new TenantUser
+            context.WorkspaceUsers.Add(new WorkspaceUser
             {
                 UserId = otherAdminUserId,
-                TenantId = isolatedTenantId,
-                TenantRole = TenantRole.TenantAdmin
+                WorkspaceId = isolatedWorkspaceId,
+                WorkspaceRole = WorkspaceRole.WorkspaceAdmin
             });
         });
 
         // Use the other admin to remove the first admin
-        using var otherAdminClient = CreateClientForTenant(isolatedTenantId, otherAdminUserId, "otheradmin@example.com", "TenantAdmin");
+        using var otherAdminClient = CreateClientForWorkspace(isolatedWorkspaceId, otherAdminUserId, "otheradmin@example.com", "WorkspaceAdmin");
 
         // First, remove the first admin - should succeed
         var firstRemoveResponse = await otherAdminClient.DeleteAsync($"/api/users/{adminUserId}");

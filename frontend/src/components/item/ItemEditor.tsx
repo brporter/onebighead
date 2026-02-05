@@ -35,7 +35,7 @@ function ItemEditor({
     }
     return {
       id: null,
-      tenantId: 1,
+      workspaceId: 1,
       collectionId: 0,
       categoryId: null,
       name: '',

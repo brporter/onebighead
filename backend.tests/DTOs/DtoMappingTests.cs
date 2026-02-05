@@ -218,10 +218,10 @@ public class DtoMappingTests
 
     #endregion
 
-    #region TenantUserResponse Tests
+    #region WorkspaceUserResponse Tests
 
     [Fact]
-    public void TenantUserResponse_FromUser_MapsLinkedUser()
+    public void WorkspaceUserResponse_FromUser_MapsLinkedUser()
     {
         // Arrange
         var user = new User
@@ -234,19 +234,19 @@ public class DtoMappingTests
         };
 
         // Act
-        var response = TenantUserResponse.FromUser(user, TenantRole.TenantAdmin);
+        var response = WorkspaceUserResponse.FromUser(user, WorkspaceRole.WorkspaceAdmin);
 
         // Assert
         Assert.Equal(100, response.UserId);
         Assert.Equal("user@example.com", response.Email);
-        Assert.Equal(TenantRole.TenantAdmin, response.TenantRole);
+        Assert.Equal(WorkspaceRole.WorkspaceAdmin, response.WorkspaceRole);
         Assert.True(response.IsLinked);
         Assert.Equal("Microsoft", response.IdentityProvider);
         Assert.Equal(new DateTime(2024, 3, 10), response.CreatedAt);
     }
 
     [Fact]
-    public void TenantUserResponse_FromUser_MapsUnlinkedUser()
+    public void WorkspaceUserResponse_FromUser_MapsUnlinkedUser()
     {
         // Arrange
         var user = new User
@@ -259,25 +259,25 @@ public class DtoMappingTests
         };
 
         // Act
-        var response = TenantUserResponse.FromUser(user, TenantRole.Normal);
+        var response = WorkspaceUserResponse.FromUser(user, WorkspaceRole.Normal);
 
         // Assert
         Assert.Equal(101, response.UserId);
         Assert.Equal("invited@example.com", response.Email);
-        Assert.Equal(TenantRole.Normal, response.TenantRole);
+        Assert.Equal(WorkspaceRole.Normal, response.WorkspaceRole);
         Assert.False(response.IsLinked);
         Assert.Null(response.IdentityProvider);
     }
 
     [Fact]
-    public void TenantUserResponse_FromTenantUser_MapsAllFields()
+    public void WorkspaceUserResponse_FromWorkspaceUser_MapsAllFields()
     {
         // Arrange
-        var tenantUser = new TenantUser
+        var workspaceUser = new WorkspaceUser
         {
             UserId = 200,
-            TenantId = 1,
-            TenantRole = TenantRole.TenantAdmin,
+            WorkspaceId = 1,
+            WorkspaceRole = WorkspaceRole.WorkspaceAdmin,
             CreatedAt = new DateTime(2024, 5, 20),
             User = new User
             {
@@ -289,26 +289,26 @@ public class DtoMappingTests
         };
 
         // Act
-        var response = TenantUserResponse.FromTenantUser(tenantUser);
+        var response = WorkspaceUserResponse.FromWorkspaceUser(workspaceUser);
 
         // Assert
         Assert.Equal(200, response.UserId);
         Assert.Equal("admin@example.com", response.Email);
-        Assert.Equal(TenantRole.TenantAdmin, response.TenantRole);
+        Assert.Equal(WorkspaceRole.WorkspaceAdmin, response.WorkspaceRole);
         Assert.True(response.IsLinked);
         Assert.Equal("Google", response.IdentityProvider);
         Assert.Equal(new DateTime(2024, 5, 20), response.CreatedAt);
     }
 
     [Fact]
-    public void TenantUserResponse_FromTenantUser_HandlesUnlinkedUser()
+    public void WorkspaceUserResponse_FromWorkspaceUser_HandlesUnlinkedUser()
     {
         // Arrange
-        var tenantUser = new TenantUser
+        var workspaceUser = new WorkspaceUser
         {
             UserId = 201,
-            TenantId = 1,
-            TenantRole = TenantRole.Normal,
+            WorkspaceId = 1,
+            WorkspaceRole = WorkspaceRole.Normal,
             CreatedAt = new DateTime(2024, 6, 25),
             User = new User
             {
@@ -320,7 +320,7 @@ public class DtoMappingTests
         };
 
         // Act
-        var response = TenantUserResponse.FromTenantUser(tenantUser);
+        var response = WorkspaceUserResponse.FromWorkspaceUser(workspaceUser);
 
         // Assert
         Assert.Equal(201, response.UserId);
@@ -348,7 +348,7 @@ public class DtoMappingTests
         };
 
         // Act
-        var item = request.ToItem(tenantId: 1);
+        var item = request.ToItem(workspaceId: 1);
 
         // Assert
         Assert.Equal("Test Item", item.Name);
@@ -358,7 +358,7 @@ public class DtoMappingTests
         Assert.Equal(5, item.CategoryId);
         Assert.Equal(UserFlag.Want, item.UserFlag);
         Assert.Equal(Visibility.Public, item.Visibility);
-        Assert.Equal(1, item.TenantId);
+        Assert.Equal(1, item.WorkspaceId);
     }
 
     [Fact]
@@ -372,7 +372,7 @@ public class DtoMappingTests
         };
 
         // Act
-        var item = request.ToItem(tenantId: 2);
+        var item = request.ToItem(workspaceId: 2);
 
         // Assert
         Assert.Equal("Minimal Item", item.Name);
@@ -380,7 +380,7 @@ public class DtoMappingTests
         Assert.Null(item.CategoryId);
         Assert.Equal(UserFlag.None, item.UserFlag);
         Assert.Equal(Visibility.Default, item.Visibility);
-        Assert.Equal(2, item.TenantId);
+        Assert.Equal(2, item.WorkspaceId);
     }
 
     #endregion
@@ -403,7 +403,7 @@ public class DtoMappingTests
         };
 
         // Act
-        var item = request.ToItem(id: 123, tenantId: 3);
+        var item = request.ToItem(id: 123, workspaceId: 3);
 
         // Assert
         Assert.Equal(123, item.Id);
@@ -414,7 +414,7 @@ public class DtoMappingTests
         Assert.Equal(8, item.CategoryId);
         Assert.Equal(UserFlag.TradeOrSell, item.UserFlag);
         Assert.Equal(Visibility.Private, item.Visibility);
-        Assert.Equal(3, item.TenantId);
+        Assert.Equal(3, item.WorkspaceId);
     }
 
     #endregion

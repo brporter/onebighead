@@ -18,19 +18,19 @@ public class ItemTemplatesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Gets all templates accessible to the current tenant (system + tenant-owned).
-    /// System templates are hidden if a tenant template with the same name exists.
+    /// Gets all templates accessible to the current workspace (system + workspace-owned).
+    /// System templates are hidden if a workspace template with the same name exists.
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ItemTemplateResponse>>> GetTemplates([FromQuery] string? filter = null)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
         var templates = filter switch
         {
-            "system" => await _templateRepository.GetSystemTemplatesAsync(tenantId),
-            "tenant" => await _templateRepository.GetTenantTemplatesAsync(tenantId),
-            _ => await _templateRepository.GetAllAccessibleAsync(tenantId)
+            "system" => await _templateRepository.GetSystemTemplatesAsync(workspaceId),
+            "workspace" => await _templateRepository.GetWorkspaceTemplatesAsync(workspaceId),
+            _ => await _templateRepository.GetAllAccessibleAsync(workspaceId)
         };
 
         var response = templates.Select(ItemTemplateResponse.FromItemTemplate);
@@ -43,9 +43,9 @@ public class ItemTemplatesController : ApiControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ItemTemplateResponse>> GetTemplate(int id)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        var template = await _templateRepository.GetByIdAsync(id, tenantId);
+        var template = await _templateRepository.GetByIdAsync(id, workspaceId);
         if (template is null)
         {
             return NotFound();
@@ -55,15 +55,15 @@ public class ItemTemplatesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Creates a new tenant-owned template.
+    /// Creates a new workspace-owned template.
     /// </summary>
     [HttpPost]
-    [Authorize(Policy = "TenantAdmin")]
+    [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<ActionResult<ItemTemplateResponse>> CreateTemplate(CreateItemTemplateRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        var template = request.ToItemTemplate(tenantId);
+        var template = request.ToItemTemplate(workspaceId);
         var created = await _templateRepository.CreateAsync(template);
 
         return CreatedAtAction(
@@ -73,16 +73,16 @@ public class ItemTemplatesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Updates a template. For system templates, creates a tenant copy (copy-on-edit).
+    /// Updates a template. For system templates, creates a workspace copy (copy-on-edit).
     /// </summary>
     [HttpPut("{id}")]
-    [Authorize(Policy = "TenantAdmin")]
+    [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<ActionResult<ItemTemplateResponse>> UpdateTemplate(int id, UpdateItemTemplateRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
         // First check if template exists and is accessible
-        var existing = await _templateRepository.GetByIdAsync(id, tenantId);
+        var existing = await _templateRepository.GetByIdAsync(id, workspaceId);
         if (existing is null)
         {
             return NotFound();
@@ -90,15 +90,15 @@ public class ItemTemplatesController : ApiControllerBase
 
         var template = request.ToItemTemplate();
 
-        // If it's a system template, copy it to tenant's library instead of editing
-        if (existing.TenantId == null)
+        // If it's a system template, copy it to workspace's library instead of editing
+        if (existing.WorkspaceId == null)
         {
-            var copied = await _templateRepository.CopySystemTemplateAsync(id, tenantId, template);
+            var copied = await _templateRepository.CopySystemTemplateAsync(id, workspaceId, template);
             return Ok(ItemTemplateResponse.FromItemTemplate(copied));
         }
 
-        // Otherwise, update the tenant-owned template directly
-        var updated = await _templateRepository.UpdateAsync(id, template, tenantId);
+        // Otherwise, update the workspace-owned template directly
+        var updated = await _templateRepository.UpdateAsync(id, template, workspaceId);
         if (updated is null)
         {
             return NotFound();
@@ -108,15 +108,15 @@ public class ItemTemplatesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Deletes a tenant-owned template. System templates cannot be deleted.
+    /// Deletes a workspace-owned template. System templates cannot be deleted.
     /// </summary>
     [HttpDelete("{id}")]
-    [Authorize(Policy = "TenantAdmin")]
+    [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<IActionResult> DeleteTemplate(int id)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        var deleted = await _templateRepository.DeleteAsync(id, tenantId);
+        var deleted = await _templateRepository.DeleteAsync(id, workspaceId);
         if (!deleted)
         {
             return NotFound();

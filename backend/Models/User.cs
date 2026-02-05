@@ -9,10 +9,10 @@ public class User
     public int Id { get; set; }
 
     /// <summary>
-    /// The user's currently active tenant. This determines which tenant's data
+    /// The user's currently active workspace. This determines which workspace's data
     /// they see and work with in the application.
     /// </summary>
-    public int ActiveTenantId { get; set; }
+    public int ActiveWorkspaceId { get; set; }
 
     [Required]
     [MaxLength(320)]
@@ -44,13 +44,13 @@ public class User
     /// </summary>
     public DateTime? AcceptedTermsAt { get; set; }
 
-    [ForeignKey(nameof(ActiveTenantId))]
-    public Tenant? ActiveTenant { get; set; }
+    [ForeignKey(nameof(ActiveWorkspaceId))]
+    public Workspace? ActiveWorkspace { get; set; }
 
     /// <summary>
-    /// All tenant memberships for this user. A user can belong to multiple tenants.
+    /// All workspace memberships for this user. A user can belong to multiple workspaces.
     /// </summary>
-    public ICollection<TenantUser> TenantMemberships { get; set; } = new List<TenantUser>();
+    public ICollection<WorkspaceUser> WorkspaceMemberships { get; set; } = new List<WorkspaceUser>();
 
     [NotMapped]
     public bool IsLinked => !string.IsNullOrEmpty(ProviderSubjectId);
@@ -58,4 +58,3 @@ public class User
     [NotMapped]
     public bool HasAcceptedTerms => AcceptedTermsAt.HasValue;
 }
-

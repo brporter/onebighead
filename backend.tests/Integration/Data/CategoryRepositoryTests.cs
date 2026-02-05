@@ -9,8 +9,8 @@ public class CategoryRepositoryTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly CategoryRepository _repository;
-    private const int TestTenantId = 1;
-    private const int OtherTenantId = 2;
+    private const int TestWorkspaceId = 1;
+    private const int OtherWorkspaceId = 2;
     private const int TestCollectionId = 1;
     private const int OtherCollectionId = 2;
 
@@ -32,31 +32,31 @@ public class CategoryRepositoryTests : IDisposable
     #region GetAllAsync Tests
 
     [Fact]
-    public async Task GetAllAsync_ReturnsOnlyCategoriesForTenant()
+    public async Task GetAllAsync_ReturnsOnlyCategoriesForWorkspace()
     {
         // Arrange
         var categories = new List<Category>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Category 1", Description = "Desc 1" },
-            new() { Id = 2, TenantId = TestTenantId, Name = "Category 2", Description = "Desc 2" },
-            new() { Id = 3, TenantId = OtherTenantId, Name = "Category 3", Description = "Desc 3" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Category 1", Description = "Desc 1" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Category 2", Description = "Desc 2" },
+            new() { Id = 3, WorkspaceId = OtherWorkspaceId, Name = "Category 3", Description = "Desc 3" }
         };
         await _context.Categories.AddRangeAsync(categories);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetAllAsync(TestTenantId);
+        var result = await _repository.GetAllAsync(TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count());
-        Assert.All(result, c => Assert.Equal(TestTenantId, c.TenantId));
+        Assert.All(result, c => Assert.Equal(TestWorkspaceId, c.WorkspaceId));
     }
 
     [Fact]
     public async Task GetAllAsync_ReturnsEmptyList_WhenNoCategories()
     {
         // Act
-        var result = await _repository.GetAllAsync(TestTenantId);
+        var result = await _repository.GetAllAsync(TestWorkspaceId);
 
         // Assert
         Assert.Empty(result);
@@ -72,15 +72,15 @@ public class CategoryRepositoryTests : IDisposable
         // Arrange
         var categories = new List<Category>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc 1" },
-            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 2", Description = "Desc 2" },
-            new() { Id = 3, TenantId = TestTenantId, CollectionId = OtherCollectionId, Name = "Category 3", Description = "Desc 3" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc 1" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 2", Description = "Desc 2" },
+            new() { Id = 3, WorkspaceId = TestWorkspaceId, CollectionId = OtherCollectionId, Name = "Category 3", Description = "Desc 3" }
         };
         await _context.Categories.AddRangeAsync(categories);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestTenantId);
+        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count());
@@ -88,30 +88,30 @@ public class CategoryRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetByCollectionAsync_FiltersOutOtherTenants()
+    public async Task GetByCollectionAsync_FiltersOutOtherWorkspaces()
     {
         // Arrange
         var categories = new List<Category>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc 1" },
-            new() { Id = 2, TenantId = OtherTenantId, CollectionId = TestCollectionId, Name = "Category 2", Description = "Desc 2" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc 1" },
+            new() { Id = 2, WorkspaceId = OtherWorkspaceId, CollectionId = TestCollectionId, Name = "Category 2", Description = "Desc 2" }
         };
         await _context.Categories.AddRangeAsync(categories);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestTenantId);
+        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestWorkspaceId);
 
         // Assert
         Assert.Single(result);
-        Assert.Equal(TestTenantId, result.First().TenantId);
+        Assert.Equal(TestWorkspaceId, result.First().WorkspaceId);
     }
 
     [Fact]
     public async Task GetByCollectionAsync_ReturnsEmptyList_WhenNoCategories()
     {
         // Act
-        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestTenantId);
+        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestWorkspaceId);
 
         // Assert
         Assert.Empty(result);
@@ -122,15 +122,15 @@ public class CategoryRepositoryTests : IDisposable
     #region GetByIdAsync Tests
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsCategory_WhenExistsForTenant()
+    public async Task GetByIdAsync_ReturnsCategory_WhenExistsForWorkspace()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, Name = "Test Category", Description = "Test Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test Category", Description = "Test Desc" };
         await _context.Categories.AddAsync(category);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByIdAsync(1, TestTenantId);
+        var result = await _repository.GetByIdAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.NotNull(result);
@@ -141,22 +141,22 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetByIdAsync_ReturnsNull_WhenNotExists()
     {
         // Act
-        var result = await _repository.GetByIdAsync(999, TestTenantId);
+        var result = await _repository.GetByIdAsync(999, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsNull_WhenExistsButDifferentTenant()
+    public async Task GetByIdAsync_ReturnsNull_WhenExistsButDifferentWorkspace()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = OtherTenantId, Name = "Test Category", Description = "Test Desc" };
+        var category = new Category { Id = 1, WorkspaceId = OtherWorkspaceId, Name = "Test Category", Description = "Test Desc" };
         await _context.Categories.AddAsync(category);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByIdAsync(1, TestTenantId);
+        var result = await _repository.GetByIdAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
@@ -170,7 +170,7 @@ public class CategoryRepositoryTests : IDisposable
     public async Task CreateAsync_AddsCategory_AndReturnsIt()
     {
         // Arrange
-        var category = new Category { TenantId = TestTenantId, Name = "New Category", Description = "New Desc" };
+        var category = new Category { WorkspaceId = TestWorkspaceId, Name = "New Category", Description = "New Desc" };
 
         // Act
         var result = await _repository.CreateAsync(category);
@@ -189,11 +189,11 @@ public class CategoryRepositoryTests : IDisposable
     public async Task CreateAsync_WithParentCategory_SetsRelationship()
     {
         // Arrange
-        var parentCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "Parent", Description = "Parent Desc" };
+        var parentCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Parent", Description = "Parent Desc" };
         await _context.Categories.AddAsync(parentCategory);
         await _context.SaveChangesAsync();
 
-        var childCategory = new Category { TenantId = TestTenantId, Name = "Child", Description = "Child Desc", ParentCategoryId = 1 };
+        var childCategory = new Category { WorkspaceId = TestWorkspaceId, Name = "Child", Description = "Child Desc", ParentCategoryId = 1 };
 
         // Act
         var result = await _repository.CreateAsync(childCategory);
@@ -208,10 +208,10 @@ public class CategoryRepositoryTests : IDisposable
     #region UpdateAsync Tests
 
     [Fact]
-    public async Task UpdateAsync_UpdatesCategory_WhenExistsForTenant()
+    public async Task UpdateAsync_UpdatesCategory_WhenExistsForWorkspace()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, Name = "Original", Description = "Original Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Original", Description = "Original Desc" };
         await _context.Categories.AddAsync(category);
         await _context.SaveChangesAsync();
         _context.Entry(category).State = EntityState.Detached;
@@ -219,13 +219,13 @@ public class CategoryRepositoryTests : IDisposable
         var updatedCategory = new Category { Name = "Updated", Description = "Updated Desc", ParentCategoryId = null };
 
         // Act
-        var result = await _repository.UpdateAsync(1, updatedCategory, TestTenantId);
+        var result = await _repository.UpdateAsync(1, updatedCategory, TestWorkspaceId);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal("Updated", result.Name);
         Assert.Equal("Updated Desc", result.Description);
-        Assert.Equal(TestTenantId, result.TenantId); // TenantId should not change
+        Assert.Equal(TestWorkspaceId, result.WorkspaceId); // WorkspaceId should not change
     }
 
     [Fact]
@@ -235,17 +235,17 @@ public class CategoryRepositoryTests : IDisposable
         var updatedCategory = new Category { Name = "Updated", Description = "Updated Desc" };
 
         // Act
-        var result = await _repository.UpdateAsync(999, updatedCategory, TestTenantId);
+        var result = await _repository.UpdateAsync(999, updatedCategory, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task UpdateAsync_ReturnsNull_WhenExistsButDifferentTenant()
+    public async Task UpdateAsync_ReturnsNull_WhenExistsButDifferentWorkspace()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = OtherTenantId, Name = "Original", Description = "Original Desc" };
+        var category = new Category { Id = 1, WorkspaceId = OtherWorkspaceId, Name = "Original", Description = "Original Desc" };
         await _context.Categories.AddAsync(category);
         await _context.SaveChangesAsync();
         _context.Entry(category).State = EntityState.Detached;
@@ -253,7 +253,7 @@ public class CategoryRepositoryTests : IDisposable
         var updatedCategory = new Category { Name = "Updated", Description = "Updated Desc" };
 
         // Act
-        var result = await _repository.UpdateAsync(1, updatedCategory, TestTenantId);
+        var result = await _repository.UpdateAsync(1, updatedCategory, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
@@ -267,12 +267,12 @@ public class CategoryRepositoryTests : IDisposable
     public async Task DeleteAsync_RemovesCategory_AndReturnsTrue()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, Name = "To Delete", Description = "Delete Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, Name = "To Delete", Description = "Delete Desc" };
         await _context.Categories.AddAsync(category);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(1, TestTenantId);
+        var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.True(result);
@@ -284,22 +284,22 @@ public class CategoryRepositoryTests : IDisposable
     public async Task DeleteAsync_ReturnsFalse_WhenNotExists()
     {
         // Act
-        var result = await _repository.DeleteAsync(999, TestTenantId);
+        var result = await _repository.DeleteAsync(999, TestWorkspaceId);
 
         // Assert
         Assert.False(result);
     }
 
     [Fact]
-    public async Task DeleteAsync_ReturnsFalse_WhenExistsButDifferentTenant()
+    public async Task DeleteAsync_ReturnsFalse_WhenExistsButDifferentWorkspace()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = OtherTenantId, Name = "To Delete", Description = "Delete Desc" };
+        var category = new Category { Id = 1, WorkspaceId = OtherWorkspaceId, Name = "To Delete", Description = "Delete Desc" };
         await _context.Categories.AddAsync(category);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(1, TestTenantId);
+        var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.False(result);
@@ -319,7 +319,7 @@ public class CategoryRepositoryTests : IDisposable
         var systemCategory = new Category 
         { 
             Id = 1, 
-            TenantId = TestTenantId, 
+            WorkspaceId = TestWorkspaceId, 
             CollectionId = TestCollectionId,
             Name = "Unassigned Items", 
             Description = "Items without a category", 
@@ -329,7 +329,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestTenantId, "Unassigned Items");
+        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestWorkspaceId, "Unassigned Items");
 
         // Assert
         Assert.NotNull(result);
@@ -341,7 +341,7 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetSystemCategoryAsync_ReturnsNull_WhenNotExists()
     {
         // Act
-        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestTenantId, "Unassigned Items");
+        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestWorkspaceId, "Unassigned Items");
 
         // Assert
         Assert.Null(result);
@@ -354,7 +354,7 @@ public class CategoryRepositoryTests : IDisposable
         var nonSystemCategory = new Category 
         { 
             Id = 1, 
-            TenantId = TestTenantId, 
+            WorkspaceId = TestWorkspaceId, 
             CollectionId = TestCollectionId,
             Name = "Unassigned Items", 
             Description = "Not a system category", 
@@ -364,20 +364,20 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestTenantId, "Unassigned Items");
+        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestWorkspaceId, "Unassigned Items");
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task GetSystemCategoryAsync_ReturnsNull_WhenDifferentTenant()
+    public async Task GetSystemCategoryAsync_ReturnsNull_WhenDifferentWorkspace()
     {
         // Arrange
         var systemCategory = new Category 
         { 
             Id = 1, 
-            TenantId = OtherTenantId, 
+            WorkspaceId = OtherWorkspaceId, 
             CollectionId = OtherCollectionId,
             Name = "Unassigned Items", 
             Description = "Items without a category", 
@@ -387,7 +387,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestTenantId, "Unassigned Items");
+        var result = await _repository.GetSystemCategoryAsync(TestCollectionId, TestWorkspaceId, "Unassigned Items");
 
         // Assert
         Assert.Null(result);
@@ -404,7 +404,7 @@ public class CategoryRepositoryTests : IDisposable
         var systemCategory = new Category 
         { 
             Id = 1, 
-            TenantId = TestTenantId, 
+            WorkspaceId = TestWorkspaceId, 
             Name = "Unassigned Items", 
             Description = "System category", 
             IsSystem = true 
@@ -413,7 +413,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(1, TestTenantId);
+        var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.False(result);
@@ -426,15 +426,15 @@ public class CategoryRepositoryTests : IDisposable
     public async Task DeleteAsync_MovesSubcategoriesToParent()
     {
         // Arrange
-        var parentCategory = new Category { Id = 1, TenantId = TestTenantId, Name = "Parent", Description = "Parent Desc" };
-        var categoryToDelete = new Category { Id = 2, TenantId = TestTenantId, Name = "To Delete", Description = "Delete Desc", ParentCategoryId = 1 };
-        var subcategory = new Category { Id = 3, TenantId = TestTenantId, Name = "Subcategory", Description = "Sub Desc", ParentCategoryId = 2 };
+        var parentCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Parent", Description = "Parent Desc" };
+        var categoryToDelete = new Category { Id = 2, WorkspaceId = TestWorkspaceId, Name = "To Delete", Description = "Delete Desc", ParentCategoryId = 1 };
+        var subcategory = new Category { Id = 3, WorkspaceId = TestWorkspaceId, Name = "Subcategory", Description = "Sub Desc", ParentCategoryId = 2 };
         
         await _context.Categories.AddRangeAsync(parentCategory, categoryToDelete, subcategory);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(2, TestTenantId);
+        var result = await _repository.DeleteAsync(2, TestWorkspaceId);
 
         // Assert
         Assert.True(result);
@@ -447,14 +447,14 @@ public class CategoryRepositoryTests : IDisposable
     public async Task DeleteAsync_MovesSubcategoriesToRoot_WhenNoParent()
     {
         // Arrange
-        var categoryToDelete = new Category { Id = 1, TenantId = TestTenantId, Name = "To Delete", Description = "Delete Desc", ParentCategoryId = null };
-        var subcategory = new Category { Id = 2, TenantId = TestTenantId, Name = "Subcategory", Description = "Sub Desc", ParentCategoryId = 1 };
+        var categoryToDelete = new Category { Id = 1, WorkspaceId = TestWorkspaceId, Name = "To Delete", Description = "Delete Desc", ParentCategoryId = null };
+        var subcategory = new Category { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Subcategory", Description = "Sub Desc", ParentCategoryId = 1 };
         
         await _context.Categories.AddRangeAsync(categoryToDelete, subcategory);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(1, TestTenantId);
+        var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.True(result);
@@ -470,16 +470,16 @@ public class CategoryRepositoryTests : IDisposable
         var unassignedCategory = new Category 
         { 
             Id = 1, 
-            TenantId = TestTenantId, 
+            WorkspaceId = TestWorkspaceId, 
             Name = "Unassigned Items", 
             Description = "System category", 
             IsSystem = true 
         };
-        var categoryToDelete = new Category { Id = 2, TenantId = TestTenantId, Name = "To Delete", Description = "Delete Desc" };
+        var categoryToDelete = new Category { Id = 2, WorkspaceId = TestWorkspaceId, Name = "To Delete", Description = "Delete Desc" };
         var item = new Item 
         { 
             Id = 1, 
-            TenantId = TestTenantId, 
+            WorkspaceId = TestWorkspaceId, 
             CategoryId = 2, 
             Name = "Test Item", 
             Summary = "Summary", 
@@ -491,7 +491,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(2, TestTenantId);
+        var result = await _repository.DeleteAsync(2, TestWorkspaceId);
 
         // Assert
         Assert.True(result);
@@ -507,17 +507,17 @@ public class CategoryRepositoryTests : IDisposable
         var unassignedCategory = new Category 
         { 
             Id = 1, 
-            TenantId = TestTenantId, 
+            WorkspaceId = TestWorkspaceId, 
             Name = "Unassigned Items", 
             Description = "System category", 
             IsSystem = true 
         };
-        var categoryToDelete = new Category { Id = 2, TenantId = TestTenantId, Name = "To Delete", Description = "Delete Desc" };
+        var categoryToDelete = new Category { Id = 2, WorkspaceId = TestWorkspaceId, Name = "To Delete", Description = "Delete Desc" };
         var items = new List<Item>
         {
-            new() { Id = 1, TenantId = TestTenantId, CategoryId = 2, Name = "Item 1", Summary = "Sum1", Description = "Desc1" },
-            new() { Id = 2, TenantId = TestTenantId, CategoryId = 2, Name = "Item 2", Summary = "Sum2", Description = "Desc2" },
-            new() { Id = 3, TenantId = TestTenantId, CategoryId = 2, Name = "Item 3", Summary = "Sum3", Description = "Desc3" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CategoryId = 2, Name = "Item 1", Summary = "Sum1", Description = "Desc1" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CategoryId = 2, Name = "Item 2", Summary = "Sum2", Description = "Desc2" },
+            new() { Id = 3, WorkspaceId = TestWorkspaceId, CategoryId = 2, Name = "Item 3", Summary = "Sum3", Description = "Desc3" }
         };
         
         await _context.Categories.AddRangeAsync(unassignedCategory, categoryToDelete);
@@ -525,11 +525,11 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(2, TestTenantId);
+        var result = await _repository.DeleteAsync(2, TestWorkspaceId);
 
         // Assert
         Assert.True(result);
-        var updatedItems = await _context.Items.Where(i => i.TenantId == TestTenantId).ToListAsync();
+        var updatedItems = await _context.Items.Where(i => i.WorkspaceId == TestWorkspaceId).ToListAsync();
         Assert.All(updatedItems, item => Assert.Equal(1, item.CategoryId));
     }
 
@@ -537,11 +537,11 @@ public class CategoryRepositoryTests : IDisposable
     public async Task DeleteAsync_SetsItemCategoryToNull_WhenNoUnassignedCategory()
     {
         // Arrange - no Unassigned Items category exists
-        var categoryToDelete = new Category { Id = 1, TenantId = TestTenantId, Name = "To Delete", Description = "Delete Desc" };
+        var categoryToDelete = new Category { Id = 1, WorkspaceId = TestWorkspaceId, Name = "To Delete", Description = "Delete Desc" };
         var item = new Item 
         { 
             Id = 1, 
-            TenantId = TestTenantId, 
+            WorkspaceId = TestWorkspaceId, 
             CategoryId = 1, 
             Name = "Test Item", 
             Summary = "Summary", 
@@ -553,7 +553,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(1, TestTenantId);
+        var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.True(result);
@@ -570,9 +570,9 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetTemplateIdsAsync_ReturnsTemplateIds_WhenAssociationsExist()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
-        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
-        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Template 2", Description = "Desc" };
         
         await _context.Categories.AddAsync(category);
         await _context.ItemTemplates.AddRangeAsync(template1, template2);
@@ -583,7 +583,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetTemplateIdsAsync(1, TestTenantId);
+        var result = await _repository.GetTemplateIdsAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -594,12 +594,12 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetTemplateIdsAsync_ReturnsEmpty_WhenNoAssociations()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
         await _context.Categories.AddAsync(category);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetTemplateIdsAsync(1, TestTenantId);
+        var result = await _repository.GetTemplateIdsAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.Empty(result);
@@ -609,7 +609,7 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetTemplateIdsAsync_ReturnsEmpty_WhenCategoryNotFound()
     {
         // Act
-        var result = await _repository.GetTemplateIdsAsync(999, TestTenantId);
+        var result = await _repository.GetTemplateIdsAsync(999, TestWorkspaceId);
 
         // Assert
         Assert.Empty(result);
@@ -619,10 +619,10 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetTemplateIdsAsync_RespectsOrder()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
-        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
-        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
-        var template3 = new ItemTemplate { Id = 3, TenantId = TestTenantId, Name = "Template 3", Description = "Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Template 2", Description = "Desc" };
+        var template3 = new ItemTemplate { Id = 3, WorkspaceId = TestWorkspaceId, Name = "Template 3", Description = "Desc" };
         
         await _context.Categories.AddAsync(category);
         await _context.ItemTemplates.AddRangeAsync(template1, template2, template3);
@@ -634,7 +634,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetTemplateIdsAsync(1, TestTenantId);
+        var result = await _repository.GetTemplateIdsAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.Equal(new List<int> { 3, 1, 2 }, result);
@@ -644,16 +644,16 @@ public class CategoryRepositoryTests : IDisposable
     public async Task SetTemplateIdsAsync_CreatesAssociations()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
-        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
-        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Template 2", Description = "Desc" };
         
         await _context.Categories.AddAsync(category);
         await _context.ItemTemplates.AddRangeAsync(template1, template2);
         await _context.SaveChangesAsync();
 
         // Act
-        await _repository.SetTemplateIdsAsync(1, new List<int> { 1, 2 }, TestTenantId);
+        await _repository.SetTemplateIdsAsync(1, new List<int> { 1, 2 }, TestWorkspaceId);
 
         // Assert
         var associations = await _context.CategoryItemTemplates.Where(ct => ct.CategoryId == 1).ToListAsync();
@@ -664,10 +664,10 @@ public class CategoryRepositoryTests : IDisposable
     public async Task SetTemplateIdsAsync_ReplacesExistingAssociations()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
-        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
-        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
-        var template3 = new ItemTemplate { Id = 3, TenantId = TestTenantId, Name = "Template 3", Description = "Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Template 2", Description = "Desc" };
+        var template3 = new ItemTemplate { Id = 3, WorkspaceId = TestWorkspaceId, Name = "Template 3", Description = "Desc" };
         
         await _context.Categories.AddAsync(category);
         await _context.ItemTemplates.AddRangeAsync(template1, template2, template3);
@@ -675,7 +675,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        await _repository.SetTemplateIdsAsync(1, new List<int> { 2, 3 }, TestTenantId);
+        await _repository.SetTemplateIdsAsync(1, new List<int> { 2, 3 }, TestWorkspaceId);
 
         // Assert
         var associations = await _context.CategoryItemTemplates.Where(ct => ct.CategoryId == 1).ToListAsync();
@@ -689,7 +689,7 @@ public class CategoryRepositoryTests : IDisposable
     public async Task SetTemplateIdsAsync_DoesNothing_WhenCategoryNotFound()
     {
         // Act
-        await _repository.SetTemplateIdsAsync(999, new List<int> { 1 }, TestTenantId);
+        await _repository.SetTemplateIdsAsync(999, new List<int> { 1 }, TestWorkspaceId);
 
         // Assert
         var associations = await _context.CategoryItemTemplates.ToListAsync();
@@ -700,8 +700,8 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetInheritedTemplateIdsAsync_ReturnsOwnTemplates()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
-        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
         
         await _context.Categories.AddAsync(category);
         await _context.ItemTemplates.AddAsync(template);
@@ -709,7 +709,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetInheritedTemplateIdsAsync(1, TestTenantId);
+        var result = await _repository.GetInheritedTemplateIdsAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.Single(result);
@@ -720,9 +720,9 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetInheritedTemplateIdsAsync_InheritsFromParent()
     {
         // Arrange
-        var parentCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc" };
-        var childCategory = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 1 };
-        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var parentCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc" };
+        var childCategory = new Category { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 1 };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
         
         await _context.Categories.AddRangeAsync(parentCategory, childCategory);
         await _context.ItemTemplates.AddAsync(template);
@@ -730,7 +730,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetInheritedTemplateIdsAsync(2, TestTenantId);
+        var result = await _repository.GetInheritedTemplateIdsAsync(2, TestWorkspaceId);
 
         // Assert
         Assert.Single(result);
@@ -741,10 +741,10 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetInheritedTemplateIdsAsync_CombinesChildAndParentTemplates()
     {
         // Arrange
-        var parentCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc" };
-        var childCategory = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 1 };
-        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
-        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        var parentCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc" };
+        var childCategory = new Category { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 1 };
+        var template1 = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Template 2", Description = "Desc" };
         
         await _context.Categories.AddRangeAsync(parentCategory, childCategory);
         await _context.ItemTemplates.AddRangeAsync(template1, template2);
@@ -755,7 +755,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetInheritedTemplateIdsAsync(2, TestTenantId);
+        var result = await _repository.GetInheritedTemplateIdsAsync(2, TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -767,9 +767,9 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetInheritedTemplateIdsAsync_ChildTemplatesTakePrecedence()
     {
         // Arrange - same template on parent and child should only appear once
-        var parentCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc" };
-        var childCategory = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 1 };
-        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
+        var parentCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc" };
+        var childCategory = new Category { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 1 };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
         
         await _context.Categories.AddRangeAsync(parentCategory, childCategory);
         await _context.ItemTemplates.AddAsync(template);
@@ -780,7 +780,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetInheritedTemplateIdsAsync(2, TestTenantId);
+        var result = await _repository.GetInheritedTemplateIdsAsync(2, TestWorkspaceId);
 
         // Assert
         Assert.Single(result); // No duplicates
@@ -791,12 +791,12 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetInheritedTemplateIdsAsync_InheritsMultipleLevels()
     {
         // Arrange - grandparent -> parent -> child
-        var grandparent = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Grandparent", Description = "Desc" };
-        var parent = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc", ParentCategoryId = 1 };
-        var child = new Category { Id = 3, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 2 };
-        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
-        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
-        var template3 = new ItemTemplate { Id = 3, TenantId = TestTenantId, Name = "Template 3", Description = "Desc" };
+        var grandparent = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Grandparent", Description = "Desc" };
+        var parent = new Category { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Parent", Description = "Desc", ParentCategoryId = 1 };
+        var child = new Category { Id = 3, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Child", Description = "Desc", ParentCategoryId = 2 };
+        var template1 = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Template 2", Description = "Desc" };
+        var template3 = new ItemTemplate { Id = 3, WorkspaceId = TestWorkspaceId, Name = "Template 3", Description = "Desc" };
         
         await _context.Categories.AddRangeAsync(grandparent, parent, child);
         await _context.ItemTemplates.AddRangeAsync(template1, template2, template3);
@@ -808,7 +808,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetInheritedTemplateIdsAsync(3, TestTenantId);
+        var result = await _repository.GetInheritedTemplateIdsAsync(3, TestWorkspaceId);
 
         // Assert
         Assert.Equal(3, result.Count);
@@ -821,10 +821,10 @@ public class CategoryRepositoryTests : IDisposable
     public async Task GetTemplateIdsByCategoryAsync_ReturnsAllMappings()
     {
         // Arrange
-        var category1 = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
-        var category2 = new Category { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Category 2", Description = "Desc" };
-        var template1 = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" };
-        var template2 = new ItemTemplate { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" };
+        var category1 = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc" };
+        var category2 = new Category { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Category 2", Description = "Desc" };
+        var template1 = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" };
+        var template2 = new ItemTemplate { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Template 2", Description = "Desc" };
         
         await _context.Categories.AddRangeAsync(category1, category2);
         await _context.ItemTemplates.AddRangeAsync(template1, template2);
@@ -836,7 +836,7 @@ public class CategoryRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetTemplateIdsByCategoryAsync(TestCollectionId, TestTenantId);
+        var result = await _repository.GetTemplateIdsByCategoryAsync(TestCollectionId, TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count);

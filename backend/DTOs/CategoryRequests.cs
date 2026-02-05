@@ -34,7 +34,7 @@ public class UpdateCategoryRequest
 public class CategoryResponse
 {
     public int CategoryId { get; set; }
-    public int TenantId { get; set; }
+    public int WorkspaceId { get; set; }
     public int CollectionId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -49,7 +49,7 @@ public class CategoryResponse
         return new CategoryResponse
         {
             CategoryId = category.Id,
-            TenantId = category.TenantId,
+            WorkspaceId = category.WorkspaceId,
             CollectionId = category.CollectionId,
             Name = category.Name,
             Description = category.Description,

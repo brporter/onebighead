@@ -40,18 +40,18 @@ public class PropertySuggestionsControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task GetSuggestions_OtherTenantCollection_ReturnsNotFound()
+    public async Task GetSuggestions_OtherWorkspaceCollection_ReturnsNotFound()
     {
         // Arrange
         await Factory.SeedDatabaseAsync(context =>
         {
-            var tenant = new Tenant { Id = 50, Name = "Other Tenant" };
-            context.Tenants.Add(tenant);
+            var workspace = new Workspace { Id = 50, Name = "Other Workspace" };
+            context.Workspaces.Add(workspace);
 
             var collection = new Collection
             {
                 Id = 50,
-                TenantId = 50,
+                WorkspaceId = 50,
                 Name = "Other Collection",
                 Slug = "other"
             };

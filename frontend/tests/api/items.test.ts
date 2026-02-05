@@ -18,7 +18,7 @@ describe('itemsApi', () => {
   describe('getAll', () => {
     it('should fetch all items without options', async () => {
       const mockItems: Item[] = [
-        { id: 1, tenantId: 1, collectionId: 1, name: 'Item 1', summary: '', description: '', properties: [], images: [], categoryId: 1, visibility: Visibility.Default, effectiveIsPublic: true },
+        { id: 1, workspaceId: 1, collectionId: 1, name: 'Item 1', summary: '', description: '', properties: [], images: [], categoryId: 1, visibility: Visibility.Default, effectiveIsPublic: true },
       ];
       
       mockFetch.mockResolvedValueOnce({
@@ -101,7 +101,7 @@ describe('itemsApi', () => {
     it('should fetch single item by id', async () => {
       const mockItem: Item = {
         id: 42,
-        tenantId: 1,
+        workspaceId: 1,
         collectionId: 1,
         name: 'Test Item',
         summary: 'A test',
@@ -129,7 +129,7 @@ describe('itemsApi', () => {
   describe('create', () => {
     it('should POST new item', async () => {
       const newItem: Item = {
-        tenantId: 1,
+        workspaceId: 1,
         collectionId: 1,
         name: 'New Item',
         summary: '',
@@ -162,7 +162,7 @@ describe('itemsApi', () => {
     it('should PUT updated item', async () => {
       const updatedItem: Item = {
         id: 42,
-        tenantId: 1,
+        workspaceId: 1,
         collectionId: 1,
         name: 'Updated Name',
         summary: 'Updated summary',

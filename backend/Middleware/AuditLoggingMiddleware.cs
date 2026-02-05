@@ -21,7 +21,7 @@ public class AuditLoggingMiddleware
     private static readonly string[] AuditedPaths =
     {
         "/api/users",
-        "/api/tenants",
+        "/api/workspaces",
         "/api/collections",
         "/api/categories",
         "/api/items",
@@ -58,14 +58,14 @@ public class AuditLoggingMiddleware
 
         // Extract user info from claims
         var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
-        var tenantId = context.User.FindFirst("tenant_id")?.Value ?? "none";
+        var workspaceId = context.User.FindFirst("workspace_id")?.Value ?? "none";
         var email = context.User.FindFirst(ClaimTypes.Email)?.Value ?? "unknown";
 
         // Log before execution
         _logger.LogInformation(
-            "Audit: User {UserId} (Tenant: {TenantId}, Email: {Email}) performing {Method} on {Path}",
+            "Audit: User {UserId} (Workspace: {WorkspaceId}, Email: {Email}) performing {Method} on {Path}",
             userId,
-            tenantId,
+            workspaceId,
             email,
             context.Request.Method,
             path);

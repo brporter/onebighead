@@ -32,17 +32,17 @@ function renderWithRouter(initialRoute: string) {
 
 describe('ItemView', () => {
   const mockCollections: Collection[] = [
-    { collectionId: 1, tenantId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
+    { collectionId: 1, workspaceId: 1, name: 'Test Collection', description: 'Test desc', heroImageUrl: null, slug: 'test', visibility: Visibility.Public, effectiveIsPublic: true },
   ];
 
   const mockCategories: Category[] = [
-    { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockItems: Item[] = [
     {
       id: 1,
-      tenantId: 1,
+      workspaceId: 1,
       collectionId: 1,
       categoryId: 1,
       name: 'Test Item',
@@ -315,7 +315,7 @@ describe('ItemView', () => {
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({
         ...mockDataContext,
         currentCollection: null,
-        collections: [{ collectionId: 99, tenantId: 1, name: 'Other', description: '', heroImageUrl: null, slug: 'other' }],
+        collections: [{ collectionId: 99, workspaceId: 1, name: 'Other', description: '', heroImageUrl: null, slug: 'other' }],
       });
 
       renderWithRouter('/collections/999/items/1');

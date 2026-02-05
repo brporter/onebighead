@@ -1,10 +1,10 @@
 import type { Item } from './types';
 import { UserFlag, Visibility } from './types';
 
-export function createEmptyItem(categoryId: number | null, collectionId: number, tenantId: number): Item {
+export function createEmptyItem(categoryId: number | null, collectionId: number, workspaceId: number): Item {
   return {
     id: null,
-    tenantId,
+    workspaceId,
     collectionId,
     categoryId,
     name: '',

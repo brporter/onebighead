@@ -93,7 +93,7 @@ exports[`WelcomeWizard > snapshots > should match snapshot for initial welcome s
         >
           <label
             class="setupWizard__label"
-            for="tenant-name"
+            for="workspace-name"
           >
             Organization / Workspace Name 
             <span
@@ -104,7 +104,7 @@ exports[`WelcomeWizard > snapshots > should match snapshot for initial welcome s
           </label>
           <input
             class="setupWizard__input"
-            id="tenant-name"
+            id="workspace-name"
             placeholder="Your name, company, or workspace"
             type="text"
             value="test@example.com"

@@ -14,7 +14,7 @@ public class CategoryTests
 
         // Assert
         Assert.Equal(0, category.Id);
-        Assert.Equal(0, category.TenantId);
+        Assert.Equal(0, category.WorkspaceId);
         Assert.Equal(0, category.CollectionId);
         Assert.Equal(string.Empty, category.Name);
         Assert.Equal(string.Empty, category.Description);
@@ -23,7 +23,7 @@ public class CategoryTests
         Assert.Null(category.ParentCategory);
         Assert.NotNull(category.ChildCategories);
         Assert.Empty(category.ChildCategories);
-        Assert.Null(category.Tenant);
+        Assert.Null(category.Workspace);
         Assert.Null(category.Collection);
     }
 
@@ -31,7 +31,7 @@ public class CategoryTests
     public void Category_PropertiesCanBeSet()
     {
         // Arrange
-        var tenant = new Tenant { Id = 2, Name = "Test Tenant" };
+        var workspace = new Workspace { Id = 2, Name = "Test Workspace" };
         var collection = new Collection { Id = 4, Name = "Test Collection", Slug = "test" };
         var parent = new Category { Id = 3, Name = "Parent" };
 
@@ -39,27 +39,27 @@ public class CategoryTests
         var category = new Category
         {
             Id = 1,
-            TenantId = 2,
+            WorkspaceId = 2,
             CollectionId = 4,
             Name = "Test Name",
             Description = "Test Description",
             IsSystem = true,
             ParentCategoryId = 3,
             ParentCategory = parent,
-            Tenant = tenant,
+            Workspace = workspace,
             Collection = collection
         };
 
         // Assert
         Assert.Equal(1, category.Id);
-        Assert.Equal(2, category.TenantId);
+        Assert.Equal(2, category.WorkspaceId);
         Assert.Equal(4, category.CollectionId);
         Assert.Equal("Test Name", category.Name);
         Assert.Equal("Test Description", category.Description);
         Assert.True(category.IsSystem);
         Assert.Equal(3, category.ParentCategoryId);
         Assert.Same(parent, category.ParentCategory);
-        Assert.Same(tenant, category.Tenant);
+        Assert.Same(workspace, category.Workspace);
         Assert.Same(collection, category.Collection);
     }
 
@@ -67,7 +67,7 @@ public class CategoryTests
     public void Category_JsonSerialization_UsesCorrectPropertyName()
     {
         // Arrange
-        var category = new Category { Id = 42, TenantId = 1, Name = "Test", Description = "Desc" };
+        var category = new Category { Id = 42, WorkspaceId = 1, Name = "Test", Description = "Desc" };
 
         // Act
         var json = JsonSerializer.Serialize(category);
@@ -81,11 +81,11 @@ public class CategoryTests
     public void Category_JsonSerialization_ExcludesNavigationProperties()
     {
         // Arrange
-        var parent = new Category { Id = 1, TenantId = 1, Name = "Parent", Description = "Parent Desc" };
+        var parent = new Category { Id = 1, WorkspaceId = 1, Name = "Parent", Description = "Parent Desc" };
         var child = new Category 
         { 
             Id = 2, 
-            TenantId = 1, 
+            WorkspaceId = 1, 
             Name = "Child", 
             Description = "Child Desc",
             ParentCategoryId = 1,
@@ -108,9 +108,9 @@ public class CategoryTests
     public void Category_ChildCategories_CanBeModified()
     {
         // Arrange
-        var parent = new Category { Id = 1, TenantId = 1, Name = "Parent", Description = "Parent Desc" };
-        var child1 = new Category { Id = 2, TenantId = 1, Name = "Child 1", Description = "Child Desc" };
-        var child2 = new Category { Id = 3, TenantId = 1, Name = "Child 2", Description = "Child Desc" };
+        var parent = new Category { Id = 1, WorkspaceId = 1, Name = "Parent", Description = "Parent Desc" };
+        var child1 = new Category { Id = 2, WorkspaceId = 1, Name = "Child 1", Description = "Child Desc" };
+        var child2 = new Category { Id = 3, WorkspaceId = 1, Name = "Child 2", Description = "Child Desc" };
 
         // Act
         parent.ChildCategories.Add(child1);

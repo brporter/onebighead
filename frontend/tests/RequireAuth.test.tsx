@@ -33,13 +33,14 @@ function renderWithRouter(children: React.ReactNode, initialRoute = '/collection
 const createUser = (overrides: Partial<CurrentUser> = {}): CurrentUser => ({
   userId: 1,
   email: 'test@example.com',
-  tenantId: 1,
-  tenantName: 'Test Tenant',
+  workspaceId: 1,
+  workspaceName: 'Test Workspace',
+  workspaces: [{ id: 1, name: 'Test Workspace' }],
   hasCompletedWelcome: true,
   hasAcceptedTerms: true,
   isSystemAdministrator: false,
-  tenantRole: 'Normal' as const,
-  isTenantAdmin: false,
+  workspaceRole: 'Normal' as const,
+  isWorkspaceAdmin: false,
   ...overrides,
 });
 

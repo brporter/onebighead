@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -10,7 +10,7 @@ public class Category
     [JsonPropertyName("categoryId")]
     public int Id { get; set; }
 
-    public int TenantId { get; set; }
+    public int WorkspaceId { get; set; }
 
     public int CollectionId { get; set; }
 
@@ -40,8 +40,8 @@ public class Category
     public ICollection<Category> ChildCategories { get; set; } = new List<Category>();
 
     [JsonIgnore]
-    [ForeignKey(nameof(TenantId))]
-    public Tenant? Tenant { get; set; }
+    [ForeignKey(nameof(WorkspaceId))]
+    public Workspace? Workspace { get; set; }
 
     [JsonIgnore]
     [ForeignKey(nameof(CollectionId))]
@@ -50,4 +50,3 @@ public class Category
     [JsonIgnore]
     public ICollection<CategoryItemTemplate> CategoryItemTemplates { get; set; } = new List<CategoryItemTemplate>();
 }
-

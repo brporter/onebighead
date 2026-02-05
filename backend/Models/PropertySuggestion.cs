@@ -15,7 +15,7 @@ public class PropertySuggestion
     [Key]
     public int Id { get; set; }
 
-    public int TenantId { get; set; }
+    public int WorkspaceId { get; set; }
 
     public int CollectionId { get; set; }
 
@@ -26,8 +26,8 @@ public class PropertySuggestion
     public string Value { get; set; } = string.Empty;
 
     [JsonIgnore]
-    [ForeignKey(nameof(TenantId))]
-    public Tenant? Tenant { get; set; }
+    [ForeignKey(nameof(WorkspaceId))]
+    public Workspace? Workspace { get; set; }
 
     [JsonIgnore]
     [ForeignKey(nameof(CollectionId))]

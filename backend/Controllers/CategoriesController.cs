@@ -29,7 +29,7 @@ public class CategoriesController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CategoryResponse>>> GetCategories([FromQuery] int? collectionId = null)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
         
         List<Category> categoryList;
         Collection? collection;
@@ -37,23 +37,23 @@ public class CategoriesController : ApiControllerBase
         
         if (collectionId.HasValue)
         {
-            // Verify collection belongs to tenant
-            collection = await _collectionRepository.GetByIdAsync(collectionId.Value, tenantId);
+            // Verify collection belongs to workspace
+            collection = await _collectionRepository.GetByIdAsync(collectionId.Value, workspaceId);
             if (collection is null)
             {
                 return NotFound("Collection not found");
             }
-            var categories = await _categoryRepository.GetByCollectionAsync(collectionId.Value, tenantId);
+            var categories = await _categoryRepository.GetByCollectionAsync(collectionId.Value, workspaceId);
             categoryList = categories.ToList();
-            templateIdsByCategory = await _categoryRepository.GetTemplateIdsByCategoryAsync(collectionId.Value, tenantId);
+            templateIdsByCategory = await _categoryRepository.GetTemplateIdsByCategoryAsync(collectionId.Value, workspaceId);
         }
         else
         {
-            collection = await _collectionRepository.GetByTenantIdAsync(tenantId);
-            var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+            collection = await _collectionRepository.GetByWorkspaceIdAsync(workspaceId);
+            var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             categoryList = allCategories.ToList();
             templateIdsByCategory = collection != null 
-                ? await _categoryRepository.GetTemplateIdsByCategoryAsync(collection.Id, tenantId)
+                ? await _categoryRepository.GetTemplateIdsByCategoryAsync(collection.Id, workspaceId)
                 : new Dictionary<int, List<int>>();
         }
         
@@ -74,18 +74,18 @@ public class CategoriesController : ApiControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<CategoryResponse>> GetCategory(int id)
     {
-        var tenantId = GetTenantId();
-        var category = await _categoryRepository.GetByIdAsync(id, tenantId);
+        var workspaceId = GetWorkspaceId();
+        var category = await _categoryRepository.GetByIdAsync(id, workspaceId);
         if (category is null)
         {
             return NotFound();
         }
         
         // Compute effective visibility
-        var collection = await _collectionRepository.GetByTenantIdAsync(tenantId);
+        var collection = await _collectionRepository.GetByWorkspaceIdAsync(workspaceId);
         if (collection != null)
         {
-            var allCategories = await _categoryRepository.GetAllAsync(tenantId);
+            var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
             _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
             
@@ -97,7 +97,7 @@ public class CategoriesController : ApiControllerBase
             }
         }
         
-        var templateIds = await _categoryRepository.GetTemplateIdsAsync(id, tenantId);
+        var templateIds = await _categoryRepository.GetTemplateIdsAsync(id, workspaceId);
         return Ok(CategoryResponse.FromCategory(category, templateIds));
     }
 
@@ -107,14 +107,14 @@ public class CategoriesController : ApiControllerBase
     [HttpGet("{id}/templates")]
     public async Task<ActionResult<IEnumerable<int>>> GetCategoryTemplates(int id)
     {
-        var tenantId = GetTenantId();
-        var category = await _categoryRepository.GetByIdAsync(id, tenantId);
+        var workspaceId = GetWorkspaceId();
+        var category = await _categoryRepository.GetByIdAsync(id, workspaceId);
         if (category is null)
         {
             return NotFound();
         }
         
-        var templateIds = await _categoryRepository.GetInheritedTemplateIdsAsync(id, tenantId);
+        var templateIds = await _categoryRepository.GetInheritedTemplateIdsAsync(id, workspaceId);
         return Ok(templateIds);
     }
 
@@ -127,21 +127,21 @@ public class CategoriesController : ApiControllerBase
             return BadRequest("The name 'Unassigned Items' is reserved for system use.");
         }
 
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        // Verify collection belongs to tenant
-        var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, tenantId);
+        // Verify collection belongs to workspace
+        var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, workspaceId);
         if (collection is null)
         {
             return BadRequest("Invalid collection");
         }
 
         // Get all categories for visibility computation
-        var allCategories = (await _categoryRepository.GetByCollectionAsync(request.CollectionId, tenantId)).ToList();
+        var allCategories = (await _categoryRepository.GetByCollectionAsync(request.CollectionId, workspaceId)).ToList();
         _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
-        // Validate ParentCategoryId belongs to tenant and same collection
+        // Validate ParentCategoryId belongs to workspace and same collection
         Category? parentCategory = null;
         if (request.ParentCategoryId.HasValue)
         {
@@ -163,7 +163,7 @@ public class CategoriesController : ApiControllerBase
 
         var category = new Category
         {
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             CollectionId = request.CollectionId,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
@@ -177,20 +177,20 @@ public class CategoriesController : ApiControllerBase
         // Set template associations if provided
         if (request.ItemTemplateIds != null && request.ItemTemplateIds.Count > 0)
         {
-            await _categoryRepository.SetTemplateIdsAsync(created.Id, request.ItemTemplateIds, tenantId);
+            await _categoryRepository.SetTemplateIdsAsync(created.Id, request.ItemTemplateIds, workspaceId);
         }
         
-        var templateIds = await _categoryRepository.GetTemplateIdsAsync(created.Id, tenantId);
+        var templateIds = await _categoryRepository.GetTemplateIdsAsync(created.Id, workspaceId);
         return CreatedAtAction(nameof(GetCategory), new { id = created.Id }, CategoryResponse.FromCategory(created, templateIds));
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<CategoryResponse>> UpdateCategory(int id, UpdateCategoryRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
         
         // Check if attempting to modify a system category
-        var existingCategory = await _categoryRepository.GetByIdAsync(id, tenantId);
+        var existingCategory = await _categoryRepository.GetByIdAsync(id, workspaceId);
         if (existingCategory is null)
         {
             return NotFound();
@@ -207,18 +207,18 @@ public class CategoriesController : ApiControllerBase
         }
 
         // Get collection for visibility checks
-        var collection = await _collectionRepository.GetByIdAsync(existingCategory.CollectionId, tenantId);
+        var collection = await _collectionRepository.GetByIdAsync(existingCategory.CollectionId, workspaceId);
         if (collection is null)
         {
             return NotFound("Collection not found");
         }
 
         // Get all categories for visibility computation
-        var allCategories = (await _categoryRepository.GetByCollectionAsync(existingCategory.CollectionId, tenantId)).ToList();
+        var allCategories = (await _categoryRepository.GetByCollectionAsync(existingCategory.CollectionId, workspaceId)).ToList();
         _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
-        // Validate ParentCategoryId belongs to tenant and same collection
+        // Validate ParentCategoryId belongs to workspace and same collection
         Category? parentCategory = null;
         if (request.ParentCategoryId.HasValue)
         {
@@ -240,7 +240,7 @@ public class CategoriesController : ApiControllerBase
 
         var category = new Category
         {
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             CollectionId = existingCategory.CollectionId,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
@@ -248,7 +248,7 @@ public class CategoriesController : ApiControllerBase
             Visibility = request.Visibility
         };
 
-        var updated = await _categoryRepository.UpdateAsync(id, category, tenantId);
+        var updated = await _categoryRepository.UpdateAsync(id, category, workspaceId);
         if (updated is null)
         {
             return NotFound();
@@ -257,20 +257,20 @@ public class CategoriesController : ApiControllerBase
         // Update template associations if provided
         if (request.ItemTemplateIds != null)
         {
-            await _categoryRepository.SetTemplateIdsAsync(id, request.ItemTemplateIds, tenantId);
+            await _categoryRepository.SetTemplateIdsAsync(id, request.ItemTemplateIds, workspaceId);
         }
         
-        var templateIds = await _categoryRepository.GetTemplateIdsAsync(id, tenantId);
+        var templateIds = await _categoryRepository.GetTemplateIdsAsync(id, workspaceId);
         return Ok(CategoryResponse.FromCategory(updated, templateIds));
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCategory(int id)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
         
         // Check if attempting to delete a system category
-        var existingCategory = await _categoryRepository.GetByIdAsync(id, tenantId);
+        var existingCategory = await _categoryRepository.GetByIdAsync(id, workspaceId);
         if (existingCategory is null)
         {
             return NotFound();
@@ -280,7 +280,7 @@ public class CategoriesController : ApiControllerBase
             return StatusCode(403, "System categories cannot be deleted.");
         }
 
-        var deleted = await _categoryRepository.DeleteAsync(id, tenantId);
+        var deleted = await _categoryRepository.DeleteAsync(id, workspaceId);
         if (!deleted)
         {
             return NotFound();

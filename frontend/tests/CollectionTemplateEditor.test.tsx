@@ -6,7 +6,7 @@ import type { Collection, ItemTemplate } from '../src/utils/types';
 
 const mockCollection: Collection = {
   collectionId: 1,
-  tenantId: 1,
+  workspaceId: 1,
   name: 'Test Collection',
   description: 'Test Description',
   heroImageUrl: null,
@@ -17,7 +17,7 @@ const mockCollection: Collection = {
 const mockTemplates: ItemTemplate[] = [
   {
     itemTemplateId: 1,
-    tenantId: 1,
+    workspaceId: 1,
     name: 'Template A',
     description: 'First template',
     isSystem: false,
@@ -25,7 +25,7 @@ const mockTemplates: ItemTemplate[] = [
   },
   {
     itemTemplateId: 2,
-    tenantId: 1,
+    workspaceId: 1,
     name: 'Template B',
     description: 'Second template',
     isSystem: true,
@@ -33,7 +33,7 @@ const mockTemplates: ItemTemplate[] = [
   },
   {
     itemTemplateId: 3,
-    tenantId: 1,
+    workspaceId: 1,
     name: 'Template C',
     description: '',
     isSystem: false,

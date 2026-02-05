@@ -3,9 +3,9 @@
  * Handles user account deletion and related operations
  */
 import { api } from './client';
-import type { TenantRole } from '../utils/types';
+import type { WorkspaceRole } from '../utils/types';
 
-export enum TenantActionType {
+export enum WorkspaceActionType {
   Delete = 'Delete',
   Transfer = 'Transfer'
 }
@@ -21,10 +21,10 @@ export interface UserBasicInfo {
   email: string;
 }
 
-export interface TenantMembershipDeletionInfo {
-  tenantId: number;
-  tenantName: string;
-  role: TenantRole;
+export interface WorkspaceMembershipDeletionInfo {
+  workspaceId: number;
+  workspaceName: string;
+  role: WorkspaceRole;
   isOnlyUser: boolean;
   isOnlyAdmin: boolean;
   userCount: number;
@@ -36,20 +36,20 @@ export interface TenantMembershipDeletionInfo {
 export interface UserDeletionInfo {
   userId: number;
   email: string;
-  tenantMemberships: TenantMembershipDeletionInfo[];
-  tenantsRequiringAction: number;
+  workspaceMemberships: WorkspaceMembershipDeletionInfo[];
+  workspacesRequiringAction: number;
   canDeleteImmediately: boolean;
 }
 
-export interface TenantActionRequest {
-  tenantId: number;
-  action: TenantActionType;
+export interface WorkspaceActionRequest {
+  workspaceId: number;
+  action: WorkspaceActionType;
   transferToUserId?: number;
 }
 
 export interface DeleteAccountRequest {
   confirmEmail: string;
-  tenantActions: TenantActionRequest[];
+  workspaceActions: WorkspaceActionRequest[];
 }
 
 export interface DeleteAccountResponse {

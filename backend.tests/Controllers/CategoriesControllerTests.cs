@@ -17,7 +17,7 @@ public class CategoriesControllerTests
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
     private readonly Mock<IVisibilityService> _mockVisibilityService;
     private readonly CategoriesController _controller;
-    private const int TestTenantId = 1;
+    private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 1;
 
     public CategoriesControllerTests()
@@ -30,10 +30,10 @@ public class CategoriesControllerTests
             _mockCollectionRepository.Object,
             _mockVisibilityService.Object);
         
-        // Set up authenticated user context with tenant_id claim
+        // Set up authenticated user context with workspace_id claim
         var claims = new List<Claim>
         {
-            new("tenant_id", TestTenantId.ToString()),
+            new("workspace_id", TestWorkspaceId.ToString()),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")
         };
@@ -54,10 +54,10 @@ public class CategoriesControllerTests
         // Arrange
         var categories = new List<Category>
         {
-            new() { Id = 1, TenantId = 1, CollectionId = 1, Name = "Category 1", Description = "Desc 1" },
-            new() { Id = 2, TenantId = 1, CollectionId = 1, Name = "Category 2", Description = "Desc 2" }
+            new() { Id = 1, WorkspaceId = 1, CollectionId = 1, Name = "Category 1", Description = "Desc 1" },
+            new() { Id = 2, WorkspaceId = 1, CollectionId = 1, Name = "Category 2", Description = "Desc 2" }
         };
-        _mockRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(categories);
 
         // Act
@@ -73,7 +73,7 @@ public class CategoriesControllerTests
     public async Task GetCategories_ReturnsOkResult_WithEmptyList_WhenNoCategories()
     {
         // Arrange
-        _mockRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
 
         // Act
@@ -89,16 +89,16 @@ public class CategoriesControllerTests
     public async Task GetCategories_WithCollectionId_ReturnsFilteredCategories()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test" };
         var categories = new List<Category>
         {
-            new() { Id = 1, TenantId = 1, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc 1" }
+            new() { Id = 1, WorkspaceId = 1, CollectionId = TestCollectionId, Name = "Category 1", Description = "Desc 1" }
         };
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(categories);
-        _mockRepository.Setup(repo => repo.GetTemplateIdsByCategoryAsync(TestCollectionId, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetTemplateIdsByCategoryAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new Dictionary<int, List<int>>());
 
         // Act
@@ -114,7 +114,7 @@ public class CategoriesControllerTests
     public async Task GetCategories_WithInvalidCollectionId_ReturnsNotFound()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -132,8 +132,8 @@ public class CategoriesControllerTests
     public async Task GetCategory_ReturnsOkResult_WhenCategoryExists()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = 1, CollectionId = 1, Name = "Test Category", Description = "Test Desc" };
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        var category = new Category { Id = 1, WorkspaceId = 1, CollectionId = 1, Name = "Test Category", Description = "Test Desc" };
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(category);
 
         // Act
@@ -150,7 +150,7 @@ public class CategoriesControllerTests
     public async Task GetCategory_ReturnsNotFound_WhenCategoryDoesNotExist()
     {
         // Arrange
-        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -168,12 +168,12 @@ public class CategoriesControllerTests
     public async Task GetCategoryTemplates_ReturnsOkResult_WithInheritedTemplateIds()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category", Description = "Test Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category", Description = "Test Desc" };
         var inheritedTemplateIds = new List<int> { 10, 20, 30 };
         
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(category);
-        _mockRepository.Setup(repo => repo.GetInheritedTemplateIdsAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetInheritedTemplateIdsAsync(1, TestWorkspaceId))
             .ReturnsAsync(inheritedTemplateIds);
 
         // Act
@@ -192,11 +192,11 @@ public class CategoriesControllerTests
     public async Task GetCategoryTemplates_ReturnsOkResult_WithEmptyList_WhenNoTemplates()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category", Description = "Test Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category", Description = "Test Desc" };
         
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(category);
-        _mockRepository.Setup(repo => repo.GetInheritedTemplateIdsAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetInheritedTemplateIdsAsync(1, TestWorkspaceId))
             .ReturnsAsync(new List<int>());
 
         // Act
@@ -212,7 +212,7 @@ public class CategoriesControllerTests
     public async Task GetCategoryTemplates_ReturnsNotFound_WhenCategoryDoesNotExist()
     {
         // Arrange
-        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -226,18 +226,18 @@ public class CategoriesControllerTests
     public async Task GetCategoryTemplates_CallsGetInheritedTemplateIdsAsync()
     {
         // Arrange
-        var category = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category", Description = "Test Desc" };
+        var category = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category", Description = "Test Desc" };
         
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(category);
-        _mockRepository.Setup(repo => repo.GetInheritedTemplateIdsAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetInheritedTemplateIdsAsync(1, TestWorkspaceId))
             .ReturnsAsync(new List<int> { 1, 2 });
 
         // Act
         await _controller.GetCategoryTemplates(1);
 
         // Assert
-        _mockRepository.Verify(repo => repo.GetInheritedTemplateIdsAsync(1, TestTenantId), Times.Once);
+        _mockRepository.Verify(repo => repo.GetInheritedTemplateIdsAsync(1, TestWorkspaceId), Times.Once);
     }
 
     #endregion
@@ -248,13 +248,13 @@ public class CategoriesControllerTests
     public async Task CreateCategory_ReturnsCreatedAtAction_WithNewCategory()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test" };
         var request = new CreateCategoryRequest { CollectionId = TestCollectionId, Name = "New Category", Description = "New Desc" };
-        var createdCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "New Category", Description = "New Desc" };
+        var createdCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "New Category", Description = "New Desc" };
         
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockRepository.Setup(repo => repo.CreateAsync(It.Is<Category>(c => c.TenantId == TestTenantId)))
+        _mockRepository.Setup(repo => repo.CreateAsync(It.Is<Category>(c => c.WorkspaceId == TestWorkspaceId)))
             .ReturnsAsync(createdCategory);
 
         // Act
@@ -269,22 +269,22 @@ public class CategoriesControllerTests
     }
 
     [Fact]
-    public async Task CreateCategory_SetsTenantIdFromClaims()
+    public async Task CreateCategory_SetsWorkspaceIdFromClaims()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test" };
         var request = new CreateCategoryRequest { CollectionId = TestCollectionId, Name = "New Category", Description = "New Desc" };
         
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
         _mockRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync((Category c) => new Category { Id = 1, TenantId = c.TenantId, CollectionId = c.CollectionId, Name = c.Name, Description = c.Description });
+            .ReturnsAsync((Category c) => new Category { Id = 1, WorkspaceId = c.WorkspaceId, CollectionId = c.CollectionId, Name = c.Name, Description = c.Description });
 
         // Act
         await _controller.CreateCategory(request);
 
         // Assert
-        _mockRepository.Verify(repo => repo.CreateAsync(It.Is<Category>(c => c.TenantId == TestTenantId)), Times.Once);
+        _mockRepository.Verify(repo => repo.CreateAsync(It.Is<Category>(c => c.WorkspaceId == TestWorkspaceId)), Times.Once);
     }
 
     [Fact]
@@ -304,13 +304,13 @@ public class CategoriesControllerTests
     public async Task CreateCategory_SetsIsSystemToFalse()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test" };
         var request = new CreateCategoryRequest { CollectionId = TestCollectionId, Name = "New Category", Description = "Desc" };
         
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
         _mockRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync((Category c) => new Category { Id = 1, TenantId = c.TenantId, CollectionId = c.CollectionId, Name = c.Name, Description = c.Description, IsSystem = c.IsSystem });
+            .ReturnsAsync((Category c) => new Category { Id = 1, WorkspaceId = c.WorkspaceId, CollectionId = c.CollectionId, Name = c.Name, Description = c.Description, IsSystem = c.IsSystem });
 
         // Act
         await _controller.CreateCategory(request);
@@ -324,7 +324,7 @@ public class CategoriesControllerTests
     {
         // Arrange
         var request = new CreateCategoryRequest { CollectionId = 999, Name = "New Category", Description = "Desc" };
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -342,18 +342,18 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsOkResult_WhenCategoryExists()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
-        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Original", Description = "Original Desc", IsSystem = false };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
+        var existingCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Original", Description = "Original Desc", IsSystem = false };
         var request = new UpdateCategoryRequest { Name = "Updated Category", Description = "Updated Desc" };
-        var updatedCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Updated Category", Description = "Updated Desc" };
+        var updatedCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Updated Category", Description = "Updated Desc" };
 
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingCategory);
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category> { existingCategory });
-        _mockRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Category>(), TestTenantId))
+        _mockRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Category>(), TestWorkspaceId))
             .ReturnsAsync(updatedCategory);
 
         // Act
@@ -370,7 +370,7 @@ public class CategoriesControllerTests
     {
         // Arrange
         var request = new UpdateCategoryRequest { Name = "Updated Category", Description = "Updated Desc" };
-        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -384,9 +384,9 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsForbidden_WhenCategoryIsSystem()
     {
         // Arrange
-        var systemCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Unassigned Items", Description = "System", IsSystem = true };
+        var systemCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Unassigned Items", Description = "System", IsSystem = true };
         var request = new UpdateCategoryRequest { Name = "Try to Update", Description = "Updated Desc" };
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(systemCategory);
 
         // Act
@@ -401,9 +401,9 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsBadRequest_WhenRenamingToReservedName()
     {
         // Arrange
-        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Original", Description = "Original Desc", IsSystem = false };
+        var existingCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Original", Description = "Original Desc", IsSystem = false };
         var request = new UpdateCategoryRequest { Name = "Unassigned Items", Description = "Updated Desc" };
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingCategory);
 
         // Act
@@ -417,16 +417,16 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsNotFound_WhenUpdateReturnsNull()
     {
         // Arrange - simulates a race condition where category is deleted between get and update
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
-        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Original", Description = "Original Desc", IsSystem = false };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
+        var existingCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Original", Description = "Original Desc", IsSystem = false };
         var request = new UpdateCategoryRequest { Name = "Updated", Description = "Updated Desc" };
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingCategory);
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category> { existingCategory });
-        _mockRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Category>(), TestTenantId))
+        _mockRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Category>(), TestWorkspaceId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -444,10 +444,10 @@ public class CategoriesControllerTests
     public async Task DeleteCategory_ReturnsNoContent_WhenCategoryExists()
     {
         // Arrange
-        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "To Delete", Description = "Desc", IsSystem = false };
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        var existingCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "To Delete", Description = "Desc", IsSystem = false };
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingCategory);
-        _mockRepository.Setup(repo => repo.DeleteAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.DeleteAsync(1, TestWorkspaceId))
             .ReturnsAsync(true);
 
         // Act
@@ -461,7 +461,7 @@ public class CategoriesControllerTests
     public async Task DeleteCategory_ReturnsNotFound_WhenCategoryDoesNotExist()
     {
         // Arrange
-        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -475,8 +475,8 @@ public class CategoriesControllerTests
     public async Task DeleteCategory_ReturnsForbidden_WhenCategoryIsSystem()
     {
         // Arrange
-        var systemCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Unassigned Items", Description = "System", IsSystem = true };
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        var systemCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Unassigned Items", Description = "System", IsSystem = true };
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(systemCategory);
 
         // Act
@@ -491,10 +491,10 @@ public class CategoriesControllerTests
     public async Task DeleteCategory_ReturnsNotFound_WhenDeleteFails()
     {
         // Arrange - simulates a race condition where category is deleted between check and delete
-        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "To Delete", Description = "Desc", IsSystem = false };
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        var existingCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "To Delete", Description = "Desc", IsSystem = false };
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingCategory);
-        _mockRepository.Setup(repo => repo.DeleteAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.DeleteAsync(1, TestWorkspaceId))
             .ReturnsAsync(false);
 
         // Act
@@ -509,20 +509,20 @@ public class CategoriesControllerTests
     #region Security Tests
 
     [Fact]
-    public async Task CreateCategory_ReturnsBadRequest_WhenParentCategoryNotOwnedByTenant()
+    public async Task CreateCategory_ReturnsBadRequest_WhenParentCategoryNotOwnedByWorkspace()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection" };
         var request = new CreateCategoryRequest
         {
             Name = "New Category",
             CollectionId = TestCollectionId,
-            ParentCategoryId = 999  // Parent that doesn't belong to tenant
+            ParentCategoryId = 999  // Parent that doesn't belong to workspace
         };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -536,8 +536,8 @@ public class CategoriesControllerTests
     public async Task CreateCategory_ReturnsBadRequest_WhenParentCategoryBelongsToDifferentCollection()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
-        var parentCategory = new Category { Id = 99, TenantId = TestTenantId, CollectionId = 999, Name = "Parent in different collection" }; // Different collection
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection" };
+        var parentCategory = new Category { Id = 99, WorkspaceId = TestWorkspaceId, CollectionId = 999, Name = "Parent in different collection" }; // Different collection
         var request = new CreateCategoryRequest
         {
             Name = "New Category",
@@ -545,9 +545,9 @@ public class CategoriesControllerTests
             ParentCategoryId = 99
         };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockRepository.Setup(repo => repo.GetByIdAsync(99, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(99, TestWorkspaceId))
             .ReturnsAsync(parentCategory);
 
         // Act
@@ -558,22 +558,22 @@ public class CategoriesControllerTests
     }
 
     [Fact]
-    public async Task UpdateCategory_ReturnsBadRequest_WhenParentCategoryNotOwnedByTenant()
+    public async Task UpdateCategory_ReturnsBadRequest_WhenParentCategoryNotOwnedByWorkspace()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
-        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Existing", IsSystem = false };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
+        var existingCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Existing", IsSystem = false };
         var request = new UpdateCategoryRequest
         {
             Name = "Updated",
-            ParentCategoryId = 999  // Parent that doesn't belong to tenant
+            ParentCategoryId = 999  // Parent that doesn't belong to workspace
         };
 
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingCategory);
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category> { existingCategory });
 
         // Act
@@ -587,19 +587,19 @@ public class CategoriesControllerTests
     public async Task UpdateCategory_ReturnsBadRequest_WhenParentCategoryBelongsToDifferentCollection()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
-        var existingCategory = new Category { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Existing", IsSystem = false };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
+        var existingCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Existing", IsSystem = false };
         var request = new UpdateCategoryRequest
         {
             Name = "Updated",
             ParentCategoryId = 99  // Parent in different collection - won't be in categoryLookup
         };
 
-        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingCategory);
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category> { existingCategory }); // Parent not in this collection's categories
 
         // Act

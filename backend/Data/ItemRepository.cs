@@ -12,28 +12,28 @@ public class ItemRepository : IItemRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Item>> GetAllAsync(int tenantId)
+    public async Task<IEnumerable<Item>> GetAllAsync(int workspaceId)
     {
         return await _context.Items
             .AsNoTracking()
-            .Where(i => i.TenantId == tenantId)
+            .Where(i => i.WorkspaceId == workspaceId)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Item>> GetByCategoryIdsAsync(IEnumerable<int> categoryIds, int tenantId)
+    public async Task<IEnumerable<Item>> GetByCategoryIdsAsync(IEnumerable<int> categoryIds, int workspaceId)
     {
         var categoryIdSet = categoryIds.ToHashSet();
         return await _context.Items
             .AsNoTracking()
-            .Where(i => i.TenantId == tenantId && i.CategoryId != null && categoryIdSet.Contains(i.CategoryId.Value))
+            .Where(i => i.WorkspaceId == workspaceId && i.CategoryId != null && categoryIdSet.Contains(i.CategoryId.Value))
             .ToListAsync();
     }
 
-    public async Task<Item?> GetByIdAsync(int id, int tenantId)
+    public async Task<Item?> GetByIdAsync(int id, int workspaceId)
     {
         return await _context.Items
             .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == id && i.TenantId == tenantId);
+            .FirstOrDefaultAsync(i => i.Id == id && i.WorkspaceId == workspaceId);
     }
 
     public async Task<Item> CreateAsync(Item item)
@@ -43,10 +43,10 @@ public class ItemRepository : IItemRepository
         return item;
     }
 
-    public async Task<Item?> UpdateAsync(int id, Item item, int tenantId)
+    public async Task<Item?> UpdateAsync(int id, Item item, int workspaceId)
     {
         var existingItem = await _context.Items
-            .FirstOrDefaultAsync(i => i.Id == id && i.TenantId == tenantId);
+            .FirstOrDefaultAsync(i => i.Id == id && i.WorkspaceId == workspaceId);
 
         if (existingItem is null)
         {
@@ -66,10 +66,10 @@ public class ItemRepository : IItemRepository
         return existingItem;
     }
 
-    public async Task<bool> DeleteAsync(int id, int tenantId)
+    public async Task<bool> DeleteAsync(int id, int workspaceId)
     {
         var item = await _context.Items
-            .FirstOrDefaultAsync(i => i.Id == id && i.TenantId == tenantId);
+            .FirstOrDefaultAsync(i => i.Id == id && i.WorkspaceId == workspaceId);
 
         if (item is null)
         {

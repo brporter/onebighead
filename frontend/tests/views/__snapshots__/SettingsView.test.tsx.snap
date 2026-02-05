@@ -117,7 +117,7 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>
@@ -426,7 +426,7 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>
@@ -614,7 +614,7 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>
@@ -908,7 +908,7 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>
@@ -1123,7 +1123,7 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>
@@ -1341,7 +1341,7 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>
@@ -1543,7 +1543,7 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>
@@ -1870,7 +1870,7 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>
@@ -2076,7 +2076,7 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>
@@ -2408,7 +2408,7 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
                 <span
                   class="settings-nav__label"
                 >
-                  My Tenants
+                  My Workspaces
                 </span>
               </button>
             </li>

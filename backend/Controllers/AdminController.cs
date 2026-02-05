@@ -22,68 +22,68 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all tenants with usage statistics.
+    /// Gets all workspaces with usage statistics.
     /// </summary>
-    [HttpGet("tenants")]
-    public async Task<ActionResult<IEnumerable<TenantSummaryResponse>>> GetTenants()
+    [HttpGet("workspaces")]
+    public async Task<ActionResult<IEnumerable<WorkspaceSummaryResponse>>> GetWorkspaces()
     {
-        var tenants = await _context.Tenants
-            .Select(t => new TenantSummaryResponse
+        var workspaces = await _context.Workspaces
+            .Select(w => new WorkspaceSummaryResponse
             {
-                TenantId = t.Id,
-                Name = t.Name,
-                UserCount = t.TenantUsers.Count,
-                CollectionCount = t.Collections.Count,
-                ItemCount = _context.Items.Count(i => i.TenantId == t.Id),
+                WorkspaceId = w.Id,
+                Name = w.Name,
+                UserCount = w.WorkspaceUsers.Count,
+                CollectionCount = w.Collections.Count,
+                ItemCount = _context.Items.Count(i => i.WorkspaceId == w.Id),
                 ImageCount = 0,
-                CreatedAt = t.CreatedAt
+                CreatedAt = w.CreatedAt
             })
-            .OrderBy(t => t.Name)
+            .OrderBy(w => w.Name)
             .ToListAsync();
 
         // Calculate image counts client-side (Images is a JSON column, can't be counted in SQL)
-        var tenantIds = tenants.Select(t => t.TenantId).ToList();
+        var workspaceIds = workspaces.Select(w => w.WorkspaceId).ToList();
         var items = await _context.Items
-            .Where(i => tenantIds.Contains(i.TenantId))
-            .Select(i => new { i.TenantId, ImageCount = i.Images.Count })
+            .Where(i => workspaceIds.Contains(i.WorkspaceId))
+            .Select(i => new { i.WorkspaceId, ImageCount = i.Images.Count })
             .ToListAsync();
 
         var imageCounts = items
-            .GroupBy(i => i.TenantId)
+            .GroupBy(i => i.WorkspaceId)
             .ToDictionary(g => g.Key, g => g.Sum(i => i.ImageCount));
 
-        foreach (var tenant in tenants)
+        foreach (var workspace in workspaces)
         {
-            if (imageCounts.TryGetValue(tenant.TenantId, out var count))
+            if (imageCounts.TryGetValue(workspace.WorkspaceId, out var count))
             {
-                tenant.ImageCount = count;
+                workspace.ImageCount = count;
             }
         }
 
-        return Ok(tenants);
+        return Ok(workspaces);
     }
 
     /// <summary>
-    /// Deletes a tenant and all associated data.
+    /// Deletes a workspace and all associated data.
     /// </summary>
-    [HttpDelete("tenants/{id}")]
-    public async Task<IActionResult> DeleteTenant(int id)
+    [HttpDelete("workspaces/{id}")]
+    public async Task<IActionResult> DeleteWorkspace(int id)
     {
-        var tenant = await _context.Tenants
-            .Include(t => t.Collections)
+        var workspace = await _context.Workspaces
+            .Include(w => w.Collections)
                 .ThenInclude(c => c.Items)
-            .Include(t => t.Collections)
+            .Include(w => w.Collections)
                 .ThenInclude(c => c.Categories)
-            .Include(t => t.TenantUsers)
-            .FirstOrDefaultAsync(t => t.Id == id);
+            .Include(w => w.WorkspaceUsers)
+            .FirstOrDefaultAsync(w => w.Id == id);
 
-        if (tenant is null)
+        if (workspace is null)
         {
             return NotFound();
         }
 
         // Delete all related data (cascading should handle most, but be explicit)
-        _context.Tenants.Remove(tenant);
+        _context.Workspaces.Remove(workspace);
         await _context.SaveChangesAsync();
 
         return NoContent();
@@ -96,7 +96,7 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<IEnumerable<UserSummaryResponse>>> GetUsers([FromQuery] string? email = null)
     {
         var query = _context.Users
-            .Include(u => u.ActiveTenant)
+            .Include(u => u.ActiveWorkspace)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(email))
@@ -109,8 +109,8 @@ public class AdminController : ControllerBase
             {
                 UserId = u.Id,
                 Email = u.Email,
-                TenantId = u.ActiveTenantId,
-                TenantName = u.ActiveTenant != null ? u.ActiveTenant.Name : "",
+                WorkspaceId = u.ActiveWorkspaceId,
+                WorkspaceName = u.ActiveWorkspace != null ? u.ActiveWorkspace.Name : "",
                 IdentityProvider = u.IdentityProvider.ToString(),
                 IsSystemAdministrator = u.IsSystemAdministrator,
                 CreatedAt = u.CreatedAt
@@ -146,7 +146,7 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<UserSummaryResponse>> SetAdminStatus(int id, SetAdminStatusRequest request)
     {
         var user = await _context.Users
-            .Include(u => u.ActiveTenant)
+            .Include(u => u.ActiveWorkspace)
             .FirstOrDefaultAsync(u => u.Id == id);
 
         if (user is null)
@@ -161,8 +161,8 @@ public class AdminController : ControllerBase
         {
             UserId = user.Id,
             Email = user.Email,
-            TenantId = user.ActiveTenantId,
-            TenantName = user.ActiveTenant?.Name ?? "",
+            WorkspaceId = user.ActiveWorkspaceId,
+            WorkspaceName = user.ActiveWorkspace?.Name ?? "",
             IdentityProvider = user.IdentityProvider.ToString(),
             IsSystemAdministrator = user.IsSystemAdministrator,
             CreatedAt = user.CreatedAt
@@ -170,14 +170,14 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all system templates (TenantId = null).
+    /// Gets all system templates (WorkspaceId = null).
     /// </summary>
     [HttpGet("templates")]
     public async Task<ActionResult<IEnumerable<ItemTemplateResponse>>> GetSystemTemplates()
     {
         var templates = await _context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
-            .Where(t => t.TenantId == null)
+            .Where(t => t.WorkspaceId == null)
             .OrderBy(t => t.Name)
             .ToListAsync();
 
@@ -193,7 +193,7 @@ public class AdminController : ControllerBase
     {
         var template = new ItemTemplate
         {
-            TenantId = null, // System template
+            WorkspaceId = null, // System template
             Name = request.Name,
             Description = request.Description,
             CreatedAt = DateTime.UtcNow,
@@ -226,7 +226,7 @@ public class AdminController : ControllerBase
     {
         var template = await _context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
-            .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == null);
+            .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == null);
 
         if (template is null)
         {
@@ -244,7 +244,7 @@ public class AdminController : ControllerBase
     {
         var template = await _context.ItemTemplates
             .Include(t => t.Properties)
-            .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == null);
+            .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == null);
 
         if (template is null)
         {
@@ -282,7 +282,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> DeleteSystemTemplate(int id)
     {
         var template = await _context.ItemTemplates
-            .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == null);
+            .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == null);
 
         if (template is null)
         {

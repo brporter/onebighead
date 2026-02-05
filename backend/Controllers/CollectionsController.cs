@@ -35,16 +35,16 @@ public partial class CollectionsController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Collection>>> GetCollections()
     {
-        var tenantId = GetTenantId();
-        var collections = await _collectionRepository.GetAllAsync(tenantId);
+        var workspaceId = GetWorkspaceId();
+        var collections = await _collectionRepository.GetAllAsync(workspaceId);
         return Ok(collections);
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Collection>> GetCollection(int id)
     {
-        var tenantId = GetTenantId();
-        var collection = await _collectionRepository.GetByIdAsync(id, tenantId);
+        var workspaceId = GetWorkspaceId();
+        var collection = await _collectionRepository.GetByIdAsync(id, workspaceId);
         if (collection is null)
         {
             return NotFound();
@@ -55,8 +55,8 @@ public partial class CollectionsController : ApiControllerBase
     [HttpGet("by-slug/{slug}")]
     public async Task<ActionResult<Collection>> GetCollectionBySlug(string slug)
     {
-        var tenantId = GetTenantId();
-        var collection = await _collectionRepository.GetBySlugAsync(slug, tenantId);
+        var workspaceId = GetWorkspaceId();
+        var collection = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
         if (collection is null)
         {
             return NotFound();
@@ -65,15 +65,15 @@ public partial class CollectionsController : ApiControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "TenantAdmin")]
+    [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<ActionResult<Collection>> CreateCollection(CreateCollectionRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
         var slug = GenerateSlug(request.Name);
         
-        // Ensure slug is unique within tenant
-        var existing = await _collectionRepository.GetBySlugAsync(slug, tenantId);
+        // Ensure slug is unique within workspace
+        var existing = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
         if (existing is not null)
         {
             slug = $"{slug}-{DateTime.UtcNow.Ticks}";
@@ -81,7 +81,7 @@ public partial class CollectionsController : ApiControllerBase
 
         var collection = new Collection
         {
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
@@ -94,7 +94,7 @@ public partial class CollectionsController : ApiControllerBase
         // Create default "Unassigned Items" category for the new collection
         var unassignedCategory = new Category
         {
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             CollectionId = created.Id,
             Name = "Unassigned Items",
             Description = "Items that have not been assigned to a category",
@@ -110,10 +110,10 @@ public partial class CollectionsController : ApiControllerBase
     /// Used by the setup wizard for new users and when creating new collections.
     /// </summary>
     [HttpPost("setup")]
-    [Authorize(Policy = "TenantAdmin")]
+    [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<ActionResult<Collection>> SetupCollection(SetupCollectionRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
         // Get the theme
         var theme = await _themeRepository.GetByIdAsync(request.ThemeId);
@@ -124,8 +124,8 @@ public partial class CollectionsController : ApiControllerBase
 
         var slug = GenerateSlug(request.Name);
         
-        // Ensure slug is unique within tenant
-        var existing = await _collectionRepository.GetBySlugAsync(slug, tenantId);
+        // Ensure slug is unique within workspace
+        var existing = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
         if (existing is not null)
         {
             slug = $"{slug}-{DateTime.UtcNow.Ticks}";
@@ -133,7 +133,7 @@ public partial class CollectionsController : ApiControllerBase
 
         var collection = new Collection
         {
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
@@ -146,7 +146,7 @@ public partial class CollectionsController : ApiControllerBase
         // Create "Unassigned Items" system category
         var unassignedCategory = new Category
         {
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             CollectionId = created.Id,
             Name = "Unassigned Items",
             Description = "Items that have not been assigned to a category",
@@ -201,7 +201,7 @@ public partial class CollectionsController : ApiControllerBase
                 
                 categoriesToCreate.Add((tc, new Category
                 {
-                    TenantId = tenantId,
+                    WorkspaceId = workspaceId,
                     CollectionId = created.Id,
                     Name = tc.Name,
                     Description = tc.Description,
@@ -238,9 +238,9 @@ public partial class CollectionsController : ApiControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<Collection>> UpdateCollection(int id, UpdateCollectionRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        var existing = await _collectionRepository.GetByIdAsync(id, tenantId);
+        var existing = await _collectionRepository.GetByIdAsync(id, workspaceId);
         if (existing is null)
         {
             return NotFound();
@@ -249,7 +249,7 @@ public partial class CollectionsController : ApiControllerBase
         var slug = GenerateSlug(request.Name);
         
         // Check if slug is taken by another collection
-        var slugCollection = await _collectionRepository.GetBySlugAsync(slug, tenantId);
+        var slugCollection = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
         if (slugCollection is not null && slugCollection.Id != id)
         {
             slug = $"{slug}-{DateTime.UtcNow.Ticks}";
@@ -264,24 +264,24 @@ public partial class CollectionsController : ApiControllerBase
             Visibility = request.Visibility
         };
 
-        var updated = await _collectionRepository.UpdateAsync(id, collection, tenantId);
+        var updated = await _collectionRepository.UpdateAsync(id, collection, workspaceId);
         return Ok(updated);
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "TenantAdmin")]
+    [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<IActionResult> DeleteCollection(int id)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
         // Check if this is the last collection
-        var count = await _collectionRepository.GetCountAsync(tenantId);
+        var count = await _collectionRepository.GetCountAsync(workspaceId);
         if (count <= 1)
         {
             return BadRequest("Cannot delete the last collection. Users must have at least one collection.");
         }
 
-        var deleted = await _collectionRepository.DeleteAsync(id, tenantId);
+        var deleted = await _collectionRepository.DeleteAsync(id, workspaceId);
         if (!deleted)
         {
             return NotFound();
@@ -295,9 +295,9 @@ public partial class CollectionsController : ApiControllerBase
     [HttpGet("{id}/templates")]
     public async Task<ActionResult<IEnumerable<ItemTemplateResponse>>> GetCollectionTemplates(int id)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        var collection = await _collectionRepository.GetByIdAsync(id, tenantId);
+        var collection = await _collectionRepository.GetByIdAsync(id, workspaceId);
         if (collection is null)
         {
             return NotFound();
@@ -314,16 +314,16 @@ public partial class CollectionsController : ApiControllerBase
     [HttpPost("{id}/templates/{templateId}")]
     public async Task<IActionResult> AssociateTemplate(int id, int templateId)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        var collection = await _collectionRepository.GetByIdAsync(id, tenantId);
+        var collection = await _collectionRepository.GetByIdAsync(id, workspaceId);
         if (collection is null)
         {
             return NotFound("Collection not found");
         }
 
         // Verify template is accessible
-        var template = await _itemTemplateRepository.GetByIdAsync(templateId, tenantId);
+        var template = await _itemTemplateRepository.GetByIdAsync(templateId, workspaceId);
         if (template is null)
         {
             return NotFound("Template not found");
@@ -339,9 +339,9 @@ public partial class CollectionsController : ApiControllerBase
     [HttpDelete("{id}/templates/{templateId}")]
     public async Task<IActionResult> DisassociateTemplate(int id, int templateId)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        var collection = await _collectionRepository.GetByIdAsync(id, tenantId);
+        var collection = await _collectionRepository.GetByIdAsync(id, workspaceId);
         if (collection is null)
         {
             return NotFound("Collection not found");

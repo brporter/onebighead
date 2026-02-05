@@ -2,9 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OneBigHead.Server.DTOs;
 
-public class TenantSummaryResponse
+public class WorkspaceSummaryResponse
 {
-    public int TenantId { get; set; }
+    public int WorkspaceId { get; set; }
     public string Name { get; set; } = string.Empty;
     public int UserCount { get; set; }
     public int CollectionCount { get; set; }
@@ -17,8 +17,8 @@ public class UserSummaryResponse
 {
     public int UserId { get; set; }
     public string Email { get; set; } = string.Empty;
-    public int TenantId { get; set; }
-    public string TenantName { get; set; } = string.Empty;
+    public int WorkspaceId { get; set; }
+    public string WorkspaceName { get; set; } = string.Empty;
     public string IdentityProvider { get; set; } = string.Empty;
     public bool IsSystemAdministrator { get; set; }
     public DateTime CreatedAt { get; set; }

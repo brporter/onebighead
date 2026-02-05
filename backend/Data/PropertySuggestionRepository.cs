@@ -12,38 +12,38 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<PropertySuggestion>> GetByCollectionAsync(int collectionId, int tenantId)
+    public async Task<IEnumerable<PropertySuggestion>> GetByCollectionAsync(int collectionId, int workspaceId)
     {
         return await _context.PropertySuggestions
-            .Where(p => p.CollectionId == collectionId && p.TenantId == tenantId)
+            .Where(p => p.CollectionId == collectionId && p.WorkspaceId == workspaceId)
             .OrderBy(p => p.Type)
             .ThenBy(p => p.Value)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<string>> GetCategoriesAsync(int collectionId, int tenantId)
+    public async Task<IEnumerable<string>> GetCategoriesAsync(int collectionId, int workspaceId)
     {
         return await _context.PropertySuggestions
-            .Where(p => p.CollectionId == collectionId && p.TenantId == tenantId && p.Type == PropertySuggestionType.Category)
+            .Where(p => p.CollectionId == collectionId && p.WorkspaceId == workspaceId && p.Type == PropertySuggestionType.Category)
             .OrderBy(p => p.Value)
             .Select(p => p.Value)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<string>> GetNamesAsync(int collectionId, int tenantId)
+    public async Task<IEnumerable<string>> GetNamesAsync(int collectionId, int workspaceId)
     {
         return await _context.PropertySuggestions
-            .Where(p => p.CollectionId == collectionId && p.TenantId == tenantId && p.Type == PropertySuggestionType.Name)
+            .Where(p => p.CollectionId == collectionId && p.WorkspaceId == workspaceId && p.Type == PropertySuggestionType.Name)
             .OrderBy(p => p.Value)
             .Select(p => p.Value)
             .ToListAsync();
     }
 
-    public async Task SyncSuggestionsAsync(int collectionId, int tenantId, IEnumerable<string> categories, IEnumerable<string> names)
+    public async Task SyncSuggestionsAsync(int collectionId, int workspaceId, IEnumerable<string> categories, IEnumerable<string> names)
     {
         // Get all items in the collection to determine which suggestions are still valid
         var itemsInCollection = await _context.Items
-            .Where(i => i.CollectionId == collectionId && i.TenantId == tenantId)
+            .Where(i => i.CollectionId == collectionId && i.WorkspaceId == workspaceId)
             .ToListAsync();
 
         // Extract all unique property categories and names from items
@@ -67,12 +67,12 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
 
         // Get existing suggestions for this collection
         var existingSuggestions = await _context.PropertySuggestions
-            .Where(p => p.CollectionId == collectionId && p.TenantId == tenantId)
+            .Where(p => p.CollectionId == collectionId && p.WorkspaceId == workspaceId)
             .ToListAsync();
 
         // Remove suggestions that are no longer used
         var suggestionsToRemove = existingSuggestions
-            .Where(s => 
+            .Where(s =>
                 (s.Type == PropertySuggestionType.Category && !usedCategories.Contains(s.Value)) ||
                 (s.Type == PropertySuggestionType.Name && !usedNames.Contains(s.Value)))
             .ToList();
@@ -101,7 +101,7 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
             {
                 newSuggestions.Add(new PropertySuggestion
                 {
-                    TenantId = tenantId,
+                    WorkspaceId = workspaceId,
                     CollectionId = collectionId,
                     Type = PropertySuggestionType.Category,
                     Value = category
@@ -115,7 +115,7 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
             {
                 newSuggestions.Add(new PropertySuggestion
                 {
-                    TenantId = tenantId,
+                    WorkspaceId = workspaceId,
                     CollectionId = collectionId,
                     Type = PropertySuggestionType.Name,
                     Value = name

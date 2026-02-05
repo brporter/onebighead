@@ -19,7 +19,7 @@ vi.mock('../src/contexts/DataContext', () => ({
 describe('ItemEditor', () => {
   const mockItem: Item = {
     id: 1,
-    tenantId: 1,
+    workspaceId: 1,
     collectionId: 1,
     categoryId: 2,
     name: 'Test Item',
@@ -40,8 +40,8 @@ describe('ItemEditor', () => {
   };
 
   const mockCategories = [
-    { tenantId: 1, collectionId: 1, categoryId: 1, name: 'Category 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
-    { tenantId: 1, collectionId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, collectionId: 1, categoryId: 1, name: 'Category 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, collectionId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const defaultProps = {

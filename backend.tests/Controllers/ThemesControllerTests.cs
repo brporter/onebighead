@@ -21,7 +21,7 @@ public class ThemesControllerTests
 
         var claims = new List<Claim>
         {
-            new("tenant_id", "1"),
+            new("workspace_id", "1"),
             new("sub", "1"),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")

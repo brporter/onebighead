@@ -31,8 +31,8 @@ function renderWithRouter() {
 
 describe('CollectionView', () => {
   const mockCollections: Collection[] = [
-    { collectionId: 1, tenantId: 1, name: 'Collection One', description: 'First collection', heroImageUrl: null, slug: 'one' },
-    { collectionId: 2, tenantId: 1, name: 'Collection Two', description: 'Second collection', heroImageUrl: null, slug: 'two' },
+    { collectionId: 1, workspaceId: 1, name: 'Collection One', description: 'First collection', heroImageUrl: null, slug: 'one' },
+    { collectionId: 2, workspaceId: 1, name: 'Collection Two', description: 'Second collection', heroImageUrl: null, slug: 'two' },
   ];
 
   const mockDataContext = {

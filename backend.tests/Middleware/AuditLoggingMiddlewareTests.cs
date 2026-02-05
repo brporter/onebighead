@@ -29,23 +29,23 @@ public class AuditLoggingMiddlewareTests
         string method = "GET",
         string path = "/api/test",
         int? userId = null,
-        int? tenantId = null,
+        int? workspaceId = null,
         string? email = null)
     {
         var context = new DefaultHttpContext();
         context.Request.Method = method;
         context.Request.Path = path;
 
-        if (userId.HasValue || tenantId.HasValue || email != null)
+        if (userId.HasValue || workspaceId.HasValue || email != null)
         {
             var claims = new List<Claim>();
             if (userId.HasValue)
             {
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()));
             }
-            if (tenantId.HasValue)
+            if (workspaceId.HasValue)
             {
-                claims.Add(new Claim("tenant_id", tenantId.Value.ToString()));
+                claims.Add(new Claim("workspace_id", workspaceId.Value.ToString()));
             }
             if (email != null)
             {
@@ -101,7 +101,7 @@ public class AuditLoggingMiddlewareTests
             method: method,
             path: "/api/users",
             userId: 123,
-            tenantId: 456,
+            workspaceId: 456,
             email: "test@example.com");
 
         // Act
@@ -126,8 +126,8 @@ public class AuditLoggingMiddlewareTests
     [Theory]
     [InlineData("/api/users")]
     [InlineData("/api/users/123")]
-    [InlineData("/api/tenants")]
-    [InlineData("/api/tenants/1/settings")]
+    [InlineData("/api/workspaces")]
+    [InlineData("/api/workspaces/1/settings")]
     [InlineData("/api/collections")]
     [InlineData("/api/collections/1")]
     [InlineData("/api/categories")]
@@ -234,11 +234,11 @@ public class AuditLoggingMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_LogsTenantId_WhenPresent()
+    public async Task InvokeAsync_LogsWorkspaceId_WhenPresent()
     {
         // Arrange
         var middleware = new AuditLoggingMiddleware(_nextDelegate, _mockLogger.Object);
-        var context = CreateHttpContext(method: "POST", path: "/api/users", tenantId: 789);
+        var context = CreateHttpContext(method: "POST", path: "/api/users", workspaceId: 789);
 
         // Act
         await middleware.InvokeAsync(context);

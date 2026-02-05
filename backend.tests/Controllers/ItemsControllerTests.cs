@@ -18,7 +18,7 @@ public class ItemsControllerTests
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
     private readonly Mock<IVisibilityService> _mockVisibilityService;
     private readonly ItemsController _controller;
-    private const int TestTenantId = 1;
+    private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 1;
     private const int TestCategoryId = 1;
 
@@ -36,7 +36,7 @@ public class ItemsControllerTests
 
         var claims = new List<Claim>
         {
-            new("tenant_id", TestTenantId.ToString()),
+            new("workspace_id", TestWorkspaceId.ToString()),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")
         };
@@ -57,10 +57,10 @@ public class ItemsControllerTests
         // Arrange
         var items = new List<Item>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = TestCategoryId },
-            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Item 2", CategoryId = TestCategoryId }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = TestCategoryId },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 2", CategoryId = TestCategoryId }
         };
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(items);
 
         // Act
@@ -76,7 +76,7 @@ public class ItemsControllerTests
     public async Task GetItems_ReturnsOkResult_WithEmptyList_WhenNoItems()
     {
         // Arrange
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Item>());
 
         // Act
@@ -94,9 +94,9 @@ public class ItemsControllerTests
         // Arrange
         var items = new List<Item>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = TestCategoryId }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = TestCategoryId }
         };
-        _mockItemRepository.Setup(repo => repo.GetByCategoryIdsAsync(It.IsAny<IEnumerable<int>>(), TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetByCategoryIdsAsync(It.IsAny<IEnumerable<int>>(), TestWorkspaceId))
             .ReturnsAsync(items);
 
         // Act
@@ -114,18 +114,18 @@ public class ItemsControllerTests
         // Arrange
         var categories = new List<Category>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Parent", ParentCategoryId = null },
-            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Child", ParentCategoryId = 1 }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Parent", ParentCategoryId = null },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Child", ParentCategoryId = 1 }
         };
         var items = new List<Item>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = 1 },
-            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Item 2", CategoryId = 2 }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = 1 },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 2", CategoryId = 2 }
         };
 
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(categories);
-        _mockItemRepository.Setup(repo => repo.GetByCategoryIdsAsync(It.IsAny<IEnumerable<int>>(), TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetByCategoryIdsAsync(It.IsAny<IEnumerable<int>>(), TestWorkspaceId))
             .ReturnsAsync(items);
 
         // Act
@@ -135,7 +135,7 @@ public class ItemsControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         _mockItemRepository.Verify(repo => repo.GetByCategoryIdsAsync(
             It.Is<IEnumerable<int>>(ids => ids.Contains(1) && ids.Contains(2)),
-            TestTenantId), Times.Once);
+            TestWorkspaceId), Times.Once);
     }
 
     [Fact]
@@ -144,9 +144,9 @@ public class ItemsControllerTests
         // Arrange
         var items = new List<Item>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = TestCategoryId }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = TestCategoryId }
         };
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(items);
 
         // First call to get the ETag
@@ -172,8 +172,8 @@ public class ItemsControllerTests
     public async Task GetItem_ReturnsOkResult_WhenItemExists()
     {
         // Arrange
-        var item = new Item { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Item" };
-        _mockItemRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        var item = new Item { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Item" };
+        _mockItemRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(item);
 
         // Act
@@ -189,7 +189,7 @@ public class ItemsControllerTests
     public async Task GetItem_ReturnsNotFound_WhenItemDoesNotExist()
     {
         // Arrange
-        _mockItemRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockItemRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Item?)null);
 
         // Act
@@ -218,19 +218,19 @@ public class ItemsControllerTests
         var createdItem = new Item
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "New Item",
             Summary = "Summary",
             Description = "Description",
             CategoryId = TestCategoryId
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection", Visibility = Visibility.Private };
-        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
+        var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category" };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category> { category });
         _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
             .ReturnsAsync(createdItem);
@@ -264,21 +264,21 @@ public class ItemsControllerTests
         var updatedItem = new Item
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "Updated Item",
             Summary = "Updated Summary",
             Description = "Updated Description",
             CategoryId = TestCategoryId
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection", Visibility = Visibility.Private };
-        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
+        var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category" };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category> { category });
-        _mockItemRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Item>(), TestTenantId))
+        _mockItemRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Item>(), TestWorkspaceId))
             .ReturnsAsync(updatedItem);
 
         // Act
@@ -299,13 +299,13 @@ public class ItemsControllerTests
             Name = "Updated Item",
             CollectionId = TestCollectionId
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection", Visibility = Visibility.Private };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
-        _mockItemRepository.Setup(repo => repo.UpdateAsync(999, It.IsAny<Item>(), TestTenantId))
+        _mockItemRepository.Setup(repo => repo.UpdateAsync(999, It.IsAny<Item>(), TestWorkspaceId))
             .ReturnsAsync((Item?)null);
 
         // Act
@@ -323,7 +323,7 @@ public class ItemsControllerTests
     public async Task DeleteItem_ReturnsNoContent_WhenItemExists()
     {
         // Arrange
-        _mockItemRepository.Setup(repo => repo.DeleteAsync(1, TestTenantId))
+        _mockItemRepository.Setup(repo => repo.DeleteAsync(1, TestWorkspaceId))
             .ReturnsAsync(true);
 
         // Act
@@ -337,7 +337,7 @@ public class ItemsControllerTests
     public async Task DeleteItem_ReturnsNotFound_WhenItemDoesNotExist()
     {
         // Arrange
-        _mockItemRepository.Setup(repo => repo.DeleteAsync(999, TestTenantId))
+        _mockItemRepository.Setup(repo => repo.DeleteAsync(999, TestWorkspaceId))
             .ReturnsAsync(false);
 
         // Act
@@ -364,20 +364,20 @@ public class ItemsControllerTests
             CollectionId = TestCollectionId,
             UserFlag = UserFlag.Want
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection", Visibility = Visibility.Private };
-        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
+        var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category" };
 
         Item? capturedItem = null;
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category> { category });
         _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
             .Callback<Item>(item => capturedItem = item)
             .ReturnsAsync((Item item) => new Item
             {
                 Id = 1,
-                TenantId = item.TenantId,
+                WorkspaceId = item.WorkspaceId,
                 CollectionId = item.CollectionId,
                 Name = item.Name,
                 UserFlag = item.UserFlag
@@ -405,20 +405,20 @@ public class ItemsControllerTests
             CollectionId = TestCollectionId
             // UserFlag not set - should default to None
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection", Visibility = Visibility.Private };
-        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
+        var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category" };
 
         Item? capturedItem = null;
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category> { category });
         _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
             .Callback<Item>(item => capturedItem = item)
             .ReturnsAsync((Item item) => new Item
             {
                 Id = 1,
-                TenantId = item.TenantId,
+                WorkspaceId = item.WorkspaceId,
                 CollectionId = item.CollectionId,
                 Name = item.Name,
                 UserFlag = item.UserFlag
@@ -445,20 +445,20 @@ public class ItemsControllerTests
             CollectionId = TestCollectionId,
             UserFlag = UserFlag.TradeOrSell
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection", Visibility = Visibility.Private };
-        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = TestCollectionId, Name = "Test Category" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
+        var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category" };
 
         Item? capturedItem = null;
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category> { category });
-        _mockItemRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Item>(), TestTenantId))
-            .Callback<int, Item, int>((id, item, tenantId) => capturedItem = item)
-            .ReturnsAsync((int id, Item item, int tenantId) => new Item
+        _mockItemRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Item>(), TestWorkspaceId))
+            .Callback<int, Item, int>((id, item, workspaceId) => capturedItem = item)
+            .ReturnsAsync((int id, Item item, int workspaceId) => new Item
             {
                 Id = id,
-                TenantId = tenantId,
+                WorkspaceId = workspaceId,
                 CollectionId = item.CollectionId,
                 Name = item.Name,
                 UserFlag = item.UserFlag
@@ -489,19 +489,19 @@ public class ItemsControllerTests
             CollectionId = TestCollectionId,
             UserFlag = userFlag
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection", Visibility = Visibility.Private };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
 
         Item? capturedItem = null;
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(new List<Category>());
         _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
             .Callback<Item>(item => capturedItem = item)
             .ReturnsAsync((Item item) => new Item
             {
                 Id = 1,
-                TenantId = item.TenantId,
+                WorkspaceId = item.WorkspaceId,
                 CollectionId = item.CollectionId,
                 Name = item.Name,
                 UserFlag = item.UserFlag
@@ -520,16 +520,16 @@ public class ItemsControllerTests
     #region Security Tests
 
     [Fact]
-    public async Task CreateItem_ReturnsBadRequest_WhenCollectionNotOwnedByTenant()
+    public async Task CreateItem_ReturnsBadRequest_WhenCollectionNotOwnedByWorkspace()
     {
-        // Arrange - Collection returns null (not found for tenant)
+        // Arrange - Collection returns null (not found for workspace)
         var request = new CreateItemRequest
         {
             Name = "New Item",
-            CollectionId = 999  // Collection that doesn't belong to tenant
+            CollectionId = 999  // Collection that doesn't belong to workspace
         };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -540,20 +540,20 @@ public class ItemsControllerTests
     }
 
     [Fact]
-    public async Task CreateItem_ReturnsBadRequest_WhenCategoryNotOwnedByTenant()
+    public async Task CreateItem_ReturnsBadRequest_WhenCategoryNotOwnedByWorkspace()
     {
         // Arrange - Collection is valid but Category is not
         var request = new CreateItemRequest
         {
             Name = "New Item",
             CollectionId = TestCollectionId,
-            CategoryId = 999  // Category that doesn't belong to tenant
+            CategoryId = 999  // Category that doesn't belong to workspace
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection" };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Category?)null);
 
         // Act
@@ -573,12 +573,12 @@ public class ItemsControllerTests
             CollectionId = TestCollectionId,
             CategoryId = TestCategoryId
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection" };
-        var category = new Category { Id = TestCategoryId, TenantId = TestTenantId, CollectionId = 999, Name = "Test Category" }; // Different CollectionId
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection" };
+        var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = 999, Name = "Test Category" }; // Different CollectionId
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
             .ReturnsAsync(collection);
-        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(TestCategoryId, TestTenantId))
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(TestCategoryId, TestWorkspaceId))
             .ReturnsAsync(category);
 
         // Act
@@ -589,16 +589,16 @@ public class ItemsControllerTests
     }
 
     [Fact]
-    public async Task UpdateItem_ReturnsBadRequest_WhenCollectionNotOwnedByTenant()
+    public async Task UpdateItem_ReturnsBadRequest_WhenCollectionNotOwnedByWorkspace()
     {
         // Arrange
         var request = new UpdateItemRequest
         {
             Name = "Updated Item",
-            CollectionId = 999  // Collection that doesn't belong to tenant
+            CollectionId = 999  // Collection that doesn't belong to workspace
         };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act

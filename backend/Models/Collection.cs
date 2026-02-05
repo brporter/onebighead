@@ -10,7 +10,7 @@ public class Collection
     [JsonPropertyName("collectionId")]
     public int Id { get; set; }
 
-    public int TenantId { get; set; }
+    public int WorkspaceId { get; set; }
 
     [Required]
     [MaxLength(200)]
@@ -36,8 +36,8 @@ public class Collection
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     [JsonIgnore]
-    [ForeignKey(nameof(TenantId))]
-    public Tenant? Tenant { get; set; }
+    [ForeignKey(nameof(WorkspaceId))]
+    public Workspace? Workspace { get; set; }
 
     [JsonIgnore]
     public ICollection<Category> Categories { get; set; } = new List<Category>();

@@ -19,7 +19,7 @@ import { authApi } from '../src/api';
 const mockUser: CurrentUser = {
   userId: 1,
   email: 'test@example.com',
-  tenantId: 1,
+  workspaceId: 1,
   isSystemAdministrator: false,
 };
 

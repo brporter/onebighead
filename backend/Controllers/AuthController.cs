@@ -15,8 +15,8 @@ public class AuthController : ControllerBase
     private readonly IOidcTokenValidator _tokenValidator;
     private readonly ITokenService _tokenService;
     private readonly IUserRepository _userRepository;
-    private readonly ITenantRepository _tenantRepository;
-    private readonly ITenantUserRepository _tenantUserRepository;
+    private readonly IWorkspaceRepository _workspaceRepository;
+    private readonly IWorkspaceUserRepository _workspaceUserRepository;
     private readonly IOAuthService _oauthService;
     private readonly AuthenticationSettings _settings;
     private readonly ILogger<AuthController> _logger;
@@ -27,8 +27,8 @@ public class AuthController : ControllerBase
         IOidcTokenValidator tokenValidator,
         ITokenService tokenService,
         IUserRepository userRepository,
-        ITenantRepository tenantRepository,
-        ITenantUserRepository tenantUserRepository,
+        IWorkspaceRepository workspaceRepository,
+        IWorkspaceUserRepository workspaceUserRepository,
         IOAuthService oauthService,
         IOptions<AuthenticationSettings> settings,
         ILogger<AuthController> logger)
@@ -36,8 +36,8 @@ public class AuthController : ControllerBase
         _tokenValidator = tokenValidator;
         _tokenService = tokenService;
         _userRepository = userRepository;
-        _tenantRepository = tenantRepository;
-        _tenantUserRepository = tenantUserRepository;
+        _workspaceRepository = workspaceRepository;
+        _workspaceUserRepository = workspaceUserRepository;
         _oauthService = oauthService;
         _settings = settings.Value;
         _logger = logger;
@@ -176,14 +176,14 @@ public class AuthController : ControllerBase
         }
 
         // Look up or create user
-        var (user, tenantRole) = await GetOrCreateUser(identityProvider, validationResult);
+        var (user, workspaceRole) = await GetOrCreateUser(identityProvider, validationResult);
         if (user == null)
         {
             return RedirectToError("Failed to create user account");
         }
 
         // Generate app-specific JWT and set HTTP-only cookie
-        var appToken = _tokenService.GenerateAppToken(user, tenantRole);
+        var appToken = _tokenService.GenerateAppToken(user, workspaceRole);
         SetAuthCookie(appToken);
 
         // Get return URL and redirect
@@ -194,7 +194,7 @@ public class AuthController : ControllerBase
         return Redirect(returnUrl);
     }
 
-    private async Task<(User? user, TenantRole tenantRole)> GetOrCreateUser(IdentityProvider provider, OidcValidationResult validationResult)
+    private async Task<(User? user, WorkspaceRole workspaceRole)> GetOrCreateUser(IdentityProvider provider, OidcValidationResult validationResult)
     {
         // 1. Check for existing linked user by provider ID
         var user = await _userRepository.GetByProviderIdAsync(provider, validationResult.Subject!);
@@ -210,8 +210,8 @@ public class AuthController : ControllerBase
                     user.Id, user.Email);
             }
 
-            var membership = await _tenantUserRepository.GetMembershipAsync(user.Id, user.ActiveTenantId);
-            return (user, membership?.TenantRole ?? TenantRole.Normal);
+            var membership = await _workspaceUserRepository.GetMembershipAsync(user.Id, user.ActiveWorkspaceId);
+            return (user, membership?.WorkspaceRole ?? WorkspaceRole.Normal);
         }
 
         // 2. Check for pending user by email (email linking)
@@ -233,10 +233,10 @@ public class AuthController : ControllerBase
                 pendingUser.Id, provider, validationResult.Subject!);
             if (linkedUser != null)
             {
-                var membership = await _tenantUserRepository.GetMembershipAsync(linkedUser.Id, linkedUser.ActiveTenantId);
-                return (linkedUser, membership?.TenantRole ?? TenantRole.Normal);
+                var membership = await _workspaceUserRepository.GetMembershipAsync(linkedUser.Id, linkedUser.ActiveWorkspaceId);
+                return (linkedUser, membership?.WorkspaceRole ?? WorkspaceRole.Normal);
             }
-            return (null, TenantRole.Normal);
+            return (null, WorkspaceRole.Normal);
         }
 
         if (pendingUser != null)
@@ -252,18 +252,18 @@ public class AuthController : ControllerBase
                     pendingUser.Id, pendingUser.Email);
             }
             _logger.LogInformation("User {Email} authenticated with different provider", validationResult.Email);
-            var membership = await _tenantUserRepository.GetMembershipAsync(pendingUser.Id, pendingUser.ActiveTenantId);
-            return (pendingUser, membership?.TenantRole ?? TenantRole.Normal);
+            var membership = await _workspaceUserRepository.GetMembershipAsync(pendingUser.Id, pendingUser.ActiveWorkspaceId);
+            return (pendingUser, membership?.WorkspaceRole ?? WorkspaceRole.Normal);
         }
 
-        // 3. Auto-provision new user with new tenant (first-time signup)
+        // 3. Auto-provision new user with new workspace (first-time signup)
         _logger.LogInformation("Auto-provisioning new user with email {Email}", validationResult.Email);
-        var newUser = await _userRepository.CreateWithNewTenantAsync(
+        var newUser = await _userRepository.CreateWithNewWorkspaceAsync(
             validationResult.Email!,
             provider,
             validationResult.Subject!);
-        // New users are TenantAdmin of their own tenant
-        return (newUser, TenantRole.TenantAdmin);
+        // New users are WorkspaceAdmin of their own workspace
+        return (newUser, WorkspaceRole.WorkspaceAdmin);
     }
 
     private void SetAuthCookie(string token)
@@ -309,22 +309,22 @@ public class AuthController : ControllerBase
         }
 
         // Look up or create user
-        var (user, tenantRole) = await GetOrCreateUser(provider, validationResult);
+        var (user, workspaceRole) = await GetOrCreateUser(provider, validationResult);
         if (user == null)
         {
             return StatusCode(500, new { error = "Failed to create user account" });
         }
 
         // Generate app-specific JWT and set cookie
-        var appToken = _tokenService.GenerateAppToken(user, tenantRole);
+        var appToken = _tokenService.GenerateAppToken(user, workspaceRole);
         SetAuthCookie(appToken);
 
         return Ok(new AuthCallbackResponse
         {
             Success = true,
             Email = user.Email,
-            TenantId = user.ActiveTenantId,
-            TenantName = user.ActiveTenant?.Name ?? string.Empty
+            WorkspaceId = user.ActiveWorkspaceId,
+            WorkspaceName = user.ActiveWorkspace?.Name ?? string.Empty
         });
     }
 
@@ -345,56 +345,56 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
+        var workspaceIdClaim = User.FindFirst("workspace_id")?.Value;
         var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
         var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var tenantRoleClaim = User.FindFirst("tenant_role")?.Value;
+        var workspaceRoleClaim = User.FindFirst("workspace_role")?.Value;
         var isAdmin = User.IsInRole("SystemAdministrator");
 
-        if (string.IsNullOrEmpty(tenantIdClaim) || string.IsNullOrEmpty(userIdClaim) ||
-            !int.TryParse(tenantIdClaim, out var tenantId) || !int.TryParse(userIdClaim, out var userId))
+        if (string.IsNullOrEmpty(workspaceIdClaim) || string.IsNullOrEmpty(userIdClaim) ||
+            !int.TryParse(workspaceIdClaim, out var workspaceId) || !int.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
         }
-        var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+        var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
         var user = await _userRepository.GetByIdAsync(userId);
 
-        // Get all tenant memberships for this user (excluding deleted tenants)
-        var memberships = await _tenantUserRepository.GetByUserIdAsync(userId);
-        var tenantMemberships = memberships
-            .Where(m => m.Tenant != null && !m.Tenant.IsDeleted)
-            .Select(m => new TenantMembershipResponse
+        // Get all workspace memberships for this user (excluding deleted workspaces)
+        var memberships = await _workspaceUserRepository.GetByUserIdAsync(userId);
+        var workspaceMemberships = memberships
+            .Where(m => m.Workspace != null && !m.Workspace.IsDeleted)
+            .Select(m => new WorkspaceMembershipResponse
             {
-                TenantId = m.TenantId,
-                TenantName = m.Tenant!.Name,
-                TenantRole = m.TenantRole,
-                HasCompletedWelcome = m.Tenant.HasCompletedWelcome
+                WorkspaceId = m.WorkspaceId,
+                WorkspaceName = m.Workspace!.Name,
+                WorkspaceRole = m.WorkspaceRole,
+                HasCompletedWelcome = m.Workspace.HasCompletedWelcome
             }).ToList();
 
-        var activeTenantRole = tenantRoleClaim ?? "Normal";
+        var activeWorkspaceRole = workspaceRoleClaim ?? "Normal";
 
         return Ok(new
         {
             userId = userId,
             email = emailClaim,
-            // Active tenant info
-            activeTenant = new TenantMembershipResponse
+            // Active workspace info
+            activeWorkspace = new WorkspaceMembershipResponse
             {
-                TenantId = tenantId,
-                TenantName = tenant?.Name ?? string.Empty,
-                TenantRole = Enum.Parse<TenantRole>(activeTenantRole),
-                HasCompletedWelcome = tenant?.HasCompletedWelcome ?? false
+                WorkspaceId = workspaceId,
+                WorkspaceName = workspace?.Name ?? string.Empty,
+                WorkspaceRole = Enum.Parse<WorkspaceRole>(activeWorkspaceRole),
+                HasCompletedWelcome = workspace?.HasCompletedWelcome ?? false
             },
-            // All tenant memberships
-            tenants = tenantMemberships,
+            // All workspace memberships
+            workspaces = workspaceMemberships,
             // Legacy fields for backwards compatibility
-            tenantId = tenantId,
-            tenantName = tenant?.Name ?? string.Empty,
-            hasCompletedWelcome = tenant?.HasCompletedWelcome ?? false,
+            workspaceId = workspaceId,
+            workspaceName = workspace?.Name ?? string.Empty,
+            hasCompletedWelcome = workspace?.HasCompletedWelcome ?? false,
             hasAcceptedTerms = user?.HasAcceptedTerms ?? false,
             isSystemAdministrator = isAdmin,
-            tenantRole = activeTenantRole,
-            isTenantAdmin = activeTenantRole == "TenantAdmin"
+            workspaceRole = activeWorkspaceRole,
+            isWorkspaceAdmin = activeWorkspaceRole == "WorkspaceAdmin"
         });
     }
 
@@ -430,41 +430,41 @@ public class AuthController : ControllerBase
     [HttpPost("complete-welcome")]
     public async Task<IActionResult> CompleteWelcome([FromBody] CompleteWelcomeRequest request)
     {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
+        var workspaceIdClaim = User.FindFirst("workspace_id")?.Value;
         var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
 
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
+        if (string.IsNullOrEmpty(workspaceIdClaim) || !int.TryParse(workspaceIdClaim, out var workspaceId))
         {
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+        var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
 
-        if (tenant == null)
+        if (workspace == null)
         {
-            return NotFound(new { error = "Tenant not found" });
+            return NotFound(new { error = "Workspace not found" });
         }
 
-        // Update tenant name if provided, otherwise use the user's email address
-        if (!string.IsNullOrWhiteSpace(request.TenantName))
+        // Update workspace name if provided, otherwise use the user's email address
+        if (!string.IsNullOrWhiteSpace(request.WorkspaceName))
         {
-            tenant.Name = request.TenantName.Trim();
+            workspace.Name = request.WorkspaceName.Trim();
         }
         else if (!string.IsNullOrEmpty(emailClaim))
         {
-            tenant.Name = emailClaim;
+            workspace.Name = emailClaim;
         }
 
-        tenant.HasCompletedWelcome = true;
-        await _tenantRepository.UpdateAsync(tenant);
+        workspace.HasCompletedWelcome = true;
+        await _workspaceRepository.UpdateAsync(workspace);
 
-        _logger.LogInformation("Tenant {TenantId} completed welcome with name: {TenantName}", tenantId, tenant.Name);
+        _logger.LogInformation("Workspace {WorkspaceId} completed welcome with name: {WorkspaceName}", workspaceId, workspace.Name);
 
         return Ok(new
         {
-            tenantId = tenant.Id,
-            tenantName = tenant.Name,
-            hasCompletedWelcome = tenant.HasCompletedWelcome
+            workspaceId = workspace.Id,
+            workspaceName = workspace.Name,
+            hasCompletedWelcome = workspace.HasCompletedWelcome
         });
     }
 
@@ -486,7 +486,7 @@ public class AuthController : ControllerBase
 
         // Look up existing user by email
         var user = await _userRepository.GetByEmailAsync(email);
-        TenantRole tenantRole;
+        WorkspaceRole workspaceRole;
 
         if (user != null)
         {
@@ -499,22 +499,22 @@ public class AuthController : ControllerBase
                 _logger.LogInformation("DEV LOGIN: Restored soft-deleted user {UserId}", user.Id);
             }
 
-            var membership = await _tenantUserRepository.GetMembershipAsync(user.Id, user.ActiveTenantId);
-            tenantRole = membership?.TenantRole ?? TenantRole.Normal;
+            var membership = await _workspaceUserRepository.GetMembershipAsync(user.Id, user.ActiveWorkspaceId);
+            workspaceRole = membership?.WorkspaceRole ?? WorkspaceRole.Normal;
         }
         else
         {
-            // Create new user with new tenant
-            user = await _userRepository.CreateWithNewTenantAsync(
+            // Create new user with new workspace
+            user = await _userRepository.CreateWithNewWorkspaceAsync(
                 email,
                 IdentityProvider.Microsoft, // Use Microsoft as placeholder provider
                 $"dev-{Guid.NewGuid()}"); // Fake provider subject ID
-            tenantRole = TenantRole.TenantAdmin;
-            _logger.LogInformation("DEV LOGIN: Created new user {UserId} with tenant {TenantId}", user.Id, user.ActiveTenantId);
+            workspaceRole = WorkspaceRole.WorkspaceAdmin;
+            _logger.LogInformation("DEV LOGIN: Created new user {UserId} with workspace {WorkspaceId}", user.Id, user.ActiveWorkspaceId);
         }
 
         // Generate JWT and set cookie
-        var appToken = _tokenService.GenerateAppToken(user, tenantRole);
+        var appToken = _tokenService.GenerateAppToken(user, workspaceRole);
         SetAuthCookie(appToken);
 
         return Ok(new
@@ -522,8 +522,8 @@ public class AuthController : ControllerBase
             success = true,
             userId = user.Id,
             email = user.Email,
-            tenantId = user.ActiveTenantId,
-            tenantRole = tenantRole.ToString(),
+            workspaceId = user.ActiveWorkspaceId,
+            workspaceRole = workspaceRole.ToString(),
             isNewUser = user.CreatedAt > DateTime.UtcNow.AddSeconds(-5)
         });
     }

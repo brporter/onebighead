@@ -11,10 +11,10 @@ public class ItemTemplate
     public int Id { get; set; }
 
     /// <summary>
-    /// Null for shared/system templates (available to all tenants, read-only).
-    /// Set for tenant-owned templates (editable by tenant users).
+    /// Null for shared/system templates (available to all workspaces, read-only).
+    /// Set for workspace-owned templates (editable by workspace users).
     /// </summary>
-    public int? TenantId { get; set; }
+    public int? WorkspaceId { get; set; }
 
     [Required]
     [MaxLength(200)]
@@ -28,8 +28,8 @@ public class ItemTemplate
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     [JsonIgnore]
-    [ForeignKey(nameof(TenantId))]
-    public Tenant? Tenant { get; set; }
+    [ForeignKey(nameof(WorkspaceId))]
+    public Workspace? Workspace { get; set; }
 
     public ICollection<ItemTemplateProperty> Properties { get; set; } = new List<ItemTemplateProperty>();
 

@@ -31,15 +31,15 @@ public class ExportController : ApiControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "TenantAdmin")]
+    [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<IActionResult> ExportData()
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
-        var collections = await _collectionRepository.GetAllAsync(tenantId);
-        var categories = await _categoryRepository.GetAllAsync(tenantId);
-        var items = await _itemRepository.GetAllAsync(tenantId);
-        var itemTemplates = await _itemTemplateRepository.GetTenantTemplatesAsync(tenantId);
+        var collections = await _collectionRepository.GetAllAsync(workspaceId);
+        var categories = await _categoryRepository.GetAllAsync(workspaceId);
+        var items = await _itemRepository.GetAllAsync(workspaceId);
+        var itemTemplates = await _itemTemplateRepository.GetWorkspaceTemplatesAsync(workspaceId);
 
         var exportData = new ExportData
         {

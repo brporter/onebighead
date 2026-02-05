@@ -1,10 +1,10 @@
-import { TenantSwitcher } from './TenantSwitcher';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 interface SiteHeaderProps {
   title?: string;
   subtitle?: string;
   children?: React.ReactNode;
-  showTenantSwitcher?: boolean;
+  showWorkspaceSwitcher?: boolean;
   backLink?: {
     label: string;
     onClick: () => void;
@@ -15,7 +15,7 @@ export function SiteHeader({
   title,
   subtitle,
   children,
-  showTenantSwitcher = true,
+  showWorkspaceSwitcher = true,
   backLink
 }: SiteHeaderProps) {
   return (
@@ -23,7 +23,7 @@ export function SiteHeader({
       <div className="site-header__content">
         <div className="site-header__brand">
           <a href="/" className="site-header__logo">OneBigHead</a>
-          {showTenantSwitcher && <TenantSwitcher />}
+          {showWorkspaceSwitcher && <WorkspaceSwitcher />}
         </div>
         {(title || backLink) && (
           <div className="site-header__title-area">

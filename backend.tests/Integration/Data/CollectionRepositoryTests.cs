@@ -9,8 +9,8 @@ public class CollectionRepositoryTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly CollectionRepository _repository;
-    private const int TestTenantId = 1;
-    private const int OtherTenantId = 2;
+    private const int TestWorkspaceId = 1;
+    private const int OtherWorkspaceId = 2;
 
     public CollectionRepositoryTests()
     {
@@ -30,24 +30,24 @@ public class CollectionRepositoryTests : IDisposable
     #region GetAllAsync Tests
 
     [Fact]
-    public async Task GetAllAsync_ReturnsOnlyCollectionsForTenant()
+    public async Task GetAllAsync_ReturnsOnlyCollectionsForWorkspace()
     {
         // Arrange
         var collections = new List<Collection>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Collection 1", Slug = "collection-1" },
-            new() { Id = 2, TenantId = TestTenantId, Name = "Collection 2", Slug = "collection-2" },
-            new() { Id = 3, TenantId = OtherTenantId, Name = "Collection 3", Slug = "collection-3" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Collection 1", Slug = "collection-1" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Collection 2", Slug = "collection-2" },
+            new() { Id = 3, WorkspaceId = OtherWorkspaceId, Name = "Collection 3", Slug = "collection-3" }
         };
         await _context.Collections.AddRangeAsync(collections);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetAllAsync(TestTenantId);
+        var result = await _repository.GetAllAsync(TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count());
-        Assert.All(result, c => Assert.Equal(TestTenantId, c.TenantId));
+        Assert.All(result, c => Assert.Equal(TestWorkspaceId, c.WorkspaceId));
     }
 
     [Fact]
@@ -56,15 +56,15 @@ public class CollectionRepositoryTests : IDisposable
         // Arrange
         var collections = new List<Collection>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Zebra", Slug = "zebra" },
-            new() { Id = 2, TenantId = TestTenantId, Name = "Apple", Slug = "apple" },
-            new() { Id = 3, TenantId = TestTenantId, Name = "Mango", Slug = "mango" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Zebra", Slug = "zebra" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Apple", Slug = "apple" },
+            new() { Id = 3, WorkspaceId = TestWorkspaceId, Name = "Mango", Slug = "mango" }
         };
         await _context.Collections.AddRangeAsync(collections);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = (await _repository.GetAllAsync(TestTenantId)).ToList();
+        var result = (await _repository.GetAllAsync(TestWorkspaceId)).ToList();
 
         // Assert
         Assert.Equal("Apple", result[0].Name);
@@ -76,7 +76,7 @@ public class CollectionRepositoryTests : IDisposable
     public async Task GetAllAsync_ReturnsEmptyList_WhenNoCollectionsExist()
     {
         // Act
-        var result = await _repository.GetAllAsync(TestTenantId);
+        var result = await _repository.GetAllAsync(TestWorkspaceId);
 
         // Assert
         Assert.Empty(result);
@@ -90,12 +90,12 @@ public class CollectionRepositoryTests : IDisposable
     public async Task GetByIdAsync_ReturnsCollection_WhenExists()
     {
         // Arrange
-        var collection = new Collection { Id = 1, TenantId = TestTenantId, Name = "Test Collection", Slug = "test" };
+        var collection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test" };
         await _context.Collections.AddAsync(collection);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByIdAsync(1, TestTenantId);
+        var result = await _repository.GetByIdAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.NotNull(result);
@@ -106,22 +106,22 @@ public class CollectionRepositoryTests : IDisposable
     public async Task GetByIdAsync_ReturnsNull_WhenCollectionDoesNotExist()
     {
         // Act
-        var result = await _repository.GetByIdAsync(999, TestTenantId);
+        var result = await _repository.GetByIdAsync(999, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsNull_WhenDifferentTenant()
+    public async Task GetByIdAsync_ReturnsNull_WhenDifferentWorkspace()
     {
         // Arrange
-        var collection = new Collection { Id = 1, TenantId = OtherTenantId, Name = "Test Collection", Slug = "test" };
+        var collection = new Collection { Id = 1, WorkspaceId = OtherWorkspaceId, Name = "Test Collection", Slug = "test" };
         await _context.Collections.AddAsync(collection);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByIdAsync(1, TestTenantId);
+        var result = await _repository.GetByIdAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
@@ -135,12 +135,12 @@ public class CollectionRepositoryTests : IDisposable
     public async Task GetBySlugAsync_ReturnsCollection_WhenExists()
     {
         // Arrange
-        var collection = new Collection { Id = 1, TenantId = TestTenantId, Name = "Test Collection", Slug = "test-collection" };
+        var collection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
         await _context.Collections.AddAsync(collection);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetBySlugAsync("test-collection", TestTenantId);
+        var result = await _repository.GetBySlugAsync("test-collection", TestWorkspaceId);
 
         // Assert
         Assert.NotNull(result);
@@ -151,22 +151,22 @@ public class CollectionRepositoryTests : IDisposable
     public async Task GetBySlugAsync_ReturnsNull_WhenSlugDoesNotExist()
     {
         // Act
-        var result = await _repository.GetBySlugAsync("nonexistent", TestTenantId);
+        var result = await _repository.GetBySlugAsync("nonexistent", TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task GetBySlugAsync_ReturnsNull_WhenDifferentTenant()
+    public async Task GetBySlugAsync_ReturnsNull_WhenDifferentWorkspace()
     {
         // Arrange
-        var collection = new Collection { Id = 1, TenantId = OtherTenantId, Name = "Test Collection", Slug = "test-collection" };
+        var collection = new Collection { Id = 1, WorkspaceId = OtherWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
         await _context.Collections.AddAsync(collection);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetBySlugAsync("test-collection", TestTenantId);
+        var result = await _repository.GetBySlugAsync("test-collection", TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
@@ -182,7 +182,7 @@ public class CollectionRepositoryTests : IDisposable
         // Arrange
         var collection = new Collection
         {
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "New Collection",
             Description = "Description",
             Slug = "new-collection"
@@ -204,7 +204,7 @@ public class CollectionRepositoryTests : IDisposable
         // Arrange
         var collection = new Collection
         {
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "New Collection",
             Slug = "new-collection"
         };
@@ -214,7 +214,7 @@ public class CollectionRepositoryTests : IDisposable
 
         // Assert
         Assert.Equal("New Collection", result.Name);
-        Assert.Equal(TestTenantId, result.TenantId);
+        Assert.Equal(TestWorkspaceId, result.WorkspaceId);
     }
 
     #endregion
@@ -228,7 +228,7 @@ public class CollectionRepositoryTests : IDisposable
         var collection = new Collection
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "Original Name",
             Description = "Original Description",
             Slug = "original"
@@ -245,7 +245,7 @@ public class CollectionRepositoryTests : IDisposable
         };
 
         // Act
-        var result = await _repository.UpdateAsync(1, updatedCollection, TestTenantId);
+        var result = await _repository.UpdateAsync(1, updatedCollection, TestWorkspaceId);
 
         // Assert
         Assert.NotNull(result);
@@ -261,17 +261,17 @@ public class CollectionRepositoryTests : IDisposable
         var updatedCollection = new Collection { Name = "Updated Name", Slug = "updated" };
 
         // Act
-        var result = await _repository.UpdateAsync(999, updatedCollection, TestTenantId);
+        var result = await _repository.UpdateAsync(999, updatedCollection, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task UpdateAsync_ReturnsNull_WhenDifferentTenant()
+    public async Task UpdateAsync_ReturnsNull_WhenDifferentWorkspace()
     {
         // Arrange
-        var collection = new Collection { Id = 1, TenantId = OtherTenantId, Name = "Test Collection", Slug = "test" };
+        var collection = new Collection { Id = 1, WorkspaceId = OtherWorkspaceId, Name = "Test Collection", Slug = "test" };
         await _context.Collections.AddAsync(collection);
         await _context.SaveChangesAsync();
         _context.Entry(collection).State = EntityState.Detached;
@@ -279,7 +279,7 @@ public class CollectionRepositoryTests : IDisposable
         var updatedCollection = new Collection { Name = "Updated Name", Slug = "updated" };
 
         // Act
-        var result = await _repository.UpdateAsync(1, updatedCollection, TestTenantId);
+        var result = await _repository.UpdateAsync(1, updatedCollection, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
@@ -293,12 +293,12 @@ public class CollectionRepositoryTests : IDisposable
     public async Task DeleteAsync_ReturnsTrue_WhenCollectionExists()
     {
         // Arrange
-        var collection = new Collection { Id = 1, TenantId = TestTenantId, Name = "Test Collection", Slug = "test" };
+        var collection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test" };
         await _context.Collections.AddAsync(collection);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(1, TestTenantId);
+        var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.True(result);
@@ -309,22 +309,22 @@ public class CollectionRepositoryTests : IDisposable
     public async Task DeleteAsync_ReturnsFalse_WhenCollectionDoesNotExist()
     {
         // Act
-        var result = await _repository.DeleteAsync(999, TestTenantId);
+        var result = await _repository.DeleteAsync(999, TestWorkspaceId);
 
         // Assert
         Assert.False(result);
     }
 
     [Fact]
-    public async Task DeleteAsync_ReturnsFalse_WhenDifferentTenant()
+    public async Task DeleteAsync_ReturnsFalse_WhenDifferentWorkspace()
     {
         // Arrange
-        var collection = new Collection { Id = 1, TenantId = OtherTenantId, Name = "Test Collection", Slug = "test" };
+        var collection = new Collection { Id = 1, WorkspaceId = OtherWorkspaceId, Name = "Test Collection", Slug = "test" };
         await _context.Collections.AddAsync(collection);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(1, TestTenantId);
+        var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.False(result);
@@ -341,15 +341,15 @@ public class CollectionRepositoryTests : IDisposable
         // Arrange
         var collections = new List<Collection>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Collection 1", Slug = "collection-1" },
-            new() { Id = 2, TenantId = TestTenantId, Name = "Collection 2", Slug = "collection-2" },
-            new() { Id = 3, TenantId = OtherTenantId, Name = "Collection 3", Slug = "collection-3" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Collection 1", Slug = "collection-1" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Collection 2", Slug = "collection-2" },
+            new() { Id = 3, WorkspaceId = OtherWorkspaceId, Name = "Collection 3", Slug = "collection-3" }
         };
         await _context.Collections.AddRangeAsync(collections);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetCountAsync(TestTenantId);
+        var result = await _repository.GetCountAsync(TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result);
@@ -359,7 +359,7 @@ public class CollectionRepositoryTests : IDisposable
     public async Task GetCountAsync_ReturnsZero_WhenNoCollections()
     {
         // Act
-        var result = await _repository.GetCountAsync(TestTenantId);
+        var result = await _repository.GetCountAsync(TestWorkspaceId);
 
         // Assert
         Assert.Equal(0, result);

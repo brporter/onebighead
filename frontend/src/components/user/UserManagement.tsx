@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usersApi } from '../../api';
 import { useUser } from '../../contexts/UserContext';
-import type { TenantUser } from '../../utils/types';
-import { TenantRole } from '../../utils/types';
+import type { WorkspaceUser } from '../../utils/types';
+import { WorkspaceRole } from '../../utils/types';
 import '../../styles/UserManagement.css';
 
 interface UserManagementProps {
@@ -11,11 +11,11 @@ interface UserManagementProps {
 
 function UserManagement({ onDirtyChange }: UserManagementProps) {
   const { user: currentUser } = useUser();
-  const [users, setUsers] = useState<TenantUser[]>([]);
+  const [users, setUsers] = useState<WorkspaceUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<TenantRole>(TenantRole.Normal);
+  const [inviteRole, setInviteRole] = useState<WorkspaceRole>(WorkspaceRole.Normal);
   const [isInviting, setIsInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -66,7 +66,7 @@ function UserManagement({ onDirtyChange }: UserManagementProps) {
     try {
       await usersApi.inviteUser({ email: inviteEmail.trim(), role: inviteRole });
       setInviteEmail('');
-      setInviteRole(TenantRole.Normal);
+      setInviteRole(WorkspaceRole.Normal);
       await loadUsers();
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Failed to invite user');
@@ -75,14 +75,14 @@ function UserManagement({ onDirtyChange }: UserManagementProps) {
     }
   };
 
-  const handleRoleChange = async (userId: number, newRole: TenantRole) => {
+  const handleRoleChange = async (userId: number, newRole: WorkspaceRole) => {
     if (updatingUserId) return;
 
     // Confirm demoting admin
-    if (newRole === TenantRole.Normal) {
-      const adminCount = users.filter(u => u.tenantRole === TenantRole.TenantAdmin).length;
+    if (newRole === WorkspaceRole.Normal) {
+      const adminCount = users.filter(u => u.workspaceRole === WorkspaceRole.WorkspaceAdmin).length;
       const targetUser = users.find(u => u.userId === userId);
-      if (targetUser?.tenantRole === TenantRole.TenantAdmin && adminCount <= 1) {
+      if (targetUser?.workspaceRole === WorkspaceRole.WorkspaceAdmin && adminCount <= 1) {
         alert('Cannot demote the last admin. Promote another user first.');
         return;
       }
@@ -106,8 +106,8 @@ function UserManagement({ onDirtyChange }: UserManagementProps) {
     if (!targetUser) return;
 
     // Check if removing last admin
-    const adminCount = users.filter(u => u.tenantRole === TenantRole.TenantAdmin).length;
-    if (targetUser.tenantRole === TenantRole.TenantAdmin && adminCount <= 1) {
+    const adminCount = users.filter(u => u.workspaceRole === WorkspaceRole.WorkspaceAdmin).length;
+    if (targetUser.workspaceRole === WorkspaceRole.WorkspaceAdmin && adminCount <= 1) {
       alert('Cannot remove the last admin. Promote another user first.');
       return;
     }
@@ -167,11 +167,11 @@ function UserManagement({ onDirtyChange }: UserManagementProps) {
           <select
             className="userManagement__inviteRole"
             value={inviteRole}
-            onChange={(e) => setInviteRole(e.target.value as TenantRole)}
+            onChange={(e) => setInviteRole(e.target.value as WorkspaceRole)}
             disabled={isInviting}
           >
-            <option value={TenantRole.Normal}>Member</option>
-            <option value={TenantRole.TenantAdmin}>Admin</option>
+            <option value={WorkspaceRole.Normal}>Member</option>
+            <option value={WorkspaceRole.WorkspaceAdmin}>Admin</option>
           </select>
           <button
             type="submit"
@@ -220,13 +220,13 @@ function UserManagement({ onDirtyChange }: UserManagementProps) {
               <div className="userManagement__userActions">
                 <select
                   className="userManagement__roleSelect"
-                  value={user.tenantRole}
-                  onChange={(e) => handleRoleChange(user.userId, e.target.value as TenantRole)}
+                  value={user.workspaceRole}
+                  onChange={(e) => handleRoleChange(user.userId, e.target.value as WorkspaceRole)}
                   disabled={isCurrentUser || isUpdating}
                   title={isCurrentUser ? "You cannot change your own role" : undefined}
                 >
-                  <option value={TenantRole.Normal}>Member</option>
-                  <option value={TenantRole.TenantAdmin}>Admin</option>
+                  <option value={WorkspaceRole.Normal}>Member</option>
+                  <option value={WorkspaceRole.WorkspaceAdmin}>Admin</option>
                 </select>
 
                 <button

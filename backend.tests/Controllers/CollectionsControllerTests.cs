@@ -19,7 +19,7 @@ public class CollectionsControllerTests
     private readonly Mock<IThemeRepository> _mockThemeRepository;
     private readonly Mock<ILogger<CollectionsController>> _mockLogger;
     private readonly CollectionsController _controller;
-    private const int TestTenantId = 1;
+    private const int TestWorkspaceId = 1;
     private const int TestUserId = 1;
 
     public CollectionsControllerTests()
@@ -38,7 +38,7 @@ public class CollectionsControllerTests
 
         var claims = new List<Claim>
         {
-            new("tenant_id", TestTenantId.ToString()),
+            new("workspace_id", TestWorkspaceId.ToString()),
             new("sub", TestUserId.ToString()),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")
@@ -60,10 +60,10 @@ public class CollectionsControllerTests
         // Arrange
         var collections = new List<Collection>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Collection 1", Slug = "collection-1" },
-            new() { Id = 2, TenantId = TestTenantId, Name = "Collection 2", Slug = "collection-2" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Collection 1", Slug = "collection-1" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Collection 2", Slug = "collection-2" }
         };
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(collections);
 
         // Act
@@ -79,7 +79,7 @@ public class CollectionsControllerTests
     public async Task GetCollections_ReturnsOkResult_WithEmptyList_WhenNoCollections()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
             .ReturnsAsync(new List<Collection>());
 
         // Act
@@ -99,8 +99,8 @@ public class CollectionsControllerTests
     public async Task GetCollection_ReturnsOkResult_WhenCollectionExists()
     {
         // Arrange
-        var collection = new Collection { Id = 1, TenantId = TestTenantId, Name = "Test Collection", Slug = "test-collection" };
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        var collection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(collection);
 
         // Act
@@ -116,7 +116,7 @@ public class CollectionsControllerTests
     public async Task GetCollection_ReturnsNotFound_WhenCollectionDoesNotExist()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -134,8 +134,8 @@ public class CollectionsControllerTests
     public async Task GetCollectionBySlug_ReturnsOkResult_WhenCollectionExists()
     {
         // Arrange
-        var collection = new Collection { Id = 1, TenantId = TestTenantId, Name = "Test Collection", Slug = "test-collection" };
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("test-collection", TestTenantId))
+        var collection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test-collection" };
+        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("test-collection", TestWorkspaceId))
             .ReturnsAsync(collection);
 
         // Act
@@ -151,7 +151,7 @@ public class CollectionsControllerTests
     public async Task GetCollectionBySlug_ReturnsNotFound_WhenCollectionDoesNotExist()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("nonexistent", TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("nonexistent", TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -177,13 +177,13 @@ public class CollectionsControllerTests
         var createdCollection = new Collection
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "New Collection",
             Description = "Description",
             Slug = "new-collection"
         };
 
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("new-collection", TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("new-collection", TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
         _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
             .ReturnsAsync(createdCollection);
@@ -208,16 +208,16 @@ public class CollectionsControllerTests
         {
             Name = "Test Collection"
         };
-        var existingCollection = new Collection { Id = 1, TenantId = TestTenantId, Name = "Test", Slug = "test-collection" };
+        var existingCollection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test-collection" };
         var createdCollection = new Collection
         {
             Id = 2,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "Test Collection",
             Slug = "test-collection-123"
         };
 
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("test-collection", TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("test-collection", TestWorkspaceId))
             .ReturnsAsync(existingCollection);
         _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
             .ReturnsAsync(createdCollection);
@@ -238,9 +238,9 @@ public class CollectionsControllerTests
     {
         // Arrange
         var request = new CreateCollectionRequest { Name = "New Collection" };
-        var createdCollection = new Collection { Id = 1, TenantId = TestTenantId, Name = "New Collection", Slug = "new-collection" };
+        var createdCollection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "New Collection", Slug = "new-collection" };
 
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync(It.IsAny<string>(), TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync(It.IsAny<string>(), TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
         _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
             .ReturnsAsync(createdCollection);
@@ -268,21 +268,21 @@ public class CollectionsControllerTests
             Name = "Updated Collection",
             Description = "Updated Description"
         };
-        var existingCollection = new Collection { Id = 1, TenantId = TestTenantId, Name = "Old Name", Slug = "old-name" };
+        var existingCollection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Old Name", Slug = "old-name" };
         var updatedCollection = new Collection
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "Updated Collection",
             Description = "Updated Description",
             Slug = "updated-collection"
         };
 
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingCollection);
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("updated-collection", TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("updated-collection", TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
-        _mockCollectionRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Collection>(), TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Collection>(), TestWorkspaceId))
             .ReturnsAsync(updatedCollection);
 
         // Act
@@ -299,7 +299,7 @@ public class CollectionsControllerTests
     {
         // Arrange
         var request = new UpdateCollectionRequest { Name = "Updated Collection" };
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((Collection?)null);
 
         // Act
@@ -317,9 +317,9 @@ public class CollectionsControllerTests
     public async Task DeleteCollection_ReturnsNoContent_WhenCollectionExists()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetCountAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetCountAsync(TestWorkspaceId))
             .ReturnsAsync(2);
-        _mockCollectionRepository.Setup(repo => repo.DeleteAsync(1, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.DeleteAsync(1, TestWorkspaceId))
             .ReturnsAsync(true);
 
         // Act
@@ -333,9 +333,9 @@ public class CollectionsControllerTests
     public async Task DeleteCollection_ReturnsNotFound_WhenCollectionDoesNotExist()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetCountAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetCountAsync(TestWorkspaceId))
             .ReturnsAsync(2);
-        _mockCollectionRepository.Setup(repo => repo.DeleteAsync(999, TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.DeleteAsync(999, TestWorkspaceId))
             .ReturnsAsync(false);
 
         // Act
@@ -349,7 +349,7 @@ public class CollectionsControllerTests
     public async Task DeleteCollection_ReturnsBadRequest_WhenDeletingLastCollection()
     {
         // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetCountAsync(TestTenantId))
+        _mockCollectionRepository.Setup(repo => repo.GetCountAsync(TestWorkspaceId))
             .ReturnsAsync(1);
 
         // Act
@@ -395,7 +395,7 @@ public class CollectionsControllerTests
         var createdCollection = new Collection
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "Test Collection",
             Slug = "test-collection"
         };
@@ -443,7 +443,7 @@ public class CollectionsControllerTests
         var createdCollection = new Collection
         {
             Id = 5,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "My Books",
             Slug = "my-books"
         };
@@ -487,7 +487,7 @@ public class CollectionsControllerTests
         var createdCollection = new Collection
         {
             Id = 5,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "My Books",
             Slug = "my-books"
         };

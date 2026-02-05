@@ -125,18 +125,18 @@ public class ItemsControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task GetItem_OtherTenantItem_ReturnsNotFound()
+    public async Task GetItem_OtherWorkspaceItem_ReturnsNotFound()
     {
-        // Arrange - Create item in another tenant
+        // Arrange - Create item in another workspace
         await Factory.SeedDatabaseAsync(context =>
         {
-            var tenant = new Tenant { Id = 10, Name = "Other Tenant" };
-            context.Tenants.Add(tenant);
+            var workspace = new Workspace { Id = 10, Name = "Other Workspace" };
+            context.Workspaces.Add(workspace);
 
             var collection = new Collection
             {
                 Id = 10,
-                TenantId = 10,
+                WorkspaceId = 10,
                 Name = "Other Collection",
                 Slug = "other"
             };
@@ -145,9 +145,9 @@ public class ItemsControllerTests : IntegrationTestBase
             var item = new Item
             {
                 Id = 1000,
-                TenantId = 10,
+                WorkspaceId = 10,
                 CollectionId = 10,
-                Name = "Other Tenant Item"
+                Name = "Other Workspace Item"
             };
             context.Items.Add(item);
         });
@@ -188,7 +188,7 @@ public class ItemsControllerTests : IntegrationTestBase
         Assert.NotNull(created);
         Assert.Equal("New Item", created.Name);
         Assert.Equal("Item summary", created.Summary);
-        Assert.Equal(DefaultTenantId, created.TenantId);
+        Assert.Equal(DefaultWorkspaceId, created.WorkspaceId);
         Assert.Single(created.Properties);
         Assert.Equal("Blue", created.Properties[0].Value);
     }

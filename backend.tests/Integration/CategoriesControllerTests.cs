@@ -97,18 +97,18 @@ public class CategoriesControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task GetCategory_OtherTenantCategory_ReturnsNotFound()
+    public async Task GetCategory_OtherWorkspaceCategory_ReturnsNotFound()
     {
         // Arrange
         await Factory.SeedDatabaseAsync(context =>
         {
-            var tenant = new Tenant { Id = 20, Name = "Other" };
-            context.Tenants.Add(tenant);
+            var workspace = new Workspace { Id = 20, Name = "Other" };
+            context.Workspaces.Add(workspace);
 
             var collection = new Collection
             {
                 Id = 20,
-                TenantId = 20,
+                WorkspaceId = 20,
                 Name = "Other Collection",
                 Slug = "other"
             };
@@ -117,7 +117,7 @@ public class CategoriesControllerTests : IntegrationTestBase
             var category = new Category
             {
                 Id = 2000,
-                TenantId = 20,
+                WorkspaceId = 20,
                 CollectionId = 20,
                 Name = "Other Category"
             };
@@ -155,7 +155,7 @@ public class CategoriesControllerTests : IntegrationTestBase
         Assert.NotNull(created);
         Assert.Equal("New Category", created.Name);
         Assert.Equal("A new category", created.Description);
-        Assert.Equal(DefaultTenantId, created.TenantId);
+        Assert.Equal(DefaultWorkspaceId, created.WorkspaceId);
         Assert.False(created.IsSystem);
     }
 

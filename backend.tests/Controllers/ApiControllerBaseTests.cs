@@ -8,8 +8,8 @@ namespace OneBigHead.Server.Tests.Controllers;
 // Concrete implementation to test abstract base class
 public class TestableApiController : ApiControllerBase
 {
-    public int TestGetTenantId() => GetTenantId();
-    public int? TestTryGetTenantId() => TryGetTenantId();
+    public int TestGetWorkspaceId() => GetWorkspaceId();
+    public int? TestTryGetWorkspaceId() => TryGetWorkspaceId();
     public int TestGetUserId() => GetUserId();
 }
 
@@ -33,105 +33,105 @@ public class ApiControllerBaseTests
         };
     }
 
-    #region GetTenantId Tests
+    #region GetWorkspaceId Tests
 
     [Fact]
-    public void GetTenantId_WithValidClaim_ReturnsTenantId()
+    public void GetWorkspaceId_WithValidClaim_ReturnsWorkspaceId()
     {
         // Arrange
-        SetupUser(new Claim("tenant_id", "42"));
+        SetupUser(new Claim("workspace_id", "42"));
 
         // Act
-        var result = _controller.TestGetTenantId();
+        var result = _controller.TestGetWorkspaceId();
 
         // Assert
         Assert.Equal(42, result);
     }
 
     [Fact]
-    public void GetTenantId_WithMissingClaim_ThrowsUnauthorizedAccessException()
+    public void GetWorkspaceId_WithMissingClaim_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         SetupUser(new Claim("other_claim", "value"));
 
         // Act & Assert
-        var exception = Assert.Throws<UnauthorizedAccessException>(() => _controller.TestGetTenantId());
-        Assert.Equal("Tenant ID not found in token", exception.Message);
+        var exception = Assert.Throws<UnauthorizedAccessException>(() => _controller.TestGetWorkspaceId());
+        Assert.Equal("Workspace ID not found in token", exception.Message);
     }
 
     [Fact]
-    public void GetTenantId_WithEmptyClaim_ThrowsUnauthorizedAccessException()
+    public void GetWorkspaceId_WithEmptyClaim_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        SetupUser(new Claim("tenant_id", ""));
+        SetupUser(new Claim("workspace_id", ""));
 
         // Act & Assert
-        var exception = Assert.Throws<UnauthorizedAccessException>(() => _controller.TestGetTenantId());
-        Assert.Equal("Tenant ID not found in token", exception.Message);
+        var exception = Assert.Throws<UnauthorizedAccessException>(() => _controller.TestGetWorkspaceId());
+        Assert.Equal("Workspace ID not found in token", exception.Message);
     }
 
     [Fact]
-    public void GetTenantId_WithNonNumericClaim_ThrowsUnauthorizedAccessException()
+    public void GetWorkspaceId_WithNonNumericClaim_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        SetupUser(new Claim("tenant_id", "not-a-number"));
+        SetupUser(new Claim("workspace_id", "not-a-number"));
 
         // Act & Assert
-        var exception = Assert.Throws<UnauthorizedAccessException>(() => _controller.TestGetTenantId());
-        Assert.Equal("Tenant ID not found in token", exception.Message);
+        var exception = Assert.Throws<UnauthorizedAccessException>(() => _controller.TestGetWorkspaceId());
+        Assert.Equal("Workspace ID not found in token", exception.Message);
     }
 
     #endregion
 
-    #region TryGetTenantId Tests
+    #region TryGetWorkspaceId Tests
 
     [Fact]
-    public void TryGetTenantId_WithValidClaim_ReturnsTenantId()
+    public void TryGetWorkspaceId_WithValidClaim_ReturnsWorkspaceId()
     {
         // Arrange
-        SetupUser(new Claim("tenant_id", "42"));
+        SetupUser(new Claim("workspace_id", "42"));
 
         // Act
-        var result = _controller.TestTryGetTenantId();
+        var result = _controller.TestTryGetWorkspaceId();
 
         // Assert
         Assert.Equal(42, result);
     }
 
     [Fact]
-    public void TryGetTenantId_WithMissingClaim_ReturnsNull()
+    public void TryGetWorkspaceId_WithMissingClaim_ReturnsNull()
     {
         // Arrange
         SetupUser(new Claim("other_claim", "value"));
 
         // Act
-        var result = _controller.TestTryGetTenantId();
+        var result = _controller.TestTryGetWorkspaceId();
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public void TryGetTenantId_WithEmptyClaim_ReturnsNull()
+    public void TryGetWorkspaceId_WithEmptyClaim_ReturnsNull()
     {
         // Arrange
-        SetupUser(new Claim("tenant_id", ""));
+        SetupUser(new Claim("workspace_id", ""));
 
         // Act
-        var result = _controller.TestTryGetTenantId();
+        var result = _controller.TestTryGetWorkspaceId();
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public void TryGetTenantId_WithNonNumericClaim_ReturnsNull()
+    public void TryGetWorkspaceId_WithNonNumericClaim_ReturnsNull()
     {
         // Arrange
-        SetupUser(new Claim("tenant_id", "not-a-number"));
+        SetupUser(new Claim("workspace_id", "not-a-number"));
 
         // Act
-        var result = _controller.TestTryGetTenantId();
+        var result = _controller.TestTryGetWorkspaceId();
 
         // Assert
         Assert.Null(result);

@@ -9,8 +9,8 @@ public class ItemTemplateRepositoryTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly ItemTemplateRepository _repository;
-    private const int TestTenantId = 1;
-    private const int OtherTenantId = 2;
+    private const int TestWorkspaceId = 1;
+    private const int OtherWorkspaceId = 2;
     private const int TestCollectionId = 1;
 
     public ItemTemplateRepositoryTests()
@@ -31,48 +31,48 @@ public class ItemTemplateRepositoryTests : IDisposable
     #region GetAllAccessibleAsync Tests
 
     [Fact]
-    public async Task GetAllAccessibleAsync_ReturnsTenantAndSystemTemplates()
+    public async Task GetAllAccessibleAsync_ReturnsWorkspaceAndSystemTemplates()
     {
         // Arrange
         var templates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Tenant Template", Description = "Desc" },
-            new() { Id = 2, TenantId = null, Name = "System Template", Description = "Desc" },
-            new() { Id = 3, TenantId = OtherTenantId, Name = "Other Tenant", Description = "Desc" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Workspace Template", Description = "Desc" },
+            new() { Id = 2, WorkspaceId = null, Name = "System Template", Description = "Desc" },
+            new() { Id = 3, WorkspaceId = OtherWorkspaceId, Name = "Other Workspace", Description = "Desc" }
         };
         await _context.ItemTemplates.AddRangeAsync(templates);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetAllAccessibleAsync(TestTenantId);
+        var result = await _repository.GetAllAccessibleAsync(TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count());
-        Assert.Contains(result, t => t.Name == "Tenant Template");
+        Assert.Contains(result, t => t.Name == "Workspace Template");
         Assert.Contains(result, t => t.Name == "System Template");
     }
 
     [Fact]
     public async Task GetAllAccessibleAsync_ExcludesOverriddenSystemTemplates()
     {
-        // Arrange - tenant has a template with same name as system template
+        // Arrange - workspace has a template with same name as system template
         var templates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Common Name", Description = "Tenant version" },
-            new() { Id = 2, TenantId = null, Name = "Common Name", Description = "System version" },
-            new() { Id = 3, TenantId = null, Name = "Unique System", Description = "Desc" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Common Name", Description = "Workspace version" },
+            new() { Id = 2, WorkspaceId = null, Name = "Common Name", Description = "System version" },
+            new() { Id = 3, WorkspaceId = null, Name = "Unique System", Description = "Desc" }
         };
         await _context.ItemTemplates.AddRangeAsync(templates);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetAllAccessibleAsync(TestTenantId);
+        var result = await _repository.GetAllAccessibleAsync(TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count());
-        Assert.Contains(result, t => t.Name == "Common Name" && t.TenantId == TestTenantId);
+        Assert.Contains(result, t => t.Name == "Common Name" && t.WorkspaceId == TestWorkspaceId);
         Assert.Contains(result, t => t.Name == "Unique System");
-        Assert.DoesNotContain(result, t => t.Name == "Common Name" && t.TenantId == null);
+        Assert.DoesNotContain(result, t => t.Name == "Common Name" && t.WorkspaceId == null);
     }
 
     #endregion
@@ -85,14 +85,14 @@ public class ItemTemplateRepositoryTests : IDisposable
         // Arrange
         var templates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Tenant Template", Description = "Desc" },
-            new() { Id = 2, TenantId = null, Name = "System Template", Description = "Desc" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Workspace Template", Description = "Desc" },
+            new() { Id = 2, WorkspaceId = null, Name = "System Template", Description = "Desc" }
         };
         await _context.ItemTemplates.AddRangeAsync(templates);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetSystemTemplatesAsync(TestTenantId);
+        var result = await _repository.GetSystemTemplatesAsync(TestWorkspaceId);
 
         // Assert
         Assert.Single(result);
@@ -101,27 +101,27 @@ public class ItemTemplateRepositoryTests : IDisposable
 
     #endregion
 
-    #region GetTenantTemplatesAsync Tests
+    #region GetWorkspaceTemplatesAsync Tests
 
     [Fact]
-    public async Task GetTenantTemplatesAsync_ReturnsOnlyTenantTemplates()
+    public async Task GetWorkspaceTemplatesAsync_ReturnsOnlyWorkspaceTemplates()
     {
         // Arrange
         var templates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Tenant Template", Description = "Desc" },
-            new() { Id = 2, TenantId = null, Name = "System Template", Description = "Desc" },
-            new() { Id = 3, TenantId = OtherTenantId, Name = "Other Template", Description = "Desc" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Workspace Template", Description = "Desc" },
+            new() { Id = 2, WorkspaceId = null, Name = "System Template", Description = "Desc" },
+            new() { Id = 3, WorkspaceId = OtherWorkspaceId, Name = "Other Template", Description = "Desc" }
         };
         await _context.ItemTemplates.AddRangeAsync(templates);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetTenantTemplatesAsync(TestTenantId);
+        var result = await _repository.GetWorkspaceTemplatesAsync(TestWorkspaceId);
 
         // Assert
         Assert.Single(result);
-        Assert.Equal("Tenant Template", result.First().Name);
+        Assert.Equal("Workspace Template", result.First().Name);
     }
 
     #endregion
@@ -129,15 +129,15 @@ public class ItemTemplateRepositoryTests : IDisposable
     #region GetByIdAsync Tests
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsTenantTemplate()
+    public async Task GetByIdAsync_ReturnsWorkspaceTemplate()
     {
         // Arrange
-        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Test", Description = "Desc" };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test", Description = "Desc" };
         await _context.ItemTemplates.AddAsync(template);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByIdAsync(1, TestTenantId);
+        var result = await _repository.GetByIdAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.NotNull(result);
@@ -148,12 +148,12 @@ public class ItemTemplateRepositoryTests : IDisposable
     public async Task GetByIdAsync_ReturnsSystemTemplate()
     {
         // Arrange
-        var template = new ItemTemplate { Id = 1, TenantId = null, Name = "System", Description = "Desc" };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = null, Name = "System", Description = "Desc" };
         await _context.ItemTemplates.AddAsync(template);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByIdAsync(1, TestTenantId);
+        var result = await _repository.GetByIdAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.NotNull(result);
@@ -161,15 +161,15 @@ public class ItemTemplateRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsNull_WhenOtherTenant()
+    public async Task GetByIdAsync_ReturnsNull_WhenOtherWorkspace()
     {
         // Arrange
-        var template = new ItemTemplate { Id = 1, TenantId = OtherTenantId, Name = "Other", Description = "Desc" };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = OtherWorkspaceId, Name = "Other", Description = "Desc" };
         await _context.ItemTemplates.AddAsync(template);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByIdAsync(1, TestTenantId);
+        var result = await _repository.GetByIdAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
@@ -185,7 +185,7 @@ public class ItemTemplateRepositoryTests : IDisposable
         // Arrange
         var template = new ItemTemplate
         {
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "New Template",
             Description = "Description"
         };
@@ -204,13 +204,13 @@ public class ItemTemplateRepositoryTests : IDisposable
     #region UpdateAsync Tests
 
     [Fact]
-    public async Task UpdateAsync_UpdatesTenantTemplate()
+    public async Task UpdateAsync_UpdatesWorkspaceTemplate()
     {
         // Arrange
         var template = new ItemTemplate
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "Original",
             Description = "Original Desc",
             CreatedAt = DateTime.UtcNow.AddDays(-1)
@@ -226,7 +226,7 @@ public class ItemTemplateRepositoryTests : IDisposable
         };
 
         // Act
-        var result = await _repository.UpdateAsync(1, updates, TestTenantId);
+        var result = await _repository.UpdateAsync(1, updates, TestWorkspaceId);
 
         // Assert
         Assert.NotNull(result);
@@ -238,12 +238,12 @@ public class ItemTemplateRepositoryTests : IDisposable
     public async Task UpdateAsync_ReturnsNull_ForSystemTemplate()
     {
         // Arrange
-        var template = new ItemTemplate { Id = 1, TenantId = null, Name = "System", Description = "Desc" };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = null, Name = "System", Description = "Desc" };
         await _context.ItemTemplates.AddAsync(template);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.UpdateAsync(1, new ItemTemplate { Name = "Updated" }, TestTenantId);
+        var result = await _repository.UpdateAsync(1, new ItemTemplate { Name = "Updated" }, TestWorkspaceId);
 
         // Assert
         Assert.Null(result);
@@ -254,15 +254,15 @@ public class ItemTemplateRepositoryTests : IDisposable
     #region DeleteAsync Tests
 
     [Fact]
-    public async Task DeleteAsync_DeletesTenantTemplate()
+    public async Task DeleteAsync_DeletesWorkspaceTemplate()
     {
         // Arrange
-        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Test", Description = "Desc" };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test", Description = "Desc" };
         await _context.ItemTemplates.AddAsync(template);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(1, TestTenantId);
+        var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.True(result);
@@ -273,12 +273,12 @@ public class ItemTemplateRepositoryTests : IDisposable
     public async Task DeleteAsync_ReturnsFalse_ForSystemTemplate()
     {
         // Arrange
-        var template = new ItemTemplate { Id = 1, TenantId = null, Name = "System", Description = "Desc" };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = null, Name = "System", Description = "Desc" };
         await _context.ItemTemplates.AddAsync(template);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.DeleteAsync(1, TestTenantId);
+        var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
         // Assert
         Assert.False(result);
@@ -293,8 +293,8 @@ public class ItemTemplateRepositoryTests : IDisposable
     public async Task AssociateWithCollectionAsync_CreatesAssociation()
     {
         // Arrange
-        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Test", Description = "Desc" };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection", Slug = "test" };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test", Description = "Desc" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test" };
         await _context.ItemTemplates.AddAsync(template);
         await _context.Collections.AddAsync(collection);
         await _context.SaveChangesAsync();
@@ -312,8 +312,8 @@ public class ItemTemplateRepositoryTests : IDisposable
     public async Task AssociateWithCollectionAsync_ReturnsTrue_WhenAlreadyAssociated()
     {
         // Arrange
-        var template = new ItemTemplate { Id = 1, TenantId = TestTenantId, Name = "Test", Description = "Desc" };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test Collection", Slug = "test" };
+        var template = new ItemTemplate { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test", Description = "Desc" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Slug = "test" };
         await _context.ItemTemplates.AddAsync(template);
         await _context.Collections.AddAsync(collection);
         await _context.CollectionItemTemplates.AddAsync(new CollectionItemTemplate
@@ -364,7 +364,7 @@ public class ItemTemplateRepositoryTests : IDisposable
     public async Task AssociateMultipleWithCollectionAsync_CreatesBatchAssociations()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test" };
         await _context.Collections.AddAsync(collection);
         await _context.SaveChangesAsync();
 
@@ -382,7 +382,7 @@ public class ItemTemplateRepositoryTests : IDisposable
     public async Task AssociateMultipleWithCollectionAsync_SkipsExisting()
     {
         // Arrange
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test" };
         await _context.Collections.AddAsync(collection);
         await _context.CollectionItemTemplates.AddAsync(new CollectionItemTemplate
         {
@@ -411,11 +411,11 @@ public class ItemTemplateRepositoryTests : IDisposable
         // Arrange
         var templates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Template 1", Description = "Desc" },
-            new() { Id = 2, TenantId = TestTenantId, Name = "Template 2", Description = "Desc" },
-            new() { Id = 3, TenantId = TestTenantId, Name = "Template 3", Description = "Desc" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Template 1", Description = "Desc" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Template 2", Description = "Desc" },
+            new() { Id = 3, WorkspaceId = TestWorkspaceId, Name = "Template 3", Description = "Desc" }
         };
-        var collection = new Collection { Id = TestCollectionId, TenantId = TestTenantId, Name = "Test", Slug = "test" };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test" };
         var associations = new List<CollectionItemTemplate>
         {
             new() { CollectionId = TestCollectionId, ItemTemplateId = 1 },
@@ -442,13 +442,13 @@ public class ItemTemplateRepositoryTests : IDisposable
     #region CopySystemTemplateAsync Tests
 
     [Fact]
-    public async Task CopySystemTemplateAsync_CreatesNewTenantTemplate()
+    public async Task CopySystemTemplateAsync_CreatesNewWorkspaceTemplate()
     {
         // Arrange
         var systemTemplate = new ItemTemplate
         {
             Id = 1,
-            TenantId = null,
+            WorkspaceId = null,
             Name = "System Template",
             Description = "Original Description",
             Properties = new List<ItemTemplateProperty>
@@ -471,11 +471,11 @@ public class ItemTemplateRepositoryTests : IDisposable
         };
 
         // Act
-        var result = await _repository.CopySystemTemplateAsync(1, TestTenantId, updates);
+        var result = await _repository.CopySystemTemplateAsync(1, TestWorkspaceId, updates);
 
         // Assert
         Assert.NotEqual(1, result.Id);
-        Assert.Equal(TestTenantId, result.TenantId);
+        Assert.Equal(TestWorkspaceId, result.WorkspaceId);
         Assert.Equal("My Copy", result.Name);
         Assert.Equal("Custom Description", result.Description);
         Assert.Equal(2, result.Properties.Count);
@@ -489,7 +489,7 @@ public class ItemTemplateRepositoryTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _repository.CopySystemTemplateAsync(999, TestTenantId, updates));
+            () => _repository.CopySystemTemplateAsync(999, TestWorkspaceId, updates));
     }
 
     #endregion

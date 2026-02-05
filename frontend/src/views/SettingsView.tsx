@@ -4,22 +4,22 @@ import '../styles/App.css';
 import '../styles/SettingsView.css';
 import { useData } from '../contexts/DataContext';
 import { useUser } from '../contexts/UserContext';
-import { exportApi, tenantsApi } from '../api';
-import type { RestorableTenant } from '../api/tenants';
+import { exportApi, workspacesApi } from '../api';
+import type { RestorableWorkspace } from '../api/workspaces';
 import ItemTemplateEditor from '../components/template/ItemTemplateEditor';
 import CollectionTemplateEditor from '../components/collection/CollectionTemplateEditor';
 import VisibilityToggle from '../components/common/VisibilityToggle';
 import CollectionSetupWizard from '../components/collection/CollectionSetupWizard';
-import TenantSetupWizard from '../components/wizard/TenantSetupWizard';
+import WorkspaceSetupWizard from '../components/wizard/WorkspaceSetupWizard';
 import { SupportSection } from '../components/support/SupportSection';
 import { AccountDeletionSection, UserButton, UserManagement } from '../components/user';
 import { SupportModal } from '../components/support/SupportModal';
-import { TenantEditModal, TenantDeletionSection } from '../components/tenant';
+import { WorkspaceEditModal, WorkspaceDeletionSection } from '../components/workspace';
 import { SiteHeader, SiteFooter } from '../components/common';
-import type { Collection, TenantMembership } from '../utils/types';
-import { Visibility, TenantRole } from '../utils/types';
+import type { Collection, WorkspaceMembership } from '../utils/types';
+import { Visibility, WorkspaceRole } from '../utils/types';
 
-type SettingsSection = 'collections' | 'templates' | 'team' | 'tenants' | 'export' | 'support' | 'account';
+type SettingsSection = 'collections' | 'templates' | 'team' | 'workspaces' | 'export' | 'support' | 'account';
 
 function SettingsView() {
   const navigate = useNavigate();
@@ -30,16 +30,16 @@ function SettingsView() {
   // Initialize section from URL query param or default to collections
   const initialSection = (searchParams.get('section') as SettingsSection) || 'collections';
   const [activeSection, setActiveSection] = useState<SettingsSection>(
-    ['collections', 'templates', 'team', 'tenants', 'export', 'support', 'account'].includes(initialSection) ? initialSection : 'collections'
+    ['collections', 'templates', 'team', 'workspaces', 'export', 'support', 'account'].includes(initialSection) ? initialSection : 'collections'
   );
 
-  // Tenant management state
-  const [isCreatingTenant, setIsCreatingTenant] = useState(false);
-  const [tenantError, setTenantError] = useState<string | null>(null);
-  const [isLeavingTenant, setIsLeavingTenant] = useState<number | null>(null);
-  const [editingTenant, setEditingTenant] = useState<TenantMembership | null>(null);
-  const [deletedTenants, setDeletedTenants] = useState<RestorableTenant[]>([]);
-  const [isRestoringTenant, setIsRestoringTenant] = useState<number | null>(null);
+  // Workspace management state
+  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+  const [isLeavingWorkspace, setIsLeavingWorkspace] = useState<number | null>(null);
+  const [editingWorkspace, setEditingWorkspace] = useState<WorkspaceMembership | null>(null);
+  const [deletedWorkspaces, setDeletedWorkspaces] = useState<RestorableWorkspace[]>([]);
+  const [isRestoringWorkspace, setIsRestoringWorkspace] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -84,19 +84,19 @@ function SettingsView() {
     loadCollections();
   }, [loadCollections]);
 
-  // Load deleted tenants when tenants section is active
+  // Load deleted workspaces when workspaces section is active
   useEffect(() => {
-    const loadDeletedTenants = async () => {
+    const loadDeletedWorkspaces = async () => {
       try {
-        const deleted = await tenantsApi.getRestorableTenants();
-        setDeletedTenants(deleted);
+        const deleted = await workspacesApi.getRestorableWorkspaces();
+        setDeletedWorkspaces(deleted);
       } catch {
-        // Silently fail - deleted tenants section is optional
+        // Silently fail - deleted workspaces section is optional
       }
     };
 
-    if (activeSection === 'tenants') {
-      loadDeletedTenants();
+    if (activeSection === 'workspaces') {
+      loadDeletedWorkspaces();
     }
   }, [activeSection]);
 
@@ -258,7 +258,7 @@ function SettingsView() {
               Manage your collections. Each collection can have categories and items.
             </p>
           </div>
-          {!isEditing && user?.isTenantAdmin && (
+          {!isEditing && user?.isWorkspaceAdmin && (
             <button className="settings-section__addButton" onClick={handleAddClick}>
               + New Collection
             </button>
@@ -381,7 +381,7 @@ function SettingsView() {
                   >
                     Edit
                   </button>
-                  {collections.length > 1 && user?.isTenantAdmin && (
+                  {collections.length > 1 && user?.isWorkspaceAdmin && (
                     <button
                       className="settings-collection-card__button settings-collection-card__button--danger"
                       onClick={() => handleDelete(collection.collectionId)}
@@ -453,72 +453,72 @@ function SettingsView() {
     </div>
   );
 
-  const handleTenantSetupComplete = () => {
-    setIsCreatingTenant(false);
-    // Reload to refresh user context with new tenant, returning to My Tenants section
-    window.location.href = '/settings?section=tenants';
+  const handleWorkspaceSetupComplete = () => {
+    setIsCreatingWorkspace(false);
+    // Reload to refresh user context with new workspace, returning to My Workspaces section
+    window.location.href = '/settings?section=workspaces';
   };
 
-  const handleTenantSetupCancel = () => {
-    setIsCreatingTenant(false);
+  const handleWorkspaceSetupCancel = () => {
+    setIsCreatingWorkspace(false);
   };
 
-  const handleLeaveTenant = async (tenant: TenantMembership) => {
-    if (!confirm(`Are you sure you want to leave "${tenant.tenantName}"? You will lose access to all data in this tenant.`)) {
+  const handleLeaveWorkspace = async (workspace: WorkspaceMembership) => {
+    if (!confirm(`Are you sure you want to leave "${workspace.workspaceName}"? You will lose access to all data in this workspace.`)) {
       return;
     }
 
-    setIsLeavingTenant(tenant.tenantId);
-    setTenantError(null);
+    setIsLeavingWorkspace(workspace.workspaceId);
+    setWorkspaceError(null);
     try {
-      await tenantsApi.leave(tenant.tenantId);
+      await workspacesApi.leave(workspace.workspaceId);
       // Reload to refresh user context
       window.location.reload();
     } catch (err) {
-      setTenantError(err instanceof Error ? err.message : 'Failed to leave tenant');
-      setIsLeavingTenant(null);
+      setWorkspaceError(err instanceof Error ? err.message : 'Failed to leave workspace');
+      setIsLeavingWorkspace(null);
     }
   };
 
-  const handleSwitchTenant = async (tenant: TenantMembership) => {
+  const handleSwitchWorkspace = async (workspace: WorkspaceMembership) => {
     try {
-      await tenantsApi.switch(tenant.tenantId);
+      await workspacesApi.switch(workspace.workspaceId);
       window.location.reload();
     } catch (err) {
-      setTenantError(err instanceof Error ? err.message : 'Failed to switch tenant');
+      setWorkspaceError(err instanceof Error ? err.message : 'Failed to switch workspace');
     }
   };
 
-  const handleRestoreTenant = async (tenantId: number) => {
-    setIsRestoringTenant(tenantId);
+  const handleRestoreWorkspace = async (workspaceId: number) => {
+    setIsRestoringWorkspace(workspaceId);
     try {
-      await tenantsApi.restoreTenant(tenantId);
-      // Reload the page to refresh tenant list
+      await workspacesApi.restoreWorkspace(workspaceId);
+      // Reload the page to refresh workspace list
       window.location.reload();
     } catch (err) {
-      setTenantError(err instanceof Error ? err.message : 'Failed to restore workspace');
-      setIsRestoringTenant(null);
+      setWorkspaceError(err instanceof Error ? err.message : 'Failed to restore workspace');
+      setIsRestoringWorkspace(null);
     }
   };
 
-  const renderTenantsSection = () => {
-    const tenants = user?.tenants || [];
-    const activeTenant = user?.activeTenant;
-    const canLeaveTenant = (tenant: TenantMembership) => {
-      // Cannot leave if it's the only tenant
-      if (tenants.length <= 1) return false;
+  const renderWorkspacesSection = () => {
+    const workspaces = user?.workspaces || [];
+    const activeWorkspace = user?.activeWorkspace;
+    const canLeaveWorkspace = (workspace: WorkspaceMembership) => {
+      // Cannot leave if it's the only workspace
+      if (workspaces.length <= 1) return false;
       // Cannot leave if you're the only admin (would need to check server-side, but we'll let API handle it)
       return true;
     };
 
-    // Show the tenant setup wizard
-    if (isCreatingTenant) {
+    // Show the workspace setup wizard
+    if (isCreatingWorkspace) {
       return (
-        <TenantSetupWizard
+        <WorkspaceSetupWizard
           showTerms={false}
           isWelcome={false}
-          onComplete={handleTenantSetupComplete}
-          onCancel={handleTenantSetupCancel}
+          onComplete={handleWorkspaceSetupComplete}
+          onCancel={handleWorkspaceSetupCancel}
         />
       );
     }
@@ -527,70 +527,70 @@ function SettingsView() {
       <div className="settings-section">
         <div className="settings-section__header">
           <div>
-            <h2 className="settings-section__title">My Tenants</h2>
+            <h2 className="settings-section__title">My Workspaces</h2>
             <p className="settings-section__description">
-              Manage your tenant memberships. You can belong to multiple tenants and switch between them.
+              Manage your workspace memberships. You can belong to multiple workspaces and switch between them.
             </p>
           </div>
           <button
             className="settings-section__addButton"
-            onClick={() => setIsCreatingTenant(true)}
+            onClick={() => setIsCreatingWorkspace(true)}
           >
             + Create New Workspace
           </button>
         </div>
 
-        {tenantError && <div className="settings-section__error">{tenantError}</div>}
+        {workspaceError && <div className="settings-section__error">{workspaceError}</div>}
 
-        <div className="settings-tenant-list">
-          {tenants.map((tenant) => (
+        <div className="settings-workspace-list">
+          {workspaces.map((workspace) => (
             <div
-              key={tenant.tenantId}
-              className={`settings-tenant-card ${tenant.tenantId === activeTenant?.tenantId ? 'settings-tenant-card--active' : ''}`}
+              key={workspace.workspaceId}
+              className={`settings-workspace-card ${workspace.workspaceId === activeWorkspace?.workspaceId ? 'settings-workspace-card--active' : ''}`}
             >
-              <div className="settings-tenant-card__content">
-                <div className="settings-tenant-card__header">
-                  <h3 className="settings-tenant-card__name">{tenant.tenantName}</h3>
-                  {tenant.tenantId === activeTenant?.tenantId && (
-                    <span className="settings-tenant-card__badge settings-tenant-card__badge--current">Current</span>
+              <div className="settings-workspace-card__content">
+                <div className="settings-workspace-card__header">
+                  <h3 className="settings-workspace-card__name">{workspace.workspaceName}</h3>
+                  {workspace.workspaceId === activeWorkspace?.workspaceId && (
+                    <span className="settings-workspace-card__badge settings-workspace-card__badge--current">Current</span>
                   )}
-                  <span className={`settings-tenant-card__badge ${tenant.tenantRole === TenantRole.TenantAdmin ? 'settings-tenant-card__badge--admin' : ''}`}>
-                    {tenant.tenantRole === TenantRole.TenantAdmin ? 'Admin' : 'Member'}
+                  <span className={`settings-workspace-card__badge ${workspace.workspaceRole === WorkspaceRole.WorkspaceAdmin ? 'settings-workspace-card__badge--admin' : ''}`}>
+                    {workspace.workspaceRole === WorkspaceRole.WorkspaceAdmin ? 'Admin' : 'Member'}
                   </span>
                 </div>
-                {!tenant.hasCompletedWelcome && (
-                  <p className="settings-tenant-card__status">Setup not completed</p>
+                {!workspace.hasCompletedWelcome && (
+                  <p className="settings-workspace-card__status">Setup not completed</p>
                 )}
               </div>
-              <div className="settings-tenant-card__actions">
-                {tenant.tenantRole === TenantRole.TenantAdmin && (
+              <div className="settings-workspace-card__actions">
+                {workspace.workspaceRole === WorkspaceRole.WorkspaceAdmin && (
                   <button
-                    className="settings-tenant-card__button"
-                    onClick={() => setEditingTenant(tenant)}
+                    className="settings-workspace-card__button"
+                    onClick={() => setEditingWorkspace(workspace)}
                   >
                     Edit
                   </button>
                 )}
-                {tenant.tenantId !== activeTenant?.tenantId && (
+                {workspace.workspaceId !== activeWorkspace?.workspaceId && (
                   <button
-                    className="settings-tenant-card__button"
-                    onClick={() => handleSwitchTenant(tenant)}
+                    className="settings-workspace-card__button"
+                    onClick={() => handleSwitchWorkspace(workspace)}
                   >
                     Switch
                   </button>
                 )}
-                {canLeaveTenant(tenant) && tenant.tenantRole !== TenantRole.TenantAdmin && (
+                {canLeaveWorkspace(workspace) && workspace.workspaceRole !== WorkspaceRole.WorkspaceAdmin && (
                   <button
-                    className="settings-tenant-card__button settings-tenant-card__button--danger"
-                    onClick={() => handleLeaveTenant(tenant)}
-                    disabled={isLeavingTenant === tenant.tenantId}
+                    className="settings-workspace-card__button settings-workspace-card__button--danger"
+                    onClick={() => handleLeaveWorkspace(workspace)}
+                    disabled={isLeavingWorkspace === workspace.workspaceId}
                   >
-                    {isLeavingTenant === tenant.tenantId ? 'Leaving...' : 'Leave'}
+                    {isLeavingWorkspace === workspace.workspaceId ? 'Leaving...' : 'Leave'}
                   </button>
                 )}
-                {tenant.tenantRole === TenantRole.TenantAdmin && (
-                  <TenantDeletionSection
-                    tenant={tenant}
+                {workspace.workspaceRole === WorkspaceRole.WorkspaceAdmin && (
+                  <WorkspaceDeletionSection
+                    workspace={workspace}
                     onDeleted={() => window.location.reload()}
                   />
                 )}
@@ -599,37 +599,37 @@ function SettingsView() {
           ))}
         </div>
 
-        {deletedTenants.length > 0 && (
+        {deletedWorkspaces.length > 0 && (
           <>
             <div className="settings-section__divider" />
             <h3 className="settings-section__subtitle">Deleted Workspaces</h3>
             <p className="settings-section__description">
               These workspaces are scheduled for permanent deletion. Restore them to keep your data.
             </p>
-            <div className="settings-tenant-list">
-              {deletedTenants.map((tenant) => (
-                <div key={tenant.tenantId} className="settings-tenant-card settings-tenant-card--deleted">
-                  <div className="settings-tenant-card__content">
-                    <div className="settings-tenant-card__header">
-                      <h3 className="settings-tenant-card__name">{tenant.name}</h3>
-                      <span className="settings-tenant-card__badge settings-tenant-card__badge--deleted">
+            <div className="settings-workspace-list">
+              {deletedWorkspaces.map((workspace) => (
+                <div key={workspace.workspaceId} className="settings-workspace-card settings-workspace-card--deleted">
+                  <div className="settings-workspace-card__content">
+                    <div className="settings-workspace-card__header">
+                      <h3 className="settings-workspace-card__name">{workspace.name}</h3>
+                      <span className="settings-workspace-card__badge settings-workspace-card__badge--deleted">
                         Deleted
                       </span>
                     </div>
-                    <p className="settings-tenant-card__stats">
-                      {tenant.stats.collectionCount} collections, {tenant.stats.itemCount} items
+                    <p className="settings-workspace-card__stats">
+                      {workspace.stats.collectionCount} collections, {workspace.stats.itemCount} items
                     </p>
-                    <p className="settings-tenant-card__countdown">
-                      {tenant.daysRemaining} days until permanent deletion
+                    <p className="settings-workspace-card__countdown">
+                      {workspace.daysRemaining} days until permanent deletion
                     </p>
                   </div>
-                  <div className="settings-tenant-card__actions">
+                  <div className="settings-workspace-card__actions">
                     <button
-                      className="settings-tenant-card__button settings-tenant-card__button--primary"
-                      onClick={() => handleRestoreTenant(tenant.tenantId)}
-                      disabled={isRestoringTenant === tenant.tenantId}
+                      className="settings-workspace-card__button settings-workspace-card__button--primary"
+                      onClick={() => handleRestoreWorkspace(workspace.workspaceId)}
+                      disabled={isRestoringWorkspace === workspace.workspaceId}
                     >
-                      {isRestoringTenant === tenant.tenantId ? 'Restoring...' : 'Restore'}
+                      {isRestoringWorkspace === workspace.workspaceId ? 'Restoring...' : 'Restore'}
                     </button>
                   </div>
                 </div>
@@ -691,8 +691,8 @@ function SettingsView() {
         return renderTemplatesSection();
       case 'team':
         return renderTeamSection();
-      case 'tenants':
-        return renderTenantsSection();
+      case 'workspaces':
+        return renderWorkspacesSection();
       case 'export':
         return renderExportSection();
       case 'support':
@@ -710,7 +710,7 @@ function SettingsView() {
     ];
 
     // Admin-only sections
-    if (user?.isTenantAdmin) {
+    if (user?.isWorkspaceAdmin) {
       items.push(
         { id: 'templates', label: 'Item Templates', icon: '📋' },
         { id: 'team', label: 'Team Members', icon: '👥' },
@@ -718,8 +718,8 @@ function SettingsView() {
       );
     }
 
-    // My Tenants is always visible (user can manage their memberships)
-    items.push({ id: 'tenants', label: 'My Tenants', icon: '🏢' });
+    // My Workspaces is always visible (user can manage their memberships)
+    items.push({ id: 'workspaces', label: 'My Workspaces', icon: '🏢' });
 
     // Support is always visible
     items.push({ id: 'support', label: 'Support', icon: '💬' });
@@ -728,7 +728,7 @@ function SettingsView() {
     items.push({ id: 'account', label: 'Account', icon: '👤' });
 
     return items;
-  }, [user?.isTenantAdmin]);
+  }, [user?.isWorkspaceAdmin]);
 
   return (
     <div className="app">
@@ -780,10 +780,10 @@ function SettingsView() {
         userEmail={user?.email}
       />
 
-      <TenantEditModal
-        tenant={editingTenant}
-        isOpen={editingTenant !== null}
-        onClose={() => setEditingTenant(null)}
+      <WorkspaceEditModal
+        workspace={editingWorkspace}
+        isOpen={editingWorkspace !== null}
+        onClose={() => setEditingWorkspace(null)}
         onSaved={() => window.location.reload()}
       />
     </div>

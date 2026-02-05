@@ -4,7 +4,7 @@
 import { api } from './client';
 import type { ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest } from '../utils/types';
 
-export type TemplateFilter = 'system' | 'tenant' | 'shared' | 'personal';
+export type TemplateFilter = 'system' | 'workspace' | 'shared' | 'personal';
 
 export const templatesApi = {
   getAll(filter?: TemplateFilter): Promise<ItemTemplate[]> {

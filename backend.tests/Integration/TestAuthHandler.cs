@@ -12,10 +12,10 @@ namespace OneBigHead.Server.Tests.Integration;
 public class TestAuthHandler : AuthenticationHandler<TestAuthSchemeOptions>
 {
     public const string SchemeName = "TestAuth";
-    public const string TenantIdHeader = "X-Test-TenantId";
+    public const string WorkspaceIdHeader = "X-Test-WorkspaceId";
     public const string UserIdHeader = "X-Test-UserId";
     public const string EmailHeader = "X-Test-Email";
-    public const string TenantRoleHeader = "X-Test-TenantRole";
+    public const string WorkspaceRoleHeader = "X-Test-WorkspaceRole";
 
     public TestAuthHandler(
         IOptionsMonitor<TestAuthSchemeOptions> options,
@@ -28,28 +28,28 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthSchemeOptions>
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         // Check if authentication headers are present
-        if (!Request.Headers.TryGetValue(TenantIdHeader, out var tenantIdValue) ||
+        if (!Request.Headers.TryGetValue(WorkspaceIdHeader, out var workspaceIdValue) ||
             !Request.Headers.TryGetValue(UserIdHeader, out var userIdValue))
         {
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var tenantId = tenantIdValue.ToString();
+        var workspaceId = workspaceIdValue.ToString();
         var userId = userIdValue.ToString();
         var email = Request.Headers.TryGetValue(EmailHeader, out var emailValue)
             ? emailValue.ToString()
             : "test@example.com";
-        var tenantRole = Request.Headers.TryGetValue(TenantRoleHeader, out var roleValue)
+        var workspaceRole = Request.Headers.TryGetValue(WorkspaceRoleHeader, out var roleValue)
             ? roleValue.ToString()
-            : "TenantAdmin"; // Default to TenantAdmin for backwards compatibility
+            : "WorkspaceAdmin"; // Default to WorkspaceAdmin for backwards compatibility
 
         var claims = new List<Claim>
         {
-            new("tenant_id", tenantId),
+            new("workspace_id", workspaceId),
             new(ClaimTypes.NameIdentifier, userId),
             new(ClaimTypes.Email, email),
             new("sub", userId),
-            new("tenant_role", tenantRole)
+            new("workspace_role", workspaceRole)
         };
 
         var identity = new ClaimsIdentity(claims, SchemeName);

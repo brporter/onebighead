@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { adminApi } from '../api';
 import { AdminSupportSection } from '../components/support/AdminSupportSection';
-import type { TenantSummary, UserSummary, ItemTemplate, CreateItemTemplateRequest } from '../utils/types';
+import type { WorkspaceSummary, UserSummary, ItemTemplate, CreateItemTemplateRequest } from '../utils/types';
 import '../styles/SystemAdmin.css';
 
-type AdminTab = 'tenants' | 'users' | 'templates' | 'support';
+type AdminTab = 'workspaces' | 'users' | 'templates' | 'support';
 
 function SystemAdmin() {
   const navigate = useNavigate();
   const { user, loading: userLoading, logout } = useUser();
-  const [activeTab, setActiveTab] = useState<AdminTab>('tenants');
-  const [tenants, setTenants] = useState<TenantSummary[]>([]);
+  const [activeTab, setActiveTab] = useState<AdminTab>('workspaces');
+  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [templates, setTemplates] = useState<ItemTemplate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,14 +33,14 @@ function SystemAdmin() {
     }
   }, [user, navigate]);
 
-  const loadTenants = useCallback(async () => {
+  const loadWorkspaces = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await adminApi.getTenants();
-      setTenants(data);
+      const data = await adminApi.getWorkspaces();
+      setWorkspaces(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load tenants');
+      setError(err instanceof Error ? err.message : 'Failed to load workspaces');
     } finally {
       setLoading(false);
     }
@@ -74,20 +74,20 @@ function SystemAdmin() {
 
   useEffect(() => {
     if (userLoading || !user?.isSystemAdministrator) return;
-    if (activeTab === 'tenants') loadTenants();
+    if (activeTab === 'workspaces') loadWorkspaces();
     else if (activeTab === 'users') loadUsers();
     else if (activeTab === 'templates') loadTemplates();
-  }, [activeTab, user, userLoading, loadTenants, loadUsers, loadTemplates]);
+  }, [activeTab, user, userLoading, loadWorkspaces, loadUsers, loadTemplates]);
 
-  const handleDeleteTenant = async (tenantId: number, tenantName: string) => {
-    if (!confirm(`Are you sure you want to delete tenant "${tenantName}"? This will permanently delete all users, collections, items, and data associated with this tenant.`)) {
+  const handleDeleteWorkspace = async (workspaceId: number, workspaceName: string) => {
+    if (!confirm(`Are you sure you want to delete workspace "${workspaceName}"? This will permanently delete all users, collections, items, and data associated with this workspace.`)) {
       return;
     }
     try {
-      await adminApi.deleteTenant(tenantId);
-      setTenants(tenants.filter(t => t.tenantId !== tenantId));
+      await adminApi.deleteWorkspace(workspaceId);
+      setWorkspaces(workspaces.filter(w => w.workspaceId !== workspaceId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete tenant');
+      setError(err instanceof Error ? err.message : 'Failed to delete workspace');
     }
   };
 
@@ -232,10 +232,10 @@ function SystemAdmin() {
 
       <nav className="systemAdmin__tabs">
         <button
-          className={`systemAdmin__tab ${activeTab === 'tenants' ? 'systemAdmin__tab--active' : ''}`}
-          onClick={() => setActiveTab('tenants')}
+          className={`systemAdmin__tab ${activeTab === 'workspaces' ? 'systemAdmin__tab--active' : ''}`}
+          onClick={() => setActiveTab('workspaces')}
         >
-          Tenants
+          Workspaces
         </button>
         <button
           className={`systemAdmin__tab ${activeTab === 'users' ? 'systemAdmin__tab--active' : ''}`}
@@ -262,9 +262,9 @@ function SystemAdmin() {
       <div className="systemAdmin__content">
         {loading && <p className="systemAdmin__loading">Loading...</p>}
 
-        {!loading && activeTab === 'tenants' && (
+        {!loading && activeTab === 'workspaces' && (
           <div className="systemAdmin__section">
-            <h2 className="systemAdmin__sectionTitle">Tenants ({tenants.length})</h2>
+            <h2 className="systemAdmin__sectionTitle">Workspaces ({workspaces.length})</h2>
             <table className="systemAdmin__table">
               <thead>
                 <tr>
@@ -278,18 +278,18 @@ function SystemAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {tenants.map(tenant => (
-                  <tr key={tenant.tenantId}>
-                    <td>{tenant.name}</td>
-                    <td>{tenant.userCount}</td>
-                    <td>{tenant.collectionCount}</td>
-                    <td>{tenant.itemCount}</td>
-                    <td>{tenant.imageCount}</td>
-                    <td>{new Date(tenant.createdAt).toLocaleDateString()}</td>
+                {workspaces.map(workspace => (
+                  <tr key={workspace.workspaceId}>
+                    <td>{workspace.name}</td>
+                    <td>{workspace.userCount}</td>
+                    <td>{workspace.collectionCount}</td>
+                    <td>{workspace.itemCount}</td>
+                    <td>{workspace.imageCount}</td>
+                    <td>{new Date(workspace.createdAt).toLocaleDateString()}</td>
                     <td>
                       <button
                         className="systemAdmin__actionButton systemAdmin__actionButton--danger"
-                        onClick={() => handleDeleteTenant(tenant.tenantId, tenant.name)}
+                        onClick={() => handleDeleteWorkspace(workspace.workspaceId, workspace.name)}
                       >
                         Delete
                       </button>
@@ -327,7 +327,7 @@ function SystemAdmin() {
               <thead>
                 <tr>
                   <th>Email</th>
-                  <th>Tenant</th>
+                  <th>Workspace</th>
                   <th>Provider</th>
                   <th>Admin</th>
                   <th>Created</th>
@@ -338,7 +338,7 @@ function SystemAdmin() {
                 {users.map(user => (
                   <tr key={user.userId}>
                     <td>{user.email}</td>
-                    <td>{user.tenantName}</td>
+                    <td>{user.workspaceName}</td>
                     <td>{user.identityProvider}</td>
                     <td>
                       <input

@@ -14,8 +14,8 @@ public class Item
     [JsonPropertyName("id")]
     public int? Id { get; set; }
 
-    [JsonPropertyName("tenantId")]
-    public int TenantId { get; set; }
+    [JsonPropertyName("workspaceId")]
+    public int WorkspaceId { get; set; }
 
     [JsonPropertyName("collectionId")]
     public int CollectionId { get; set; }
@@ -55,8 +55,8 @@ public class Item
     public UserFlag UserFlag { get; set; } = UserFlag.None;
 
     [JsonIgnore]
-    [ForeignKey(nameof(TenantId))]
-    public Tenant? Tenant { get; set; }
+    [ForeignKey(nameof(WorkspaceId))]
+    public Workspace? Workspace { get; set; }
 
     [JsonIgnore]
     [ForeignKey(nameof(CollectionId))]
@@ -66,4 +66,3 @@ public class Item
     [ForeignKey(nameof(CategoryId))]
     public Category? Category { get; set; }
 }
-

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OneBigHead is a multi-tenant collection management application with a .NET 10 backend API and React 19 frontend. Users can create collections of items organized into hierarchical categories, with support for custom item templates, image uploads, and public/private visibility controls.
+OneBigHead is a multi-workspace collection management application with a .NET 10 backend API and React 19 frontend. Users can create collections of items organized into hierarchical categories, with support for custom item templates, image uploads, and public/private visibility controls.
 
 ## Commands
 
@@ -63,15 +63,15 @@ backend/
 ```
 
 **Controllers:**
-- Inherit from `ApiControllerBase` for tenant-scoped endpoints (Collections, Items, Categories, etc.)
-- Inherit from `ControllerBase` directly for: authentication, system-wide data, cross-tenant admin, or anonymous endpoints
+- Inherit from `ApiControllerBase` for workspace-scoped endpoints (Collections, Items, Categories, etc.)
+- Inherit from `ControllerBase` directly for: authentication, system-wide data, cross-workspace admin, or anonymous endpoints
 
 **DTOs:**
 - All request/response classes go in `DTOs/` folder (not inline in controllers)
 - Organize by domain: `CollectionRequests.cs`, `CategoryRequests.cs`, `AuthRequests.cs`, etc.
 
 Key patterns:
-- Multi-tenancy: All data access is scoped by `TenantId` via repository methods
+- Multi-workspace: All data access is scoped by `WorkspaceId` via repository methods
 - Visibility: Items/categories/collections have `isPublicOverride` and computed `effectiveIsPublic`
 - Migrations run automatically in Debug builds; use migration bundles for production
 
@@ -123,12 +123,12 @@ Key patterns:
 1. Frontend components use `DataContext` hooks for all data operations
 2. DataContext calls typed API modules (`collectionsApi`, `itemsApi`, etc.)
 3. API modules use the shared `api/client.ts` with consistent error handling
-4. Backend controllers validate tenant context and delegate to repositories
+4. Backend controllers validate workspace context and delegate to repositories
 5. Repositories use EF Core with SQL Server
 
 ### Domain Model
 
-- **Tenant**: Multi-tenant container, has many Users and Collections
+- **Workspace**: Multi-workspace container, has many Users and Collections
 - **Collection**: Top-level container, has Categories and Items
 - **Category**: Hierarchical (parent/child), can have ItemTemplates assigned
 - **Item**: Belongs to Collection and optionally Category, has Properties and Images

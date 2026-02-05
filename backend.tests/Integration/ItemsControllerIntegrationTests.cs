@@ -21,7 +21,7 @@ public class ItemsControllerIntegrationTests : IDisposable
     private readonly AppDbContext _context;
     private readonly ItemsController _controller;
     private readonly JsonSerializerOptions _jsonOptions;
-    private const int TestTenantId = 1;
+    private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 1;
 
     public ItemsControllerIntegrationTests()
@@ -47,7 +47,7 @@ public class ItemsControllerIntegrationTests : IDisposable
         // Configure claims
         var claims = new List<Claim>
         {
-            new("tenant_id", TestTenantId.ToString()),
+            new("workspace_id", TestWorkspaceId.ToString()),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")
         };
@@ -72,13 +72,13 @@ public class ItemsControllerIntegrationTests : IDisposable
 
     private void SeedTestData()
     {
-        var tenant = new Tenant { Id = TestTenantId, Name = "Test Tenant" };
-        _context.Tenants.Add(tenant);
+        var workspace = new Workspace { Id = TestWorkspaceId, Name = "Test Workspace" };
+        _context.Workspaces.Add(workspace);
 
         var collection = new Collection
         {
             Id = TestCollectionId,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "Test Collection",
             Slug = "test"
         };
@@ -135,7 +135,7 @@ public class ItemsControllerIntegrationTests : IDisposable
         // Arrange - Create an item with None flag first
         var existingItem = new Item
         {
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "Existing Item",
             UserFlag = UserFlag.None
@@ -185,7 +185,7 @@ public class ItemsControllerIntegrationTests : IDisposable
         // Arrange - Create an item with a specific flag
         var item = new Item
         {
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "Item with Flag",
             UserFlag = UserFlag.Have

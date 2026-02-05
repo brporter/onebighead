@@ -27,7 +27,7 @@ interface ApiClientConfig {
   defaultHeaders?: HeadersInit;
   onUnauthorized?: () => void;
   onUserDeleted?: () => void;
-  onNoActiveTenants?: () => void;
+  onNoActiveWorkspaces?: () => void;
 }
 
 export class ApiClient {
@@ -131,14 +131,14 @@ export class ApiClient {
           // Ignore parse errors
         }
 
-        // Handle specific error codes for user/tenant deletion
+        // Handle specific error codes for user/workspace deletion
         const errorCode = (errorData as { code?: string })?.code;
 
         if (response.status === 401) {
           if (errorCode === 'USER_DELETED' && this.config.onUserDeleted) {
             this.config.onUserDeleted();
-          } else if (errorCode === 'NO_ACTIVE_TENANTS' && this.config.onNoActiveTenants) {
-            this.config.onNoActiveTenants();
+          } else if (errorCode === 'NO_ACTIVE_WORKSPACES' && this.config.onNoActiveWorkspaces) {
+            this.config.onNoActiveWorkspaces();
           } else if (this.config.onUnauthorized) {
             this.config.onUnauthorized();
           }
@@ -255,8 +255,8 @@ export const api = new ApiClient({
   onUserDeleted: () => {
     clearAuthAndRedirect('User account deleted');
   },
-  onNoActiveTenants: () => {
-    clearAuthAndRedirect('User has no active tenants');
+  onNoActiveWorkspaces: () => {
+    clearAuthAndRedirect('User has no active workspaces');
   },
 });
 

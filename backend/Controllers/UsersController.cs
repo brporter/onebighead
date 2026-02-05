@@ -16,7 +16,7 @@ namespace OneBigHead.Server.Controllers;
 public class UsersController : ApiControllerBase
 {
     private readonly IUserRepository _userRepository;
-    private readonly ITenantUserRepository _tenantUserRepository;
+    private readonly IWorkspaceUserRepository _workspaceUserRepository;
     private readonly IUserDeletionService _userDeletionService;
     private readonly AuthenticationSettings _authSettings;
     private readonly ILogger<UsersController> _logger;
@@ -24,14 +24,14 @@ public class UsersController : ApiControllerBase
 
     public UsersController(
         IUserRepository userRepository,
-        ITenantUserRepository tenantUserRepository,
+        IWorkspaceUserRepository workspaceUserRepository,
         IUserDeletionService userDeletionService,
         IOptions<AuthenticationSettings> authSettings,
         ILogger<UsersController> logger,
         AppDbContext context)
     {
         _userRepository = userRepository;
-        _tenantUserRepository = tenantUserRepository;
+        _workspaceUserRepository = workspaceUserRepository;
         _userDeletionService = userDeletionService;
         _authSettings = authSettings.Value;
         _logger = logger;
@@ -39,62 +39,62 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Gets all users in the current tenant.
+    /// Gets all users in the current workspace.
     /// </summary>
     [HttpGet]
-    [Authorize(Policy = "TenantAdmin")]
-    public async Task<ActionResult<IEnumerable<TenantUserResponse>>> GetUsers()
+    [Authorize(Policy = "WorkspaceAdmin")]
+    public async Task<ActionResult<IEnumerable<WorkspaceUserResponse>>> GetUsers()
     {
-        var tenantId = GetTenantId();
-        var memberships = await _tenantUserRepository.GetByTenantIdAsync(tenantId);
-        var response = memberships.Select(TenantUserResponse.FromTenantUser);
+        var workspaceId = GetWorkspaceId();
+        var memberships = await _workspaceUserRepository.GetByWorkspaceIdAsync(workspaceId);
+        var response = memberships.Select(WorkspaceUserResponse.FromWorkspaceUser);
         return Ok(response);
     }
 
     /// <summary>
-    /// Invites a new user to the tenant by email.
+    /// Invites a new user to the workspace by email.
     /// Creates a pending user record that will be linked when they first authenticate.
     /// </summary>
     [HttpPost]
-    [Authorize(Policy = "TenantAdmin")]
-    public async Task<ActionResult<TenantUserResponse>> InviteUser(InviteUserRequest request)
+    [Authorize(Policy = "WorkspaceAdmin")]
+    public async Task<ActionResult<WorkspaceUserResponse>> InviteUser(InviteUserRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
 
         // Check if user with this email already exists
         var existingUser = await _userRepository.GetByEmailAsync(request.Email);
         if (existingUser != null)
         {
-            // Check if they're already a member of this tenant
-            var existingMembership = await _tenantUserRepository.GetMembershipAsync(existingUser.Id, tenantId);
+            // Check if they're already a member of this workspace
+            var existingMembership = await _workspaceUserRepository.GetMembershipAsync(existingUser.Id, workspaceId);
             if (existingMembership != null)
             {
                 return Conflict(new { error = "A user with this email already exists in your team" });
             }
-            // User exists but not in this tenant - add them as a member
-            var newMembership = await _tenantUserRepository.CreateAsync(existingUser.Id, tenantId, request.Role);
-            _logger.LogInformation("Added existing user {Email} to tenant {TenantId} with role {Role}",
-                request.Email, tenantId, request.Role);
-            return CreatedAtAction(nameof(GetUsers), null, TenantUserResponse.FromTenantUser(newMembership));
+            // User exists but not in this workspace - add them as a member
+            var newMembership = await _workspaceUserRepository.CreateAsync(existingUser.Id, workspaceId, request.Role);
+            _logger.LogInformation("Added existing user {Email} to workspace {WorkspaceId} with role {Role}",
+                request.Email, workspaceId, request.Role);
+            return CreatedAtAction(nameof(GetUsers), null, WorkspaceUserResponse.FromWorkspaceUser(newMembership));
         }
 
-        _logger.LogInformation("Inviting new user {Email} to tenant {TenantId} with role {Role}",
-            request.Email, tenantId, request.Role);
+        _logger.LogInformation("Inviting new user {Email} to workspace {WorkspaceId} with role {Role}",
+            request.Email, workspaceId, request.Role);
 
-        var user = await _userRepository.CreatePendingUserAsync(tenantId, request.Email, request.Role);
-        var membership = await _tenantUserRepository.GetMembershipAsync(user.Id, tenantId);
+        var user = await _userRepository.CreatePendingUserAsync(workspaceId, request.Email, request.Role);
+        var membership = await _workspaceUserRepository.GetMembershipAsync(user.Id, workspaceId);
 
-        return CreatedAtAction(nameof(GetUsers), null, TenantUserResponse.FromUser(user, membership?.TenantRole ?? request.Role));
+        return CreatedAtAction(nameof(GetUsers), null, WorkspaceUserResponse.FromUser(user, membership?.WorkspaceRole ?? request.Role));
     }
 
     /// <summary>
-    /// Updates a user's role within the tenant.
+    /// Updates a user's role within the workspace.
     /// </summary>
     [HttpPut("{id}/role")]
-    [Authorize(Policy = "TenantAdmin")]
+    [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<IActionResult> UpdateUserRole(int id, UpdateUserRoleRequest request)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
         var currentUserId = GetUserId();
 
         // Prevent users from changing their own role
@@ -104,7 +104,7 @@ public class UsersController : ApiControllerBase
         }
 
         // Use atomic operation to update role with admin check
-        var result = await _tenantUserRepository.UpdateRoleWithAdminCheckAsync(id, tenantId, request.Role);
+        var result = await _workspaceUserRepository.UpdateRoleWithAdminCheckAsync(id, workspaceId, request.Role);
 
         if (result == AdminCheckResult.UserNotFound)
         {
@@ -116,20 +116,20 @@ public class UsersController : ApiControllerBase
             return BadRequest(new { error = "Cannot demote the last admin. Promote another user first." });
         }
 
-        _logger.LogInformation("Updated user {UserId} role to {Role} in tenant {TenantId}",
-            id, request.Role, tenantId);
+        _logger.LogInformation("Updated user {UserId} role to {Role} in workspace {WorkspaceId}",
+            id, request.Role, workspaceId);
 
         return NoContent();
     }
 
     /// <summary>
-    /// Removes a user from the tenant.
+    /// Removes a user from the workspace.
     /// </summary>
     [HttpDelete("{id}")]
-    [Authorize(Policy = "TenantAdmin")]
+    [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<IActionResult> RemoveUser(int id)
     {
-        var tenantId = GetTenantId();
+        var workspaceId = GetWorkspaceId();
         var currentUserId = GetUserId();
 
         // Prevent users from removing themselves
@@ -139,11 +139,11 @@ public class UsersController : ApiControllerBase
         }
 
         // Use atomic operation to check admin count and delete
-        var result = await _tenantUserRepository.DeleteWithAdminCheckAsync(id, tenantId);
+        var result = await _workspaceUserRepository.DeleteWithAdminCheckAsync(id, workspaceId);
 
         if (result == AdminCheckResult.UserNotFound)
         {
-            return NotFound(new { error = "User not found in this tenant" });
+            return NotFound(new { error = "User not found in this workspace" });
         }
 
         if (result == AdminCheckResult.WouldRemoveLastAdmin)
@@ -152,20 +152,20 @@ public class UsersController : ApiControllerBase
         }
 
         // Check if we need to clean up the user record (if they have no other memberships)
-        var remainingMemberships = await _tenantUserRepository.CountUserMembershipsAsync(id);
+        var remainingMemberships = await _workspaceUserRepository.CountUserMembershipsAsync(id);
         if (remainingMemberships == 0)
         {
             await _userRepository.DeleteAsync(id);
         }
 
-        _logger.LogInformation("Removed user {UserId} from tenant {TenantId}", id, tenantId);
+        _logger.LogInformation("Removed user {UserId} from workspace {WorkspaceId}", id, workspaceId);
 
         return NoContent();
     }
 
     /// <summary>
     /// Gets deletion info for the current user's account.
-    /// Returns information about tenants that require action before account can be deleted.
+    /// Returns information about workspaces that require action before account can be deleted.
     /// </summary>
     [HttpGet("me/deletion-info")]
     public async Task<ActionResult<UserDeletionInfoResponse>> GetDeletionInfo()
@@ -182,66 +182,66 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Get soft-deleted tenants that the current user can restore.
-    /// Only returns tenants where user was TenantAdmin.
+    /// Get soft-deleted workspaces that the current user can restore.
+    /// Only returns workspaces where user was WorkspaceAdmin.
     /// </summary>
-    [HttpGet("me/restorable-tenants")]
-    public async Task<IActionResult> GetRestorableTenants()
+    [HttpGet("me/restorable-workspaces")]
+    public async Task<IActionResult> GetRestorableWorkspaces()
     {
         var userId = GetUserId();
-        _logger.LogInformation("GetRestorableTenants called for user {UserId}", userId);
+        _logger.LogInformation("GetRestorableWorkspaces called for user {UserId}", userId);
 
-        // First get all tenant memberships for this user where they are TenantAdmin
-        var adminMemberships = await _context.TenantUsers
-            .Include(tu => tu.Tenant)
-            .Where(tu => tu.UserId == userId && tu.TenantRole == TenantRole.TenantAdmin)
+        // First get all workspace memberships for this user where they are WorkspaceAdmin
+        var adminMemberships = await _context.WorkspaceUsers
+            .Include(wu => wu.Workspace)
+            .Where(wu => wu.UserId == userId && wu.WorkspaceRole == WorkspaceRole.WorkspaceAdmin)
             .ToListAsync();
 
-        _logger.LogInformation("User {UserId} has {Count} TenantAdmin memberships", userId, adminMemberships.Count);
+        _logger.LogInformation("User {UserId} has {Count} WorkspaceAdmin memberships", userId, adminMemberships.Count);
 
-        // Filter to only deleted tenants and build response
-        var restorableTenants = new List<RestorableTenantResponse>();
+        // Filter to only deleted workspaces and build response
+        var restorableWorkspaces = new List<RestorableWorkspaceResponse>();
         foreach (var membership in adminMemberships)
         {
-            if (membership.Tenant == null)
+            if (membership.Workspace == null)
             {
-                _logger.LogWarning("TenantUser membership for user {UserId}, tenant {TenantId} has null Tenant", userId, membership.TenantId);
+                _logger.LogWarning("WorkspaceUser membership for user {UserId}, workspace {WorkspaceId} has null Workspace", userId, membership.WorkspaceId);
                 continue;
             }
 
-            _logger.LogInformation("Checking tenant {TenantId} ({TenantName}): IsDeleted={IsDeleted}",
-                membership.TenantId, membership.Tenant.Name, membership.Tenant.IsDeleted);
+            _logger.LogInformation("Checking workspace {WorkspaceId} ({WorkspaceName}): IsDeleted={IsDeleted}",
+                membership.WorkspaceId, membership.Workspace.Name, membership.Workspace.IsDeleted);
 
-            if (!membership.Tenant.IsDeleted)
+            if (!membership.Workspace.IsDeleted)
             {
                 continue;
             }
 
-            var stats = new RestorableTenantStats
+            var stats = new RestorableWorkspaceStats
             {
-                CollectionCount = await _context.Collections.CountAsync(c => c.TenantId == membership.TenantId),
-                ItemCount = await _context.Items.CountAsync(i => i.TenantId == membership.TenantId),
-                CategoryCount = await _context.Categories.CountAsync(c => c.TenantId == membership.TenantId),
-                ImageCount = await _context.StoredImages.CountAsync(i => i.TenantId == membership.TenantId)
+                CollectionCount = await _context.Collections.CountAsync(c => c.WorkspaceId == membership.WorkspaceId),
+                ItemCount = await _context.Items.CountAsync(i => i.WorkspaceId == membership.WorkspaceId),
+                CategoryCount = await _context.Categories.CountAsync(c => c.WorkspaceId == membership.WorkspaceId),
+                ImageCount = await _context.StoredImages.CountAsync(i => i.WorkspaceId == membership.WorkspaceId)
             };
 
-            restorableTenants.Add(new RestorableTenantResponse
+            restorableWorkspaces.Add(new RestorableWorkspaceResponse
             {
-                TenantId = membership.TenantId,
-                Name = membership.Tenant.Name,
-                DeletedAt = membership.Tenant.DeletedAt!.Value,
-                DaysRemaining = Math.Max(0, 30 - (DateTime.UtcNow - membership.Tenant.DeletedAt!.Value).Days),
+                WorkspaceId = membership.WorkspaceId,
+                Name = membership.Workspace.Name,
+                DeletedAt = membership.Workspace.DeletedAt!.Value,
+                DaysRemaining = Math.Max(0, 30 - (DateTime.UtcNow - membership.Workspace.DeletedAt!.Value).Days),
                 Stats = stats
             });
         }
 
-        _logger.LogInformation("Returning {Count} restorable tenants for user {UserId}", restorableTenants.Count, userId);
-        return Ok(restorableTenants);
+        _logger.LogInformation("Returning {Count} restorable workspaces for user {UserId}", restorableWorkspaces.Count, userId);
+        return Ok(restorableWorkspaces);
     }
 
     /// <summary>
     /// Deletes the current user's account.
-    /// Requires email confirmation and resolution of any blocking tenants.
+    /// Requires email confirmation and resolution of any blocking workspaces.
     /// </summary>
     [HttpDelete("me")]
     public async Task<ActionResult<DeleteUserResponse>> DeleteAccount([FromBody] DeleteUserRequest request)

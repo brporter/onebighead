@@ -8,7 +8,7 @@ describe('ItemList', () => {
   const createMockItems = (count: number): Item[] => {
     return Array.from({ length: count }, (_, i) => ({
       id: i + 1,
-      tenantId: 1,
+      workspaceId: 1,
       categoryId: 1,
       name: `Item ${i + 1}`,
       summary: `Summary ${i + 1}`,
@@ -167,7 +167,7 @@ describe('ItemList', () => {
     it('should handle empty summary gracefully', () => {
       const items: Item[] = [{
         id: 1,
-        tenantId: 1,
+        workspaceId: 1,
         categoryId: 1,
         name: 'Item without summary',
         summary: '',
@@ -187,7 +187,7 @@ describe('ItemList', () => {
 
       const itemsWithNullId: Item[] = [{
         id: null,
-        tenantId: 1,
+        workspaceId: 1,
         categoryId: 1,
         name: 'Item with null id',
         summary: 'Summary',
@@ -210,7 +210,7 @@ describe('ItemList', () => {
 
       const itemsWithNullId: Item[] = [{
         id: null,
-        tenantId: 1,
+        workspaceId: 1,
         categoryId: 1,
         name: 'Item with null id',
         summary: 'Summary',

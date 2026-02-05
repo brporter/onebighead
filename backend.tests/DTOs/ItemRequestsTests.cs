@@ -106,7 +106,7 @@ public class ItemRequestsTests
             UserFlag = UserFlag.Want
         };
 
-        var item = request.ToItem(tenantId: 1);
+        var item = request.ToItem(workspaceId: 1);
 
         Assert.Equal(UserFlag.Want, item.UserFlag);
     }
@@ -121,7 +121,7 @@ public class ItemRequestsTests
             UserFlag = UserFlag.TradeOrSell
         };
 
-        var item = request.ToItem(id: 1, tenantId: 1);
+        var item = request.ToItem(id: 1, workspaceId: 1);
 
         Assert.Equal(UserFlag.TradeOrSell, item.UserFlag);
     }

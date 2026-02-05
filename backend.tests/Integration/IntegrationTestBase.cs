@@ -19,10 +19,12 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
     protected readonly JsonSerializerOptions JsonOptions;
 
     // Default test entities - these are seeded once per test class
-    protected const int DefaultTenantId = 1;
+    protected const int DefaultWorkspaceId = 1;
     protected const int DefaultUserId = 1;
     protected const string DefaultEmail = "test@example.com";
     protected const int DefaultCollectionId = 1;
+    protected const int DefaultNormalUserId = 2;
+    protected const string DefaultNormalUserEmail = "normal@example.com";
 
     protected IntegrationTestBase(CustomWebApplicationFactory factory)
     {
@@ -45,7 +47,7 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
         await SeedAdditionalDataAsync();
 
         // Create a fresh client for each test
-        Client = Factory.CreateAuthenticatedClient(DefaultTenantId, DefaultUserId, DefaultEmail);
+        Client = Factory.CreateAuthenticatedClient(DefaultWorkspaceId, DefaultUserId, DefaultEmail);
     }
 
     public virtual Task DisposeAsync()
@@ -64,41 +66,59 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         // Check if already seeded (in case of race condition)
-        if (context.Tenants.Any(t => t.Id == DefaultTenantId))
+        if (context.Workspaces.Any(t => t.Id == DefaultWorkspaceId))
         {
             return;
         }
 
-        // Create default tenant
-        context.Tenants.Add(new Tenant
+        // Create default workspace
+        context.Workspaces.Add(new Workspace
         {
-            Id = DefaultTenantId,
-            Name = "Test Tenant"
+            Id = DefaultWorkspaceId,
+            Name = "Test Workspace"
         });
 
-        // Create default user (TenantAdmin)
+        // Create default user (WorkspaceAdmin)
         context.Users.Add(new User
         {
             Id = DefaultUserId,
-            ActiveTenantId = DefaultTenantId,
+            ActiveWorkspaceId = DefaultWorkspaceId,
             Email = DefaultEmail,
             IdentityProvider = IdentityProvider.Microsoft,
             ProviderSubjectId = "test-user-1"
         });
 
-        // Create TenantUser membership
-        context.TenantUsers.Add(new TenantUser
+        // Create WorkspaceUser membership
+        context.WorkspaceUsers.Add(new WorkspaceUser
         {
             UserId = DefaultUserId,
-            TenantId = DefaultTenantId,
-            TenantRole = TenantRole.TenantAdmin
+            WorkspaceId = DefaultWorkspaceId,
+            WorkspaceRole = WorkspaceRole.WorkspaceAdmin
+        });
+
+        // Create default normal user (for authorization tests)
+        context.Users.Add(new User
+        {
+            Id = DefaultNormalUserId,
+            ActiveWorkspaceId = DefaultWorkspaceId,
+            Email = DefaultNormalUserEmail,
+            IdentityProvider = IdentityProvider.Microsoft,
+            ProviderSubjectId = "test-normal-user-2"
+        });
+
+        // Create WorkspaceUser membership for normal user
+        context.WorkspaceUsers.Add(new WorkspaceUser
+        {
+            UserId = DefaultNormalUserId,
+            WorkspaceId = DefaultWorkspaceId,
+            WorkspaceRole = WorkspaceRole.Normal
         });
 
         // Create default collection
         context.Collections.Add(new Collection
         {
             Id = DefaultCollectionId,
-            TenantId = DefaultTenantId,
+            WorkspaceId = DefaultWorkspaceId,
             Name = "Test Collection",
             Slug = "test-collection",
             Description = "A test collection",
@@ -109,7 +129,7 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
         context.Categories.Add(new Category
         {
             Id = 1,
-            TenantId = DefaultTenantId,
+            WorkspaceId = DefaultWorkspaceId,
             CollectionId = DefaultCollectionId,
             Name = "Unassigned Items",
             Description = "Items not assigned to a category",
@@ -121,7 +141,7 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
             new ItemTemplate
             {
                 Id = 1,
-                TenantId = null, // System template
+                WorkspaceId = null, // System template
                 Name = "General Item",
                 Description = "A general purpose item template",
                 Properties = new List<ItemTemplateProperty>
@@ -132,7 +152,7 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
             new ItemTemplate
             {
                 Id = 2,
-                TenantId = null, // System template
+                WorkspaceId = null, // System template
                 Name = "Book",
                 Description = "A book item template",
                 Properties = new List<ItemTemplateProperty>
@@ -157,11 +177,11 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
     }
 
     /// <summary>
-    /// Creates an authenticated client for a different tenant/user.
+    /// Creates an authenticated client for a different workspace/user.
     /// </summary>
-    protected HttpClient CreateClientForTenant(int tenantId, int userId, string email = "other@example.com", string tenantRole = "TenantAdmin")
+    protected HttpClient CreateClientForWorkspace(int workspaceId, int userId, string email = "other@example.com", string workspaceRole = "WorkspaceAdmin")
     {
-        return Factory.CreateAuthenticatedClient(tenantId, userId, email, tenantRole);
+        return Factory.CreateAuthenticatedClient(workspaceId, userId, email, workspaceRole);
     }
 
     /// <summary>
@@ -173,19 +193,19 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
     }
 
     /// <summary>
-    /// Creates an authenticated client with Normal (non-admin) role for the default tenant.
+    /// Creates an authenticated client with Normal (non-admin) role for the default workspace.
     /// </summary>
-    protected HttpClient CreateNormalUserClient(int userId = 999, string email = "normal@example.com")
+    protected HttpClient CreateNormalUserClient(int userId = DefaultNormalUserId, string email = DefaultNormalUserEmail)
     {
-        return Factory.CreateAuthenticatedClient(DefaultTenantId, userId, email, "Normal");
+        return Factory.CreateAuthenticatedClient(DefaultWorkspaceId, userId, email, "Normal");
     }
 
     /// <summary>
-    /// Creates an authenticated client with TenantAdmin role for the default tenant.
+    /// Creates an authenticated client with WorkspaceAdmin role for the default workspace.
     /// </summary>
     protected HttpClient CreateAdminUserClient(int userId = DefaultUserId, string email = DefaultEmail)
     {
-        return Factory.CreateAuthenticatedClient(DefaultTenantId, userId, email, "TenantAdmin");
+        return Factory.CreateAuthenticatedClient(DefaultWorkspaceId, userId, email, "WorkspaceAdmin");
     }
 
     /// <summary>

@@ -70,10 +70,10 @@ describe('UserButton', () => {
   const createMockUser = (overrides = {}) => ({
     userId: 1,
     email: 'test@example.com',
-    tenantId: 1,
+    workspaceId: 1,
     isSystemAdministrator: false,
-    tenants: [{ tenantId: 1, tenantName: 'Test Tenant', tenantRole: 'TenantAdmin', hasCompletedWelcome: true }],
-    activeTenant: { tenantId: 1, tenantName: 'Test Tenant', tenantRole: 'TenantAdmin', hasCompletedWelcome: true },
+    workspaces: [{ workspaceId: 1, workspaceName: 'Test Workspace', workspaceRole: 'WorkspaceAdmin', hasCompletedWelcome: true }],
+    activeWorkspace: { workspaceId: 1, workspaceName: 'Test Workspace', workspaceRole: 'WorkspaceAdmin', hasCompletedWelcome: true },
     ...overrides,
   });
 

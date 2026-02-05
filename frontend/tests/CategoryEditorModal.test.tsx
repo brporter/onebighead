@@ -14,7 +14,7 @@ const { mockAddCategory, mockUpdateCategory, mockDeleteCategory } = vi.hoisted((
 
 const mockCollection: Collection = {
   collectionId: 1,
-  tenantId: 1,
+  workspaceId: 1,
   name: 'Test Collection',
   description: 'Test Description',
   heroImageUrl: null,
@@ -25,7 +25,7 @@ const mockCollection: Collection = {
 
 const mockCategories: Category[] = [
   {
-    tenantId: 1,
+    workspaceId: 1,
     collectionId: 1,
     categoryId: 1,
     name: 'Category 1',
@@ -37,7 +37,7 @@ const mockCategories: Category[] = [
     itemTemplateIds: [],
   },
   {
-    tenantId: 1,
+    workspaceId: 1,
     collectionId: 1,
     categoryId: 2,
     name: 'Category 2',
@@ -49,7 +49,7 @@ const mockCategories: Category[] = [
     itemTemplateIds: [],
   },
   {
-    tenantId: 1,
+    workspaceId: 1,
     collectionId: 1,
     categoryId: 3,
     name: 'Child of Category 1',
@@ -61,7 +61,7 @@ const mockCategories: Category[] = [
     itemTemplateIds: [],
   },
   {
-    tenantId: 1,
+    workspaceId: 1,
     collectionId: 1,
     categoryId: 99,
     name: 'Unassigned Items',
@@ -175,7 +175,7 @@ describe('CategoryEditorModal', () => {
 
   describe('rendering - editing category', () => {
     const existingCategory: Category = {
-      tenantId: 1,
+      workspaceId: 1,
       collectionId: 1,
       categoryId: 1,
       name: 'Category 1',
@@ -228,7 +228,7 @@ describe('CategoryEditorModal', () => {
 
   describe('rendering - system category', () => {
     const systemCategory: Category = {
-      tenantId: 1,
+      workspaceId: 1,
       collectionId: 1,
       categoryId: 99,
       name: 'Unassigned Items',

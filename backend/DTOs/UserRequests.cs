@@ -10,47 +10,47 @@ public class InviteUserRequest
     [MaxLength(320)]
     public string Email { get; set; } = string.Empty;
 
-    public TenantRole Role { get; set; } = TenantRole.Normal;
+    public WorkspaceRole Role { get; set; } = WorkspaceRole.Normal;
 }
 
 public class UpdateUserRoleRequest
 {
     [Required]
-    public TenantRole Role { get; set; }
+    public WorkspaceRole Role { get; set; }
 }
 
-public class TenantUserResponse
+public class WorkspaceUserResponse
 {
     public int UserId { get; set; }
     public string Email { get; set; } = string.Empty;
-    public TenantRole TenantRole { get; set; }
+    public WorkspaceRole WorkspaceRole { get; set; }
     public bool IsLinked { get; set; }
     public string? IdentityProvider { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    public static TenantUserResponse FromUser(User user, TenantRole role)
+    public static WorkspaceUserResponse FromUser(User user, WorkspaceRole role)
     {
-        return new TenantUserResponse
+        return new WorkspaceUserResponse
         {
             UserId = user.Id,
             Email = user.Email,
-            TenantRole = role,
+            WorkspaceRole = role,
             IsLinked = user.IsLinked,
             IdentityProvider = user.IsLinked ? user.IdentityProvider.ToString() : null,
             CreatedAt = user.CreatedAt
         };
     }
 
-    public static TenantUserResponse FromTenantUser(TenantUser tenantUser)
+    public static WorkspaceUserResponse FromWorkspaceUser(WorkspaceUser workspaceUser)
     {
-        return new TenantUserResponse
+        return new WorkspaceUserResponse
         {
-            UserId = tenantUser.UserId,
-            Email = tenantUser.User.Email,
-            TenantRole = tenantUser.TenantRole,
-            IsLinked = tenantUser.User.IsLinked,
-            IdentityProvider = tenantUser.User.IsLinked ? tenantUser.User.IdentityProvider.ToString() : null,
-            CreatedAt = tenantUser.CreatedAt
+            UserId = workspaceUser.UserId,
+            Email = workspaceUser.User.Email,
+            WorkspaceRole = workspaceUser.WorkspaceRole,
+            IsLinked = workspaceUser.User.IsLinked,
+            IdentityProvider = workspaceUser.User.IsLinked ? workspaceUser.User.IdentityProvider.ToString() : null,
+            CreatedAt = workspaceUser.CreatedAt
         };
     }
 }

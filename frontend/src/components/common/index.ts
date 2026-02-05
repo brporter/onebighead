@@ -1,13 +1,13 @@
 export { default as BackNav } from './BackNav';
-export { DeletionConfirmationModal, type TenantBlocker } from './DeletionConfirmationModal';
+export { DeletionConfirmationModal, type WorkspaceBlocker } from './DeletionConfirmationModal';
 export { DeletionStatsGrid } from './DeletionStatsGrid';
 export { default as ImageEditor } from './ImageEditor';
 export { default as ImageGallery } from './ImageGallery';
 export { Loading } from './Loading';
-export { NoTenantHandler } from './NoTenantHandler';
+export { NoWorkspaceHandler } from './NoWorkspaceHandler';
 export { default as RequireAuth } from './RequireAuth';
 export { default as SiteFooter } from './SiteFooter';
 export { default as SiteHeader } from './SiteHeader';
-export { TenantSwitcher } from './TenantSwitcher';
+export { WorkspaceSwitcher } from './WorkspaceSwitcher';
 export { TermsAcceptance } from './TermsAcceptance';
 export { default as VisibilityToggle } from './VisibilityToggle';

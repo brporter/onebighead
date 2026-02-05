@@ -24,13 +24,13 @@ vi.mock('../src/api/auth', () => ({
 const createUser = (overrides: Partial<CurrentUser> = {}): CurrentUser => ({
   userId: 1,
   email: 'test@example.com',
-  tenantId: 1,
-  tenantName: 'Test Tenant',
+  workspaceId: 1,
+  workspaceName: 'Test Workspace',
   hasCompletedWelcome: false,
   hasAcceptedTerms: true, // Default to true so tests start at welcome step
   isSystemAdministrator: false,
-  tenantRole: 'Normal' as const,
-  isTenantAdmin: false,
+  workspaceRole: 'Normal' as const,
+  isWorkspaceAdmin: false,
   ...overrides,
 });
 
@@ -86,26 +86,26 @@ describe('WelcomeWizard', () => {
     expect(screen.getByLabelText(/First Collection Name/)).toBeInTheDocument();
   });
 
-  it('should pre-fill tenant name with user email', () => {
+  it('should pre-fill workspace name with user email', () => {
     render(<WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />);
 
-    const tenantNameInput = screen.getByLabelText(/Organization \/ Workspace Name/) as HTMLInputElement;
-    expect(tenantNameInput.value).toBe('test@example.com');
+    const workspaceNameInput = screen.getByLabelText(/Organization \/ Workspace Name/) as HTMLInputElement;
+    expect(workspaceNameInput.value).toBe('test@example.com');
   });
 
-  it('should allow entering tenant name and collection name', async () => {
+  it('should allow entering workspace name and collection name', async () => {
     const user = userEvent.setup();
     render(<WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />);
 
-    const tenantNameInput = screen.getByLabelText(/Organization \/ Workspace Name/) as HTMLInputElement;
+    const workspaceNameInput = screen.getByLabelText(/Organization \/ Workspace Name/) as HTMLInputElement;
     const collectionNameInput = screen.getByLabelText(/First Collection Name/) as HTMLInputElement;
 
     // Triple-click to select all, then type to replace
-    await user.tripleClick(tenantNameInput);
+    await user.tripleClick(workspaceNameInput);
     await user.keyboard('My Organization');
     await user.type(collectionNameInput, 'My Books');
 
-    expect(tenantNameInput.value).toBe('My Organization');
+    expect(workspaceNameInput.value).toBe('My Organization');
     expect(collectionNameInput.value).toBe('My Books');
   });
 
@@ -144,8 +144,8 @@ describe('WelcomeWizard', () => {
   it('should call skip handler when Skip button is clicked', async () => {
     const user = userEvent.setup();
     vi.mocked(authApi.authApi.completeWelcome).mockResolvedValue({
-      tenantId: 1,
-      tenantName: 'test@example.com',
+      workspaceId: 1,
+      workspaceName: 'test@example.com',
       hasCompletedWelcome: true,
     });
     mockRefetch.mockResolvedValue(undefined);
@@ -182,8 +182,8 @@ describe('WelcomeWizard', () => {
   it('should complete setup and create collection on submit', async () => {
     const user = userEvent.setup();
     vi.mocked(authApi.authApi.completeWelcome).mockResolvedValue({
-      tenantId: 1,
-      tenantName: 'My Org',
+      workspaceId: 1,
+      workspaceName: 'My Org',
       hasCompletedWelcome: true,
     });
     mockRefetch.mockResolvedValue(undefined);
@@ -192,10 +192,10 @@ describe('WelcomeWizard', () => {
     render(<WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />);
 
     // Step 1: Welcome
-    const tenantNameInput = screen.getByLabelText(/Organization \/ Workspace Name/);
+    const workspaceNameInput = screen.getByLabelText(/Organization \/ Workspace Name/);
     const collectionNameInput = screen.getByLabelText(/First Collection Name/);
     // Use triple-click to select all, then type to replace
-    await user.tripleClick(tenantNameInput);
+    await user.tripleClick(workspaceNameInput);
     await user.keyboard('My Org');
     await user.type(collectionNameInput, 'My Collection');
     await user.click(screen.getByRole('button', { name: 'Next' }));

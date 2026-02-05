@@ -1,0 +1,134 @@
+/* ==========================================================================
+   Workspace Switcher
+   A dropdown component for switching between workspaces
+   ========================================================================== */
+
+.workspace-switcher {
+  position: relative;
+}
+
+.workspace-switcher__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  transition: all var(--transition-fast);
+}
+
+.workspace-switcher__trigger:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
+}
+
+.workspace-switcher__trigger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.workspace-switcher__name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-switcher__icon {
+  font-size: 0.625rem;
+  color: var(--color-text-muted);
+}
+
+.workspace-switcher__dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-xs));
+  left: 0;
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.workspace-switcher__current,
+.workspace-switcher__others {
+  padding: var(--space-sm);
+}
+
+.workspace-switcher__others {
+  border-top: 1px solid var(--color-border);
+}
+
+.workspace-switcher__label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-xs);
+}
+
+.workspace-switcher__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: var(--space-sm);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  transition: background var(--transition-fast);
+}
+
+.workspace-switcher__item:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.workspace-switcher__item:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.workspace-switcher__item--active {
+  background: var(--color-surface-raised);
+  cursor: default;
+}
+
+.workspace-switcher__item--active:hover {
+  background: var(--color-surface-raised);
+}
+
+.workspace-switcher__item-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-switcher__item-role {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  margin-left: var(--space-sm);
+}
+
+@media (max-width: 640px) {
+  .workspace-switcher__name {
+    max-width: 100px;
+  }
+
+  .workspace-switcher__dropdown {
+    right: 0;
+    left: auto;
+  }
+}

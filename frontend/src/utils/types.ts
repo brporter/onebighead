@@ -34,18 +34,18 @@ export enum Visibility {
 }
 
 /**
- * User's role within a tenant.
+ * User's role within a workspace.
  *
  * Note: Uses string values to match backend JsonStringEnumConverter serialization.
  */
-export enum TenantRole {
+export enum WorkspaceRole {
   Normal = "Normal",
-  TenantAdmin = "TenantAdmin",
+  WorkspaceAdmin = "WorkspaceAdmin",
 }
 
 export interface Item {
   id: number | null;
-  tenantId: number;
+  workspaceId: number;
   collectionId: number;
   categoryId: number | null;
   name: string;
@@ -59,7 +59,7 @@ export interface Item {
 }
 
 export interface Category {
-  tenantId: number;
+  workspaceId: number;
   collectionId: number;
   categoryId: number;
   name: string;
@@ -77,7 +77,7 @@ export interface CategoryNode extends Category {
 
 export interface Collection {
   collectionId: number;
-  tenantId: number;
+  workspaceId: number;
   name: string;
   description: string;
   heroImageUrl: string | null;
@@ -86,38 +86,38 @@ export interface Collection {
   effectiveIsPublic: boolean;
 }
 
-export interface Tenant {
-  tenantId: number;
+export interface Workspace {
+  workspaceId: number;
   name: string;
   owner: string;
 }
 
-export interface TenantMembership {
-  tenantId: number;
-  tenantName: string;
-  tenantRole: TenantRole;
+export interface WorkspaceMembership {
+  workspaceId: number;
+  workspaceName: string;
+  workspaceRole: WorkspaceRole;
   hasCompletedWelcome: boolean;
 }
 
 export interface CurrentUser {
   userId: number;
   email: string;
-  // Active tenant info (new structure)
-  activeTenant: TenantMembership;
-  // All tenant memberships
-  tenants: TenantMembership[];
+  // Active workspace info (new structure)
+  activeWorkspace: WorkspaceMembership;
+  // All workspace memberships
+  workspaces: WorkspaceMembership[];
   // Legacy fields for backwards compatibility
-  tenantId: number;
-  tenantName: string;
+  workspaceId: number;
+  workspaceName: string;
   hasCompletedWelcome: boolean;
   hasAcceptedTerms: boolean;
   isSystemAdministrator: boolean;
-  tenantRole: TenantRole;
-  isTenantAdmin: boolean;
+  workspaceRole: WorkspaceRole;
+  isWorkspaceAdmin: boolean;
 }
 
-export interface TenantSummary {
-  tenantId: number;
+export interface WorkspaceSummary {
+  workspaceId: number;
   name: string;
   userCount: number;
   collectionCount: number;
@@ -129,8 +129,8 @@ export interface TenantSummary {
 export interface UserSummary {
   userId: number;
   email: string;
-  tenantId: number;
-  tenantName: string;
+  workspaceId: number;
+  workspaceName: string;
   identityProvider: string;
   isSystemAdministrator: boolean;
   createdAt: string;
@@ -196,10 +196,10 @@ export interface SetupCollectionRequest {
   themeId: number;
 }
 
-export interface TenantUser {
+export interface WorkspaceUser {
   userId: number;
   email: string;
-  tenantRole: TenantRole;
+  workspaceRole: WorkspaceRole;
   isLinked: boolean;
   identityProvider: string | null;
   createdAt: string;
@@ -207,10 +207,10 @@ export interface TenantUser {
 
 export interface InviteUserRequest {
   email: string;
-  role: TenantRole;
+  role: WorkspaceRole;
 }
 
 export interface UpdateUserRoleRequest {
-  role: TenantRole;
+  role: WorkspaceRole;
 }
 

@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import App from './App';
 import RequireAuth from './components/common/RequireAuth';
-import { NoTenantHandler } from './components/common';
+import { NoWorkspaceHandler } from './components/common';
 
 // Lazy load route components for better initial load performance
 const CollectionView = lazy(() => import('./views/CollectionView'));
@@ -11,7 +11,7 @@ const ItemView = lazy(() => import('./views/ItemView'));
 const SetupView = lazy(() => import('./views/SetupView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 const SystemAdmin = lazy(() => import('./views/SystemAdmin'));
-const TenantCreationView = lazy(() => import('./views/TenantCreationView'));
+const WorkspaceCreationView = lazy(() => import('./views/WorkspaceCreationView'));
 const TermsView = lazy(() => import('./views/TermsView'));
 const WelcomeView = lazy(() => import('./views/WelcomeView'));
 
@@ -27,9 +27,9 @@ export const router = createBrowserRouter([
     path: '/',
     element: (
       <RequireAuth>
-        <NoTenantHandler>
+        <NoWorkspaceHandler>
           <App />
-        </NoTenantHandler>
+        </NoWorkspaceHandler>
       </RequireAuth>
     ),
     children: [
@@ -122,11 +122,11 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/tenants/new',
+    path: '/workspaces/new',
     element: (
       <RequireAuth skipWelcomeCheck>
         <Suspense fallback={<LoadingFallback />}>
-          <TenantCreationView />
+          <WorkspaceCreationView />
         </Suspense>
       </RequireAuth>
     ),

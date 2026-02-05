@@ -8,7 +8,7 @@ public class StoredImage
     [Key]
     public Guid Id { get; set; }
 
-    public int TenantId { get; set; }
+    public int WorkspaceId { get; set; }
 
     [Required]
     [MaxLength(255)]
@@ -23,6 +23,6 @@ public class StoredImage
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [ForeignKey(nameof(TenantId))]
-    public Tenant? Tenant { get; set; }
+    [ForeignKey(nameof(WorkspaceId))]
+    public Workspace? Workspace { get; set; }
 }

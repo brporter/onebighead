@@ -8,7 +8,7 @@ namespace OneBigHead.Server.Services;
 public interface IUserDeletionService
 {
     Task<UserDeletionInfoResponse?> GetDeletionInfoAsync(int userId);
-    Task<TransferAdminResponse> TransferAdminRoleAsync(int tenantId, int fromUserId, int toUserId);
+    Task<TransferAdminResponse> TransferAdminRoleAsync(int workspaceId, int fromUserId, int toUserId);
     Task<DeleteUserResponse> DeleteUserAccountAsync(int userId, DeleteUserRequest request);
 }
 
@@ -16,21 +16,21 @@ public class UserDeletionService : IUserDeletionService
 {
     private readonly AppDbContext _context;
     private readonly IUserRepository _userRepository;
-    private readonly ITenantUserRepository _tenantUserRepository;
-    private readonly ITenantDeletionService _tenantDeletionService;
+    private readonly IWorkspaceUserRepository _workspaceUserRepository;
+    private readonly IWorkspaceDeletionService _workspaceDeletionService;
     private readonly ILogger<UserDeletionService> _logger;
 
     public UserDeletionService(
         AppDbContext context,
         IUserRepository userRepository,
-        ITenantUserRepository tenantUserRepository,
-        ITenantDeletionService tenantDeletionService,
+        IWorkspaceUserRepository workspaceUserRepository,
+        IWorkspaceDeletionService workspaceDeletionService,
         ILogger<UserDeletionService> logger)
     {
         _context = context;
         _userRepository = userRepository;
-        _tenantUserRepository = tenantUserRepository;
-        _tenantDeletionService = tenantDeletionService;
+        _workspaceUserRepository = workspaceUserRepository;
+        _workspaceDeletionService = workspaceDeletionService;
         _logger = logger;
     }
 
@@ -42,22 +42,22 @@ public class UserDeletionService : IUserDeletionService
             return null;
         }
 
-        var memberships = await _tenantUserRepository.GetByUserIdAsync(userId);
-        var membershipInfos = new List<TenantMembershipDeletionInfo>();
-        var tenantsRequiringAction = 0;
+        var memberships = await _workspaceUserRepository.GetByUserIdAsync(userId);
+        var membershipInfos = new List<WorkspaceMembershipDeletionInfo>();
+        var workspacesRequiringAction = 0;
 
         foreach (var membership in memberships)
         {
-            // Skip deleted tenants
-            if (membership.Tenant?.IsDeleted == true)
+            // Skip deleted workspaces
+            if (membership.Workspace?.IsDeleted == true)
             {
                 continue;
             }
 
-            var userCount = await _tenantUserRepository.CountMembersInTenantAsync(membership.TenantId);
-            var adminCount = await _tenantUserRepository.CountAdminsInTenantAsync(membership.TenantId);
+            var userCount = await _workspaceUserRepository.CountMembersInWorkspaceAsync(membership.WorkspaceId);
+            var adminCount = await _workspaceUserRepository.CountAdminsInWorkspaceAsync(membership.WorkspaceId);
             var isOnlyUser = userCount == 1;
-            var isOnlyAdmin = membership.TenantRole == TenantRole.TenantAdmin && adminCount == 1 && userCount > 1;
+            var isOnlyAdmin = membership.WorkspaceRole == WorkspaceRole.WorkspaceAdmin && adminCount == 1 && userCount > 1;
 
             var blockerReason = DeletionBlockerReason.None;
             var canLeave = true;
@@ -66,39 +66,39 @@ public class UserDeletionService : IUserDeletionService
             {
                 blockerReason = DeletionBlockerReason.SoleUser;
                 canLeave = false;
-                tenantsRequiringAction++;
+                workspacesRequiringAction++;
             }
             else if (isOnlyAdmin)
             {
                 blockerReason = DeletionBlockerReason.SoleAdmin;
                 canLeave = false;
-                tenantsRequiringAction++;
+                workspacesRequiringAction++;
             }
 
-            // Get other users in the tenant for admin transfer selection
+            // Get other users in the workspace for admin transfer selection
             var otherUsers = new List<UserBasicInfo>();
             if (isOnlyAdmin)
             {
-                var tenantUsers = await _context.TenantUsers
-                    .Include(tu => tu.User)
-                    .Where(tu => tu.TenantId == membership.TenantId && tu.UserId != userId)
+                var workspaceUsers = await _context.WorkspaceUsers
+                    .Include(wu => wu.User)
+                    .Where(wu => wu.WorkspaceId == membership.WorkspaceId && wu.UserId != userId)
                     .ToListAsync();
 
-                otherUsers = tenantUsers
-                    .Where(tu => tu.User != null)
-                    .Select(tu => new UserBasicInfo
+                otherUsers = workspaceUsers
+                    .Where(wu => wu.User != null)
+                    .Select(wu => new UserBasicInfo
                     {
-                        UserId = tu.UserId,
-                        Email = tu.User!.Email
+                        UserId = wu.UserId,
+                        Email = wu.User!.Email
                     })
                     .ToList();
             }
 
-            membershipInfos.Add(new TenantMembershipDeletionInfo
+            membershipInfos.Add(new WorkspaceMembershipDeletionInfo
             {
-                TenantId = membership.TenantId,
-                TenantName = membership.Tenant?.Name ?? "Unknown",
-                Role = membership.TenantRole,
+                WorkspaceId = membership.WorkspaceId,
+                WorkspaceName = membership.Workspace?.Name ?? "Unknown",
+                Role = membership.WorkspaceRole,
                 IsOnlyUser = isOnlyUser,
                 IsOnlyAdmin = isOnlyAdmin,
                 UserCount = userCount,
@@ -112,44 +112,44 @@ public class UserDeletionService : IUserDeletionService
         {
             UserId = userId,
             Email = user.Email,
-            TenantMemberships = membershipInfos,
-            TenantsRequiringAction = tenantsRequiringAction,
-            CanDeleteImmediately = tenantsRequiringAction == 0
+            WorkspaceMemberships = membershipInfos,
+            WorkspacesRequiringAction = workspacesRequiringAction,
+            CanDeleteImmediately = workspacesRequiringAction == 0
         };
     }
 
-    public async Task<TransferAdminResponse> TransferAdminRoleAsync(int tenantId, int fromUserId, int toUserId)
+    public async Task<TransferAdminResponse> TransferAdminRoleAsync(int workspaceId, int fromUserId, int toUserId)
     {
         // Verify the from user is an admin
-        var fromMembership = await _tenantUserRepository.GetMembershipAsync(fromUserId, tenantId);
-        if (fromMembership == null || fromMembership.TenantRole != TenantRole.TenantAdmin)
+        var fromMembership = await _workspaceUserRepository.GetMembershipAsync(fromUserId, workspaceId);
+        if (fromMembership == null || fromMembership.WorkspaceRole != WorkspaceRole.WorkspaceAdmin)
         {
             return new TransferAdminResponse
             {
                 Success = false,
-                Error = "You are not an admin of this tenant"
+                Error = "You are not an admin of this workspace"
             };
         }
 
-        // Verify the to user is a member of the tenant
-        var toMembership = await _tenantUserRepository.GetMembershipAsync(toUserId, tenantId);
+        // Verify the to user is a member of the workspace
+        var toMembership = await _workspaceUserRepository.GetMembershipAsync(toUserId, workspaceId);
         if (toMembership == null)
         {
             return new TransferAdminResponse
             {
                 Success = false,
-                Error = "Target user is not a member of this tenant"
+                Error = "Target user is not a member of this workspace"
             };
         }
 
         // Promote the target user to admin
-        await _tenantUserRepository.UpdateRoleAsync(toUserId, tenantId, TenantRole.TenantAdmin);
+        await _workspaceUserRepository.UpdateRoleAsync(toUserId, workspaceId, WorkspaceRole.WorkspaceAdmin);
 
         // Demote the from user to member
-        await _tenantUserRepository.UpdateRoleAsync(fromUserId, tenantId, TenantRole.Normal);
+        await _workspaceUserRepository.UpdateRoleAsync(fromUserId, workspaceId, WorkspaceRole.Normal);
 
-        _logger.LogInformation("Admin role transferred in tenant {TenantId} from user {FromUserId} to user {ToUserId}",
-            tenantId, fromUserId, toUserId);
+        _logger.LogInformation("Admin role transferred in workspace {WorkspaceId} from user {FromUserId} to user {ToUserId}",
+            workspaceId, fromUserId, toUserId);
 
         return new TransferAdminResponse { Success = true };
     }
@@ -187,79 +187,79 @@ public class UserDeletionService : IUserDeletionService
             };
         }
 
-        // Process each tenant that requires action
-        var actionsByTenant = request.TenantActions.ToDictionary(a => a.TenantId);
+        // Process each workspace that requires action
+        var actionsByWorkspace = request.WorkspaceActions.ToDictionary(a => a.WorkspaceId);
 
-        foreach (var membership in deletionInfo.TenantMemberships.Where(m => !m.CanLeave))
+        foreach (var membership in deletionInfo.WorkspaceMemberships.Where(m => !m.CanLeave))
         {
-            if (!actionsByTenant.TryGetValue(membership.TenantId, out var action))
+            if (!actionsByWorkspace.TryGetValue(membership.WorkspaceId, out var action))
             {
                 return new DeleteUserResponse
                 {
                     Success = false,
-                    Error = $"Missing action for tenant: {membership.TenantName}"
+                    Error = $"Missing action for workspace: {membership.WorkspaceName}"
                 };
             }
 
             if (membership.BlockerReason == DeletionBlockerReason.SoleUser)
             {
-                // Must delete the tenant
-                if (action.Action != TenantActionType.Delete)
+                // Must delete the workspace
+                if (action.Action != WorkspaceActionType.Delete)
                 {
                     return new DeleteUserResponse
                     {
                         Success = false,
-                        Error = $"Tenant '{membership.TenantName}' must be deleted since you are the only member"
+                        Error = $"Workspace '{membership.WorkspaceName}' must be deleted since you are the only member"
                     };
                 }
 
-                var deleteResult = await _tenantDeletionService.SoftDeleteTenantAsync(membership.TenantId, userId);
+                var deleteResult = await _workspaceDeletionService.SoftDeleteWorkspaceAsync(membership.WorkspaceId, userId);
                 if (!deleteResult.Success)
                 {
                     return new DeleteUserResponse
                     {
                         Success = false,
-                        Error = $"Failed to delete tenant: {membership.TenantName}"
+                        Error = $"Failed to delete workspace: {membership.WorkspaceName}"
                     };
                 }
 
-                _logger.LogInformation("Tenant {TenantId} deleted as part of user {UserId} account deletion",
-                    membership.TenantId, userId);
+                _logger.LogInformation("Workspace {WorkspaceId} deleted as part of user {UserId} account deletion",
+                    membership.WorkspaceId, userId);
             }
             else if (membership.BlockerReason == DeletionBlockerReason.SoleAdmin)
             {
                 // Must transfer admin
-                if (action.Action != TenantActionType.Transfer || !action.TransferToUserId.HasValue)
+                if (action.Action != WorkspaceActionType.Transfer || !action.TransferToUserId.HasValue)
                 {
                     return new DeleteUserResponse
                     {
                         Success = false,
-                        Error = $"Admin role must be transferred for tenant: {membership.TenantName}"
+                        Error = $"Admin role must be transferred for workspace: {membership.WorkspaceName}"
                     };
                 }
 
-                var transferResult = await TransferAdminRoleAsync(membership.TenantId, userId, action.TransferToUserId.Value);
+                var transferResult = await TransferAdminRoleAsync(membership.WorkspaceId, userId, action.TransferToUserId.Value);
                 if (!transferResult.Success)
                 {
                     return new DeleteUserResponse
                     {
                         Success = false,
-                        Error = $"Failed to transfer admin for tenant '{membership.TenantName}': {transferResult.Error}"
+                        Error = $"Failed to transfer admin for workspace '{membership.WorkspaceName}': {transferResult.Error}"
                     };
                 }
 
-                _logger.LogInformation("Admin role transferred from user {UserId} to user {ToUserId} in tenant {TenantId} as part of account deletion",
-                    userId, action.TransferToUserId.Value, membership.TenantId);
+                _logger.LogInformation("Admin role transferred from user {UserId} to user {ToUserId} in workspace {WorkspaceId} as part of account deletion",
+                    userId, action.TransferToUserId.Value, membership.WorkspaceId);
             }
         }
 
-        // Remove user from all remaining tenants
-        var memberships = await _tenantUserRepository.GetByUserIdAsync(userId);
+        // Remove user from all remaining workspaces
+        var memberships = await _workspaceUserRepository.GetByUserIdAsync(userId);
         foreach (var membership in memberships)
         {
-            await _tenantUserRepository.DeleteAsync(userId, membership.TenantId);
-            _logger.LogInformation("Removed user {UserId} from tenant {TenantId} during account deletion",
-                userId, membership.TenantId);
+            await _workspaceUserRepository.DeleteAsync(userId, membership.WorkspaceId);
+            _logger.LogInformation("Removed user {UserId} from workspace {WorkspaceId} during account deletion",
+                userId, membership.WorkspaceId);
         }
 
         // Delete the user account

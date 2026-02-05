@@ -5,7 +5,7 @@ namespace OneBigHead.Server.DTOs;
 public class CompleteWelcomeRequest
 {
     [MaxLength(200)]
-    public string? TenantName { get; set; }
+    public string? WorkspaceName { get; set; }
 }
 
 public class AuthCallbackRequest
@@ -18,8 +18,8 @@ public class AuthCallbackResponse
 {
     public bool Success { get; set; }
     public string Email { get; set; } = string.Empty;
-    public int TenantId { get; set; }
-    public string TenantName { get; set; } = string.Empty;
+    public int WorkspaceId { get; set; }
+    public string WorkspaceName { get; set; } = string.Empty;
 }
 
 #if DEBUG

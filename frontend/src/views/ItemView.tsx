@@ -116,7 +116,7 @@ function ItemView() {
 
   const newItemTemplate = useMemo(() => {
     if (!isNewItem || categoryIdNum == null || !currentCollection) return null;
-    const emptyItem = createEmptyItem(categoryIdNum, currentCollection.collectionId, currentCollection.tenantId);
+    const emptyItem = createEmptyItem(categoryIdNum, currentCollection.collectionId, currentCollection.workspaceId);
     // Apply selected template properties if available
     if (selectedTemplateProperties && selectedTemplateProperties.length > 0) {
       emptyItem.properties = selectedTemplateProperties;

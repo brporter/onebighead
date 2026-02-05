@@ -13,7 +13,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Collection> Collections => Set<Collection>();
-    public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Item> Items => Set<Item>();
     public DbSet<PropertySuggestion> PropertySuggestions => Set<PropertySuggestion>();
@@ -27,17 +27,17 @@ public class AppDbContext : DbContext
     public DbSet<CollectionThemeCategory> CollectionThemeCategories => Set<CollectionThemeCategory>();
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
     public DbSet<SupportReply> SupportReplies => Set<SupportReply>();
-    public DbSet<TenantUser> TenantUsers => Set<TenantUser>();
+    public DbSet<WorkspaceUser> WorkspaceUsers => Set<WorkspaceUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Tenant>(entity =>
+        modelBuilder.Entity<Workspace>(entity =>
         {
-            entity.HasKey(t => t.Id);
-            entity.HasIndex(t => t.Name);
-            entity.HasIndex(t => t.IsDeleted);
+            entity.HasKey(w => w.Id);
+            entity.HasIndex(w => w.Name);
+            entity.HasIndex(w => w.IsDeleted);
         });
 
         modelBuilder.Entity<User>(entity =>
@@ -47,40 +47,40 @@ public class AppDbContext : DbContext
             entity.HasIndex(u => u.Email);
             entity.HasIndex(u => new { u.IdentityProvider, u.ProviderSubjectId }).IsUnique();
 
-            entity.HasOne(u => u.ActiveTenant)
-                .WithMany(t => t.ActiveUsers)
-                .HasForeignKey(u => u.ActiveTenantId)
+            entity.HasOne(u => u.ActiveWorkspace)
+                .WithMany(w => w.ActiveUsers)
+                .HasForeignKey(u => u.ActiveWorkspaceId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<TenantUser>(entity =>
+        modelBuilder.Entity<WorkspaceUser>(entity =>
         {
-            entity.HasKey(tu => new { tu.UserId, tu.TenantId });
+            entity.HasKey(wu => new { wu.UserId, wu.WorkspaceId });
 
-            entity.HasOne(tu => tu.User)
-                .WithMany(u => u.TenantMemberships)
-                .HasForeignKey(tu => tu.UserId)
+            entity.HasOne(wu => wu.User)
+                .WithMany(u => u.WorkspaceMemberships)
+                .HasForeignKey(wu => wu.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(tu => tu.Tenant)
-                .WithMany(t => t.TenantUsers)
-                .HasForeignKey(tu => tu.TenantId)
+            entity.HasOne(wu => wu.Workspace)
+                .WithMany(w => w.WorkspaceUsers)
+                .HasForeignKey(wu => wu.WorkspaceId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(tu => tu.TenantId);
+            entity.HasIndex(wu => wu.WorkspaceId);
         });
 
         modelBuilder.Entity<Collection>(entity =>
         {
             entity.HasKey(c => c.Id);
 
-            entity.HasOne(c => c.Tenant)
-                .WithMany(t => t.Collections)
-                .HasForeignKey(c => c.TenantId)
+            entity.HasOne(c => c.Workspace)
+                .WithMany(w => w.Collections)
+                .HasForeignKey(c => c.WorkspaceId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(c => c.TenantId);
-            entity.HasIndex(c => new { c.TenantId, c.Slug }).IsUnique();
+            entity.HasIndex(c => c.WorkspaceId);
+            entity.HasIndex(c => new { c.WorkspaceId, c.Slug }).IsUnique();
         });
 
         modelBuilder.Entity<Category>(entity =>
@@ -94,9 +94,9 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Use Restrict to avoid multiple cascade paths in SQL Server
-            entity.HasOne(c => c.Tenant)
-                .WithMany(t => t.Categories)
-                .HasForeignKey(c => c.TenantId)
+            entity.HasOne(c => c.Workspace)
+                .WithMany(w => w.Categories)
+                .HasForeignKey(c => c.WorkspaceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(c => c.Collection)
@@ -104,7 +104,7 @@ public class AppDbContext : DbContext
                 .HasForeignKey(c => c.CollectionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(c => c.TenantId);
+            entity.HasIndex(c => c.WorkspaceId);
             entity.HasIndex(c => c.CollectionId);
             entity.HasIndex(c => c.ParentCategoryId);
         });
@@ -114,9 +114,9 @@ public class AppDbContext : DbContext
             entity.HasKey(i => i.Id);
 
             // Use Restrict to avoid multiple cascade paths in SQL Server
-            entity.HasOne(i => i.Tenant)
+            entity.HasOne(i => i.Workspace)
                 .WithMany()
-                .HasForeignKey(i => i.TenantId)
+                .HasForeignKey(i => i.WorkspaceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Use Restrict to avoid multiple cascade paths in SQL Server
@@ -131,14 +131,14 @@ public class AppDbContext : DbContext
                 .HasForeignKey(i => i.CategoryId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasIndex(i => i.TenantId);
+            entity.HasIndex(i => i.WorkspaceId);
             entity.HasIndex(i => i.CollectionId);
             entity.HasIndex(i => i.CategoryId);
 
             // Index for user flag queries (finding items by Have/Want/Trade status)
             entity.HasIndex(i => i.UserFlag);
-            // Composite index for tenant-scoped flag queries (most common use case)
-            entity.HasIndex(i => new { i.TenantId, i.UserFlag });
+            // Composite index for workspace-scoped flag queries (most common use case)
+            entity.HasIndex(i => new { i.WorkspaceId, i.UserFlag });
 
             // Configure JSON columns for Properties and Images
             var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -171,9 +171,9 @@ public class AppDbContext : DbContext
             entity.HasKey(p => p.Id);
 
             // Use Restrict to avoid multiple cascade paths in SQL Server
-            entity.HasOne(p => p.Tenant)
+            entity.HasOne(p => p.Workspace)
                 .WithMany()
-                .HasForeignKey(p => p.TenantId)
+                .HasForeignKey(p => p.WorkspaceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(p => p.Collection)
@@ -189,12 +189,12 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(t => t.Id);
 
-            entity.HasOne(t => t.Tenant)
+            entity.HasOne(t => t.Workspace)
                 .WithMany()
-                .HasForeignKey(t => t.TenantId)
+                .HasForeignKey(t => t.WorkspaceId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(t => t.TenantId);
+            entity.HasIndex(t => t.WorkspaceId);
         });
 
         modelBuilder.Entity<ItemTemplateProperty>(entity =>
@@ -247,12 +247,12 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(s => s.Id);
 
-            entity.HasOne(s => s.Tenant)
+            entity.HasOne(s => s.Workspace)
                 .WithMany()
-                .HasForeignKey(s => s.TenantId)
+                .HasForeignKey(s => s.WorkspaceId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(s => s.TenantId);
+            entity.HasIndex(s => s.WorkspaceId);
         });
 
         modelBuilder.Entity<CollectionTheme>(entity =>

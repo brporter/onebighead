@@ -9,8 +9,8 @@ public class PropertySuggestionRepositoryTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly PropertySuggestionRepository _repository;
-    private const int TestTenantId = 1;
-    private const int OtherTenantId = 2;
+    private const int TestWorkspaceId = 1;
+    private const int OtherWorkspaceId = 2;
     private const int TestCollectionId = 1;
 
     public PropertySuggestionRepositoryTests()
@@ -36,20 +36,20 @@ public class PropertySuggestionRepositoryTests : IDisposable
         // Arrange
         var suggestions = new List<PropertySuggestion>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Cat1" },
-            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Name1" },
-            new() { Id = 3, TenantId = TestTenantId, CollectionId = 999, Type = PropertySuggestionType.Category, Value = "Other" },
-            new() { Id = 4, TenantId = OtherTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "OtherTenant" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Cat1" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Name1" },
+            new() { Id = 3, WorkspaceId = TestWorkspaceId, CollectionId = 999, Type = PropertySuggestionType.Category, Value = "Other" },
+            new() { Id = 4, WorkspaceId = OtherWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "OtherWorkspace" }
         };
         await _context.PropertySuggestions.AddRangeAsync(suggestions);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestTenantId);
+        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count());
-        Assert.All(result, s => Assert.Equal(TestTenantId, s.TenantId));
+        Assert.All(result, s => Assert.Equal(TestWorkspaceId, s.WorkspaceId));
         Assert.All(result, s => Assert.Equal(TestCollectionId, s.CollectionId));
     }
 
@@ -59,16 +59,16 @@ public class PropertySuggestionRepositoryTests : IDisposable
         // Arrange
         var suggestions = new List<PropertySuggestion>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Zebra" },
-            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Apple" },
-            new() { Id = 3, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Banana" },
-            new() { Id = 4, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Alpha" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Zebra" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Apple" },
+            new() { Id = 3, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Banana" },
+            new() { Id = 4, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Alpha" }
         };
         await _context.PropertySuggestions.AddRangeAsync(suggestions);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = (await _repository.GetByCollectionAsync(TestCollectionId, TestTenantId)).ToList();
+        var result = (await _repository.GetByCollectionAsync(TestCollectionId, TestWorkspaceId)).ToList();
 
         // Assert - Categories come first (Type sorted), then alphabetically within type
         Assert.Equal("Apple", result[0].Value);
@@ -81,7 +81,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
     public async Task GetByCollectionAsync_ReturnsEmpty_WhenNoSuggestions()
     {
         // Act
-        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestTenantId);
+        var result = await _repository.GetByCollectionAsync(TestCollectionId, TestWorkspaceId);
 
         // Assert
         Assert.Empty(result);
@@ -97,15 +97,15 @@ public class PropertySuggestionRepositoryTests : IDisposable
         // Arrange
         var suggestions = new List<PropertySuggestion>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Cat1" },
-            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Cat2" },
-            new() { Id = 3, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Name1" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Cat1" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Cat2" },
+            new() { Id = 3, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Name1" }
         };
         await _context.PropertySuggestions.AddRangeAsync(suggestions);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetCategoriesAsync(TestCollectionId, TestTenantId);
+        var result = await _repository.GetCategoriesAsync(TestCollectionId, TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count());
@@ -120,14 +120,14 @@ public class PropertySuggestionRepositoryTests : IDisposable
         // Arrange
         var suggestions = new List<PropertySuggestion>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Zebra" },
-            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Apple" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Zebra" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Apple" }
         };
         await _context.PropertySuggestions.AddRangeAsync(suggestions);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = (await _repository.GetCategoriesAsync(TestCollectionId, TestTenantId)).ToList();
+        var result = (await _repository.GetCategoriesAsync(TestCollectionId, TestWorkspaceId)).ToList();
 
         // Assert
         Assert.Equal("Apple", result[0]);
@@ -144,15 +144,15 @@ public class PropertySuggestionRepositoryTests : IDisposable
         // Arrange
         var suggestions = new List<PropertySuggestion>
         {
-            new() { Id = 1, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Cat1" },
-            new() { Id = 2, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Name1" },
-            new() { Id = 3, TenantId = TestTenantId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Name2" }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Category, Value = "Cat1" },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Name1" },
+            new() { Id = 3, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Type = PropertySuggestionType.Name, Value = "Name2" }
         };
         await _context.PropertySuggestions.AddRangeAsync(suggestions);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetNamesAsync(TestCollectionId, TestTenantId);
+        var result = await _repository.GetNamesAsync(TestCollectionId, TestWorkspaceId);
 
         // Assert
         Assert.Equal(2, result.Count());
@@ -172,7 +172,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         var item = new Item
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "Test Item",
             Properties = new List<ItemProperty>
@@ -184,7 +184,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        await _repository.SyncSuggestionsAsync(TestCollectionId, TestTenantId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
+        await _repository.SyncSuggestionsAsync(TestCollectionId, TestWorkspaceId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
 
         // Assert
         var suggestions = await _context.PropertySuggestions.ToListAsync();
@@ -200,7 +200,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         var existingSuggestion = new PropertySuggestion
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Type = PropertySuggestionType.Category,
             Value = "UnusedCategory"
@@ -209,7 +209,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act - no items, so the suggestion should be removed
-        await _repository.SyncSuggestionsAsync(TestCollectionId, TestTenantId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
+        await _repository.SyncSuggestionsAsync(TestCollectionId, TestWorkspaceId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
 
         // Assert
         Assert.Empty(await _context.PropertySuggestions.ToListAsync());
@@ -222,7 +222,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         var existingSuggestion = new PropertySuggestion
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Type = PropertySuggestionType.Category,
             Value = "UsedCategory"
@@ -230,7 +230,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         var item = new Item
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "Test Item",
             Properties = new List<ItemProperty>
@@ -243,7 +243,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        await _repository.SyncSuggestionsAsync(TestCollectionId, TestTenantId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
+        await _repository.SyncSuggestionsAsync(TestCollectionId, TestWorkspaceId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
 
         // Assert
         var suggestions = await _context.PropertySuggestions.Where(s => s.Type == PropertySuggestionType.Category).ToListAsync();
@@ -258,7 +258,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         var existingSuggestion = new PropertySuggestion
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Type = PropertySuggestionType.Category,
             Value = "Category"
@@ -266,7 +266,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         var item = new Item
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "Test Item",
             Properties = new List<ItemProperty>
@@ -279,7 +279,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        await _repository.SyncSuggestionsAsync(TestCollectionId, TestTenantId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
+        await _repository.SyncSuggestionsAsync(TestCollectionId, TestWorkspaceId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
 
         // Assert
         var categorySuggestions = await _context.PropertySuggestions
@@ -295,7 +295,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         var item = new Item
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "Test Item",
             Properties = new List<ItemProperty>
@@ -307,7 +307,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        await _repository.SyncSuggestionsAsync(TestCollectionId, TestTenantId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
+        await _repository.SyncSuggestionsAsync(TestCollectionId, TestWorkspaceId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
 
         // Assert - no suggestions should be created for empty values
         Assert.Empty(await _context.PropertySuggestions.ToListAsync());
@@ -320,7 +320,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         var existingSuggestion = new PropertySuggestion
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Type = PropertySuggestionType.Category,
             Value = "Category"
@@ -328,7 +328,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         var item = new Item
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "Test Item",
             Properties = new List<ItemProperty>
@@ -341,7 +341,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        await _repository.SyncSuggestionsAsync(TestCollectionId, TestTenantId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
+        await _repository.SyncSuggestionsAsync(TestCollectionId, TestWorkspaceId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
 
         // Assert - should keep existing and not duplicate
         var categorySuggestions = await _context.PropertySuggestions
@@ -351,27 +351,27 @@ public class PropertySuggestionRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task SyncSuggestionsAsync_OnlyAffectsSpecifiedTenantAndCollection()
+    public async Task SyncSuggestionsAsync_OnlyAffectsSpecifiedWorkspaceAndCollection()
     {
         // Arrange
         var otherSuggestion = new PropertySuggestion
         {
             Id = 1,
-            TenantId = OtherTenantId,
+            WorkspaceId = OtherWorkspaceId,
             CollectionId = TestCollectionId,
             Type = PropertySuggestionType.Category,
-            Value = "OtherTenantCategory"
+            Value = "OtherWorkspaceCategory"
         };
         await _context.PropertySuggestions.AddAsync(otherSuggestion);
         await _context.SaveChangesAsync();
 
         // Act
-        await _repository.SyncSuggestionsAsync(TestCollectionId, TestTenantId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
+        await _repository.SyncSuggestionsAsync(TestCollectionId, TestWorkspaceId, Enumerable.Empty<string>(), Enumerable.Empty<string>());
 
-        // Assert - other tenant's suggestion should not be affected
+        // Assert - other workspace's suggestion should not be affected
         var suggestion = await _context.PropertySuggestions.FindAsync(1);
         Assert.NotNull(suggestion);
-        Assert.Equal("OtherTenantCategory", suggestion.Value);
+        Assert.Equal("OtherWorkspaceCategory", suggestion.Value);
     }
 
     #endregion

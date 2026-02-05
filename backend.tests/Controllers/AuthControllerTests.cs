@@ -18,8 +18,8 @@ public class AuthControllerTests
     private readonly Mock<IOidcTokenValidator> _mockTokenValidator;
     private readonly Mock<ITokenService> _mockTokenService;
     private readonly Mock<IUserRepository> _mockUserRepository;
-    private readonly Mock<ITenantRepository> _mockTenantRepository;
-    private readonly Mock<ITenantUserRepository> _mockTenantUserRepository;
+    private readonly Mock<IWorkspaceRepository> _mockWorkspaceRepository;
+    private readonly Mock<IWorkspaceUserRepository> _mockWorkspaceUserRepository;
     private readonly Mock<IOAuthService> _mockOAuthService;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
     private readonly AuthenticationSettings _settings;
@@ -30,8 +30,8 @@ public class AuthControllerTests
         _mockTokenValidator = new Mock<IOidcTokenValidator>();
         _mockTokenService = new Mock<ITokenService>();
         _mockUserRepository = new Mock<IUserRepository>();
-        _mockTenantRepository = new Mock<ITenantRepository>();
-        _mockTenantUserRepository = new Mock<ITenantUserRepository>();
+        _mockWorkspaceRepository = new Mock<IWorkspaceRepository>();
+        _mockWorkspaceUserRepository = new Mock<IWorkspaceUserRepository>();
         _mockOAuthService = new Mock<IOAuthService>();
         _mockLogger = new Mock<ILogger<AuthController>>();
 
@@ -72,8 +72,8 @@ public class AuthControllerTests
             _mockTokenValidator.Object,
             _mockTokenService.Object,
             _mockUserRepository.Object,
-            _mockTenantRepository.Object,
-            _mockTenantUserRepository.Object,
+            _mockWorkspaceRepository.Object,
+            _mockWorkspaceUserRepository.Object,
             _mockOAuthService.Object,
             options,
             _mockLogger.Object);
@@ -81,7 +81,7 @@ public class AuthControllerTests
         SetupHttpContext();
     }
 
-    private void SetupHttpContext(bool authenticated = false, int tenantId = 1, string email = "test@example.com")
+    private void SetupHttpContext(bool authenticated = false, int workspaceId = 1, string email = "test@example.com")
     {
         var httpContext = new DefaultHttpContext();
         
@@ -89,7 +89,7 @@ public class AuthControllerTests
         {
             var claims = new List<Claim>
             {
-                new("tenant_id", tenantId.ToString()),
+                new("workspace_id", workspaceId.ToString()),
                 new(ClaimTypes.NameIdentifier, "1"),
                 new(ClaimTypes.Email, email)
             };
@@ -276,8 +276,8 @@ public class AuthControllerTests
     public async Task CallbackGet_RedirectsToApp_WhenSuccessful()
     {
         // Arrange
-        var user = new User { Id = 1, ActiveTenantId = 1, Email = "test@example.com" };
-        var membership = new TenantUser { UserId = 1, TenantId = 1, TenantRole = TenantRole.Normal };
+        var user = new User { Id = 1, ActiveWorkspaceId = 1, Email = "test@example.com" };
+        var membership = new WorkspaceUser { UserId = 1, WorkspaceId = 1, WorkspaceRole = WorkspaceRole.Normal };
 
         _mockOAuthService.Setup(s => s.ValidateState(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
         _mockOAuthService.Setup(s => s.ExchangeCodeForTokensAsync("code", IdentityProvider.Google))
@@ -286,9 +286,9 @@ public class AuthControllerTests
             .ReturnsAsync(new OidcValidationResult { IsValid = true, Email = "test@example.com", Subject = "sub123" });
         _mockUserRepository.Setup(r => r.GetByProviderIdAsync(IdentityProvider.Google, "sub123"))
             .ReturnsAsync(user);
-        _mockTenantUserRepository.Setup(r => r.GetMembershipAsync(1, 1))
+        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(1, 1))
             .ReturnsAsync(membership);
-        _mockTokenService.Setup(t => t.GenerateAppToken(user, TenantRole.Normal)).Returns("app-token");
+        _mockTokenService.Setup(t => t.GenerateAppToken(user, WorkspaceRole.Normal)).Returns("app-token");
 
         // Act
         var result = await _controller.CallbackGet("google", code: "code", state: "state");
@@ -302,7 +302,7 @@ public class AuthControllerTests
     public async Task CallbackGet_CreatesNewUser_WhenNotFound()
     {
         // Arrange
-        var newUser = new User { Id = 1, ActiveTenantId = 1, Email = "new@example.com" };
+        var newUser = new User { Id = 1, ActiveWorkspaceId = 1, Email = "new@example.com" };
 
         _mockOAuthService.Setup(s => s.ValidateState(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
         _mockOAuthService.Setup(s => s.ExchangeCodeForTokensAsync("code", IdentityProvider.Google))
@@ -313,15 +313,15 @@ public class AuthControllerTests
             .ReturnsAsync((User?)null);
         _mockUserRepository.Setup(r => r.GetByEmailAsync("new@example.com"))
             .ReturnsAsync((User?)null);
-        _mockUserRepository.Setup(r => r.CreateWithNewTenantAsync("new@example.com", IdentityProvider.Google, "sub123"))
+        _mockUserRepository.Setup(r => r.CreateWithNewWorkspaceAsync("new@example.com", IdentityProvider.Google, "sub123"))
             .ReturnsAsync(newUser);
-        _mockTokenService.Setup(t => t.GenerateAppToken(newUser, TenantRole.TenantAdmin)).Returns("app-token");
+        _mockTokenService.Setup(t => t.GenerateAppToken(newUser, WorkspaceRole.WorkspaceAdmin)).Returns("app-token");
 
         // Act
         var result = await _controller.CallbackGet("google", code: "code", state: "state");
 
         // Assert
-        _mockUserRepository.Verify(r => r.CreateWithNewTenantAsync("new@example.com", IdentityProvider.Google, "sub123"), Times.Once);
+        _mockUserRepository.Verify(r => r.CreateWithNewWorkspaceAsync("new@example.com", IdentityProvider.Google, "sub123"), Times.Once);
     }
 
     [Fact]
@@ -388,16 +388,16 @@ public class AuthControllerTests
     {
         // Arrange
         var request = new AuthCallbackRequest { Token = "valid-token", Provider = "google" };
-        var user = new User { Id = 1, ActiveTenantId = 1, Email = "test@example.com", ActiveTenant = new Tenant { Name = "Test Tenant" } };
-        var membership = new TenantUser { UserId = 1, TenantId = 1, TenantRole = TenantRole.Normal };
+        var user = new User { Id = 1, ActiveWorkspaceId = 1, Email = "test@example.com", ActiveWorkspace = new Workspace { Name = "Test Workspace" } };
+        var membership = new WorkspaceUser { UserId = 1, WorkspaceId = 1, WorkspaceRole = WorkspaceRole.Normal };
 
         _mockTokenValidator.Setup(v => v.ValidateTokenAsync("valid-token", IdentityProvider.Google))
             .ReturnsAsync(new OidcValidationResult { IsValid = true, Email = "test@example.com", Subject = "sub123" });
         _mockUserRepository.Setup(r => r.GetByProviderIdAsync(IdentityProvider.Google, "sub123"))
             .ReturnsAsync(user);
-        _mockTenantUserRepository.Setup(r => r.GetMembershipAsync(1, 1))
+        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(1, 1))
             .ReturnsAsync(membership);
-        _mockTokenService.Setup(t => t.GenerateAppToken(user, TenantRole.Normal)).Returns("app-token");
+        _mockTokenService.Setup(t => t.GenerateAppToken(user, WorkspaceRole.Normal)).Returns("app-token");
 
         // Act
         var result = await _controller.Callback(request);
@@ -443,9 +443,9 @@ public class AuthControllerTests
     public async Task GetCurrentUser_ReturnsUser_WhenAuthenticated()
     {
         // Arrange
-        SetupHttpContext(authenticated: true, tenantId: 5, email: "user@test.com");
-        _mockTenantRepository.Setup(r => r.GetByIdAsync(5))
-            .ReturnsAsync(new Tenant { Id = 5, Name = "Test Tenant", HasCompletedWelcome = true });
+        SetupHttpContext(authenticated: true, workspaceId: 5, email: "user@test.com");
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(5))
+            .ReturnsAsync(new Workspace { Id = 5, Name = "Test Workspace", HasCompletedWelcome = true });
 
         // Act
         var result = await _controller.GetCurrentUser();
@@ -456,12 +456,12 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task GetCurrentUser_ReturnsHasCompletedWelcome_FromTenant()
+    public async Task GetCurrentUser_ReturnsHasCompletedWelcome_FromWorkspace()
     {
         // Arrange
-        SetupHttpContext(authenticated: true, tenantId: 1, email: "user@test.com");
-        _mockTenantRepository.Setup(r => r.GetByIdAsync(1))
-            .ReturnsAsync(new Tenant { Id = 1, Name = "Test", HasCompletedWelcome = false });
+        SetupHttpContext(authenticated: true, workspaceId: 1, email: "user@test.com");
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1))
+            .ReturnsAsync(new Workspace { Id = 1, Name = "Test", HasCompletedWelcome = false });
 
         // Act
         var result = await _controller.GetCurrentUser();
@@ -480,7 +480,7 @@ public class AuthControllerTests
     public async Task CompleteWelcome_ReturnsUnauthorized_WhenNotAuthenticated()
     {
         // Arrange - default setup has no auth
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = "Test" };
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = "Test" };
 
         // Act
         var result = await _controller.CompleteWelcome(request);
@@ -490,65 +490,65 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task CompleteWelcome_UpdatesTenantName_WhenProvided()
+    public async Task CompleteWelcome_UpdatesWorkspaceName_WhenProvided()
     {
         // Arrange
-        SetupHttpContext(authenticated: true, tenantId: 1, email: "user@test.com");
-        var tenant = new Tenant { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
-        _mockTenantRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(tenant);
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = "New Name" };
+        SetupHttpContext(authenticated: true, workspaceId: 1, email: "user@test.com");
+        var workspace = new Workspace { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = "New Name" };
 
         // Act
         var result = await _controller.CompleteWelcome(request);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("New Name", tenant.Name);
-        Assert.True(tenant.HasCompletedWelcome);
-        _mockTenantRepository.Verify(r => r.UpdateAsync(tenant), Times.Once);
+        Assert.Equal("New Name", workspace.Name);
+        Assert.True(workspace.HasCompletedWelcome);
+        _mockWorkspaceRepository.Verify(r => r.UpdateAsync(workspace), Times.Once);
     }
 
     [Fact]
-    public async Task CompleteWelcome_UsesEmail_WhenTenantNameNotProvided()
+    public async Task CompleteWelcome_UsesEmail_WhenWorkspaceNameNotProvided()
     {
         // Arrange
-        SetupHttpContext(authenticated: true, tenantId: 1, email: "user@example.com");
-        var tenant = new Tenant { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
-        _mockTenantRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(tenant);
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = null };
+        SetupHttpContext(authenticated: true, workspaceId: 1, email: "user@example.com");
+        var workspace = new Workspace { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = null };
 
         // Act
         var result = await _controller.CompleteWelcome(request);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("user@example.com", tenant.Name);
-        Assert.True(tenant.HasCompletedWelcome);
+        Assert.Equal("user@example.com", workspace.Name);
+        Assert.True(workspace.HasCompletedWelcome);
     }
 
     [Fact]
     public async Task CompleteWelcome_SetsHasCompletedWelcome_ToTrue()
     {
         // Arrange
-        SetupHttpContext(authenticated: true, tenantId: 1, email: "user@test.com");
-        var tenant = new Tenant { Id = 1, Name = "Test", HasCompletedWelcome = false };
-        _mockTenantRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(tenant);
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = "My Org" };
+        SetupHttpContext(authenticated: true, workspaceId: 1, email: "user@test.com");
+        var workspace = new Workspace { Id = 1, Name = "Test", HasCompletedWelcome = false };
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = "My Org" };
 
         // Act
         await _controller.CompleteWelcome(request);
 
         // Assert
-        Assert.True(tenant.HasCompletedWelcome);
+        Assert.True(workspace.HasCompletedWelcome);
     }
 
     [Fact]
-    public async Task CompleteWelcome_ReturnsNotFound_WhenTenantDoesNotExist()
+    public async Task CompleteWelcome_ReturnsNotFound_WhenWorkspaceDoesNotExist()
     {
         // Arrange
-        SetupHttpContext(authenticated: true, tenantId: 999, email: "user@test.com");
-        _mockTenantRepository.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Tenant?)null);
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { TenantName = "Test" };
+        SetupHttpContext(authenticated: true, workspaceId: 999, email: "user@test.com");
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Workspace?)null);
+        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = "Test" };
 
         // Act
         var result = await _controller.CompleteWelcome(request);

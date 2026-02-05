@@ -59,7 +59,7 @@ exports[`UserManagement > snapshots > should match snapshot with error 1`] = `
             Member
           </option>
           <option
-            value="TenantAdmin"
+            value="WorkspaceAdmin"
           >
             Admin
           </option>
@@ -136,7 +136,7 @@ exports[`UserManagement > snapshots > should match snapshot with pending user 1`
             Member
           </option>
           <option
-            value="TenantAdmin"
+            value="WorkspaceAdmin"
           >
             Admin
           </option>
@@ -186,7 +186,7 @@ exports[`UserManagement > snapshots > should match snapshot with pending user 1`
               Member
             </option>
             <option
-              value="TenantAdmin"
+              value="WorkspaceAdmin"
             >
               Admin
             </option>
@@ -260,7 +260,7 @@ exports[`UserManagement > snapshots > should match snapshot with users loaded 1`
             Member
           </option>
           <option
-            value="TenantAdmin"
+            value="WorkspaceAdmin"
           >
             Admin
           </option>
@@ -322,7 +322,7 @@ exports[`UserManagement > snapshots > should match snapshot with users loaded 1`
               Member
             </option>
             <option
-              value="TenantAdmin"
+              value="WorkspaceAdmin"
             >
               Admin
             </option>
@@ -374,7 +374,7 @@ exports[`UserManagement > snapshots > should match snapshot with users loaded 1`
               Member
             </option>
             <option
-              value="TenantAdmin"
+              value="WorkspaceAdmin"
             >
               Admin
             </option>
@@ -420,7 +420,7 @@ exports[`UserManagement > snapshots > should match snapshot with users loaded 1`
               Member
             </option>
             <option
-              value="TenantAdmin"
+              value="WorkspaceAdmin"
             >
               Admin
             </option>

@@ -12,60 +12,60 @@ public class ItemTemplateRepository : IItemTemplateRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<ItemTemplate>> GetAllAccessibleAsync(int tenantId)
+    public async Task<IEnumerable<ItemTemplate>> GetAllAccessibleAsync(int workspaceId)
     {
-        // Get tenant template names to filter out overridden system templates
-        var tenantTemplateNames = await _context.ItemTemplates
+        // Get workspace template names to filter out overridden system templates
+        var workspaceTemplateNames = await _context.ItemTemplates
             .AsNoTracking()
-            .Where(t => t.TenantId == tenantId)
+            .Where(t => t.WorkspaceId == workspaceId)
             .Select(t => t.Name)
             .ToListAsync();
 
         return await _context.ItemTemplates
             .AsNoTracking()
             .Include(t => t.Properties)
-            .Where(t => 
-                t.TenantId == tenantId || 
-                (t.TenantId == null && !tenantTemplateNames.Contains(t.Name)))
+            .Where(t =>
+                t.WorkspaceId == workspaceId ||
+                (t.WorkspaceId == null && !workspaceTemplateNames.Contains(t.Name)))
             .OrderBy(t => t.Name)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<ItemTemplate>> GetSystemTemplatesAsync(int tenantId)
+    public async Task<IEnumerable<ItemTemplate>> GetSystemTemplatesAsync(int workspaceId)
     {
-        // Get tenant template names to filter out overridden system templates
-        var tenantTemplateNames = await _context.ItemTemplates
+        // Get workspace template names to filter out overridden system templates
+        var workspaceTemplateNames = await _context.ItemTemplates
             .AsNoTracking()
-            .Where(t => t.TenantId == tenantId)
+            .Where(t => t.WorkspaceId == workspaceId)
             .Select(t => t.Name)
             .ToListAsync();
 
         return await _context.ItemTemplates
             .AsNoTracking()
             .Include(t => t.Properties)
-            .Where(t => t.TenantId == null && !tenantTemplateNames.Contains(t.Name))
+            .Where(t => t.WorkspaceId == null && !workspaceTemplateNames.Contains(t.Name))
             .OrderBy(t => t.Name)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<ItemTemplate>> GetTenantTemplatesAsync(int tenantId)
+    public async Task<IEnumerable<ItemTemplate>> GetWorkspaceTemplatesAsync(int workspaceId)
     {
         return await _context.ItemTemplates
             .AsNoTracking()
             .Include(t => t.Properties)
-            .Where(t => t.TenantId == tenantId)
+            .Where(t => t.WorkspaceId == workspaceId)
             .OrderBy(t => t.Name)
             .ToListAsync();
     }
 
-    public async Task<ItemTemplate?> GetByIdAsync(int id, int tenantId)
+    public async Task<ItemTemplate?> GetByIdAsync(int id, int workspaceId)
     {
         return await _context.ItemTemplates
             .AsNoTracking()
             .Include(t => t.Properties)
-            .FirstOrDefaultAsync(t => 
+            .FirstOrDefaultAsync(t =>
                 t.Id == id &&
-                (t.TenantId == null || t.TenantId == tenantId));
+                (t.WorkspaceId == null || t.WorkspaceId == workspaceId));
     }
 
     public async Task<IEnumerable<ItemTemplate>> GetByCollectionAsync(int collectionId)
@@ -84,18 +84,18 @@ public class ItemTemplateRepository : IItemTemplateRepository
     {
         template.CreatedAt = DateTime.UtcNow;
         template.UpdatedAt = DateTime.UtcNow;
-        
+
         _context.ItemTemplates.Add(template);
         await _context.SaveChangesAsync();
         return template;
     }
 
-    public async Task<ItemTemplate?> UpdateAsync(int id, ItemTemplate template, int tenantId)
+    public async Task<ItemTemplate?> UpdateAsync(int id, ItemTemplate template, int workspaceId)
     {
-        // Only tenant-owned templates can be updated directly
+        // Only workspace-owned templates can be updated directly
         var existing = await _context.ItemTemplates
             .Include(t => t.Properties)
-            .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
+            .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == workspaceId);
 
         if (existing is null)
         {
@@ -108,7 +108,7 @@ public class ItemTemplateRepository : IItemTemplateRepository
 
         // Replace properties
         _context.ItemTemplateProperties.RemoveRange(existing.Properties);
-        
+
         var sortOrder = 0;
         foreach (var prop in template.Properties)
         {
@@ -125,21 +125,21 @@ public class ItemTemplateRepository : IItemTemplateRepository
         return existing;
     }
 
-    public async Task<ItemTemplate> CopySystemTemplateAsync(int systemTemplateId, int tenantId, ItemTemplate updates)
+    public async Task<ItemTemplate> CopySystemTemplateAsync(int systemTemplateId, int workspaceId, ItemTemplate updates)
     {
         var systemTemplate = await _context.ItemTemplates
             .Include(t => t.Properties)
-            .FirstOrDefaultAsync(t => t.Id == systemTemplateId && t.TenantId == null);
+            .FirstOrDefaultAsync(t => t.Id == systemTemplateId && t.WorkspaceId == null);
 
         if (systemTemplate is null)
         {
             throw new InvalidOperationException("System template not found");
         }
 
-        // Create a new tenant-owned template as a copy
+        // Create a new workspace-owned template as a copy
         var newTemplate = new ItemTemplate
         {
-            TenantId = tenantId,
+            WorkspaceId = workspaceId,
             Name = updates.Name,
             Description = updates.Description,
             CreatedAt = DateTime.UtcNow,
@@ -162,11 +162,11 @@ public class ItemTemplateRepository : IItemTemplateRepository
         return newTemplate;
     }
 
-    public async Task<bool> DeleteAsync(int id, int tenantId)
+    public async Task<bool> DeleteAsync(int id, int workspaceId)
     {
-        // Only tenant-owned templates can be deleted
+        // Only workspace-owned templates can be deleted
         var template = await _context.ItemTemplates
-            .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
+            .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == workspaceId);
 
         if (template is null)
         {

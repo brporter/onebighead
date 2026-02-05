@@ -12,34 +12,34 @@ public class CategoryRepository : ICategoryRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Category>> GetAllAsync(int tenantId)
+    public async Task<IEnumerable<Category>> GetAllAsync(int workspaceId)
     {
         return await _context.Categories
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId)
+            .Where(c => c.WorkspaceId == workspaceId)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Category>> GetByCollectionAsync(int collectionId, int tenantId)
+    public async Task<IEnumerable<Category>> GetByCollectionAsync(int collectionId, int workspaceId)
     {
         return await _context.Categories
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId && c.CollectionId == collectionId)
+            .Where(c => c.WorkspaceId == workspaceId && c.CollectionId == collectionId)
             .ToListAsync();
     }
 
-    public async Task<Category?> GetByIdAsync(int id, int tenantId)
+    public async Task<Category?> GetByIdAsync(int id, int workspaceId)
     {
         return await _context.Categories
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+            .FirstOrDefaultAsync(c => c.Id == id && c.WorkspaceId == workspaceId);
     }
 
-    public async Task<Category?> GetSystemCategoryAsync(int collectionId, int tenantId, string name)
+    public async Task<Category?> GetSystemCategoryAsync(int collectionId, int workspaceId, string name)
     {
         return await _context.Categories
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.CollectionId == collectionId && c.IsSystem && c.Name == name);
+            .FirstOrDefaultAsync(c => c.WorkspaceId == workspaceId && c.CollectionId == collectionId && c.IsSystem && c.Name == name);
     }
 
     public async Task<Category> CreateAsync(Category category)
@@ -57,11 +57,11 @@ public class CategoryRepository : ICategoryRepository
         return categoryList;
     }
 
-    public async Task<Category?> UpdateAsync(int id, Category category, int tenantId)
+    public async Task<Category?> UpdateAsync(int id, Category category, int workspaceId)
     {
         var existingCategory = await _context.Categories
-            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
-        
+            .FirstOrDefaultAsync(c => c.Id == id && c.WorkspaceId == workspaceId);
+
         if (existingCategory is null)
         {
             return null;
@@ -76,11 +76,11 @@ public class CategoryRepository : ICategoryRepository
         return existingCategory;
     }
 
-    public async Task<bool> DeleteAsync(int id, int tenantId)
+    public async Task<bool> DeleteAsync(int id, int workspaceId)
     {
         var category = await _context.Categories
-            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
-        
+            .FirstOrDefaultAsync(c => c.Id == id && c.WorkspaceId == workspaceId);
+
         if (category is null)
         {
             return false;
@@ -94,22 +94,22 @@ public class CategoryRepository : ICategoryRepository
 
         // Move subcategories to the deleted category's parent (or root if no parent)
         var subcategories = await _context.Categories
-            .Where(c => c.ParentCategoryId == id && c.TenantId == tenantId)
+            .Where(c => c.ParentCategoryId == id && c.WorkspaceId == workspaceId)
             .ToListAsync();
-        
+
         foreach (var subcategory in subcategories)
         {
             subcategory.ParentCategoryId = category.ParentCategoryId;
         }
 
         // Get the "Unassigned Items" system category for this collection
-        var unassignedCategory = await GetSystemCategoryAsync(category.CollectionId, tenantId, "Unassigned Items");
-        
+        var unassignedCategory = await GetSystemCategoryAsync(category.CollectionId, workspaceId, "Unassigned Items");
+
         // Move items in the deleted category to "Unassigned Items"
         var items = await _context.Items
-            .Where(i => i.CategoryId == id && i.TenantId == tenantId)
+            .Where(i => i.CategoryId == id && i.WorkspaceId == workspaceId)
             .ToListAsync();
-        
+
         foreach (var item in items)
         {
             item.CategoryId = unassignedCategory?.Id;
@@ -120,13 +120,13 @@ public class CategoryRepository : ICategoryRepository
         return true;
     }
 
-    public async Task<List<int>> GetTemplateIdsAsync(int categoryId, int tenantId)
+    public async Task<List<int>> GetTemplateIdsAsync(int categoryId, int workspaceId)
     {
-        // Verify category belongs to tenant
+        // Verify category belongs to workspace
         var category = await _context.Categories
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == categoryId && c.TenantId == tenantId);
-        
+            .FirstOrDefaultAsync(c => c.Id == categoryId && c.WorkspaceId == workspaceId);
+
         if (category is null)
         {
             return new List<int>();
@@ -140,11 +140,11 @@ public class CategoryRepository : ICategoryRepository
             .ToListAsync();
     }
 
-    public async Task<Dictionary<int, List<int>>> GetTemplateIdsByCategoryAsync(int collectionId, int tenantId)
+    public async Task<Dictionary<int, List<int>>> GetTemplateIdsByCategoryAsync(int collectionId, int workspaceId)
     {
         var categoryIds = await _context.Categories
             .AsNoTracking()
-            .Where(c => c.CollectionId == collectionId && c.TenantId == tenantId)
+            .Where(c => c.CollectionId == collectionId && c.WorkspaceId == workspaceId)
             .Select(c => c.Id)
             .ToListAsync();
 
@@ -162,12 +162,12 @@ public class CategoryRepository : ICategoryRepository
             );
     }
 
-    public async Task SetTemplateIdsAsync(int categoryId, List<int> templateIds, int tenantId)
+    public async Task SetTemplateIdsAsync(int categoryId, List<int> templateIds, int workspaceId)
     {
-        // Verify category belongs to tenant
+        // Verify category belongs to workspace
         var category = await _context.Categories
-            .FirstOrDefaultAsync(c => c.Id == categoryId && c.TenantId == tenantId);
-        
+            .FirstOrDefaultAsync(c => c.Id == categoryId && c.WorkspaceId == workspaceId);
+
         if (category is null)
         {
             return;
@@ -194,12 +194,12 @@ public class CategoryRepository : ICategoryRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<int>> GetInheritedTemplateIdsAsync(int categoryId, int tenantId)
+    public async Task<List<int>> GetInheritedTemplateIdsAsync(int categoryId, int workspaceId)
     {
         // First get the target category to determine its collection
         var rootCategory = await _context.Categories
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == categoryId && c.TenantId == tenantId);
+            .FirstOrDefaultAsync(c => c.Id == categoryId && c.WorkspaceId == workspaceId);
 
         if (rootCategory is null)
         {
@@ -209,9 +209,9 @@ public class CategoryRepository : ICategoryRepository
         // Load only categories for this collection to avoid loading unnecessary data
         var allCategories = await _context.Categories
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId && c.CollectionId == rootCategory.CollectionId)
+            .Where(c => c.WorkspaceId == workspaceId && c.CollectionId == rootCategory.CollectionId)
             .ToDictionaryAsync(c => c.Id);
-        
+
         // Collect ancestor category IDs
         var ancestorIds = new List<int>();
         var currentId = (int?)categoryId;
@@ -220,23 +220,23 @@ public class CategoryRepository : ICategoryRepository
             ancestorIds.Add(currentId.Value);
             currentId = category.ParentCategoryId;
         }
-        
+
         // Load all template associations for ancestors in single query
         var templateAssociations = await _context.CategoryItemTemplates
             .AsNoTracking()
             .Where(ct => ancestorIds.Contains(ct.CategoryId))
             .OrderBy(ct => ct.SortOrder)
             .ToListAsync();
-        
+
         // Group by category for in-memory traversal
         var templatesByCategory = templateAssociations
             .GroupBy(ct => ct.CategoryId)
             .ToDictionary(g => g.Key, g => g.Select(ct => ct.ItemTemplateId).ToList());
-        
+
         // Walk the hierarchy in order (child first) and collect unique templates
         var result = new List<int>();
         var seen = new HashSet<int>();
-        
+
         foreach (var catId in ancestorIds)
         {
             if (templatesByCategory.TryGetValue(catId, out var templateIds))

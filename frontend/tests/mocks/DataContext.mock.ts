@@ -5,15 +5,15 @@ import type { DataContextValue } from '../../src/contexts/DataContext';
 import { Visibility, UserFlag } from '../../src/utils/types';
 
 export const mockCategories: Category[] = [
-  { tenantId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
-  { tenantId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child description', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
-  { tenantId: 1, categoryId: 3, collectionId: 1, name: 'Another Root', description: 'Another root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child description', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 3, collectionId: 1, name: 'Another Root', description: 'Another root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
 ];
 
 export const mockItems: Item[] = [
   {
     id: 1,
-    tenantId: 1,
+    workspaceId: 1,
     collectionId: 1,
     categoryId: 2,
     name: 'Test Item 1',
@@ -27,7 +27,7 @@ export const mockItems: Item[] = [
   },
   {
     id: 2,
-    tenantId: 1,
+    workspaceId: 1,
     collectionId: 1,
     categoryId: 2,
     name: 'Test Item 2',
@@ -42,7 +42,7 @@ export const mockItems: Item[] = [
 ];
 
 export const mockCollections: Collection[] = [
-  { collectionId: 1, name: 'Test Collection', tenantId: 1, description: '', heroImageUrl: null, slug: 'test-collection', visibility: Visibility.Private, effectiveIsPublic: false },
+  { collectionId: 1, name: 'Test Collection', workspaceId: 1, description: '', heroImageUrl: null, slug: 'test-collection', visibility: Visibility.Private, effectiveIsPublic: false },
 ];
 
 export const createMockDataContext = (overrides?: Partial<DataContextValue>): DataContextValue => ({

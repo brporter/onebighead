@@ -30,8 +30,8 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
     user?.hasAcceptedTerms ? 'welcome' : 'terms'
   );
   const [termsAccepted, setTermsAccepted] = useState(user?.hasAcceptedTerms ?? false);
-  const [tenantName, setTenantName] = useState('');
-  const hasPrefilledTenantName = useRef(false);
+  const [workspaceName, setWorkspaceName] = useState('');
+  const hasPrefilledWorkspaceName = useRef(false);
   const [collectionName, setCollectionName] = useState('');
   const [collectionDescription, setCollectionDescription] = useState('');
   const [selectedThemeId, setSelectedThemeId] = useState<number | null>(null);
@@ -42,11 +42,11 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
     loadThemes();
   }, [loadThemes]);
 
-  // Pre-fill tenant name with email (only once)
+  // Pre-fill workspace name with email (only once)
   useEffect(() => {
-    if (user?.email && !hasPrefilledTenantName.current) {
-      hasPrefilledTenantName.current = true;
-      setTenantName(user.email);
+    if (user?.email && !hasPrefilledWorkspaceName.current) {
+      hasPrefilledWorkspaceName.current = true;
+      setWorkspaceName(user.email);
     }
   }, [user?.email]);
 
@@ -75,7 +75,7 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
       case 'terms':
         return termsAccepted;
       case 'welcome':
-        return tenantName.trim().length > 0 && collectionName.trim().length > 0;
+        return workspaceName.trim().length > 0 && collectionName.trim().length > 0;
       case 'theme':
         return selectedThemeId !== null;
       case 'preview':
@@ -104,7 +104,7 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
     setError(null);
 
     try {
-      // Complete welcome without a tenant name (backend will use email)
+      // Complete welcome without a workspace name (backend will use email)
       await authApi.completeWelcome(undefined);
       await refetchUser();
       onSkip();
@@ -125,8 +125,8 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
     setError(null);
 
     try {
-      // First complete the welcome with tenant name
-      await authApi.completeWelcome(tenantName.trim());
+      // First complete the welcome with workspace name
+      await authApi.completeWelcome(workspaceName.trim());
       await refetchUser();
 
       // Then create the collection
@@ -164,15 +164,15 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
             </div>
 
             <div className="setupWizard__field">
-              <label htmlFor="tenant-name" className="setupWizard__label">
+              <label htmlFor="workspace-name" className="setupWizard__label">
                 Organization / Workspace Name <span className="setupWizard__required">*</span>
               </label>
               <input
-                id="tenant-name"
+                id="workspace-name"
                 type="text"
                 className="setupWizard__input"
-                value={tenantName}
-                onChange={(e) => setTenantName(e.target.value)}
+                value={workspaceName}
+                onChange={(e) => setWorkspaceName(e.target.value)}
                 placeholder="Your name, company, or workspace"
                 autoFocus
               />
@@ -244,7 +244,7 @@ function WelcomeWizard({ onComplete, onSkip }: WelcomeWizardProps) {
                   <h3 className="setupWizard__summaryTitle">Setup Summary</h3>
                   <dl className="setupWizard__summaryList">
                     <dt>Workspace Name</dt>
-                    <dd>{tenantName}</dd>
+                    <dd>{workspaceName}</dd>
                     <dt>Collection Name</dt>
                     <dd>{collectionName}</dd>
                     {collectionDescription && (

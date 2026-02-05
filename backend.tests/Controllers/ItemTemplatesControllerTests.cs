@@ -14,7 +14,7 @@ public class ItemTemplatesControllerTests
 {
     private readonly Mock<IItemTemplateRepository> _mockTemplateRepository;
     private readonly ItemTemplatesController _controller;
-    private const int TestTenantId = 1;
+    private const int TestWorkspaceId = 1;
     private const int TestUserId = 1;
 
     public ItemTemplatesControllerTests()
@@ -24,7 +24,7 @@ public class ItemTemplatesControllerTests
 
         var claims = new List<Claim>
         {
-            new("tenant_id", TestTenantId.ToString()),
+            new("workspace_id", TestWorkspaceId.ToString()),
             new("sub", TestUserId.ToString()),
             new(ClaimTypes.NameIdentifier, "1"),
             new(ClaimTypes.Email, "test@example.com")
@@ -46,10 +46,10 @@ public class ItemTemplatesControllerTests
         // Arrange
         var templates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = null, Name = "System Template", Description = "System", Properties = new List<ItemTemplateProperty>() },
-            new() { Id = 2, TenantId = TestTenantId, Name = "Tenant Template", Description = "Tenant", Properties = new List<ItemTemplateProperty>() }
+            new() { Id = 1, WorkspaceId = null, Name = "System Template", Description = "System", Properties = new List<ItemTemplateProperty>() },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Workspace Template", Description = "Workspace", Properties = new List<ItemTemplateProperty>() }
         };
-        _mockTemplateRepository.Setup(repo => repo.GetAllAccessibleAsync(TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetAllAccessibleAsync(TestWorkspaceId))
             .ReturnsAsync(templates);
 
         // Act
@@ -65,7 +65,7 @@ public class ItemTemplatesControllerTests
     public async Task GetTemplates_ReturnsOkResult_WithEmptyList_WhenNoTemplates()
     {
         // Arrange
-        _mockTemplateRepository.Setup(repo => repo.GetAllAccessibleAsync(TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetAllAccessibleAsync(TestWorkspaceId))
             .ReturnsAsync(new List<ItemTemplate>());
 
         // Act
@@ -83,10 +83,10 @@ public class ItemTemplatesControllerTests
         // Arrange
         var systemTemplates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = null, Name = "System Template 1", Description = "System", Properties = new List<ItemTemplateProperty>() },
-            new() { Id = 2, TenantId = null, Name = "System Template 2", Description = "System", Properties = new List<ItemTemplateProperty>() }
+            new() { Id = 1, WorkspaceId = null, Name = "System Template 1", Description = "System", Properties = new List<ItemTemplateProperty>() },
+            new() { Id = 2, WorkspaceId = null, Name = "System Template 2", Description = "System", Properties = new List<ItemTemplateProperty>() }
         };
-        _mockTemplateRepository.Setup(repo => repo.GetSystemTemplatesAsync(TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetSystemTemplatesAsync(TestWorkspaceId))
             .ReturnsAsync(systemTemplates);
 
         // Act
@@ -97,30 +97,30 @@ public class ItemTemplatesControllerTests
         var returnedTemplates = Assert.IsAssignableFrom<IEnumerable<ItemTemplateResponse>>(okResult.Value);
         Assert.Equal(2, returnedTemplates.Count());
         Assert.All(returnedTemplates, t => Assert.True(t.IsSystem));
-        _mockTemplateRepository.Verify(repo => repo.GetSystemTemplatesAsync(TestTenantId), Times.Once);
+        _mockTemplateRepository.Verify(repo => repo.GetSystemTemplatesAsync(TestWorkspaceId), Times.Once);
     }
 
     [Fact]
-    public async Task GetTemplates_WithTenantFilter_ReturnsOnlyTenantTemplates()
+    public async Task GetTemplates_WithWorkspaceFilter_ReturnsOnlyWorkspaceTemplates()
     {
         // Arrange
-        var tenantTemplates = new List<ItemTemplate>
+        var workspaceTemplates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = TestTenantId, Name = "Tenant Template 1", Description = "Tenant", Properties = new List<ItemTemplateProperty>() },
-            new() { Id = 2, TenantId = TestTenantId, Name = "Tenant Template 2", Description = "Tenant", Properties = new List<ItemTemplateProperty>() }
+            new() { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Workspace Template 1", Description = "Workspace", Properties = new List<ItemTemplateProperty>() },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Workspace Template 2", Description = "Workspace", Properties = new List<ItemTemplateProperty>() }
         };
-        _mockTemplateRepository.Setup(repo => repo.GetTenantTemplatesAsync(TestTenantId))
-            .ReturnsAsync(tenantTemplates);
+        _mockTemplateRepository.Setup(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId))
+            .ReturnsAsync(workspaceTemplates);
 
         // Act
-        var result = await _controller.GetTemplates(filter: "tenant");
+        var result = await _controller.GetTemplates(filter: "workspace");
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var returnedTemplates = Assert.IsAssignableFrom<IEnumerable<ItemTemplateResponse>>(okResult.Value);
         Assert.Equal(2, returnedTemplates.Count());
         Assert.All(returnedTemplates, t => Assert.False(t.IsSystem));
-        _mockTemplateRepository.Verify(repo => repo.GetTenantTemplatesAsync(TestTenantId), Times.Once);
+        _mockTemplateRepository.Verify(repo => repo.GetWorkspaceTemplatesAsync(TestWorkspaceId), Times.Once);
     }
 
     [Fact]
@@ -129,10 +129,10 @@ public class ItemTemplatesControllerTests
         // Arrange
         var templates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = null, Name = "System Template", Description = "System", Properties = new List<ItemTemplateProperty>() },
-            new() { Id = 2, TenantId = TestTenantId, Name = "Tenant Template", Description = "Tenant", Properties = new List<ItemTemplateProperty>() }
+            new() { Id = 1, WorkspaceId = null, Name = "System Template", Description = "System", Properties = new List<ItemTemplateProperty>() },
+            new() { Id = 2, WorkspaceId = TestWorkspaceId, Name = "Workspace Template", Description = "Workspace", Properties = new List<ItemTemplateProperty>() }
         };
-        _mockTemplateRepository.Setup(repo => repo.GetAllAccessibleAsync(TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetAllAccessibleAsync(TestWorkspaceId))
             .ReturnsAsync(templates);
 
         // Act
@@ -142,7 +142,7 @@ public class ItemTemplatesControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var returnedTemplates = Assert.IsAssignableFrom<IEnumerable<ItemTemplateResponse>>(okResult.Value);
         Assert.Equal(2, returnedTemplates.Count());
-        _mockTemplateRepository.Verify(repo => repo.GetAllAccessibleAsync(TestTenantId), Times.Once);
+        _mockTemplateRepository.Verify(repo => repo.GetAllAccessibleAsync(TestWorkspaceId), Times.Once);
     }
 
     [Fact]
@@ -151,9 +151,9 @@ public class ItemTemplatesControllerTests
         // Arrange
         var templates = new List<ItemTemplate>
         {
-            new() { Id = 1, TenantId = null, Name = "System Template", Description = "System", Properties = new List<ItemTemplateProperty>() }
+            new() { Id = 1, WorkspaceId = null, Name = "System Template", Description = "System", Properties = new List<ItemTemplateProperty>() }
         };
-        _mockTemplateRepository.Setup(repo => repo.GetAllAccessibleAsync(TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetAllAccessibleAsync(TestWorkspaceId))
             .ReturnsAsync(templates);
 
         // Act
@@ -161,7 +161,7 @@ public class ItemTemplatesControllerTests
 
         // Assert
         Assert.IsType<OkObjectResult>(result.Result);
-        _mockTemplateRepository.Verify(repo => repo.GetAllAccessibleAsync(TestTenantId), Times.Once);
+        _mockTemplateRepository.Verify(repo => repo.GetAllAccessibleAsync(TestWorkspaceId), Times.Once);
     }
 
     #endregion
@@ -175,7 +175,7 @@ public class ItemTemplatesControllerTests
         var template = new ItemTemplate 
         { 
             Id = 1, 
-            TenantId = TestTenantId, 
+            WorkspaceId = TestWorkspaceId, 
             Name = "Test Template", 
             Description = "Test Description",
             Properties = new List<ItemTemplateProperty>
@@ -183,7 +183,7 @@ public class ItemTemplatesControllerTests
                 new() { Id = 1, Category = "Details", Name = "Color", SortOrder = 0 }
             }
         };
-        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(template);
 
         // Act
@@ -201,7 +201,7 @@ public class ItemTemplatesControllerTests
     public async Task GetTemplate_ReturnsNotFound_WhenTemplateDoesNotExist()
     {
         // Arrange
-        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((ItemTemplate?)null);
 
         // Act
@@ -218,12 +218,12 @@ public class ItemTemplatesControllerTests
         var template = new ItemTemplate 
         { 
             Id = 1, 
-            TenantId = null, // System template
+            WorkspaceId = null, // System template
             Name = "System Template", 
             Description = "System Description",
             Properties = new List<ItemTemplateProperty>()
         };
-        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(template);
 
         // Act
@@ -256,7 +256,7 @@ public class ItemTemplatesControllerTests
         var createdTemplate = new ItemTemplate
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "New Template",
             Description = "New Description",
             Properties = new List<ItemTemplateProperty>
@@ -281,20 +281,20 @@ public class ItemTemplatesControllerTests
     }
 
     [Fact]
-    public async Task CreateTemplate_SetsTenantId_FromClaims()
+    public async Task CreateTemplate_SetsWorkspaceId_FromClaims()
     {
         // Arrange
         var request = new CreateItemTemplateRequest
         {
-            Name = "Tenant Template",
+            Name = "Workspace Template",
             Description = "Description",
             Properties = new List<ItemTemplatePropertyDto>()
         };
         var createdTemplate = new ItemTemplate
         {
             Id = 1,
-            TenantId = TestTenantId,
-            Name = "Tenant Template",
+            WorkspaceId = TestWorkspaceId,
+            Name = "Workspace Template",
             Description = "Description",
             Properties = new List<ItemTemplateProperty>()
         };
@@ -307,7 +307,7 @@ public class ItemTemplatesControllerTests
 
         // Assert
         _mockTemplateRepository.Verify(repo => repo.CreateAsync(
-            It.Is<ItemTemplate>(t => t.TenantId == TestTenantId)), Times.Once);
+            It.Is<ItemTemplate>(t => t.WorkspaceId == TestWorkspaceId)), Times.Once);
     }
 
     [Fact]
@@ -323,7 +323,7 @@ public class ItemTemplatesControllerTests
         var createdTemplate = new ItemTemplate
         {
             Id = 42,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "New Template",
             Description = "Description",
             Properties = new List<ItemTemplateProperty>()
@@ -345,7 +345,7 @@ public class ItemTemplatesControllerTests
     #region UpdateTemplate Tests
 
     [Fact]
-    public async Task UpdateTemplate_ReturnsOkResult_WhenTenantTemplateUpdated()
+    public async Task UpdateTemplate_ReturnsOkResult_WhenWorkspaceTemplateUpdated()
     {
         // Arrange
         var request = new UpdateItemTemplateRequest
@@ -360,14 +360,14 @@ public class ItemTemplatesControllerTests
         var existingTemplate = new ItemTemplate 
         { 
             Id = 1, 
-            TenantId = TestTenantId, 
+            WorkspaceId = TestWorkspaceId, 
             Name = "Original Template",
             Properties = new List<ItemTemplateProperty>()
         };
         var updatedTemplate = new ItemTemplate
         {
             Id = 1,
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "Updated Template",
             Description = "Updated Description",
             Properties = new List<ItemTemplateProperty>
@@ -376,9 +376,9 @@ public class ItemTemplatesControllerTests
             }
         };
 
-        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingTemplate);
-        _mockTemplateRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<ItemTemplate>(), TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<ItemTemplate>(), TestWorkspaceId))
             .ReturnsAsync(updatedTemplate);
 
         // Act
@@ -401,7 +401,7 @@ public class ItemTemplatesControllerTests
             Description = "Description",
             Properties = new List<ItemTemplatePropertyDto>()
         };
-        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(999, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
             .ReturnsAsync((ItemTemplate?)null);
 
         // Act
@@ -427,14 +427,14 @@ public class ItemTemplatesControllerTests
         var systemTemplate = new ItemTemplate 
         { 
             Id = 1, 
-            TenantId = null, // System template
+            WorkspaceId = null, // System template
             Name = "System Template",
             Properties = new List<ItemTemplateProperty>()
         };
         var copiedTemplate = new ItemTemplate
         {
             Id = 100, // New ID for the copied template
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "My Custom Template",
             Description = "Customized",
             Properties = new List<ItemTemplateProperty>
@@ -443,9 +443,9 @@ public class ItemTemplatesControllerTests
             }
         };
 
-        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(systemTemplate);
-        _mockTemplateRepository.Setup(repo => repo.CopySystemTemplateAsync(1, TestTenantId, It.IsAny<ItemTemplate>()))
+        _mockTemplateRepository.Setup(repo => repo.CopySystemTemplateAsync(1, TestWorkspaceId, It.IsAny<ItemTemplate>()))
             .ReturnsAsync(copiedTemplate);
 
         // Act
@@ -457,46 +457,46 @@ public class ItemTemplatesControllerTests
         Assert.Equal("My Custom Template", returnedTemplate.Name);
         Assert.Equal(100, returnedTemplate.ItemTemplateId);
         Assert.False(returnedTemplate.IsSystem);
-        _mockTemplateRepository.Verify(repo => repo.CopySystemTemplateAsync(1, TestTenantId, It.IsAny<ItemTemplate>()), Times.Once);
+        _mockTemplateRepository.Verify(repo => repo.CopySystemTemplateAsync(1, TestWorkspaceId, It.IsAny<ItemTemplate>()), Times.Once);
         _mockTemplateRepository.Verify(repo => repo.UpdateAsync(It.IsAny<int>(), It.IsAny<ItemTemplate>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
-    public async Task UpdateTemplate_DoesNotCopy_WhenEditingTenantTemplate()
+    public async Task UpdateTemplate_DoesNotCopy_WhenEditingWorkspaceTemplate()
     {
         // Arrange
         var request = new UpdateItemTemplateRequest
         {
-            Name = "Updated Tenant Template",
+            Name = "Updated Workspace Template",
             Description = "Updated",
             Properties = new List<ItemTemplatePropertyDto>()
         };
-        var tenantTemplate = new ItemTemplate 
+        var workspaceTemplate = new ItemTemplate 
         { 
             Id = 1, 
-            TenantId = TestTenantId, // Tenant-owned template
-            Name = "Tenant Template",
+            WorkspaceId = TestWorkspaceId, // Workspace-owned template
+            Name = "Workspace Template",
             Properties = new List<ItemTemplateProperty>()
         };
         var updatedTemplate = new ItemTemplate
         {
             Id = 1,
-            TenantId = TestTenantId,
-            Name = "Updated Tenant Template",
+            WorkspaceId = TestWorkspaceId,
+            Name = "Updated Workspace Template",
             Description = "Updated",
             Properties = new List<ItemTemplateProperty>()
         };
 
-        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
-            .ReturnsAsync(tenantTemplate);
-        _mockTemplateRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<ItemTemplate>(), TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
+            .ReturnsAsync(workspaceTemplate);
+        _mockTemplateRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<ItemTemplate>(), TestWorkspaceId))
             .ReturnsAsync(updatedTemplate);
 
         // Act
         await _controller.UpdateTemplate(1, request);
 
         // Assert
-        _mockTemplateRepository.Verify(repo => repo.UpdateAsync(1, It.IsAny<ItemTemplate>(), TestTenantId), Times.Once);
+        _mockTemplateRepository.Verify(repo => repo.UpdateAsync(1, It.IsAny<ItemTemplate>(), TestWorkspaceId), Times.Once);
         _mockTemplateRepository.Verify(repo => repo.CopySystemTemplateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<ItemTemplate>()), Times.Never);
     }
 
@@ -513,14 +513,14 @@ public class ItemTemplatesControllerTests
         var existingTemplate = new ItemTemplate 
         { 
             Id = 1, 
-            TenantId = TestTenantId,
+            WorkspaceId = TestWorkspaceId,
             Name = "Template",
             Properties = new List<ItemTemplateProperty>()
         };
 
-        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
             .ReturnsAsync(existingTemplate);
-        _mockTemplateRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<ItemTemplate>(), TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<ItemTemplate>(), TestWorkspaceId))
             .ReturnsAsync((ItemTemplate?)null);
 
         // Act
@@ -538,7 +538,7 @@ public class ItemTemplatesControllerTests
     public async Task DeleteTemplate_ReturnsNoContent_WhenTemplateDeleted()
     {
         // Arrange
-        _mockTemplateRepository.Setup(repo => repo.DeleteAsync(1, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.DeleteAsync(1, TestWorkspaceId))
             .ReturnsAsync(true);
 
         // Act
@@ -552,7 +552,7 @@ public class ItemTemplatesControllerTests
     public async Task DeleteTemplate_ReturnsNotFound_WhenTemplateDoesNotExist()
     {
         // Arrange
-        _mockTemplateRepository.Setup(repo => repo.DeleteAsync(999, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.DeleteAsync(999, TestWorkspaceId))
             .ReturnsAsync(false);
 
         // Act
@@ -566,7 +566,7 @@ public class ItemTemplatesControllerTests
     public async Task DeleteTemplate_ReturnsNotFound_WhenDeletingSystemTemplate()
     {
         // Arrange - Repository returns false for system templates (they can't be deleted)
-        _mockTemplateRepository.Setup(repo => repo.DeleteAsync(1, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.DeleteAsync(1, TestWorkspaceId))
             .ReturnsAsync(false);
 
         // Act
@@ -577,17 +577,17 @@ public class ItemTemplatesControllerTests
     }
 
     [Fact]
-    public async Task DeleteTemplate_CallsRepositoryWithCorrectTenantId()
+    public async Task DeleteTemplate_CallsRepositoryWithCorrectWorkspaceId()
     {
         // Arrange
-        _mockTemplateRepository.Setup(repo => repo.DeleteAsync(1, TestTenantId))
+        _mockTemplateRepository.Setup(repo => repo.DeleteAsync(1, TestWorkspaceId))
             .ReturnsAsync(true);
 
         // Act
         await _controller.DeleteTemplate(1);
 
         // Assert
-        _mockTemplateRepository.Verify(repo => repo.DeleteAsync(1, TestTenantId), Times.Once);
+        _mockTemplateRepository.Verify(repo => repo.DeleteAsync(1, TestWorkspaceId), Times.Once);
     }
 
     #endregion

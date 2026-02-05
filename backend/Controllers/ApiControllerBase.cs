@@ -4,22 +4,22 @@ using System.Security.Claims;
 namespace OneBigHead.Server.Controllers;
 
 /// <summary>
-/// Base controller providing tenant-scoped functionality for API controllers.
+/// Base controller providing workspace-scoped functionality for API controllers.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>When to use ApiControllerBase:</b>
-/// Use this base class for controllers that operate on tenant-scoped data.
+/// Use this base class for controllers that operate on workspace-scoped data.
 /// This includes most domain controllers like Collections, Categories, Items, etc.
-/// These controllers require an authenticated user with a valid tenant_id claim.
+/// These controllers require an authenticated user with a valid workspace_id claim.
 /// </para>
 /// <para>
 /// <b>When to use ControllerBase directly:</b>
 /// Use the standard ControllerBase for controllers that:
 /// <list type="bullet">
-///   <item>Handle authentication (AuthController) - operates before tenant context exists</item>
-///   <item>Serve system-wide data (ThemesController) - themes are shared across tenants</item>
-///   <item>Handle cross-tenant administration (AdminController, AdminSupportController)</item>
+///   <item>Handle authentication (AuthController) - operates before workspace context exists</item>
+///   <item>Serve system-wide data (ThemesController) - themes are shared across workspaces</item>
+///   <item>Handle cross-workspace administration (AdminController, AdminSupportController)</item>
 ///   <item>Accept both authenticated and anonymous requests (SupportController)</item>
 /// </list>
 /// </para>
@@ -28,32 +28,32 @@ namespace OneBigHead.Server.Controllers;
 public abstract class ApiControllerBase : ControllerBase
 {
     /// <summary>
-    /// Extracts and validates the tenant ID from the current user's claims.
+    /// Extracts and validates the workspace ID from the current user's claims.
     /// </summary>
-    /// <returns>The tenant ID from the user's token.</returns>
-    /// <exception cref="UnauthorizedAccessException">Thrown when tenant_id claim is missing or invalid.</exception>
-    protected int GetTenantId()
+    /// <returns>The workspace ID from the user's token.</returns>
+    /// <exception cref="UnauthorizedAccessException">Thrown when workspace_id claim is missing or invalid.</exception>
+    protected int GetWorkspaceId()
     {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
+        var workspaceIdClaim = User.FindFirst("workspace_id")?.Value;
+        if (string.IsNullOrEmpty(workspaceIdClaim) || !int.TryParse(workspaceIdClaim, out var workspaceId))
         {
-            throw new UnauthorizedAccessException("Tenant ID not found in token");
+            throw new UnauthorizedAccessException("Workspace ID not found in token");
         }
-        return tenantId;
+        return workspaceId;
     }
 
     /// <summary>
-    /// Attempts to extract the tenant ID from the current user's claims.
+    /// Attempts to extract the workspace ID from the current user's claims.
     /// </summary>
-    /// <returns>The tenant ID if present and valid; otherwise, null.</returns>
-    protected int? TryGetTenantId()
+    /// <returns>The workspace ID if present and valid; otherwise, null.</returns>
+    protected int? TryGetWorkspaceId()
     {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
+        var workspaceIdClaim = User.FindFirst("workspace_id")?.Value;
+        if (string.IsNullOrEmpty(workspaceIdClaim) || !int.TryParse(workspaceIdClaim, out var workspaceId))
         {
             return null;
         }
-        return tenantId;
+        return workspaceId;
     }
 
     /// <summary>

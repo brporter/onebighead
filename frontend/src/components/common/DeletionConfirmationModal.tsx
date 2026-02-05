@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { DeletionStatsGrid, type DeletionStatsGridProps } from './DeletionStatsGrid';
-import { DeletionBlockerReason, TenantActionType, type UserBasicInfo } from '../../api/account';
+import { DeletionBlockerReason, WorkspaceActionType, type UserBasicInfo } from '../../api/account';
 
-export interface TenantBlocker {
-  tenantId: number;
-  tenantName: string;
+export interface WorkspaceBlocker {
+  workspaceId: number;
+  workspaceName: string;
   reason: DeletionBlockerReason;
   users?: UserBasicInfo[];
   resolved?: boolean;
-  action?: TenantActionType;
+  action?: WorkspaceActionType;
   transferToUserId?: number;
 }
 
@@ -19,7 +19,7 @@ export interface DeletionConfirmationModalProps {
 
   // Content
   title: string;
-  entityType: 'tenant' | 'account';
+  entityType: 'workspace' | 'account';
   entityName: string;
 
   // Statistics (optional)
@@ -35,8 +35,8 @@ export interface DeletionConfirmationModalProps {
   confirmationText?: string;
 
   // Blockers (for account deletion)
-  blockers?: TenantBlocker[];
-  onResolveBlocker?: (tenantId: number, action: TenantActionType, userId?: number) => void;
+  blockers?: WorkspaceBlocker[];
+  onResolveBlocker?: (workspaceId: number, action: WorkspaceActionType, userId?: number) => void;
 }
 
 export function DeletionConfirmationModal({
@@ -104,13 +104,13 @@ export function DeletionConfirmationModal({
     onClose();
   };
 
-  const renderBlocker = (blocker: TenantBlocker) => {
+  const renderBlocker = (blocker: WorkspaceBlocker) => {
     const isResolved = blocker.resolved;
 
     return (
-      <div key={blocker.tenantId} className={`deletion-modal__blocker ${isResolved ? 'deletion-modal__blocker--resolved' : ''}`}>
+      <div key={blocker.workspaceId} className={`deletion-modal__blocker ${isResolved ? 'deletion-modal__blocker--resolved' : ''}`}>
         <div className="deletion-modal__blocker-header">
-          <span className="deletion-modal__blocker-name">{blocker.tenantName}</span>
+          <span className="deletion-modal__blocker-name">{blocker.workspaceName}</span>
           {isResolved && <span className="deletion-modal__blocker-status">Resolved</span>}
         </div>
 
@@ -123,7 +123,7 @@ export function DeletionConfirmationModal({
                 </p>
                 <button
                   className="deletion-modal__blocker-action"
-                  onClick={() => onResolveBlocker?.(blocker.tenantId, TenantActionType.Delete)}
+                  onClick={() => onResolveBlocker?.(blocker.workspaceId, WorkspaceActionType.Delete)}
                 >
                   Confirm deletion of workspace
                 </button>
@@ -144,7 +144,7 @@ export function DeletionConfirmationModal({
                       onChange={(e) => {
                         const userId = parseInt(e.target.value);
                         if (userId) {
-                          onResolveBlocker?.(blocker.tenantId, TenantActionType.Transfer, userId);
+                          onResolveBlocker?.(blocker.workspaceId, WorkspaceActionType.Transfer, userId);
                         }
                       }}
                     >
@@ -181,7 +181,7 @@ export function DeletionConfirmationModal({
             <span className="deletion-modal__warning-icon">&#9888;</span>
             <div className="deletion-modal__warning-content">
               <strong>This action cannot be undone.</strong>
-              {entityType === 'tenant' && (
+              {entityType === 'workspace' && (
                 <p>Deleting "{entityName}" will permanently remove all collections, categories, items, and images.</p>
               )}
               {entityType === 'account' && (
@@ -275,7 +275,7 @@ export function DeletionConfirmationModal({
             onClick={handleConfirm}
             disabled={!canConfirm || isDeleting}
           >
-            {isDeleting ? 'Deleting...' : `Delete ${entityType === 'tenant' ? 'Workspace' : 'Account'}`}
+            {isDeleting ? 'Deleting...' : `Delete ${entityType === 'workspace' ? 'Workspace' : 'Account'}`}
           </button>
         </div>
       </div>
