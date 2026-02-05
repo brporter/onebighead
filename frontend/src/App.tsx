@@ -34,6 +34,11 @@ function App() {
   }
 
   // Loading state
+  console.log('[App] Render state:', {
+    collectionsLoading,
+    collectionsLength: collections.length,
+    showLoading: collectionsLoading && collections.length === 0
+  });
   if (collectionsLoading && collections.length === 0) {
     return (
       <div className="app">

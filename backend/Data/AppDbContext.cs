@@ -37,6 +37,7 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(t => t.Id);
             entity.HasIndex(t => t.Name);
+            entity.HasIndex(t => t.IsDeleted);
         });
 
         modelBuilder.Entity<User>(entity =>

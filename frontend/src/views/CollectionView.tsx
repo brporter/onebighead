@@ -9,6 +9,7 @@ function CollectionView() {
   const {
     collections,
     collectionsLoading,
+    collectionsError,
     loadCollections,
   } = useData();
 
@@ -17,20 +18,44 @@ function CollectionView() {
   }, [loadCollections]);
 
   useEffect(() => {
+    console.log('[CollectionView] Effect running:', {
+      collectionsLoading,
+      collectionsLength: collections.length,
+      collectionsError,
+      collections: collections.map(c => ({ id: c.collectionId, name: c.name }))
+    });
+
+    // Don't redirect if there was an error loading collections - show error instead
+    if (collectionsError) {
+      console.log('[CollectionView] Collections error, not redirecting:', collectionsError);
+      return;
+    }
+
     // Redirect to setup if user has no collections
     if (!collectionsLoading && collections.length === 0) {
+      console.log('[CollectionView] Redirecting to /setup - no collections found');
       navigate('/setup', { replace: true });
       return;
     }
-    
+
     // Auto-navigate to single collection
     if (!collectionsLoading && collections.length === 1) {
+      console.log('[CollectionView] Auto-navigating to single collection:', collections[0].collectionId);
       navigate(`/collections/${collections[0].collectionId}`, { replace: true });
     }
-  }, [collections, collectionsLoading, navigate]);
+  }, [collections, collectionsLoading, collectionsError, navigate]);
 
   if (collectionsLoading) {
     return <Loading message="Loading collections..." />;
+  }
+
+  if (collectionsError) {
+    return (
+      <div className="app__error">
+        <p>Error loading collections: {collectionsError}</p>
+        <button onClick={() => loadCollections()}>Retry</button>
+      </div>
+    );
   }
 
   if (collections.length === 0) {

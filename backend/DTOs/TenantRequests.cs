@@ -89,3 +89,49 @@ public class SetupTenantResponse
     public int CollectionId { get; set; }
     public string CollectionName { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// A soft-deleted tenant that the user can restore
+/// </summary>
+public class RestorableTenantResponse
+{
+    public int TenantId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public DateTime DeletedAt { get; set; }
+    public int DaysRemaining { get; set; }
+    public RestorableTenantStats Stats { get; set; } = new();
+}
+
+public class RestorableTenantStats
+{
+    public int CollectionCount { get; set; }
+    public int ItemCount { get; set; }
+    public int CategoryCount { get; set; }
+    public int ImageCount { get; set; }
+}
+
+/// <summary>
+/// Request to restore multiple soft-deleted tenants
+/// </summary>
+public class RestoreTenantsRequest
+{
+    public List<int> TenantIds { get; set; } = new();
+}
+
+/// <summary>
+/// Response from restoring tenants
+/// </summary>
+public class RestoreTenantsResponse
+{
+    public List<int> RestoredTenantIds { get; set; } = new();
+    public int ActiveTenantId { get; set; }
+}
+
+/// <summary>
+/// Response from restoring a single tenant
+/// </summary>
+public class RestoreTenantResponse
+{
+    public int TenantId { get; set; }
+    public string Name { get; set; } = string.Empty;
+}

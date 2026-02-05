@@ -16,15 +16,18 @@ public class ExportController : ApiControllerBase
     private readonly ICollectionRepository _collectionRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly IItemRepository _itemRepository;
+    private readonly IItemTemplateRepository _itemTemplateRepository;
 
     public ExportController(
         ICollectionRepository collectionRepository,
         ICategoryRepository categoryRepository,
-        IItemRepository itemRepository)
+        IItemRepository itemRepository,
+        IItemTemplateRepository itemTemplateRepository)
     {
         _collectionRepository = collectionRepository;
         _categoryRepository = categoryRepository;
         _itemRepository = itemRepository;
+        _itemTemplateRepository = itemTemplateRepository;
     }
 
     [HttpGet]
@@ -36,6 +39,7 @@ public class ExportController : ApiControllerBase
         var collections = await _collectionRepository.GetAllAsync(tenantId);
         var categories = await _categoryRepository.GetAllAsync(tenantId);
         var items = await _itemRepository.GetAllAsync(tenantId);
+        var itemTemplates = await _itemTemplateRepository.GetTenantTemplatesAsync(tenantId);
 
         var exportData = new ExportData
         {
@@ -66,8 +70,21 @@ public class ExportController : ApiControllerBase
                 Name = i.Name,
                 Summary = i.Summary,
                 Description = i.Description,
+                UserFlag = i.UserFlag,
                 Properties = i.Properties,
                 Images = i.Images
+            }).ToList(),
+            ItemTemplates = itemTemplates.Select(t => new ItemTemplateExport
+            {
+                ItemTemplateId = t.Id,
+                Name = t.Name,
+                Description = t.Description,
+                Properties = t.Properties.Select(p => new ItemTemplatePropertyExport
+                {
+                    Category = p.Category,
+                    Name = p.Name,
+                    SortOrder = p.SortOrder
+                }).ToList()
             }).ToList()
         };
 

@@ -31,11 +31,24 @@ export default defineConfig({
         target: 'http://localhost:5148/',
         changeOrigin: true,
         secure: false,
+        // Ensure cookies are properly forwarded through the proxy
+        cookieDomainRewrite: '',
+        cookiePathRewrite: '/',
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            // Forward Set-Cookie headers from backend to browser
+            const setCookie = proxyRes.headers['set-cookie'];
+            if (setCookie) {
+              res.setHeader('set-cookie', setCookie);
+            }
+          });
+        },
       },
       '/api/auth': {
         target: 'http://localhost:5148/',
         changeOrigin: true,
         secure: false,
+        cookieDomainRewrite: '',
       },
       '^/$': {
         target: 'http://localhost:5148',

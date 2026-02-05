@@ -194,7 +194,7 @@ export function DataProvider({ children }: DataProviderProps) {
   const [currentCollection, setCurrentCollection] = useState<Collection | null>(null);
   
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [collectionsLoading, setCollectionsLoading] = useState(true); // Start true to prevent premature redirects
   const [collectionsError, setCollectionsError] = useState<string | null>(null);
   
   const [themes, setThemes] = useState<CollectionTheme[]>([]);
@@ -212,6 +212,7 @@ export function DataProvider({ children }: DataProviderProps) {
   
   const itemsCacheRef = useRef<Map<number, CategoryItemsCache>>(new Map());
   const propertySuggestionsCacheRef = useRef<Map<number, PropertySuggestionsCache>>(new Map());
+  const loadCollectionsPromiseRef = useRef<Promise<void> | null>(null);
   const pendingSyncRef = useRef<number | null>(null);
   
   // Property suggestions state (fetched from backend API)
@@ -303,16 +304,33 @@ export function DataProvider({ children }: DataProviderProps) {
 
   // Collection operations
   const loadCollections = useCallback(async () => {
-    try {
-      setCollectionsLoading(true);
-      setCollectionsError(null);
-      const data = await collectionsApi.getAll();
-      setCollections(data);
-    } catch (error) {
-      setCollectionsError(getErrorMessage(error, 'Failed to fetch collections'));
-    } finally {
-      setCollectionsLoading(false);
+    console.log('[DataContext] loadCollections called');
+
+    // If already loading, return the existing promise to prevent duplicate calls
+    if (loadCollectionsPromiseRef.current) {
+      console.log('[DataContext] loadCollections already in progress, returning existing promise');
+      return loadCollectionsPromiseRef.current;
     }
+
+    const loadPromise = (async () => {
+      try {
+        setCollectionsLoading(true);
+        setCollectionsError(null);
+        const data = await collectionsApi.getAll();
+        console.log('[DataContext] loadCollections received:', data?.length, 'collections', data);
+        setCollections(data);
+      } catch (error) {
+        console.error('[DataContext] loadCollections error:', error);
+        setCollectionsError(getErrorMessage(error, 'Failed to fetch collections'));
+      } finally {
+        setCollectionsLoading(false);
+        loadCollectionsPromiseRef.current = null;
+        console.log('[DataContext] loadCollections finished');
+      }
+    })();
+
+    loadCollectionsPromiseRef.current = loadPromise;
+    return loadPromise;
   }, []);
 
   const addCollection = useCallback(async (name: string, description?: string, heroImageUrl?: string, visibility?: Visibility): Promise<Collection> => {

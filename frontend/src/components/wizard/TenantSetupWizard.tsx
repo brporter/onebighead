@@ -189,6 +189,10 @@ function TenantSetupWizard({
           themeId: selectedThemeId,
         });
 
+        // Explicitly switch to the new tenant to ensure the JWT cookie is updated
+        // This works around Vite proxy not properly forwarding Set-Cookie headers
+        await tenantsApi.switch(result.tenantId);
+
         await refetchUser();
 
         onComplete({

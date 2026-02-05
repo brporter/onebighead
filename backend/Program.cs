@@ -51,6 +51,10 @@ builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
 // Register visibility service
 builder.Services.AddScoped<IVisibilityService, VisibilityService>();
 
+// Register deletion services
+builder.Services.AddScoped<ITenantDeletionService, TenantDeletionService>();
+builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
+
 // Configure email service
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.AddScoped<IEmailService, AzureEmailService>();
@@ -145,6 +149,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseTenantActiveCheck();
 app.UseAuditLogging();
 
 // Serve static assets from wwwroot (CSS, favicon, etc.)

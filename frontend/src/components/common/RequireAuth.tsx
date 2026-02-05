@@ -19,6 +19,16 @@ function RequireAuth({ children, skipWelcomeCheck = false, skipTermsCheck = fals
   const { user, loading } = useUser();
   const location = useLocation();
 
+  console.log('[RequireAuth] State:', {
+    loading,
+    hasUser: !!user,
+    path: location.pathname,
+    skipWelcomeCheck,
+    skipTermsCheck,
+    hasCompletedWelcome: user?.hasCompletedWelcome,
+    tenantsCount: user?.tenants?.length
+  });
+
   if (loading) {
     return <div className="app__loading">Loading...</div>;
   }
@@ -28,6 +38,15 @@ function RequireAuth({ children, skipWelcomeCheck = false, skipTermsCheck = fals
     const returnUrl = encodeURIComponent(location.pathname + location.search);
     window.location.href = `/signin?returnUrl=${returnUrl}`;
     return null;
+  }
+
+  // Check if user has any tenants
+  const hasAnyTenant = user.tenants && user.tenants.length > 0;
+
+  // If user has no tenants, let NoTenantHandler manage the flow
+  // Don't redirect to welcome wizard in this case
+  if (!hasAnyTenant) {
+    return <>{children}</>;
   }
 
   // Redirect to terms acceptance if user hasn't accepted terms

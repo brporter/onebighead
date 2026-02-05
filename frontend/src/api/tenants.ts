@@ -49,6 +49,61 @@ export interface SetupTenantResponse {
   collectionName: string;
 }
 
+export interface TenantStats {
+  tenantId: number;
+  tenantName: string;
+  collectionCount: number;
+  categoryCount: number;
+  itemCount: number;
+  imageCount: number;
+  userCount: number;
+  adminCount: number;
+}
+
+export interface TenantDeletionResponse {
+  success: boolean;
+  newActiveTenantId?: number;
+  userSoftDeleted?: boolean;
+}
+
+export interface TransferAdminRequest {
+  newAdminUserId: number;
+}
+
+export interface TransferAdminResponse {
+  success: boolean;
+  error?: string;
+}
+
+export interface RestorableTenantStats {
+  collectionCount: number;
+  itemCount: number;
+  categoryCount: number;
+  imageCount: number;
+}
+
+export interface RestorableTenant {
+  tenantId: number;
+  name: string;
+  deletedAt: string;
+  daysRemaining: number;
+  stats: RestorableTenantStats;
+}
+
+export interface RestoreTenantsRequest {
+  tenantIds: number[];
+}
+
+export interface RestoreTenantsResponse {
+  restoredTenantIds: number[];
+  activeTenantId: number;
+}
+
+export interface RestoreTenantResponse {
+  tenantId: number;
+  name: string;
+}
+
 export const tenantsApi = {
   /**
    * Get all tenant memberships for the current user
@@ -91,5 +146,47 @@ export const tenantsApi = {
    */
   setup(request: SetupTenantRequest): Promise<SetupTenantResponse> {
     return api.post<SetupTenantResponse>('/tenants/setup', request);
+  },
+
+  /**
+   * Get deletion statistics for a tenant (requires TenantAdmin)
+   */
+  getStats(tenantId: number): Promise<TenantStats> {
+    return api.get<TenantStats>(`/tenants/${tenantId}/stats`);
+  },
+
+  /**
+   * Soft-delete a tenant (requires TenantAdmin)
+   */
+  deleteTenant(tenantId: number): Promise<TenantDeletionResponse> {
+    return api.delete<TenantDeletionResponse>(`/tenants/${tenantId}`);
+  },
+
+  /**
+   * Transfer admin role to another user (requires TenantAdmin)
+   */
+  transferAdmin(tenantId: number, request: TransferAdminRequest): Promise<TransferAdminResponse> {
+    return api.post<TransferAdminResponse>(`/tenants/${tenantId}/transfer-admin`, request);
+  },
+
+  /**
+   * Get soft-deleted tenants the current user can restore
+   */
+  getRestorableTenants(): Promise<RestorableTenant[]> {
+    return api.get<RestorableTenant[]>('/users/me/restorable-tenants');
+  },
+
+  /**
+   * Restore multiple soft-deleted tenants
+   */
+  restoreTenants(request: RestoreTenantsRequest): Promise<RestoreTenantsResponse> {
+    return api.post<RestoreTenantsResponse>('/tenants/restore', request);
+  },
+
+  /**
+   * Restore a single soft-deleted tenant
+   */
+  restoreTenant(tenantId: number): Promise<RestoreTenantResponse> {
+    return api.post<RestoreTenantResponse>(`/tenants/${tenantId}/restore`);
   },
 };
