@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { DeletionConfirmationModal } from '../common';
-import { tenantsApi, exportApi } from '../../api';
+import { tenantsApi, exportApi, authApi } from '../../api';
 import type { TenantStats } from '../../api/tenants';
 import type { TenantMembership } from '../../utils/types';
 
@@ -52,6 +52,14 @@ export function TenantDeletionSection({ tenant, onDeleted }: TenantDeletionSecti
     if (!result.success) {
       throw new Error('Failed to delete workspace');
     }
+
+    if (result.userSoftDeleted) {
+      // User account was soft-deleted - log out and redirect to homepage
+      await authApi.logout();
+      window.location.href = '/';
+      return;
+    }
+
     onDeleted();
   }, [tenant.tenantId, onDeleted]);
 

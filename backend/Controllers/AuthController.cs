@@ -200,6 +200,16 @@ public class AuthController : ControllerBase
         var user = await _userRepository.GetByProviderIdAsync(provider, validationResult.Subject!);
         if (user != null)
         {
+            // Restore soft-deleted user
+            if (user.IsDeleted)
+            {
+                user.IsDeleted = false;
+                user.DeletedAt = null;
+                await _userRepository.UpdateAsync(user);
+                _logger.LogInformation("Restored soft-deleted user {UserId} ({Email}) on sign-in",
+                    user.Id, user.Email);
+            }
+
             var membership = await _tenantUserRepository.GetMembershipAsync(user.Id, user.ActiveTenantId);
             return (user, membership?.TenantRole ?? TenantRole.Normal);
         }
@@ -208,6 +218,15 @@ public class AuthController : ControllerBase
         var pendingUser = await _userRepository.GetByEmailAsync(validationResult.Email!);
         if (pendingUser != null && !pendingUser.IsLinked)
         {
+            // Restore if soft-deleted
+            if (pendingUser.IsDeleted)
+            {
+                pendingUser.IsDeleted = false;
+                pendingUser.DeletedAt = null;
+                await _userRepository.UpdateAsync(pendingUser);
+                _logger.LogInformation("Restored soft-deleted pending user {UserId} on link", pendingUser.Id);
+            }
+
             // Link pending user to this OAuth identity
             _logger.LogInformation("Linking pending user {Email} to {Provider}", validationResult.Email, provider);
             var linkedUser = await _userRepository.LinkUserAsync(
@@ -223,6 +242,15 @@ public class AuthController : ControllerBase
         if (pendingUser != null)
         {
             // User exists with same email but different provider (already linked)
+            // Restore if soft-deleted
+            if (pendingUser.IsDeleted)
+            {
+                pendingUser.IsDeleted = false;
+                pendingUser.DeletedAt = null;
+                await _userRepository.UpdateAsync(pendingUser);
+                _logger.LogInformation("Restored soft-deleted user {UserId} ({Email}) on sign-in with different provider",
+                    pendingUser.Id, pendingUser.Email);
+            }
             _logger.LogInformation("User {Email} authenticated with different provider", validationResult.Email);
             var membership = await _tenantUserRepository.GetMembershipAsync(pendingUser.Id, pendingUser.ActiveTenantId);
             return (pendingUser, membership?.TenantRole ?? TenantRole.Normal);
@@ -331,15 +359,17 @@ public class AuthController : ControllerBase
         var tenant = await _tenantRepository.GetByIdAsync(tenantId);
         var user = await _userRepository.GetByIdAsync(userId);
 
-        // Get all tenant memberships for this user
+        // Get all tenant memberships for this user (excluding deleted tenants)
         var memberships = await _tenantUserRepository.GetByUserIdAsync(userId);
-        var tenantMemberships = memberships.Select(m => new TenantMembershipResponse
-        {
-            TenantId = m.TenantId,
-            TenantName = m.Tenant.Name,
-            TenantRole = m.TenantRole,
-            HasCompletedWelcome = m.Tenant.HasCompletedWelcome
-        }).ToList();
+        var tenantMemberships = memberships
+            .Where(m => m.Tenant != null && !m.Tenant.IsDeleted)
+            .Select(m => new TenantMembershipResponse
+            {
+                TenantId = m.TenantId,
+                TenantName = m.Tenant!.Name,
+                TenantRole = m.TenantRole,
+                HasCompletedWelcome = m.Tenant.HasCompletedWelcome
+            }).ToList();
 
         var activeTenantRole = tenantRoleClaim ?? "Normal";
 
@@ -437,5 +467,66 @@ public class AuthController : ControllerBase
             hasCompletedWelcome = tenant.HasCompletedWelcome
         });
     }
+
+#if DEBUG
+    /// <summary>
+    /// Development-only endpoint for test authentication.
+    /// Logs in as the specified email address, creating the user if needed.
+    /// </summary>
+    [HttpPost("dev-login")]
+    public async Task<IActionResult> DevLogin([FromBody] DevLoginRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest(new { error = "Email is required" });
+        }
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        _logger.LogWarning("DEV LOGIN: Authenticating as {Email} - THIS SHOULD NEVER APPEAR IN PRODUCTION", email);
+
+        // Look up existing user by email
+        var user = await _userRepository.GetByEmailAsync(email);
+        TenantRole tenantRole;
+
+        if (user != null)
+        {
+            // Restore if soft-deleted
+            if (user.IsDeleted)
+            {
+                user.IsDeleted = false;
+                user.DeletedAt = null;
+                await _userRepository.UpdateAsync(user);
+                _logger.LogInformation("DEV LOGIN: Restored soft-deleted user {UserId}", user.Id);
+            }
+
+            var membership = await _tenantUserRepository.GetMembershipAsync(user.Id, user.ActiveTenantId);
+            tenantRole = membership?.TenantRole ?? TenantRole.Normal;
+        }
+        else
+        {
+            // Create new user with new tenant
+            user = await _userRepository.CreateWithNewTenantAsync(
+                email,
+                IdentityProvider.Microsoft, // Use Microsoft as placeholder provider
+                $"dev-{Guid.NewGuid()}"); // Fake provider subject ID
+            tenantRole = TenantRole.TenantAdmin;
+            _logger.LogInformation("DEV LOGIN: Created new user {UserId} with tenant {TenantId}", user.Id, user.ActiveTenantId);
+        }
+
+        // Generate JWT and set cookie
+        var appToken = _tokenService.GenerateAppToken(user, tenantRole);
+        SetAuthCookie(appToken);
+
+        return Ok(new
+        {
+            success = true,
+            userId = user.Id,
+            email = user.Email,
+            tenantId = user.ActiveTenantId,
+            tenantRole = tenantRole.ToString(),
+            isNewUser = user.CreatedAt > DateTime.UtcNow.AddSeconds(-5)
+        });
+    }
+#endif
 }
 

@@ -28,6 +28,11 @@ public class TenantDeletionResponse
     /// The new active tenant ID for the user, if they were switched to another tenant.
     /// </summary>
     public int? NewActiveTenantId { get; set; }
+    /// <summary>
+    /// True if the user account was also soft-deleted (single-tenant admin scenario).
+    /// Frontend should log out and redirect to homepage.
+    /// </summary>
+    public bool UserSoftDeleted { get; set; }
 }
 
 /// <summary>

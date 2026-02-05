@@ -5,6 +5,7 @@ import '../styles/SettingsView.css';
 import { useData } from '../contexts/DataContext';
 import { useUser } from '../contexts/UserContext';
 import { exportApi, tenantsApi } from '../api';
+import type { RestorableTenant } from '../api/tenants';
 import ItemTemplateEditor from '../components/template/ItemTemplateEditor';
 import CollectionTemplateEditor from '../components/collection/CollectionTemplateEditor';
 import VisibilityToggle from '../components/common/VisibilityToggle';
@@ -37,6 +38,8 @@ function SettingsView() {
   const [tenantError, setTenantError] = useState<string | null>(null);
   const [isLeavingTenant, setIsLeavingTenant] = useState<number | null>(null);
   const [editingTenant, setEditingTenant] = useState<TenantMembership | null>(null);
+  const [deletedTenants, setDeletedTenants] = useState<RestorableTenant[]>([]);
+  const [isRestoringTenant, setIsRestoringTenant] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -80,6 +83,22 @@ function SettingsView() {
   useEffect(() => {
     loadCollections();
   }, [loadCollections]);
+
+  // Load deleted tenants when tenants section is active
+  useEffect(() => {
+    const loadDeletedTenants = async () => {
+      try {
+        const deleted = await tenantsApi.getRestorableTenants();
+        setDeletedTenants(deleted);
+      } catch {
+        // Silently fail - deleted tenants section is optional
+      }
+    };
+
+    if (activeSection === 'tenants') {
+      loadDeletedTenants();
+    }
+  }, [activeSection]);
 
   const handleSectionChange = (section: SettingsSection) => {
     if (hasUnsavedChanges()) {
@@ -470,6 +489,18 @@ function SettingsView() {
     }
   };
 
+  const handleRestoreTenant = async (tenantId: number) => {
+    setIsRestoringTenant(tenantId);
+    try {
+      await tenantsApi.restoreTenant(tenantId);
+      // Reload the page to refresh tenant list
+      window.location.reload();
+    } catch (err) {
+      setTenantError(err instanceof Error ? err.message : 'Failed to restore workspace');
+      setIsRestoringTenant(null);
+    }
+  };
+
   const renderTenantsSection = () => {
     const tenants = user?.tenants || [];
     const activeTenant = user?.activeTenant;
@@ -567,6 +598,45 @@ function SettingsView() {
             </div>
           ))}
         </div>
+
+        {deletedTenants.length > 0 && (
+          <>
+            <div className="settings-section__divider" />
+            <h3 className="settings-section__subtitle">Deleted Workspaces</h3>
+            <p className="settings-section__description">
+              These workspaces are scheduled for permanent deletion. Restore them to keep your data.
+            </p>
+            <div className="settings-tenant-list">
+              {deletedTenants.map((tenant) => (
+                <div key={tenant.tenantId} className="settings-tenant-card settings-tenant-card--deleted">
+                  <div className="settings-tenant-card__content">
+                    <div className="settings-tenant-card__header">
+                      <h3 className="settings-tenant-card__name">{tenant.name}</h3>
+                      <span className="settings-tenant-card__badge settings-tenant-card__badge--deleted">
+                        Deleted
+                      </span>
+                    </div>
+                    <p className="settings-tenant-card__stats">
+                      {tenant.stats.collectionCount} collections, {tenant.stats.itemCount} items
+                    </p>
+                    <p className="settings-tenant-card__countdown">
+                      {tenant.daysRemaining} days until permanent deletion
+                    </p>
+                  </div>
+                  <div className="settings-tenant-card__actions">
+                    <button
+                      className="settings-tenant-card__button settings-tenant-card__button--primary"
+                      onClick={() => handleRestoreTenant(tenant.tenantId)}
+                      disabled={isRestoringTenant === tenant.tenantId}
+                    >
+                      {isRestoringTenant === tenant.tenantId ? 'Restoring...' : 'Restore'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     );
   };

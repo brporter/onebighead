@@ -63,6 +63,7 @@ export interface TenantStats {
 export interface TenantDeletionResponse {
   success: boolean;
   newActiveTenantId?: number;
+  userSoftDeleted?: boolean;
 }
 
 export interface TransferAdminRequest {
@@ -72,6 +73,35 @@ export interface TransferAdminRequest {
 export interface TransferAdminResponse {
   success: boolean;
   error?: string;
+}
+
+export interface RestorableTenantStats {
+  collectionCount: number;
+  itemCount: number;
+  categoryCount: number;
+  imageCount: number;
+}
+
+export interface RestorableTenant {
+  tenantId: number;
+  name: string;
+  deletedAt: string;
+  daysRemaining: number;
+  stats: RestorableTenantStats;
+}
+
+export interface RestoreTenantsRequest {
+  tenantIds: number[];
+}
+
+export interface RestoreTenantsResponse {
+  restoredTenantIds: number[];
+  activeTenantId: number;
+}
+
+export interface RestoreTenantResponse {
+  tenantId: number;
+  name: string;
 }
 
 export const tenantsApi = {
@@ -137,5 +167,26 @@ export const tenantsApi = {
    */
   transferAdmin(tenantId: number, request: TransferAdminRequest): Promise<TransferAdminResponse> {
     return api.post<TransferAdminResponse>(`/tenants/${tenantId}/transfer-admin`, request);
+  },
+
+  /**
+   * Get soft-deleted tenants the current user can restore
+   */
+  getRestorableTenants(): Promise<RestorableTenant[]> {
+    return api.get<RestorableTenant[]>('/users/me/restorable-tenants');
+  },
+
+  /**
+   * Restore multiple soft-deleted tenants
+   */
+  restoreTenants(request: RestoreTenantsRequest): Promise<RestoreTenantsResponse> {
+    return api.post<RestoreTenantsResponse>('/tenants/restore', request);
+  },
+
+  /**
+   * Restore a single soft-deleted tenant
+   */
+  restoreTenant(tenantId: number): Promise<RestoreTenantResponse> {
+    return api.post<RestoreTenantResponse>(`/tenants/${tenantId}/restore`);
   },
 };

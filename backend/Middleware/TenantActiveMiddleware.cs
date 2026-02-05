@@ -5,7 +5,8 @@ using OneBigHead.Server.Services;
 namespace OneBigHead.Server.Middleware;
 
 /// <summary>
-/// Middleware that checks if the user's current tenant has been soft-deleted.
+/// Middleware that checks if the user and their current tenant are active.
+/// Returns 401 Unauthorized with USER_DELETED code if user is soft-deleted or has no active tenants.
 /// Returns 410 Gone if the tenant is deleted, allowing the client to handle the situation.
 /// </summary>
 public class TenantActiveMiddleware
@@ -18,6 +19,8 @@ public class TenantActiveMiddleware
     {
         "/api/auth",
         "/api/users/me/deletion-info",
+        "/api/users/me/restorable-tenants",
+        "/api/themes",
         "/health"
     };
 
@@ -37,12 +40,15 @@ public class TenantActiveMiddleware
     {
         var path = context.Request.Path.Value ?? "";
 
-        // Skip excluded paths (auth endpoints, deletion info, health check)
+        // Skip excluded paths (auth endpoints, deletion info, health check, themes)
         if (ExcludedPrefixes.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
         {
+            _logger.LogDebug("Path {Path} matched excluded prefix, skipping tenant check", path);
             await _next(context);
             return;
         }
+
+        _logger.LogDebug("Path {Path} did not match any excluded prefix", path);
 
         // Allow tenant listing and switching (GET /api/tenants, POST /api/tenants/{id}/switch)
         if (path.StartsWith("/api/tenants", StringComparison.OrdinalIgnoreCase))
@@ -78,6 +84,69 @@ public class TenantActiveMiddleware
                 await _next(context);
                 return;
             }
+
+            // Allow POST /api/tenants/restore (restore multiple tenants)
+            if (path.Equals("/api/tenants/restore", StringComparison.OrdinalIgnoreCase) &&
+                context.Request.Method == "POST")
+            {
+                await _next(context);
+                return;
+            }
+
+            // Allow POST /api/tenants/{id}/restore (restore single tenant)
+            if (path.EndsWith("/restore", StringComparison.OrdinalIgnoreCase) &&
+                context.Request.Method == "POST")
+            {
+                await _next(context);
+                return;
+            }
+        }
+
+        // Get user ID from claims
+        var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out var userId))
+        {
+            // Check if user is soft-deleted
+            var isUserDeleted = await tenantDeletionService.IsUserDeletedAsync(userId);
+            if (isUserDeleted)
+            {
+                _logger.LogWarning("Request blocked for deleted user {UserId} at path {Path}",
+                    userId, path);
+
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                context.Response.Headers.CacheControl = "no-store";
+
+                var response = new
+                {
+                    error = "Your account has been deleted. Please sign in again to restore your account.",
+                    code = "USER_DELETED"
+                };
+
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+                return;
+            }
+
+            // Check if user has any active tenants
+            var hasActiveTenant = await tenantDeletionService.HasUserAnyActiveTenantAsync(userId);
+            if (!hasActiveTenant)
+            {
+                _logger.LogWarning("Request blocked for user {UserId} with no active tenants at path {Path}",
+                    userId, path);
+
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                context.Response.Headers.CacheControl = "no-store";
+
+                var response = new
+                {
+                    error = "You have no active workspaces. Please create or restore a workspace.",
+                    code = "NO_ACTIVE_TENANTS"
+                };
+
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+                return;
+            }
         }
 
         // Get tenant ID from claims
@@ -98,6 +167,8 @@ public class TenantActiveMiddleware
 
             context.Response.StatusCode = StatusCodes.Status410Gone;
             context.Response.ContentType = "application/json";
+            // Prevent browsers from caching 410 responses - user may create/restore a tenant
+            context.Response.Headers.CacheControl = "no-store";
 
             var response = new
             {

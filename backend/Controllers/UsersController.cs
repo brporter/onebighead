@@ -5,6 +5,7 @@ using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace OneBigHead.Server.Controllers;
@@ -19,19 +20,22 @@ public class UsersController : ApiControllerBase
     private readonly IUserDeletionService _userDeletionService;
     private readonly AuthenticationSettings _authSettings;
     private readonly ILogger<UsersController> _logger;
+    private readonly AppDbContext _context;
 
     public UsersController(
         IUserRepository userRepository,
         ITenantUserRepository tenantUserRepository,
         IUserDeletionService userDeletionService,
         IOptions<AuthenticationSettings> authSettings,
-        ILogger<UsersController> logger)
+        ILogger<UsersController> logger,
+        AppDbContext context)
     {
         _userRepository = userRepository;
         _tenantUserRepository = tenantUserRepository;
         _userDeletionService = userDeletionService;
         _authSettings = authSettings.Value;
         _logger = logger;
+        _context = context;
     }
 
     /// <summary>
@@ -175,6 +179,64 @@ public class UsersController : ApiControllerBase
         }
 
         return Ok(deletionInfo);
+    }
+
+    /// <summary>
+    /// Get soft-deleted tenants that the current user can restore.
+    /// Only returns tenants where user was TenantAdmin.
+    /// </summary>
+    [HttpGet("me/restorable-tenants")]
+    public async Task<IActionResult> GetRestorableTenants()
+    {
+        var userId = GetUserId();
+        _logger.LogInformation("GetRestorableTenants called for user {UserId}", userId);
+
+        // First get all tenant memberships for this user where they are TenantAdmin
+        var adminMemberships = await _context.TenantUsers
+            .Include(tu => tu.Tenant)
+            .Where(tu => tu.UserId == userId && tu.TenantRole == TenantRole.TenantAdmin)
+            .ToListAsync();
+
+        _logger.LogInformation("User {UserId} has {Count} TenantAdmin memberships", userId, adminMemberships.Count);
+
+        // Filter to only deleted tenants and build response
+        var restorableTenants = new List<RestorableTenantResponse>();
+        foreach (var membership in adminMemberships)
+        {
+            if (membership.Tenant == null)
+            {
+                _logger.LogWarning("TenantUser membership for user {UserId}, tenant {TenantId} has null Tenant", userId, membership.TenantId);
+                continue;
+            }
+
+            _logger.LogInformation("Checking tenant {TenantId} ({TenantName}): IsDeleted={IsDeleted}",
+                membership.TenantId, membership.Tenant.Name, membership.Tenant.IsDeleted);
+
+            if (!membership.Tenant.IsDeleted)
+            {
+                continue;
+            }
+
+            var stats = new RestorableTenantStats
+            {
+                CollectionCount = await _context.Collections.CountAsync(c => c.TenantId == membership.TenantId),
+                ItemCount = await _context.Items.CountAsync(i => i.TenantId == membership.TenantId),
+                CategoryCount = await _context.Categories.CountAsync(c => c.TenantId == membership.TenantId),
+                ImageCount = await _context.StoredImages.CountAsync(i => i.TenantId == membership.TenantId)
+            };
+
+            restorableTenants.Add(new RestorableTenantResponse
+            {
+                TenantId = membership.TenantId,
+                Name = membership.Tenant.Name,
+                DeletedAt = membership.Tenant.DeletedAt!.Value,
+                DaysRemaining = Math.Max(0, 30 - (DateTime.UtcNow - membership.Tenant.DeletedAt!.Value).Days),
+                Stats = stats
+            });
+        }
+
+        _logger.LogInformation("Returning {Count} restorable tenants for user {UserId}", restorableTenants.Count, userId);
+        return Ok(restorableTenants);
     }
 
     /// <summary>

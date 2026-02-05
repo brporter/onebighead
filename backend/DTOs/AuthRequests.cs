@@ -21,3 +21,12 @@ public class AuthCallbackResponse
     public int TenantId { get; set; }
     public string TenantName { get; set; } = string.Empty;
 }
+
+#if DEBUG
+public class DevLoginRequest
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+}
+#endif

@@ -26,6 +26,8 @@ interface ApiClientConfig {
   baseUrl: string;
   defaultHeaders?: HeadersInit;
   onUnauthorized?: () => void;
+  onUserDeleted?: () => void;
+  onNoActiveTenants?: () => void;
 }
 
 export class ApiClient {
@@ -111,11 +113,6 @@ export class ApiClient {
       }
 
       if (!response.ok) {
-        // Handle 401 Unauthorized
-        if (response.status === 401 && this.config.onUnauthorized) {
-          this.config.onUnauthorized();
-        }
-
         let errorData: unknown;
         let errorMessage = response.statusText;
 
@@ -123,15 +120,28 @@ export class ApiClient {
           const text = await response.text();
           try {
             errorData = JSON.parse(text);
-            errorMessage = (errorData as { error?: string; message?: string })?.error 
-              || (errorData as { message?: string })?.message 
-              || text 
+            errorMessage = (errorData as { error?: string; message?: string })?.error
+              || (errorData as { message?: string })?.message
+              || text
               || response.statusText;
           } catch {
             errorMessage = text || response.statusText;
           }
         } catch {
           // Ignore parse errors
+        }
+
+        // Handle specific error codes for user/tenant deletion
+        const errorCode = (errorData as { code?: string })?.code;
+
+        if (response.status === 401) {
+          if (errorCode === 'USER_DELETED' && this.config.onUserDeleted) {
+            this.config.onUserDeleted();
+          } else if (errorCode === 'NO_ACTIVE_TENANTS' && this.config.onNoActiveTenants) {
+            this.config.onNoActiveTenants();
+          } else if (this.config.onUnauthorized) {
+            this.config.onUnauthorized();
+          }
         }
 
         throw new ApiError(errorMessage, response.status, response.statusText, errorData);
@@ -220,12 +230,33 @@ export class ApiClient {
   }
 }
 
+// Helper to clear auth and redirect to home
+async function clearAuthAndRedirect(reason: string): Promise<void> {
+  console.warn(`${reason} - clearing auth and redirecting to home page`);
+  try {
+    // Clear the auth cookie by calling logout
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch {
+    // Ignore logout errors - we're redirecting anyway
+  }
+  window.location.href = '/';
+}
+
 // Create singleton instance
 export const api = new ApiClient({
   baseUrl: '/api',
   onUnauthorized: () => {
     // Redirect to login or handle as needed
     console.warn('Unauthorized request - user may need to log in');
+  },
+  onUserDeleted: () => {
+    clearAuthAndRedirect('User account deleted');
+  },
+  onNoActiveTenants: () => {
+    clearAuthAndRedirect('User has no active tenants');
   },
 });
 

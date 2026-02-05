@@ -25,6 +25,17 @@ public class User
 
     public bool IsSystemAdministrator { get; set; }
 
+    /// <summary>
+    /// Whether this user account has been soft-deleted.
+    /// Soft-deleted users can be restored by signing back in.
+    /// </summary>
+    public bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// When the user account was soft-deleted.
+    /// </summary>
+    public DateTime? DeletedAt { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>

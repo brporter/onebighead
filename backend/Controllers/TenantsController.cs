@@ -512,6 +512,117 @@ public partial class TenantsController : ApiControllerBase
     }
 
     /// <summary>
+    /// Restore multiple soft-deleted tenants (requires user was TenantAdmin of each).
+    /// User identity is determined from JWT claims only.
+    /// </summary>
+    [HttpPost("restore")]
+    public async Task<IActionResult> RestoreTenants([FromBody] RestoreTenantsRequest request)
+    {
+        var userId = GetUserId();
+
+        if (request.TenantIds == null || !request.TenantIds.Any())
+        {
+            return BadRequest(new { error = "At least one tenant ID is required" });
+        }
+
+        var restoredIds = new List<int>();
+        int? firstActiveTenantId = null;
+
+        foreach (var tenantId in request.TenantIds)
+        {
+            // Verify user was TenantAdmin of this tenant
+            var membership = await _tenantUserRepository.GetMembershipAsync(userId, tenantId);
+            if (membership == null || membership.TenantRole != TenantRole.TenantAdmin)
+            {
+                return Forbid(); // User wasn't admin of this tenant
+            }
+
+            var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+            if (tenant == null || !tenant.IsDeleted)
+            {
+                continue; // Skip non-existent or already-active tenants
+            }
+
+            // Restore the tenant
+            tenant.IsDeleted = false;
+            tenant.DeletedAt = null;
+            tenant.DeletedByUserId = null;
+            await _tenantRepository.UpdateAsync(tenant);
+
+            restoredIds.Add(tenantId);
+            if (!firstActiveTenantId.HasValue)
+            {
+                firstActiveTenantId = tenantId;
+            }
+
+            _logger.LogInformation("User {UserId} restored tenant {TenantId} ({TenantName})",
+                userId, tenantId, tenant.Name);
+        }
+
+        // Set the first restored tenant as active
+        if (firstActiveTenantId.HasValue)
+        {
+            await _userRepository.UpdateActiveTenantAsync(userId, firstActiveTenantId.Value);
+
+            // Generate new JWT with the new tenant
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user != null)
+            {
+                var appToken = _tokenService.GenerateAppToken(user, TenantRole.TenantAdmin);
+                SetAuthCookie(appToken);
+            }
+        }
+
+        return Ok(new RestoreTenantsResponse
+        {
+            RestoredTenantIds = restoredIds,
+            ActiveTenantId = firstActiveTenantId ?? 0
+        });
+    }
+
+    /// <summary>
+    /// Restore a single soft-deleted tenant (requires user was TenantAdmin).
+    /// </summary>
+    [HttpPost("{tenantId}/restore")]
+    public async Task<IActionResult> RestoreTenant(int tenantId)
+    {
+        var userId = GetUserId();
+
+        // Verify user was TenantAdmin of this tenant
+        var membership = await _tenantUserRepository.GetMembershipAsync(userId, tenantId);
+        if (membership == null || membership.TenantRole != TenantRole.TenantAdmin)
+        {
+            return Forbid();
+        }
+
+        var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+        if (tenant == null)
+        {
+            return NotFound(new { error = "Tenant not found" });
+        }
+
+        if (!tenant.IsDeleted)
+        {
+            return BadRequest(new { error = "Tenant is not deleted" });
+        }
+
+        // Restore the tenant
+        tenant.IsDeleted = false;
+        tenant.DeletedAt = null;
+        tenant.DeletedByUserId = null;
+        await _tenantRepository.UpdateAsync(tenant);
+
+        _logger.LogInformation("User {UserId} restored tenant {TenantId} ({TenantName})",
+            userId, tenantId, tenant.Name);
+
+        return Ok(new RestoreTenantResponse
+        {
+            TenantId = tenant.Id,
+            Name = tenant.Name
+        });
+    }
+
+    /// <summary>
     /// Transfer admin role to another user (requires TenantAdmin role)
     /// </summary>
     [HttpPost("{tenantId}/transfer-admin")]

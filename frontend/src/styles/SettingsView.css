@@ -786,6 +786,44 @@
   background: var(--color-danger-bg);
 }
 
+.settings-tenant-card__button--primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+
+.settings-tenant-card__button--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.settings-tenant-card--deleted {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.settings-tenant-card__badge--deleted {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.settings-tenant-card__stats {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.settings-tenant-card__countdown {
+  font-size: 0.75rem;
+  color: var(--color-warning);
+  margin: 0.25rem 0 0;
+}
+
+.settings-section__subtitle {
+  font-size: 1.125rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
 @media (max-width: 640px) {
   .settings-tenant-card {
     flex-direction: column;

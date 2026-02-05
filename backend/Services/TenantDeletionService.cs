@@ -10,6 +10,8 @@ public interface ITenantDeletionService
     Task<TenantStatsResponse?> GetTenantStatsAsync(int tenantId);
     Task<TenantDeletionResponse> SoftDeleteTenantAsync(int tenantId, int deletedByUserId);
     Task<bool> IsTenantDeletedAsync(int tenantId);
+    Task<bool> IsUserDeletedAsync(int userId);
+    Task<bool> HasUserAnyActiveTenantAsync(int userId);
 }
 
 public class TenantDeletionService : ITenantDeletionService
@@ -115,10 +117,39 @@ public class TenantDeletionService : ITenantDeletionService
             }
         }
 
+        // Check if we should soft-delete the user (single-tenant admin scenario)
+        bool userSoftDeleted = false;
+        var deletingUser = await _userRepository.GetByIdAsync(deletedByUserId);
+        if (deletingUser != null)
+        {
+            // Count user's tenant memberships (excluding the one being deleted)
+            var otherMemberships = await _context.TenantUsers
+                .CountAsync(tu => tu.UserId == deletedByUserId && tu.TenantId != tenantId);
+
+            // Check if user was TenantAdmin of the deleted tenant
+            var wasAdmin = await _context.TenantUsers
+                .AnyAsync(tu => tu.UserId == deletedByUserId &&
+                                tu.TenantId == tenantId &&
+                                tu.TenantRole == TenantRole.TenantAdmin);
+
+            if (otherMemberships == 0 && wasAdmin)
+            {
+                // Single-tenant admin deleting their only tenant - soft-delete user
+                deletingUser.IsDeleted = true;
+                deletingUser.DeletedAt = DateTime.UtcNow;
+                await _userRepository.UpdateAsync(deletingUser);
+                userSoftDeleted = true;
+
+                _logger.LogInformation("User {UserId} soft-deleted after deleting their only tenant {TenantId}",
+                    deletedByUserId, tenantId);
+            }
+        }
+
         return new TenantDeletionResponse
         {
             Success = true,
-            NewActiveTenantId = newActiveTenantId
+            NewActiveTenantId = newActiveTenantId,
+            UserSoftDeleted = userSoftDeleted
         };
     }
 
@@ -126,5 +157,19 @@ public class TenantDeletionService : ITenantDeletionService
     {
         var tenant = await _tenantRepository.GetByIdAsync(tenantId);
         return tenant?.IsDeleted ?? true;
+    }
+
+    public async Task<bool> IsUserDeletedAsync(int userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        return user?.IsDeleted ?? true;
+    }
+
+    public async Task<bool> HasUserAnyActiveTenantAsync(int userId)
+    {
+        // Check if the user has any tenant memberships where the tenant is not deleted
+        return await _context.TenantUsers
+            .Include(tu => tu.Tenant)
+            .AnyAsync(tu => tu.UserId == userId && !tu.Tenant!.IsDeleted);
     }
 }
