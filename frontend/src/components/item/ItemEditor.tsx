@@ -38,6 +38,7 @@ function ItemEditor({
       workspaceId: 1,
       collectionId: 0,
       categoryId: null,
+      templateKey: null,
       name: '',
       summary: '',
       description: '',

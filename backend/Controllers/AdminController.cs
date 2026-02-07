@@ -194,6 +194,7 @@ public class AdminController : ControllerBase
         var template = new ItemTemplate
         {
             WorkspaceId = null, // System template
+            TemplateKey = ItemTemplate.GenerateTemplateKey(),
             Name = request.Name,
             Description = request.Description,
             CreatedAt = DateTime.UtcNow,

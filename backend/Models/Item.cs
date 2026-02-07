@@ -23,6 +23,14 @@ public class Item
     [JsonPropertyName("categoryId")]
     public int? CategoryId { get; set; }
 
+    /// <summary>
+    /// The template key of the item template this item was created from.
+    /// Null if the item was created from scratch without a template.
+    /// This is not a foreign key - it's a soft reference that survives template deletion.
+    /// </summary>
+    [JsonPropertyName("templateKey")]
+    public Guid? TemplateKey { get; set; }
+
     [Required]
     [MaxLength(200)]
     [JsonPropertyName("name")]

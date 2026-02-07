@@ -2,12 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../../contexts/DataContext';
 import type { ItemTemplate, ItemProperty } from '../../utils/types';
 
+interface TemplateSelection {
+  properties: ItemProperty[];
+  templateKey: string | null;
+}
+
 interface TemplateSelectorProps {
   collectionId: number;
   categoryId?: number | null;
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (properties: ItemProperty[]) => void;
+  onSelect: (selection: TemplateSelection) => void;
 }
 
 function TemplateSelector({ collectionId, categoryId, isOpen, onClose, onSelect }: TemplateSelectorProps) {
@@ -73,11 +78,11 @@ function TemplateSelector({ collectionId, categoryId, isOpen, onClose, onSelect 
       name: p.name,
       value: '',
     }));
-    onSelect(properties);
+    onSelect({ properties, templateKey: template.templateKey });
   };
 
   const handleStartFromScratch = () => {
-    onSelect([]);
+    onSelect({ properties: [], templateKey: null });
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {

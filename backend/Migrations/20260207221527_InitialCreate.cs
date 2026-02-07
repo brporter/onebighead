@@ -99,6 +99,7 @@ namespace OneBigHead.Server.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    TemplateKey = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     WorkspaceId = table.Column<int>(type: "int", nullable: true),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
@@ -388,6 +389,7 @@ namespace OneBigHead.Server.Migrations
                     WorkspaceId = table.Column<int>(type: "int", nullable: false),
                     CollectionId = table.Column<int>(type: "int", nullable: false),
                     CategoryId = table.Column<int>(type: "int", nullable: true),
+                    TemplateKey = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Summary = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),

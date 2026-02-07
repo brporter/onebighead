@@ -11,6 +11,14 @@ public class ItemTemplate
     public int Id { get; set; }
 
     /// <summary>
+    /// Unique key for this template. Used to track which template items were created from.
+    /// This key persists even if the template is deleted, allowing batch updates to items
+    /// that share the same template origin.
+    /// </summary>
+    [Required]
+    public Guid TemplateKey { get; set; }
+
+    /// <summary>
     /// Null for shared/system templates (available to all workspaces, read-only).
     /// Set for workspace-owned templates (editable by workspace users).
     /// </summary>
@@ -38,4 +46,12 @@ public class ItemTemplate
 
     [JsonIgnore]
     public ICollection<CategoryItemTemplate> CategoryItemTemplates { get; set; } = new List<CategoryItemTemplate>();
+
+    /// <summary>
+    /// Generates a unique template key.
+    /// </summary>
+    public static Guid GenerateTemplateKey()
+    {
+        return Guid.NewGuid();
+    }
 }

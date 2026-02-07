@@ -14,8 +14,8 @@ const mockCategories: Category[] = [
 ];
 
 const mockItems: Item[] = [
-  { id: 1, workspaceId: 1, collectionId: 1, categoryId: 1, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.None },
-  { id: 2, workspaceId: 1, collectionId: 1, categoryId: 2, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.Have },
+  { id: 1, workspaceId: 1, collectionId: 1, categoryId: 1, templateKey: null, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.None },
+  { id: 2, workspaceId: 1, collectionId: 1, categoryId: 2, templateKey: null, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.Have },
 ];
 
 // Test component to access context
@@ -369,6 +369,7 @@ describe('DataContext', () => {
         workspaceId: 1,
         collectionId: 1,
         categoryId: 1,
+        templateKey: null,
         name: 'New Item',
         summary: 'Summary',
         description: 'Description',
@@ -469,6 +470,7 @@ describe('DataContext', () => {
         workspaceId: 1,
         collectionId: 1,
         categoryId: 1,
+        templateKey: null,
         name: 'New Item with Flag',
         summary: 'Summary',
         description: 'Description',

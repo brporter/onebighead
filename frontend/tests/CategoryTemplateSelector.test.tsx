@@ -13,6 +13,7 @@ describe('CategoryTemplateSelector', () => {
   const mockCollectionTemplates: ItemTemplate[] = [
     {
       itemTemplateId: 1,
+      templateKey: 'a1b2c3d4-0001-4000-8000-000000000001',
       name: 'Collection Template 1',
       description: 'Description 1',
       isSystem: false,
@@ -22,6 +23,7 @@ describe('CategoryTemplateSelector', () => {
     },
     {
       itemTemplateId: 2,
+      templateKey: 'a1b2c3d4-0002-4000-8000-000000000002',
       name: 'Collection Template 2',
       description: '',
       isSystem: false,
@@ -34,6 +36,7 @@ describe('CategoryTemplateSelector', () => {
   const mockLibraryTemplates: ItemTemplate[] = [
     {
       itemTemplateId: 3,
+      templateKey: 'a1b2c3d4-0003-4000-8000-000000000003',
       name: 'Library Template',
       description: 'A library template',
       isSystem: true,
@@ -142,6 +145,7 @@ describe('CategoryTemplateSelector', () => {
         ...mockLibraryTemplates,
         {
           itemTemplateId: 1, // Same as Collection Template 1
+          templateKey: 'a1b2c3d4-0004-4000-8000-000000000004',
           name: 'Duplicate Name',
           description: '',
           isSystem: false,
@@ -169,8 +173,8 @@ describe('CategoryTemplateSelector', () => {
 
     it('should sort templates alphabetically', async () => {
       const unsortedTemplates: ItemTemplate[] = [
-        { itemTemplateId: 1, name: 'Zebra Template', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' },
-        { itemTemplateId: 2, name: 'Apple Template', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' },
+        { itemTemplateId: 1, templateKey: 'a1b2c3d4-0005-4000-8000-000000000005', name: 'Zebra Template', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' },
+        { itemTemplateId: 2, templateKey: 'a1b2c3d4-0006-4000-8000-000000000006', name: 'Apple Template', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' },
       ];
       mockLoadCollectionTemplates.mockResolvedValue(unsortedTemplates);
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({

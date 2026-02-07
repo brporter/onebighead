@@ -20,6 +20,7 @@ const mockCollection: Collection = {
 const mockTemplates: ItemTemplate[] = [
   {
     itemTemplateId: 1,
+    templateKey: 'a1b2c3d4-000a-4000-8000-00000000000a',
     name: 'Template A',
     description: 'First template',
     isSystem: false,
@@ -29,6 +30,7 @@ const mockTemplates: ItemTemplate[] = [
   },
   {
     itemTemplateId: 2,
+    templateKey: 'a1b2c3d4-000b-4000-8000-00000000000b',
     name: 'Template B',
     description: 'Second template',
     isSystem: true,
@@ -38,6 +40,7 @@ const mockTemplates: ItemTemplate[] = [
   },
   {
     itemTemplateId: 3,
+    templateKey: 'a1b2c3d4-000c-4000-8000-00000000000c',
     name: 'Template C',
     description: '',
     isSystem: false,

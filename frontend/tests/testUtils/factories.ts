@@ -28,6 +28,7 @@ export function createMockItem(overrides: Partial<Item> = {}): Item {
     workspaceId: 1,
     collectionId: 1,
     categoryId: null,
+    templateKey: null,
     name: 'Test Item',
     summary: 'Test summary',
     description: 'Test description',
@@ -128,6 +129,7 @@ export function createMockTemplateProperty(overrides: Partial<ItemTemplateProper
 export function createMockItemTemplate(overrides: Partial<ItemTemplate> = {}): ItemTemplate {
   return {
     itemTemplateId: 1,
+    templateKey: 'a1b2c3d4-0000-4000-8000-000000000000',
     name: 'Test Template',
     description: 'Test template description',
     isSystem: false,

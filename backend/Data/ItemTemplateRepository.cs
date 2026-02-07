@@ -140,6 +140,7 @@ public class ItemTemplateRepository : IItemTemplateRepository
         var newTemplate = new ItemTemplate
         {
             WorkspaceId = workspaceId,
+            TemplateKey = ItemTemplate.GenerateTemplateKey(),
             Name = updates.Name,
             Description = updates.Description,
             CreatedAt = DateTime.UtcNow,

@@ -7,6 +7,7 @@
       "rows": [
         {
           "Id": 1,
+          "TemplateKey": "a1b2c3d4-1111-4000-8000-000000000001",
           "Name": "Book",
           "Description": "A template for books with author, publisher, and ISBN fields",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -14,6 +15,7 @@
         },
         {
           "Id": 2,
+          "TemplateKey": "a1b2c3d4-2222-4000-8000-000000000002",
           "Name": "Video Game",
           "Description": "A template for video games with platform, publisher, and genre fields",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -21,6 +23,7 @@
         },
         {
           "Id": 3,
+          "TemplateKey": "a1b2c3d4-3333-4000-8000-000000000003",
           "Name": "Artwork",
           "Description": "A template for artwork with artist, medium, and dimensions fields",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -28,6 +31,7 @@
         },
         {
           "Id": 4,
+          "TemplateKey": "a1b2c3d4-4444-4000-8000-000000000004",
           "Name": "Music Album",
           "Description": "A template for music albums with artist, label, and track count fields",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -35,6 +39,7 @@
         },
         {
           "Id": 5,
+          "TemplateKey": "a1b2c3d4-5555-4000-8000-000000000005",
           "Name": "Coin",
           "Description": "A template for coins with denomination, mint, and year fields",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -42,6 +47,7 @@
         },
         {
           "Id": 6,
+          "TemplateKey": "a1b2c3d4-6666-4000-8000-000000000006",
           "Name": "General Item",
           "Description": "A general-purpose template for any collectible item",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -49,6 +55,7 @@
         },
         {
           "Id": 7,
+          "TemplateKey": "a1b2c3d4-7777-4000-8000-000000000007",
           "Name": "Comic Book",
           "Description": "A template for comic book collections with publisher, issue, and grading fields",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -56,6 +63,7 @@
         },
         {
           "Id": 8,
+          "TemplateKey": "a1b2c3d4-8888-4000-8000-000000000008",
           "Name": "Knife",
           "Description": "A template for knife collections with blade, handle, and maker fields",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -63,6 +71,7 @@
         },
         {
           "Id": 9,
+          "TemplateKey": "a1b2c3d4-9999-4000-8000-000000000009",
           "Name": "Firearm",
           "Description": "A template for firearm collections with caliber, manufacturer, and specifications",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -70,6 +79,7 @@
         },
         {
           "Id": 10,
+          "TemplateKey": "a1b2c3d4-aaaa-4000-8000-00000000000a",
           "Name": "Baseball Card",
           "Description": "A template for baseball card collections with player, year, and grading fields",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -77,6 +87,7 @@
         },
         {
           "Id": 11,
+          "TemplateKey": "a1b2c3d4-bbbb-4000-8000-00000000000b",
           "Name": "Trading Card",
           "Description": "A template for TCG collections like Pokemon, MTG, and Yu-Gi-Oh",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -84,6 +95,7 @@
         },
         {
           "Id": 12,
+          "TemplateKey": "a1b2c3d4-cccc-4000-8000-00000000000c",
           "Name": "Computer",
           "Description": "A template for vintage computer collections with specifications and provenance",
           "CreatedAt": "2026-01-01T00:00:00Z",
@@ -91,6 +103,7 @@
         },
         {
           "Id": 13,
+          "TemplateKey": "a1b2c3d4-dddd-4000-8000-00000000000d",
           "Name": "Toy",
           "Description": "A template for toy collections with manufacturer, packaging, and condition fields",
           "CreatedAt": "2026-01-01T00:00:00Z",

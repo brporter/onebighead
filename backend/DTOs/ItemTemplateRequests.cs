@@ -30,6 +30,7 @@ public class CreateItemTemplateRequest
         var template = new ItemTemplate
         {
             WorkspaceId = workspaceId,
+            TemplateKey = ItemTemplate.GenerateTemplateKey(),
             Name = Name,
             Description = Description
         };
@@ -86,6 +87,7 @@ public class UpdateItemTemplateRequest
 public class ItemTemplateResponse
 {
     public int ItemTemplateId { get; set; }
+    public Guid TemplateKey { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public bool IsSystem { get; set; }
@@ -98,6 +100,7 @@ public class ItemTemplateResponse
         return new ItemTemplateResponse
         {
             ItemTemplateId = template.Id,
+            TemplateKey = template.TemplateKey,
             Name = template.Name,
             Description = template.Description,
             IsSystem = template.WorkspaceId == null,

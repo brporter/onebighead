@@ -249,4 +249,116 @@ public class ItemsControllerIntegrationTests : IDisposable
         var readItem2 = ((OkObjectResult)getResult2.Result!).Value as Item;
         Assert.Equal(UserFlag.TradeOrSell, readItem2!.UserFlag);
     }
+
+    [Fact]
+    public async Task CreateItem_WithTemplateKey_RecordsTemplateKey()
+    {
+        // Arrange - Create an item template first
+        var templateKey = Guid.NewGuid();
+        var template = new ItemTemplate
+        {
+            WorkspaceId = TestWorkspaceId,
+            TemplateKey = templateKey,
+            Name = "Test Template",
+            Description = "A test template"
+        };
+        _context.ItemTemplates.Add(template);
+        await _context.SaveChangesAsync();
+
+        // Create item request with the template key
+        var request = new CreateItemRequest
+        {
+            Name = "Item From Template",
+            Summary = "Created from a template",
+            CollectionId = TestCollectionId,
+            TemplateKey = templateKey,
+            Properties = new List<ItemProperty>
+            {
+                new("Details", "Author", "Test Author")
+            }
+        };
+
+        // Act
+        var result = await _controller.CreateItem(request);
+
+        // Assert - Verify the controller returns the item with the template key
+        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+        var returnedItem = Assert.IsType<Item>(createdResult.Value);
+        Assert.Equal(templateKey, returnedItem.TemplateKey);
+
+        // Verify the response JSON includes templateKey
+        var responseJson = JsonSerializer.Serialize(returnedItem, _jsonOptions);
+        Assert.Contains("\"templateKey\"", responseJson);
+        Assert.Contains(templateKey.ToString(), responseJson);
+
+        // Verify it's persisted in the database
+        var savedItem = await _context.Items.FindAsync(returnedItem.Id);
+        Assert.Equal(templateKey, savedItem!.TemplateKey);
+    }
+
+    [Fact]
+    public async Task CreateItem_WithoutTemplateKey_HasNullTemplateKey()
+    {
+        // Arrange - Create item without template key (from scratch)
+        var request = new CreateItemRequest
+        {
+            Name = "Item From Scratch",
+            Summary = "Created without a template",
+            CollectionId = TestCollectionId,
+            TemplateKey = null
+        };
+
+        // Act
+        var result = await _controller.CreateItem(request);
+
+        // Assert
+        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+        var returnedItem = Assert.IsType<Item>(createdResult.Value);
+        Assert.Null(returnedItem.TemplateKey);
+
+        // Verify it's persisted as null in the database
+        var savedItem = await _context.Items.FindAsync(returnedItem.Id);
+        Assert.Null(savedItem!.TemplateKey);
+    }
+
+    [Fact]
+    public async Task CreateItem_TemplateKeyPersistsAfterTemplateDeleted()
+    {
+        // Arrange - Create a template
+        var templateKey = Guid.NewGuid();
+        var template = new ItemTemplate
+        {
+            WorkspaceId = TestWorkspaceId,
+            TemplateKey = templateKey,
+            Name = "Deletable Template"
+        };
+        _context.ItemTemplates.Add(template);
+        await _context.SaveChangesAsync();
+        var templateId = template.Id;
+
+        // Create an item from the template
+        var request = new CreateItemRequest
+        {
+            Name = "Item With Template Reference",
+            CollectionId = TestCollectionId,
+            TemplateKey = templateKey
+        };
+        var createResult = await _controller.CreateItem(request);
+        var createdItem = ((CreatedAtActionResult)createResult.Result!).Value as Item;
+        var itemId = createdItem!.Id!.Value;
+
+        // Act - Delete the template
+        var templateToDelete = await _context.ItemTemplates.FindAsync(templateId);
+        _context.ItemTemplates.Remove(templateToDelete!);
+        await _context.SaveChangesAsync();
+
+        // Assert - Item still has the template key (soft reference survives deletion)
+        var savedItem = await _context.Items.FindAsync(itemId);
+        Assert.Equal(templateKey, savedItem!.TemplateKey);
+
+        // Read via controller
+        var getResult = await _controller.GetItem(itemId);
+        var returnedItem = ((OkObjectResult)getResult.Result!).Value as Item;
+        Assert.Equal(templateKey, returnedItem!.TemplateKey);
+    }
 }

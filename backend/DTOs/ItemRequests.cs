@@ -22,6 +22,12 @@ public abstract class ItemRequestBase
 
     public int? CategoryId { get; set; }
 
+    /// <summary>
+    /// The template key of the item template this item was created from.
+    /// Null if the item was created from scratch without a template.
+    /// </summary>
+    public Guid? TemplateKey { get; set; }
+
     public List<ItemProperty> Properties { get; set; } = new();
 
     public List<ItemImage> Images { get; set; } = new();
@@ -37,6 +43,7 @@ public abstract class ItemRequestBase
     {
         item.CollectionId = CollectionId;
         item.CategoryId = CategoryId;
+        item.TemplateKey = TemplateKey;
         item.Name = Name;
         item.Summary = Summary;
         item.Description = Description;

@@ -48,6 +48,7 @@ export interface Item {
   workspaceId: number;
   collectionId: number;
   categoryId: number | null;
+  templateKey: string | null;
   name: string;
   summary: string;
   description: string;
@@ -144,6 +145,7 @@ export interface ItemTemplateProperty {
 
 export interface ItemTemplate {
   itemTemplateId: number;
+  templateKey: string;
   name: string;
   description: string;
   isSystem: boolean;

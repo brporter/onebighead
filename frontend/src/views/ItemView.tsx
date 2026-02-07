@@ -36,6 +36,7 @@ function ItemView() {
   const [deepLinkedItem, setDeepLinkedItem] = useState<Item | null>(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [selectedTemplateProperties, setSelectedTemplateProperties] = useState<ItemProperty[] | null>(null);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const isNewItem = itemId === 'new';
@@ -116,13 +117,13 @@ function ItemView() {
 
   const newItemTemplate = useMemo(() => {
     if (!isNewItem || categoryIdNum == null || !currentCollection) return null;
-    const emptyItem = createEmptyItem(categoryIdNum, currentCollection.collectionId, currentCollection.workspaceId);
+    const emptyItem = createEmptyItem(categoryIdNum, currentCollection.collectionId, currentCollection.workspaceId, selectedTemplateKey);
     // Apply selected template properties if available
     if (selectedTemplateProperties && selectedTemplateProperties.length > 0) {
       emptyItem.properties = selectedTemplateProperties;
     }
     return emptyItem;
-  }, [isNewItem, categoryIdNum, currentCollection, selectedTemplateProperties]);
+  }, [isNewItem, categoryIdNum, currentCollection, selectedTemplateProperties, selectedTemplateKey]);
 
   const detailItem = isNewItem ? newItemTemplate : selectedItem;
 
@@ -135,8 +136,9 @@ function ItemView() {
     }
   }
 
-  function handleTemplateSelected(properties: ItemProperty[]) {
-    setSelectedTemplateProperties(properties);
+  function handleTemplateSelected(selection: { properties: ItemProperty[]; templateKey: string | null }) {
+    setSelectedTemplateProperties(selection.properties);
+    setSelectedTemplateKey(selection.templateKey);
     setShowTemplateSelector(false);
   }
 

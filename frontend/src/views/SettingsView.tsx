@@ -579,7 +579,7 @@ function SettingsView() {
                     Switch
                   </button>
                 )}
-                {canLeaveWorkspace(workspace) && workspace.workspaceRole !== WorkspaceRole.WorkspaceAdmin && (
+                {canLeaveWorkspace() && workspace.workspaceRole !== WorkspaceRole.WorkspaceAdmin && (
                   <button
                     className="settings-workspace-card__button settings-workspace-card__button--danger"
                     onClick={() => handleLeaveWorkspace(workspace)}

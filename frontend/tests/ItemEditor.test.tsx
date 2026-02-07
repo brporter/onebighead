@@ -22,6 +22,7 @@ describe('ItemEditor', () => {
     workspaceId: 1,
     collectionId: 1,
     categoryId: 2,
+    templateKey: null,
     name: 'Test Item',
     summary: 'Test summary',
     description: 'Test description',

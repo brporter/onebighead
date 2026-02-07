@@ -283,6 +283,10 @@ namespace OneBigHead.Server.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasJsonPropertyName("summary");
 
+                    b.Property<Guid?>("TemplateKey")
+                        .HasColumnType("uniqueidentifier")
+                        .HasJsonPropertyName("templateKey");
+
                     b.Property<int>("UserFlag")
                         .HasColumnType("int")
                         .HasJsonPropertyName("userFlag");
@@ -331,6 +335,9 @@ namespace OneBigHead.Server.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("TemplateKey")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
