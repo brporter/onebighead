@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest, CollectionTheme, SetupCollectionRequest } from '../utils/types';
 import { Visibility } from '../utils/types';
-import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi, ApiError } from '../api';
+import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi } from '../api';
+import { getErrorMessage, logError } from '../utils/errorUtils';
 
 /**
  * Evicts the least recently used entries from a cache map when it exceeds the max size.
@@ -16,31 +17,6 @@ function evictLRU<K, V extends { accessedAt: number }>(cache: Map<K, V>, maxSize
   const toRemove = entries.slice(0, cache.size - maxSize);
   for (const [key] of toRemove) {
     cache.delete(key);
-  }
-}
-
-/**
- * Extract a user-friendly error message from an error, preserving status code for API errors.
- */
-function getErrorMessage(error: unknown, defaultMessage: string): string {
-  if (error instanceof ApiError) {
-    const statusInfo = error.status ? ` (${error.status})` : '';
-    return `${error.message}${statusInfo}`;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return defaultMessage;
-}
-
-/**
- * Log an error with context, including status code for API errors.
- */
-function logError(context: string, error: unknown): void {
-  if (error instanceof ApiError) {
-    console.error(`${context}: ${error.message} (status: ${error.status})`);
-  } else {
-    console.error(`${context}:`, error);
   }
 }
 
@@ -304,11 +280,8 @@ export function DataProvider({ children }: DataProviderProps) {
 
   // Collection operations
   const loadCollections = useCallback(async () => {
-    console.log('[DataContext] loadCollections called');
-
     // If already loading, return the existing promise to prevent duplicate calls
     if (loadCollectionsPromiseRef.current) {
-      console.log('[DataContext] loadCollections already in progress, returning existing promise');
       return loadCollectionsPromiseRef.current;
     }
 
@@ -317,15 +290,13 @@ export function DataProvider({ children }: DataProviderProps) {
         setCollectionsLoading(true);
         setCollectionsError(null);
         const data = await collectionsApi.getAll();
-        console.log('[DataContext] loadCollections received:', data?.length, 'collections', data);
         setCollections(data);
       } catch (error) {
-        console.error('[DataContext] loadCollections error:', error);
+        logError('Failed to load collections', error);
         setCollectionsError(getErrorMessage(error, 'Failed to fetch collections'));
       } finally {
         setCollectionsLoading(false);
         loadCollectionsPromiseRef.current = null;
-        console.log('[DataContext] loadCollections finished');
       }
     })();
 

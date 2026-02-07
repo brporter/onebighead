@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Item, ItemProperty, ItemImage, Category, CategoryNode, Collection, Workspace } from '../src/utils/types';
+import { Visibility, UserFlag } from '../src/utils/types';
 
 describe('types', () => {
   describe('Item interface', () => {
@@ -7,12 +8,16 @@ describe('types', () => {
       const item: Item = {
         id: 1,
         workspaceId: 1,
+        collectionId: 1,
         categoryId: 1,
         name: 'Test Item',
         summary: 'Test summary',
         description: 'Test description',
         properties: [],
         images: [],
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        userFlag: UserFlag.None,
       };
 
       expect(item.id).toBe(1);
@@ -23,12 +28,16 @@ describe('types', () => {
       const item: Item = {
         id: null,
         workspaceId: 1,
+        collectionId: 1,
         categoryId: 1,
         name: 'New Item',
         summary: '',
         description: '',
         properties: [],
         images: [],
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        userFlag: UserFlag.None,
       };
 
       expect(item.id).toBeNull();
@@ -38,12 +47,16 @@ describe('types', () => {
       const item: Item = {
         id: 1,
         workspaceId: 1,
+        collectionId: 1,
         categoryId: null,
         name: 'Uncategorized Item',
         summary: '',
         description: '',
         properties: [],
         images: [],
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        userFlag: UserFlag.None,
       };
 
       expect(item.categoryId).toBeNull();
@@ -80,11 +93,15 @@ describe('types', () => {
     it('should accept valid Category object', () => {
       const category: Category = {
         workspaceId: 1,
+        collectionId: 1,
         categoryId: 1,
         name: 'Test Category',
         description: 'Test description',
         parentCategoryId: null,
         isSystem: false,
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        itemTemplateIds: [],
       };
 
       expect(category.categoryId).toBe(1);
@@ -94,11 +111,15 @@ describe('types', () => {
     it('should accept parentCategoryId as number', () => {
       const category: Category = {
         workspaceId: 1,
+        collectionId: 1,
         categoryId: 2,
         name: 'Child Category',
         description: 'Child description',
         parentCategoryId: 1,
         isSystem: false,
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        itemTemplateIds: [],
       };
 
       expect(category.parentCategoryId).toBe(1);
@@ -109,19 +130,27 @@ describe('types', () => {
     it('should extend Category with children array', () => {
       const node: CategoryNode = {
         workspaceId: 1,
+        collectionId: 1,
         categoryId: 1,
         name: 'Parent',
         description: 'Parent desc',
         parentCategoryId: null,
         isSystem: false,
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        itemTemplateIds: [],
         children: [
           {
             workspaceId: 1,
+            collectionId: 1,
             categoryId: 2,
             name: 'Child',
             description: 'Child desc',
             parentCategoryId: 1,
             isSystem: false,
+            visibility: Visibility.Default,
+            effectiveIsPublic: false,
+            itemTemplateIds: [],
             children: [],
           },
         ],
@@ -136,8 +165,13 @@ describe('types', () => {
     it('should accept valid Collection object', () => {
       const collection: Collection = {
         collectionId: 1,
-        name: 'My Collection',
         workspaceId: 1,
+        name: 'My Collection',
+        description: 'Test description',
+        heroImageUrl: null,
+        slug: 'my-collection',
+        visibility: Visibility.Private,
+        effectiveIsPublic: false,
       };
 
       expect(collection.collectionId).toBe(1);
@@ -158,4 +192,3 @@ describe('types', () => {
     });
   });
 });
-

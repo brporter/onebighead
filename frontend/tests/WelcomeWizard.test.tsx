@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WelcomeWizard from '../src/components/wizard/WelcomeWizard';
 import * as UserContext from '../src/contexts/UserContext';
 import * as DataContext from '../src/contexts/DataContext';
 import * as authApi from '../src/api/auth';
-import type { CurrentUser, CollectionTheme } from '../src/utils/types';
+import type { CurrentUser, CollectionTheme, WorkspaceMembership } from '../src/utils/types';
+import { WorkspaceRole } from '../src/utils/types';
+import { createMockDataContextValue } from './testUtils';
 
 vi.mock('../src/contexts/UserContext', () => ({
   useUser: vi.fn(),
@@ -21,24 +23,36 @@ vi.mock('../src/api/auth', () => ({
   },
 }));
 
-const createUser = (overrides: Partial<CurrentUser> = {}): CurrentUser => ({
-  userId: 1,
-  email: 'test@example.com',
-  workspaceId: 1,
-  workspaceName: 'Test Workspace',
-  hasCompletedWelcome: false,
-  hasAcceptedTerms: true, // Default to true so tests start at welcome step
-  isSystemAdministrator: false,
-  workspaceRole: 'Normal' as const,
-  isWorkspaceAdmin: false,
-  ...overrides,
-});
+const createUser = (overrides: Partial<CurrentUser> = {}): CurrentUser => {
+  const activeWorkspace: WorkspaceMembership = {
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
+    workspaceRole: WorkspaceRole.Normal,
+    hasCompletedWelcome: false,
+  };
+  return {
+    userId: 1,
+    email: 'test@example.com',
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
+    hasCompletedWelcome: false,
+    hasAcceptedTerms: true, // Default to true so tests start at welcome step
+    isSystemAdministrator: false,
+    workspaceRole: WorkspaceRole.Normal,
+    isWorkspaceAdmin: false,
+    activeWorkspace,
+    workspaces: [activeWorkspace],
+    ...overrides,
+  };
+};
 
 const mockThemes: CollectionTheme[] = [
   {
     themeId: 1,
     name: 'General',
     description: 'A general-purpose theme',
+    iconName: 'folder',
+    sortOrder: 0,
     templates: [],
     categories: [],
   },
@@ -46,6 +60,8 @@ const mockThemes: CollectionTheme[] = [
     themeId: 2,
     name: 'Books',
     description: 'For book collections',
+    iconName: 'book',
+    sortOrder: 1,
     templates: [],
     categories: [],
   },
@@ -69,13 +85,12 @@ describe('WelcomeWizard', () => {
       logout: vi.fn(),
     });
 
-    vi.mocked(DataContext.useData).mockReturnValue({
+    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
       themes: mockThemes,
       themesLoading: false,
       loadThemes: mockLoadThemes,
       setupCollection: mockSetupCollection,
-      // Include other required DataContext properties as needed
-    } as ReturnType<typeof DataContext.useData>);
+    }));
   });
 
   it('should render welcome step initially', () => {
@@ -225,12 +240,12 @@ describe('WelcomeWizard', () => {
 
   it('should show loading state when themes are loading', async () => {
     const user = userEvent.setup();
-    vi.mocked(DataContext.useData).mockReturnValue({
+    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
       themes: [],
       themesLoading: true,
       loadThemes: mockLoadThemes,
       setupCollection: mockSetupCollection,
-    } as ReturnType<typeof DataContext.useData>);
+    }));
 
     render(<WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />);
 

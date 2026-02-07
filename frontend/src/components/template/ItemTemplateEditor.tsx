@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { SortablePropertyList, type BaseProperty, type FieldConfig } from '../common';
 import '../../styles/ItemTemplateEditor.css';
 import type { ItemTemplate, ItemTemplateProperty } from '../../utils/types';
+import { generateUniqueId } from '../../utils/idUtils';
 
 interface PropertyFormData extends BaseProperty {
   id: string;
@@ -15,10 +16,6 @@ interface ItemTemplateEditorProps {
   onDirtyChange?: (isDirty: boolean) => void;
   isFullPage?: boolean;
 }
-
-// Generate unique ID for drag-and-drop
-let propertyIdCounter = 0;
-const generatePropertyId = () => `prop-${++propertyIdCounter}`;
 
 const FIELD_CONFIG: FieldConfig[] = [
   { field: 'category', placeholder: 'e.g., Specs, Details' },
@@ -36,7 +33,7 @@ const CLASS_NAMES = {
   removeButton: 'template-form__removeBtn',
 };
 
-function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: ItemTemplateEditorProps) {
+function ItemTemplateEditor({ onDirtyChange, isFullPage = false }: ItemTemplateEditorProps) {
   const {
     itemTemplates,
     itemTemplatesLoading,
@@ -81,7 +78,8 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
   }, [hasUnsavedChanges, onDirtyChange]);
 
   useEffect(() => {
-    const filterValue = filter === 'all' ? undefined : filter;
+    // Map UI filter to API filter: 'system' -> 'shared', 'workspace' -> 'personal'
+    const filterValue = filter === 'all' ? undefined : (filter === 'system' ? 'shared' : 'personal');
     loadItemTemplates(filterValue);
   }, [filter, loadItemTemplates]);
 
@@ -99,7 +97,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
       name: template.name,
       description: template.description,
       properties: template.properties.map((p) => ({
-        id: generatePropertyId(),
+        id: generateUniqueId('prop'),
         category: p.category,
         name: p.name,
       })),
@@ -120,7 +118,7 @@ function ItemTemplateEditor({ onClose, onDirtyChange, isFullPage = false }: Item
   const handleAddProperty = () => {
     setFormData((prev) => ({
       ...prev,
-      properties: [...prev.properties, { id: generatePropertyId(), category: '', name: '' }],
+      properties: [...prev.properties, { id: generateUniqueId('prop'), category: '', name: '' }],
     }));
   };
 

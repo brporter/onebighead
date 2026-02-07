@@ -5,7 +5,7 @@ namespace OneBigHead.Server.Services;
 public interface IVisibilityService
 {
     void ComputeEffectiveVisibility(Category category, Collection collection, IEnumerable<Category> allCategories);
-    void ComputeEffectiveVisibility(Item item, Collection collection, Category? category, IEnumerable<Category> allCategories);
+    void ComputeEffectiveVisibility(Item item, Collection collection, Category? category);
     void ComputeEffectiveVisibility(IEnumerable<Category> categories, Collection collection);
     void ComputeEffectiveVisibility(IEnumerable<Item> items, Collection collection, IEnumerable<Category> categories);
 }
@@ -65,7 +65,7 @@ public class VisibilityService : IVisibilityService
         }
     }
 
-    public void ComputeEffectiveVisibility(Item item, Collection collection, Category? category, IEnumerable<Category> allCategories)
+    public void ComputeEffectiveVisibility(Item item, Collection collection, Category? category)
     {
         // If collection is not public, item cannot be public
         if (!collection.EffectiveIsPublic)
@@ -148,7 +148,7 @@ public class VisibilityService : IVisibilityService
             var category = item.CategoryId.HasValue && categoryLookup.TryGetValue(item.CategoryId.Value, out var cat)
                 ? cat
                 : null;
-            ComputeEffectiveVisibility(item, collection, category, categories);
+            ComputeEffectiveVisibility(item, collection, category);
         }
     }
 }

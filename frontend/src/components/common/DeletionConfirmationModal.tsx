@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DeletionStatsGrid, type DeletionStatsGridProps } from './DeletionStatsGrid';
 import { DeletionBlockerReason, WorkspaceActionType, type UserBasicInfo } from '../../api/account';
 

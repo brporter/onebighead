@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   getMySupportRequests,
   getSupportRequest,
@@ -15,7 +15,7 @@ interface SupportSectionProps {
   refreshKey?: number;
 }
 
-export function SupportSection({ isFullPage = false, onNewRequest, refreshKey }: SupportSectionProps) {
+export function SupportSection({ onNewRequest, refreshKey }: SupportSectionProps) {
   const [requests, setRequests] = useState<SupportRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

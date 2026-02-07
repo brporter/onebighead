@@ -34,11 +34,6 @@ function App() {
   }
 
   // Loading state
-  console.log('[App] Render state:', {
-    collectionsLoading,
-    collectionsLength: collections.length,
-    showLoading: collectionsLoading && collections.length === 0
-  });
   if (collectionsLoading && collections.length === 0) {
     return (
       <div className="app">
@@ -49,7 +44,6 @@ function App() {
 
   // Determine header content based on route - show "Collections" when on collections list or no current collection
   const isCollectionsList = !currentCollection && (location.pathname === '/collections' || location.pathname === '/' || location.pathname.startsWith('/collections'));
-  const collectionName = currentCollection?.name ?? 'Collection';
 
   // Determine mobile view state based on route
   const pathParts = location.pathname.split('/').filter(Boolean);

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CategoryTree from '../src/components/category/CategoryTree';
-import type { Category } from '../src/utils/types';
 import * as DataContext from '../src/contexts/DataContext';
+import { createMockCategory, createMockCollection, createMockDataContextValue } from './testUtils';
 
 // Mock the useData hook
 vi.mock('../src/contexts/DataContext', async () => {
@@ -15,12 +15,12 @@ vi.mock('../src/contexts/DataContext', async () => {
 });
 
 describe('CategoryTree', () => {
-  const mockCategories: Category[] = [
-    { workspaceId: 1, categoryId: 1, name: 'Root 1', description: 'Root 1 desc', parentCategoryId: null, isSystem: false },
-    { workspaceId: 1, categoryId: 2, name: 'Child 1-1', description: 'Child 1-1 desc', parentCategoryId: 1, isSystem: false },
-    { workspaceId: 1, categoryId: 3, name: 'Child 1-2', description: 'Child 1-2 desc', parentCategoryId: 1, isSystem: false },
-    { workspaceId: 1, categoryId: 4, name: 'Grandchild 1-1-1', description: 'Grandchild desc', parentCategoryId: 2, isSystem: false },
-    { workspaceId: 1, categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null, isSystem: false },
+  const mockCategories = [
+    createMockCategory({ categoryId: 1, name: 'Root 1', description: 'Root 1 desc', parentCategoryId: null }),
+    createMockCategory({ categoryId: 2, name: 'Child 1-1', description: 'Child 1-1 desc', parentCategoryId: 1 }),
+    createMockCategory({ categoryId: 3, name: 'Child 1-2', description: 'Child 1-2 desc', parentCategoryId: 1 }),
+    createMockCategory({ categoryId: 4, name: 'Grandchild 1-1-1', description: 'Grandchild desc', parentCategoryId: 2 }),
+    createMockCategory({ categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null }),
   ];
 
   // Shared expanded state for tests that need to verify toggle behavior
@@ -40,39 +40,13 @@ describe('CategoryTree', () => {
     toggleCategoryExpanded.mockClear();
 
     // Default mock: not loading, no error
-    vi.mocked(DataContext.useData).mockReturnValue({
-      currentCollection: null,
-      setCurrentCollection: vi.fn(),
-      collections: [],
-      collectionsLoading: false,
-      collectionsError: null,
-      loadCollections: vi.fn(async () => {}),
-      addCollection: vi.fn(async () => ({ collectionId: 1, workspaceId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
-      updateCollection: vi.fn(async () => {}),
-      deleteCollection: vi.fn(async () => {}),
+    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
       categories: mockCategories,
-      categoriesLoading: false,
-      categoriesError: null,
-      loadCategoriesForCollection: vi.fn(async () => {}),
       addCategory: vi.fn(async () => 6),
-      updateCategory: vi.fn(async () => {}),
-      deleteCategory: vi.fn(async () => {}),
-      items: [],
-      itemsLoading: false,
-      itemsError: null,
-      loadItemsForCategory: vi.fn(async () => {}),
-      addItem: vi.fn(async () => 0),
-      updateItem: vi.fn(async () => {}),
-      deleteItem: vi.fn(async () => {}),
-      propertyCategorySuggestions: [],
-      propertyNameSuggestions: [],
-      loadPropertySuggestions: vi.fn(async () => {}),
-      syncPropertySuggestions: vi.fn(async () => {}),
-      addLocalCategorySuggestion: vi.fn(),
-      addLocalNameSuggestion: vi.fn(),
+      addCollection: vi.fn(async () => createMockCollection()),
       expandedCategoryIds,
       toggleCategoryExpanded,
-    });
+    }));
   });
 
   describe('snapshots', () => {
@@ -181,39 +155,11 @@ describe('CategoryTree', () => {
       const user = userEvent.setup();
 
       // Start with Root 1 collapsed
-      vi.mocked(DataContext.useData).mockReturnValue({
-        currentCollection: null,
-        setCurrentCollection: vi.fn(),
-        collections: [],
-        collectionsLoading: false,
-        collectionsError: null,
-        loadCollections: vi.fn(async () => {}),
-        addCollection: vi.fn(async () => ({ collectionId: 1, workspaceId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
-        updateCollection: vi.fn(async () => {}),
-        deleteCollection: vi.fn(async () => {}),
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
         categories: mockCategories,
-        categoriesLoading: false,
-        categoriesError: null,
-        loadCategoriesForCollection: vi.fn(async () => {}),
-        addCategory: vi.fn(async () => 6),
-        updateCategory: vi.fn(async () => {}),
-        deleteCategory: vi.fn(async () => {}),
-        items: [],
-        itemsLoading: false,
-        itemsError: null,
-        loadItemsForCategory: vi.fn(async () => {}),
-        addItem: vi.fn(async () => 0),
-        updateItem: vi.fn(async () => {}),
-        deleteItem: vi.fn(async () => {}),
-        propertyCategorySuggestions: [],
-        propertyNameSuggestions: [],
-        loadPropertySuggestions: vi.fn(async () => {}),
-        syncPropertySuggestions: vi.fn(async () => {}),
-        addLocalCategorySuggestion: vi.fn(),
-        addLocalNameSuggestion: vi.fn(),
         expandedCategoryIds: new Set([5]), // Only Root 2 expanded, Root 1 collapsed
         toggleCategoryExpanded,
-      });
+      }));
 
       render(
         <CategoryTree
@@ -271,9 +217,9 @@ describe('CategoryTree', () => {
     });
 
     it('should handle categories with orphaned parent references', () => {
-      const orphanedCategories: Category[] = [
-        { workspaceId: 1, categoryId: 1, name: 'Root', description: 'Desc', parentCategoryId: null, isSystem: false },
-        { workspaceId: 1, categoryId: 2, name: 'Orphan', description: 'Desc', parentCategoryId: 999, isSystem: false }, // Non-existent parent
+      const orphanedCategories = [
+        createMockCategory({ categoryId: 1, name: 'Root', description: 'Desc', parentCategoryId: null }),
+        createMockCategory({ categoryId: 2, name: 'Orphan', description: 'Desc', parentCategoryId: 999 }), // Non-existent parent
       ];
 
       render(
@@ -316,39 +262,9 @@ describe('CategoryTree', () => {
 
   describe('loading and error states', () => {
     it('should display loading message when categories are loading', () => {
-      vi.mocked(DataContext.useData).mockReturnValue({
-        currentCollection: null,
-        setCurrentCollection: vi.fn(),
-        collections: [],
-        collectionsLoading: false,
-        collectionsError: null,
-        loadCollections: vi.fn(async () => {}),
-        addCollection: vi.fn(async () => ({ collectionId: 1, workspaceId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
-        updateCollection: vi.fn(async () => {}),
-        deleteCollection: vi.fn(async () => {}),
-        categories: [],
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
         categoriesLoading: true,
-        categoriesError: null,
-        loadCategoriesForCollection: vi.fn(async () => {}),
-        addCategory: vi.fn(async () => 0),
-        updateCategory: vi.fn(async () => {}),
-        deleteCategory: vi.fn(async () => {}),
-        items: [],
-        itemsLoading: false,
-        itemsError: null,
-        loadItemsForCategory: vi.fn(async () => {}),
-        addItem: vi.fn(async () => 0),
-        updateItem: vi.fn(async () => {}),
-        deleteItem: vi.fn(async () => {}),
-        propertyCategorySuggestions: [],
-        propertyNameSuggestions: [],
-        loadPropertySuggestions: vi.fn(async () => {}),
-        syncPropertySuggestions: vi.fn(async () => {}),
-        addLocalCategorySuggestion: vi.fn(),
-        addLocalNameSuggestion: vi.fn(),
-        expandedCategoryIds: new Set(),
-        toggleCategoryExpanded: vi.fn(),
-      });
+      }));
 
       render(
         <CategoryTree
@@ -362,39 +278,9 @@ describe('CategoryTree', () => {
     });
 
     it('should display error message when categories fail to load', () => {
-      vi.mocked(DataContext.useData).mockReturnValue({
-        currentCollection: null,
-        setCurrentCollection: vi.fn(),
-        collections: [],
-        collectionsLoading: false,
-        collectionsError: null,
-        loadCollections: vi.fn(async () => {}),
-        addCollection: vi.fn(async () => ({ collectionId: 1, workspaceId: 1, name: '', description: '', heroImageUrl: null, slug: '' })),
-        updateCollection: vi.fn(async () => {}),
-        deleteCollection: vi.fn(async () => {}),
-        categories: [],
-        categoriesLoading: false,
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
         categoriesError: 'Failed to fetch categories: Internal Server Error',
-        loadCategoriesForCollection: vi.fn(async () => {}),
-        addCategory: vi.fn(async () => 0),
-        updateCategory: vi.fn(async () => {}),
-        deleteCategory: vi.fn(async () => {}),
-        items: [],
-        itemsLoading: false,
-        itemsError: null,
-        loadItemsForCategory: vi.fn(async () => {}),
-        addItem: vi.fn(async () => 0),
-        updateItem: vi.fn(async () => {}),
-        deleteItem: vi.fn(async () => {}),
-        propertyCategorySuggestions: [],
-        propertyNameSuggestions: [],
-        loadPropertySuggestions: vi.fn(async () => {}),
-        syncPropertySuggestions: vi.fn(async () => {}),
-        addLocalCategorySuggestion: vi.fn(),
-        addLocalNameSuggestion: vi.fn(),
-        expandedCategoryIds: new Set(),
-        toggleCategoryExpanded: vi.fn(),
-      });
+      }));
 
       render(
         <CategoryTree

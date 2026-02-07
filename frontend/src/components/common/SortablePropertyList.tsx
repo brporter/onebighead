@@ -75,7 +75,7 @@ function SortablePropertyRow<T extends BaseProperty>({
           type="text"
           className={`${inputClassName} ${fieldConfig.className || ''}`}
           placeholder={fieldConfig.placeholder}
-          value={(property as Record<string, string>)[fieldConfig.field] || ''}
+          value={(property as unknown as Record<string, string>)[fieldConfig.field] || ''}
           onChange={(e) => onFieldChange(property.id, fieldConfig.field as keyof T, e.target.value)}
           onBlur={() => onFieldBlur?.(property.id, fieldConfig.field as keyof T)}
           list={fieldConfig.datalistId}
@@ -239,7 +239,7 @@ export function SortablePropertyList<T extends BaseProperty>({
                 key={fieldConfig.field}
                 type="text"
                 className={`${classNames.input} ${fieldConfig.className || ''}`}
-                value={(activeProperty as Record<string, string>)[fieldConfig.field] || ''}
+                value={(activeProperty as unknown as Record<string, string>)[fieldConfig.field] || ''}
                 readOnly
               />
             ))}

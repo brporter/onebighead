@@ -42,7 +42,7 @@ describe('WorkspaceSwitcher', () => {
     hasCompletedWelcome: true,
     hasAcceptedTerms: true,
     isSystemAdministrator: false,
-    workspaceRole: 'WorkspaceAdmin',
+    workspaceRole: WorkspaceRole.WorkspaceAdmin,
     isWorkspaceAdmin: true,
   };
 

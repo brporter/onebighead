@@ -3,12 +3,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SubcategoryDropdown from '../src/components/category/SubcategoryDropdown';
 import type { Category } from '../src/utils/types';
+import { Visibility } from '../src/utils/types';
 
 describe('SubcategoryDropdown', () => {
   const mockSubcategories: Category[] = [
-    { workspaceId: 1, categoryId: 1, name: 'Subcategory 1', description: 'Desc 1', parentCategoryId: null, isSystem: false },
-    { workspaceId: 1, categoryId: 2, name: 'Subcategory 2', description: 'Desc 2', parentCategoryId: null, isSystem: false },
-    { workspaceId: 1, categoryId: 3, name: 'Subcategory 3', description: 'Desc 3', parentCategoryId: null, isSystem: false },
+    { workspaceId: 1, collectionId: 1, categoryId: 1, name: 'Subcategory 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
+    { workspaceId: 1, collectionId: 1, categoryId: 2, name: 'Subcategory 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
+    { workspaceId: 1, collectionId: 1, categoryId: 3, name: 'Subcategory 3', description: 'Desc 3', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
   ];
 
   describe('snapshots', () => {

@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SetupView > snapshots > should match snapshot 1`] = `
+<div>
+  <div
+    data-testid="collection-setup-wizard"
+  >
+    <button>
+      Complete Collection Setup
+    </button>
+  </div>
+</div>
+`;

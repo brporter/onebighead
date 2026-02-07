@@ -8,33 +8,41 @@ interface UnreadSupportBannerProps {
   onOpenSettings?: () => void;
 }
 
+// Namespace sessionStorage key by user id to prevent cross-user issues
+function getStorageKey(userId: number) {
+  return `supportBannerDismissed_${userId}`;
+}
+
 export function UnreadSupportBanner({ onOpenSettings }: UnreadSupportBannerProps) {
   const { user } = useUser();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isDismissed, setIsDismissed] = useState(false);
 
-  // Namespace sessionStorage key by user id to prevent cross-user issues
-  const getStorageKey = () => user ? `supportBannerDismissed_${user.userId}` : null;
+  // Initialize isDismissed from sessionStorage if we have a user
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    // Note: user may not be available during initial render, will be checked in effect
+    return false;
+  });
 
   useEffect(() => {
     if (!user) return;
 
     // Check if we've already shown the banner this session for this user
-    const storageKey = getStorageKey();
-    if (storageKey) {
-      const dismissed = sessionStorage.getItem(storageKey);
-      if (dismissed === 'true') {
-        setIsDismissed(true);
-        return;
-      }
+    const storageKey = getStorageKey(user.userId);
+    const dismissed = sessionStorage.getItem(storageKey);
+    if (dismissed === 'true') {
+      // Already dismissed, skip fetch
+      setIsDismissed(true);
+      return;
     }
 
     // Fetch unread count
     getUnreadSupportCount()
       .then((data) => setUnreadCount(data.unreadCount))
       .catch(() => setUnreadCount(0));
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
 
   if (!user || unreadCount === 0 || isDismissed) {
     return null;
@@ -42,9 +50,8 @@ export function UnreadSupportBanner({ onOpenSettings }: UnreadSupportBannerProps
 
   const handleDismiss = () => {
     setIsDismissed(true);
-    const storageKey = getStorageKey();
-    if (storageKey) {
-      sessionStorage.setItem(storageKey, 'true');
+    if (user) {
+      sessionStorage.setItem(getStorageKey(user.userId), 'true');
     }
   };
 

@@ -35,4 +35,10 @@ public interface IWorkspaceUserRepository
     /// Prevents removing the last admin in a workspace.
     /// </summary>
     Task<AdminCheckResult> DeleteWithAdminCheckAsync(int userId, int workspaceId);
+
+    /// <summary>
+    /// Gets admin memberships for a user including deleted workspaces.
+    /// Used for the restorable workspaces feature.
+    /// </summary>
+    Task<IEnumerable<WorkspaceUser>> GetAdminMembershipsIncludingDeletedAsync(int userId);
 }

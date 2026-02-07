@@ -1,6 +1,7 @@
 using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Extensions;
 using OneBigHead.Server.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -184,7 +185,7 @@ public class AuthController : ControllerBase
 
         // Generate app-specific JWT and set HTTP-only cookie
         var appToken = _tokenService.GenerateAppToken(user, workspaceRole);
-        SetAuthCookie(appToken);
+        Response.SetAuthCookie(appToken, _settings);
 
         // Get return URL and redirect
         var returnUrl = Request.Cookies["oauth_return_url"] ?? _settings.OAuth.PostLoginRedirectUrl;
@@ -266,20 +267,6 @@ public class AuthController : ControllerBase
         return (newUser, WorkspaceRole.WorkspaceAdmin);
     }
 
-    private void SetAuthCookie(string token)
-    {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = _settings.Cookie.Secure,
-            SameSite = Enum.Parse<SameSiteMode>(_settings.Cookie.SameSite, true),
-            Expires = DateTimeOffset.UtcNow.AddDays(_settings.Jwt.AbsoluteExpirationDays),
-            Path = "/"
-        };
-
-        Response.Cookies.Append(_settings.Cookie.Name, token, cookieOptions);
-    }
-
     private IActionResult RedirectToError(string message)
     {
         return Redirect($"{_settings.OAuth.PostLoginErrorUrl}?error={Uri.EscapeDataString(message)}");
@@ -317,7 +304,7 @@ public class AuthController : ControllerBase
 
         // Generate app-specific JWT and set cookie
         var appToken = _tokenService.GenerateAppToken(user, workspaceRole);
-        SetAuthCookie(appToken);
+        Response.SetAuthCookie(appToken, _settings);
 
         return Ok(new AuthCallbackResponse
         {
@@ -515,7 +502,7 @@ public class AuthController : ControllerBase
 
         // Generate JWT and set cookie
         var appToken = _tokenService.GenerateAppToken(user, workspaceRole);
-        SetAuthCookie(appToken);
+        Response.SetAuthCookie(appToken, _settings);
 
         return Ok(new
         {

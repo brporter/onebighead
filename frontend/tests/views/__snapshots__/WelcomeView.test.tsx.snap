@@ -1,0 +1,16 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`WelcomeView > snapshots > should match snapshot 1`] = `
+<div>
+  <div
+    data-testid="welcome-wizard"
+  >
+    <button>
+      Complete Setup
+    </button>
+    <button>
+      Skip Setup
+    </button>
+  </div>
+</div>
+`;

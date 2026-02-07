@@ -29,7 +29,7 @@ export const itemsApi = {
     const queryString = params.toString();
     const endpoint = queryString ? `/items?${queryString}` : '/items';
 
-    const headers: HeadersInit = {};
+    const headers: globalThis.HeadersInit = {};
     if (options.etag) {
       headers['If-None-Match'] = options.etag;
     }

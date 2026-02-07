@@ -1,3 +1,4 @@
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 
@@ -36,7 +37,8 @@ function RequireAuth({ children, skipWelcomeCheck = false, skipTermsCheck = fals
   if (!user) {
     // Redirect to signin, preserving the intended destination
     const returnUrl = encodeURIComponent(location.pathname + location.search);
-    window.location.href = `/signin?returnUrl=${returnUrl}`;
+    // eslint-disable-next-line react-hooks/immutability
+    globalThis.location.href = `/signin?returnUrl=${returnUrl}`;
     return null;
   }
 

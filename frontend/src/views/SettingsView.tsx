@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/App.css';
 import '../styles/SettingsView.css';
@@ -504,7 +504,7 @@ function SettingsView() {
   const renderWorkspacesSection = () => {
     const workspaces = user?.workspaces || [];
     const activeWorkspace = user?.activeWorkspace;
-    const canLeaveWorkspace = (workspace: WorkspaceMembership) => {
+    const canLeaveWorkspace = () => {
       // Cannot leave if it's the only workspace
       if (workspaces.length <= 1) return false;
       // Cannot leave if you're the only admin (would need to check server-side, but we'll let API handle it)

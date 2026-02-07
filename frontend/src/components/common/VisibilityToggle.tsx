@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Visibility } from '../../utils/types';
 
 export interface VisibilityToggleProps {
@@ -16,6 +15,13 @@ export interface VisibilityToggleProps {
   isCollection?: boolean;
 }
 
+function visibilityToLocal(visibility: Visibility, isCollection: boolean): 'inherit' | 'public' | 'private' {
+  if (isCollection) {
+    return visibility === Visibility.Public ? 'public' : 'private';
+  }
+  return visibility === Visibility.Default ? 'inherit' : visibility === Visibility.Public ? 'public' : 'private';
+}
+
 export default function VisibilityToggle({
   visibility,
   effectiveIsPublic,
@@ -24,22 +30,10 @@ export default function VisibilityToggle({
   label = 'Visibility',
   isCollection = false,
 }: VisibilityToggleProps) {
-  const [localValue, setLocalValue] = useState<'inherit' | 'public' | 'private'>(
-    isCollection
-      ? (visibility === Visibility.Public ? 'public' : 'private')
-      : (visibility === Visibility.Default ? 'inherit' : visibility === Visibility.Public ? 'public' : 'private')
-  );
-
-  useEffect(() => {
-    if (isCollection) {
-      setLocalValue(visibility === Visibility.Public ? 'public' : 'private');
-    } else {
-      setLocalValue(visibility === Visibility.Default ? 'inherit' : visibility === Visibility.Public ? 'public' : 'private');
-    }
-  }, [visibility, isCollection]);
+  // Derive local value directly from visibility prop - no local state needed
+  const localValue = visibilityToLocal(visibility, isCollection);
 
   const handleChange = (newValue: 'inherit' | 'public' | 'private') => {
-    setLocalValue(newValue);
     if (isCollection) {
       onChange(newValue === 'public' ? Visibility.Public : Visibility.Private);
     } else {

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { itemsApi, type GetItemsOptions } from '../../src/api/items';
-import type { Item } from '../../src/utils/types';
-import { Visibility } from '../../src/utils/types';
+import { itemsApi } from '../../src/api/items';
+import { createMockItem } from '../testUtils';
 
 describe('itemsApi', () => {
   let mockFetch: ReturnType<typeof vi.fn>;
@@ -17,8 +16,8 @@ describe('itemsApi', () => {
 
   describe('getAll', () => {
     it('should fetch all items without options', async () => {
-      const mockItems: Item[] = [
-        { id: 1, workspaceId: 1, collectionId: 1, name: 'Item 1', summary: '', description: '', properties: [], images: [], categoryId: 1, visibility: Visibility.Default, effectiveIsPublic: true },
+      const mockItems = [
+        createMockItem({ id: 1, name: 'Item 1', categoryId: 1, effectiveIsPublic: true }),
       ];
       
       mockFetch.mockResolvedValueOnce({
@@ -99,19 +98,14 @@ describe('itemsApi', () => {
 
   describe('getById', () => {
     it('should fetch single item by id', async () => {
-      const mockItem: Item = {
+      const mockItem = createMockItem({
         id: 42,
-        workspaceId: 1,
-        collectionId: 1,
         name: 'Test Item',
         summary: 'A test',
         description: 'Description',
-        properties: [],
-        images: [],
         categoryId: 5,
-        visibility: Visibility.Default,
         effectiveIsPublic: true,
-      };
+      });
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -128,18 +122,13 @@ describe('itemsApi', () => {
 
   describe('create', () => {
     it('should POST new item', async () => {
-      const newItem: Item = {
-        workspaceId: 1,
-        collectionId: 1,
+      const newItem = createMockItem({
+        id: null,
         name: 'New Item',
-        summary: '',
-        description: '',
         properties: [{ category: 'Size', name: 'Width', value: '10cm' }],
-        images: [],
         categoryId: 3,
-        visibility: Visibility.Default,
         effectiveIsPublic: true,
-      };
+      });
 
       const createdItem = { ...newItem, id: 99 };
 
@@ -160,19 +149,13 @@ describe('itemsApi', () => {
 
   describe('update', () => {
     it('should PUT updated item', async () => {
-      const updatedItem: Item = {
+      const updatedItem = createMockItem({
         id: 42,
-        workspaceId: 1,
-        collectionId: 1,
         name: 'Updated Name',
         summary: 'Updated summary',
-        description: '',
-        properties: [],
-        images: [],
         categoryId: 3,
-        visibility: Visibility.Public,
         effectiveIsPublic: true,
-      };
+      });
 
       mockFetch.mockResolvedValueOnce({
         ok: true,

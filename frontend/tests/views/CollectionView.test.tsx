@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import CollectionView from '../../src/views/CollectionView';
 import { useData } from '../../src/contexts/DataContext';
 import type { Collection } from '../../src/utils/types';
+import { Visibility } from '../../src/utils/types';
 
 vi.mock('../../src/contexts/DataContext', () => ({
   useData: vi.fn(),
@@ -31,8 +32,8 @@ function renderWithRouter() {
 
 describe('CollectionView', () => {
   const mockCollections: Collection[] = [
-    { collectionId: 1, workspaceId: 1, name: 'Collection One', description: 'First collection', heroImageUrl: null, slug: 'one' },
-    { collectionId: 2, workspaceId: 1, name: 'Collection Two', description: 'Second collection', heroImageUrl: null, slug: 'two' },
+    { collectionId: 1, workspaceId: 1, name: 'Collection One', description: 'First collection', heroImageUrl: null, slug: 'one', visibility: Visibility.Private, effectiveIsPublic: false },
+    { collectionId: 2, workspaceId: 1, name: 'Collection Two', description: 'Second collection', heroImageUrl: null, slug: 'two', visibility: Visibility.Private, effectiveIsPublic: false },
   ];
 
   const mockDataContext = {

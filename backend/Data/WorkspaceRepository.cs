@@ -28,4 +28,15 @@ public class WorkspaceRepository : IWorkspaceRepository
         _context.Workspaces.Add(workspace);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<WorkspaceStats> GetStatsAsync(int workspaceId)
+    {
+        return new WorkspaceStats
+        {
+            CollectionCount = await _context.Collections.CountAsync(c => c.WorkspaceId == workspaceId),
+            ItemCount = await _context.Items.CountAsync(i => i.WorkspaceId == workspaceId),
+            CategoryCount = await _context.Categories.CountAsync(c => c.WorkspaceId == workspaceId),
+            ImageCount = await _context.StoredImages.CountAsync(i => i.WorkspaceId == workspaceId)
+        };
+    }
 }

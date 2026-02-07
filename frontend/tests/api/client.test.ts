@@ -280,8 +280,8 @@ describe('ApiClient', () => {
   describe('Request timeout', () => {
     it('should timeout after specified duration', async () => {
       // Create a promise that will be aborted when AbortController.abort() is called
-      let abortSignal: AbortSignal | undefined;
-      mockFetch.mockImplementation((_url: string, options?: RequestInit) => {
+      let abortSignal: AbortSignal | null | undefined;
+      mockFetch.mockImplementation((_url: string, options?: globalThis.RequestInit) => {
         abortSignal = options?.signal;
         return new Promise((_, reject) => {
           if (abortSignal) {
@@ -317,8 +317,8 @@ describe('ApiClient', () => {
 
   describe('Request cancellation', () => {
     it('should cancel request when cancelRequest is called', async () => {
-      let abortSignal: AbortSignal | undefined;
-      mockFetch.mockImplementation((_url: string, options?: RequestInit) => {
+      let abortSignal: AbortSignal | null | undefined;
+      mockFetch.mockImplementation((_url: string, options?: globalThis.RequestInit) => {
         abortSignal = options?.signal;
         return new Promise((_, reject) => {
           if (abortSignal) {

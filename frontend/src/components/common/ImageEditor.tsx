@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useData } from '../../contexts/DataContext';
 import type { ItemImage } from '../../utils/types';
 

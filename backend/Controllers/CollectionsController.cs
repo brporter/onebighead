@@ -1,16 +1,16 @@
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
+using OneBigHead.Server.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.RegularExpressions;
 
 namespace OneBigHead.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public partial class CollectionsController : ApiControllerBase
+public class CollectionsController : ApiControllerBase
 {
     private readonly ICollectionRepository _collectionRepository;
     private readonly ICategoryRepository _categoryRepository;
@@ -70,7 +70,7 @@ public partial class CollectionsController : ApiControllerBase
     {
         var workspaceId = GetWorkspaceId();
 
-        var slug = GenerateSlug(request.Name);
+        var slug = SlugHelper.GenerateSlug(request.Name);
         
         // Ensure slug is unique within workspace
         var existing = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
@@ -96,8 +96,8 @@ public partial class CollectionsController : ApiControllerBase
         {
             WorkspaceId = workspaceId,
             CollectionId = created.Id,
-            Name = "Unassigned Items",
-            Description = "Items that have not been assigned to a category",
+            Name = Constants.CategoryNames.UnassignedItems,
+            Description = Constants.CategoryNames.UnassignedItemsDescription,
             IsSystem = true
         };
         await _categoryRepository.CreateAsync(unassignedCategory);
@@ -122,7 +122,7 @@ public partial class CollectionsController : ApiControllerBase
             return BadRequest("Invalid theme");
         }
 
-        var slug = GenerateSlug(request.Name);
+        var slug = SlugHelper.GenerateSlug(request.Name);
         
         // Ensure slug is unique within workspace
         var existing = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
@@ -148,8 +148,8 @@ public partial class CollectionsController : ApiControllerBase
         {
             WorkspaceId = workspaceId,
             CollectionId = created.Id,
-            Name = "Unassigned Items",
-            Description = "Items that have not been assigned to a category",
+            Name = Constants.CategoryNames.UnassignedItems,
+            Description = Constants.CategoryNames.UnassignedItemsDescription,
             IsSystem = true
         };
         await _categoryRepository.CreateAsync(unassignedCategory);
@@ -246,7 +246,7 @@ public partial class CollectionsController : ApiControllerBase
             return NotFound();
         }
 
-        var slug = GenerateSlug(request.Name);
+        var slug = SlugHelper.GenerateSlug(request.Name);
         
         // Check if slug is taken by another collection
         var slugCollection = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
@@ -355,23 +355,4 @@ public partial class CollectionsController : ApiControllerBase
 
         return NoContent();
     }
-
-    private static string GenerateSlug(string name)
-    {
-        var slug = name.ToLowerInvariant();
-        slug = SlugInvalidCharsRegex().Replace(slug, "");
-        slug = SlugWhitespaceRegex().Replace(slug, "-");
-        slug = SlugMultipleDashRegex().Replace(slug, "-");
-        slug = slug.Trim('-');
-        return string.IsNullOrEmpty(slug) ? "collection" : slug;
-    }
-
-    [GeneratedRegex("[^a-z0-9\\s-]")]
-    private static partial Regex SlugInvalidCharsRegex();
-
-    [GeneratedRegex("\\s+")]
-    private static partial Regex SlugWhitespaceRegex();
-
-    [GeneratedRegex("-+")]
-    private static partial Regex SlugMultipleDashRegex();
 }

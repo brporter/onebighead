@@ -101,12 +101,12 @@ function ItemView() {
     fetchItemForDeepLink();
   }, [itemIdNum, currentCollection, categories.length, items, loadItemsForCategory, loadItemById]);
 
-  // Show template selector for new items
-  useEffect(() => {
-    if (isNewItem && currentCollection && selectedTemplateProperties === null) {
-      setShowTemplateSelector(true);
-    }
-  }, [isNewItem, currentCollection, selectedTemplateProperties]);
+  // Show template selector for new items - computed from state, no effect needed
+  // This is a derived state that should show selector when conditions are met
+  const shouldShowTemplateSelector = isNewItem && currentCollection && selectedTemplateProperties === null && !showTemplateSelector;
+  if (shouldShowTemplateSelector) {
+    setShowTemplateSelector(true);
+  }
 
   const selectedItem = useMemo(() => {
     if (itemIdNum == null) return null;

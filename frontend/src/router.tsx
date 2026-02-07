@@ -15,12 +15,15 @@ const WorkspaceCreationView = lazy(() => import('./views/WorkspaceCreationView')
 const TermsView = lazy(() => import('./views/TermsView'));
 const WelcomeView = lazy(() => import('./views/WelcomeView'));
 
-// Loading fallback component
-const LoadingFallback = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: '2rem' }}>
-    Loading...
-  </div>
-);
+// Loading fallback component - inline to avoid separate file
+// eslint-disable-next-line react-refresh/only-export-components
+function LoadingFallback() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: '2rem' }}>
+      Loading...
+    </div>
+  );
+}
 
 export const router = createBrowserRouter([
   {

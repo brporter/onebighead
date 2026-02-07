@@ -190,4 +190,12 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
             throw;
         }
     }
+
+    public async Task<IEnumerable<WorkspaceUser>> GetAdminMembershipsIncludingDeletedAsync(int userId)
+    {
+        return await _context.WorkspaceUsers
+            .Include(wu => wu.Workspace)
+            .Where(wu => wu.UserId == userId && wu.WorkspaceRole == WorkspaceRole.WorkspaceAdmin)
+            .ToListAsync();
+    }
 }

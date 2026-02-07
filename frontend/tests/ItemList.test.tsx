@@ -3,18 +3,23 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemList from '../src/components/item/ItemList';
 import type { Item } from '../src/utils/types';
+import { Visibility, UserFlag } from '../src/utils/types';
 
 describe('ItemList', () => {
   const createMockItems = (count: number): Item[] => {
     return Array.from({ length: count }, (_, i) => ({
       id: i + 1,
       workspaceId: 1,
+      collectionId: 1,
       categoryId: 1,
       name: `Item ${i + 1}`,
       summary: `Summary ${i + 1}`,
       description: `Description ${i + 1}`,
       properties: [],
       images: [],
+      visibility: Visibility.Default,
+      effectiveIsPublic: false,
+      userFlag: UserFlag.None,
     }));
   };
 
@@ -168,12 +173,16 @@ describe('ItemList', () => {
       const items: Item[] = [{
         id: 1,
         workspaceId: 1,
+        collectionId: 1,
         categoryId: 1,
         name: 'Item without summary',
         summary: '',
         description: 'Desc',
         properties: [],
         images: [],
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        userFlag: UserFlag.None,
       }];
 
       render(<ItemList {...defaultProps} items={items} />);
@@ -188,12 +197,16 @@ describe('ItemList', () => {
       const itemsWithNullId: Item[] = [{
         id: null,
         workspaceId: 1,
+        collectionId: 1,
         categoryId: 1,
         name: 'Item with null id',
         summary: 'Summary',
         description: 'Desc',
         properties: [],
         images: [],
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        userFlag: UserFlag.None,
       }];
 
       render(<ItemList {...defaultProps} items={itemsWithNullId} onSelect={handleSelect} />);
@@ -211,12 +224,16 @@ describe('ItemList', () => {
       const itemsWithNullId: Item[] = [{
         id: null,
         workspaceId: 1,
+        collectionId: 1,
         categoryId: 1,
         name: 'Item with null id',
         summary: 'Summary',
         description: 'Desc',
         properties: [],
         images: [],
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        userFlag: UserFlag.None,
       }];
 
       render(<ItemList {...defaultProps} items={itemsWithNullId} onSelect={handleSelect} />);

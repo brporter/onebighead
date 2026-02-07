@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, memo } from 'react';
 import type { Category, CategoryNode } from '../../utils/types';
 import { useData } from '../../contexts/DataContext';
 import CategoryEditorModal from './CategoryEditorModal';
@@ -41,7 +41,7 @@ function buildTree(categories: Category[]): CategoryNode[] {
   return roots;
 }
 
-function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expandedIds, onToggle, onEdit }: CategoryNodeProps) {
+const CategoryNodeComponent = memo(function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expandedIds, onToggle, onEdit }: CategoryNodeProps) {
   const isSelected = node.categoryId === selectedCategoryId;
   const hasChildren = node.children.length > 0;
   const isExpanded = expandedIds.has(node.categoryId);
@@ -105,7 +105,7 @@ function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expa
       ) : null}
     </li>
   );
-}
+});
 
 function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTreeProps) {
   const {

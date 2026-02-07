@@ -15,14 +15,19 @@ function CategoryTemplateSelector({ collectionId, selectedTemplateIds, onChange,
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
+
     Promise.all([
       loadCollectionTemplates(collectionId),
       loadItemTemplates(),
     ]).then(([colTemplates]) => {
-      setCollectionTemplates(colTemplates);
-      setLoading(false);
+      if (!cancelled) {
+        setCollectionTemplates(colTemplates);
+        setLoading(false);
+      }
     });
+
+    return () => { cancelled = true; };
   }, [collectionId, loadCollectionTemplates, loadItemTemplates]);
 
   // Combine collection templates and library templates, deduplicating

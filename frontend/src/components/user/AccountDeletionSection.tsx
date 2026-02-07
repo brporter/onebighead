@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { DeletionConfirmationModal, type WorkspaceBlocker } from '../common';
 import {
   accountApi,
-  DeletionBlockerReason,
   WorkspaceActionType,
   type UserDeletionInfo,
   type WorkspaceActionRequest

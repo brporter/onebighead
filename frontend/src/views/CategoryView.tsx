@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, Outlet } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import CategoryTree from '../components/category/CategoryTree';
 import ItemList from '../components/item/ItemList';
@@ -42,6 +42,7 @@ function CategoryView() {
 
   // Set current collection once collections are loaded
   useEffect(() => {
+    let shouldSetLoading = true;
     if (collectionIdNum && collections.length > 0 && currentCollection?.collectionId !== collectionIdNum) {
       const collection = collections.find(c => c.collectionId === collectionIdNum);
       if (collection) {
@@ -51,18 +52,24 @@ function CategoryView() {
       } else {
         // Collection not found, redirect to collections list
         navigate('/collections', { replace: true });
+        shouldSetLoading = false;
       }
     }
-    setIsLoading(false);
+    if (shouldSetLoading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- loading state must be set after collection load
+      setIsLoading(false);
+    }
   }, [collectionIdNum, collections, currentCollection, setCurrentCollection, loadCategoriesForCollection, loadPropertySuggestions, navigate]);
 
   // Load items when category changes
   useEffect(() => {
     if (categoryIdNum) {
       loadItemsForCategory(categoryIdNum);
-      setSubcategoryFilter(null);
-      setPageIndex(0);
     }
+    // Reset filters on category change (state resetting side effect)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when category changes
+    setSubcategoryFilter(null);
+    setPageIndex(0);
   }, [categoryIdNum, loadItemsForCategory]);
 
   const directSubcategories = useMemo(() => {

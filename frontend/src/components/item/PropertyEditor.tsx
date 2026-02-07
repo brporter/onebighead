@@ -2,15 +2,12 @@ import { useState, useMemo } from 'react';
 import type { ItemProperty } from '../../utils/types';
 import { useData } from '../../contexts/DataContext';
 import { SortablePropertyList, type PropertyWithValue, type FieldConfig } from '../common';
+import { generateUniqueId } from '../../utils/idUtils';
 
 interface PropertyEditorProps {
   properties: ItemProperty[];
   onChange: (properties: ItemProperty[]) => void;
 }
-
-// Generate unique ID for drag-and-drop
-let propertyIdCounter = 0;
-const generatePropertyId = () => `item-prop-${++propertyIdCounter}`;
 
 const FIELD_CONFIG: FieldConfig[] = [
   { field: 'category', placeholder: 'Category', className: 'propertyEditor__input--category', datalistId: 'property-category-suggestions' },
@@ -55,7 +52,7 @@ function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
 
     return properties.map((prop, index) => {
       if (!propertyIds.has(index)) {
-        propertyIds.set(index, generatePropertyId());
+        propertyIds.set(index, generateUniqueId('item-prop'));
       }
       return {
         ...prop,

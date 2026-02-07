@@ -1,8 +1,10 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import UserButton from '../src/components/user/UserButton';
 import * as UserContext from '../src/contexts/UserContext';
+import { createMockCurrentUser } from './testUtils';
 
 vi.mock('../src/contexts/UserContext', () => ({
   useUser: vi.fn(),
@@ -67,19 +69,9 @@ describe('UserButton', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  const createMockUser = (overrides = {}) => ({
-    userId: 1,
-    email: 'test@example.com',
-    workspaceId: 1,
-    isSystemAdministrator: false,
-    workspaces: [{ workspaceId: 1, workspaceName: 'Test Workspace', workspaceRole: 'WorkspaceAdmin', hasCompletedWelcome: true }],
-    activeWorkspace: { workspaceId: 1, workspaceName: 'Test Workspace', workspaceRole: 'WorkspaceAdmin', hasCompletedWelcome: true },
-    ...overrides,
-  });
-
   it('should render settings and sign out buttons when user is logged in', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: createMockUser(),
+      user: createMockCurrentUser(),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -93,7 +85,7 @@ describe('UserButton', () => {
 
   it('should show Admin button only for system administrators', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: createMockUser({ email: 'admin@example.com', isSystemAdministrator: true }),
+      user: createMockCurrentUser({ email: 'admin@example.com', isSystemAdministrator: true }),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -106,7 +98,7 @@ describe('UserButton', () => {
 
   it('should not show Admin button for non-administrators', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: createMockUser({ email: 'user@example.com' }),
+      user: createMockCurrentUser({ email: 'user@example.com' }),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -119,7 +111,7 @@ describe('UserButton', () => {
 
   it('should call logout on Sign Out click', async () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: createMockUser(),
+      user: createMockCurrentUser(),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -137,7 +129,7 @@ describe('UserButton', () => {
 
   it('should navigate to /admin when Admin button clicked', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
-      user: createMockUser({ email: 'admin@example.com', isSystemAdministrator: true }),
+      user: createMockCurrentUser({ email: 'admin@example.com', isSystemAdministrator: true }),
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -155,7 +147,7 @@ describe('UserButton', () => {
   describe('snapshots', () => {
     it('should match snapshot for regular user', () => {
       vi.mocked(UserContext.useUser).mockReturnValue({
-        user: createMockUser({ email: 'user@example.com' }),
+        user: createMockCurrentUser({ email: 'user@example.com' }),
         loading: false,
         error: null,
         refetch: vi.fn(),
@@ -168,7 +160,7 @@ describe('UserButton', () => {
 
     it('should match snapshot for admin user', () => {
       vi.mocked(UserContext.useUser).mockReturnValue({
-        user: createMockUser({ email: 'admin@example.com', isSystemAdministrator: true }),
+        user: createMockCurrentUser({ email: 'admin@example.com', isSystemAdministrator: true }),
         loading: false,
         error: null,
         refetch: vi.fn(),

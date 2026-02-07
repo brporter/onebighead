@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   getAdminSupportRequests,
   getAdminSupportRequest,
@@ -24,6 +24,7 @@ export function AdminSupportSection() {
 
   useEffect(() => {
     loadRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, includeDeleted, page]);
 
   const loadRequests = async () => {

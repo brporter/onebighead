@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { getCategoryAndDescendantIds } from '../src/utils/categoryUtils';
-import type { Category } from '../src/utils/types';
+import { createMockCategory } from './testUtils';
 
 describe('getCategoryAndDescendantIds', () => {
-  const categories: Category[] = [
-    { workspaceId: 1, categoryId: 1, name: 'Root 1', description: 'Root 1 desc', parentCategoryId: null, isSystem: false },
-    { workspaceId: 1, categoryId: 2, name: 'Child 1-1', description: 'Child 1-1 desc', parentCategoryId: 1, isSystem: false },
-    { workspaceId: 1, categoryId: 3, name: 'Child 1-2', description: 'Child 1-2 desc', parentCategoryId: 1, isSystem: false },
-    { workspaceId: 1, categoryId: 4, name: 'Grandchild 1-1-1', description: 'Grandchild desc', parentCategoryId: 2, isSystem: false },
-    { workspaceId: 1, categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null, isSystem: false },
+  const categories = [
+    createMockCategory({ categoryId: 1, name: 'Root 1', description: 'Root 1 desc', parentCategoryId: null }),
+    createMockCategory({ categoryId: 2, name: 'Child 1-1', description: 'Child 1-1 desc', parentCategoryId: 1 }),
+    createMockCategory({ categoryId: 3, name: 'Child 1-2', description: 'Child 1-2 desc', parentCategoryId: 1 }),
+    createMockCategory({ categoryId: 4, name: 'Grandchild 1-1-1', description: 'Grandchild desc', parentCategoryId: 2 }),
+    createMockCategory({ categoryId: 5, name: 'Root 2', description: 'Root 2 desc', parentCategoryId: null }),
   ];
 
   it('should return empty set when selectedCategoryId is null', () => {
@@ -48,8 +48,8 @@ describe('getCategoryAndDescendantIds', () => {
 
   it('should handle categories with null in stack gracefully', () => {
     // This tests the id == null branch in the while loop
-    const categoriesWithNullParent: Category[] = [
-      { workspaceId: 1, categoryId: 1, name: 'Root', description: 'desc', parentCategoryId: null, isSystem: false },
+    const categoriesWithNullParent = [
+      createMockCategory({ categoryId: 1, name: 'Root', description: 'desc', parentCategoryId: null }),
     ];
     const result = getCategoryAndDescendantIds(categoriesWithNullParent, 1);
     expect(result).toEqual(new Set([1]));

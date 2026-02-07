@@ -15,7 +15,7 @@ export class ApiError extends Error {
   }
 }
 
-export interface RequestOptions extends RequestInit {
+export interface RequestOptions extends globalThis.RequestInit {
   /** Skip automatic JSON parsing of response */
   skipJsonParse?: boolean;
   /** Custom timeout in milliseconds (default: 30000) */
@@ -24,7 +24,7 @@ export interface RequestOptions extends RequestInit {
 
 interface ApiClientConfig {
   baseUrl: string;
-  defaultHeaders?: HeadersInit;
+  defaultHeaders?: globalThis.HeadersInit;
   onUnauthorized?: () => void;
   onUserDeleted?: () => void;
   onNoActiveWorkspaces?: () => void;

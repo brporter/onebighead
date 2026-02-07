@@ -3,7 +3,10 @@ using OneBigHead.Server.Models;
 
 namespace OneBigHead.Server.DTOs;
 
-public class CreateItemRequest
+/// <summary>
+/// Base class for item request DTOs with shared properties.
+/// </summary>
+public abstract class ItemRequestBase
 {
     [Required]
     [MaxLength(200)]
@@ -27,63 +30,39 @@ public class CreateItemRequest
 
     public UserFlag UserFlag { get; set; } = UserFlag.None;
 
-    public Item ToItem(int workspaceId)
+    /// <summary>
+    /// Populates the shared properties on an Item entity.
+    /// </summary>
+    protected void PopulateItem(Item item)
     {
-        return new Item
-        {
-            WorkspaceId = workspaceId,
-            CollectionId = CollectionId,
-            CategoryId = CategoryId,
-            Name = Name,
-            Summary = Summary,
-            Description = Description,
-            Properties = Properties,
-            Images = Images,
-            Visibility = Visibility,
-            UserFlag = UserFlag
-        };
+        item.CollectionId = CollectionId;
+        item.CategoryId = CategoryId;
+        item.Name = Name;
+        item.Summary = Summary;
+        item.Description = Description;
+        item.Properties = Properties;
+        item.Images = Images;
+        item.Visibility = Visibility;
+        item.UserFlag = UserFlag;
     }
 }
 
-public class UpdateItemRequest
+public class CreateItemRequest : ItemRequestBase
 {
-    [Required]
-    [MaxLength(200)]
-    public string Name { get; set; } = string.Empty;
+    public Item ToItem(int workspaceId)
+    {
+        var item = new Item { WorkspaceId = workspaceId };
+        PopulateItem(item);
+        return item;
+    }
+}
 
-    [MaxLength(500)]
-    public string Summary { get; set; } = string.Empty;
-
-    [MaxLength(10000)]
-    public string Description { get; set; } = string.Empty;
-
-    public int CollectionId { get; set; }
-
-    public int? CategoryId { get; set; }
-
-    public List<ItemProperty> Properties { get; set; } = new();
-
-    public List<ItemImage> Images { get; set; } = new();
-
-    public Visibility Visibility { get; set; } = Visibility.Default;
-
-    public UserFlag UserFlag { get; set; } = UserFlag.None;
-
+public class UpdateItemRequest : ItemRequestBase
+{
     public Item ToItem(int id, int workspaceId)
     {
-        return new Item
-        {
-            Id = id,
-            WorkspaceId = workspaceId,
-            CollectionId = CollectionId,
-            CategoryId = CategoryId,
-            Name = Name,
-            Summary = Summary,
-            Description = Description,
-            Properties = Properties,
-            Images = Images,
-            Visibility = Visibility,
-            UserFlag = UserFlag
-        };
+        var item = new Item { Id = id, WorkspaceId = workspaceId };
+        PopulateItem(item);
+        return item;
     }
 }

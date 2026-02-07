@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { UserProvider, useUser } from '../src/contexts/UserContext';
-import type { CurrentUser } from '../src/utils/types';
+import { createMockCurrentUser } from './testUtils';
 
 vi.mock('../src/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/api')>();
@@ -16,12 +16,7 @@ vi.mock('../src/api', async (importOriginal) => {
 
 import { authApi } from '../src/api';
 
-const mockUser: CurrentUser = {
-  userId: 1,
-  email: 'test@example.com',
-  workspaceId: 1,
-  isSystemAdministrator: false,
-};
+const mockUser = createMockCurrentUser();
 
 function TestConsumer({
   onData

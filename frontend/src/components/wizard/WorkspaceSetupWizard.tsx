@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { useData } from '../../contexts/DataContext';
 import { authApi, workspacesApi } from '../../api';
-import type { CollectionTheme, SetupCollectionRequest } from '../../utils/types';
+import type { CollectionTheme } from '../../utils/types';
 import ThemeCard from '../collection/ThemeCard';
 import ThemePreview from '../collection/ThemePreview';
 import { TermsAcceptance } from '../common';

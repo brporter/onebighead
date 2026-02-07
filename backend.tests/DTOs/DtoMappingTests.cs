@@ -131,7 +131,7 @@ public class DtoMappingTests
             Subject = "Subject",
             Description = "Desc",
             Status = SupportRequestStatus.Open,
-            Replies = null
+            Replies = null!
         };
 
         // Act

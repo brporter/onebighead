@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { DeletionConfirmationModal } from '../common';
 import { workspacesApi, exportApi, authApi } from '../../api';
 import type { WorkspaceStats } from '../../api/workspaces';

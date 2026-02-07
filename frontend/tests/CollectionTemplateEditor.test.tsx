@@ -3,6 +3,8 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import CollectionTemplateEditor from '../src/components/collection/CollectionTemplateEditor';
 import DataContext from '../src/contexts/DataContext';
 import type { Collection, ItemTemplate } from '../src/utils/types';
+import { Visibility } from '../src/utils/types';
+import { createMockDataContextValue } from './testUtils';
 
 const mockCollection: Collection = {
   collectionId: 1,
@@ -11,83 +13,49 @@ const mockCollection: Collection = {
   description: 'Test Description',
   heroImageUrl: null,
   slug: 'test-collection',
-  isPublic: true,
+  visibility: Visibility.Public,
+  effectiveIsPublic: true,
 };
 
 const mockTemplates: ItemTemplate[] = [
   {
     itemTemplateId: 1,
-    workspaceId: 1,
     name: 'Template A',
     description: 'First template',
     isSystem: false,
-    properties: [{ name: 'Prop1', defaultValue: '' }],
+    properties: [{ category: 'General', name: 'Prop1' }],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     itemTemplateId: 2,
-    workspaceId: 1,
     name: 'Template B',
     description: 'Second template',
     isSystem: true,
     properties: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     itemTemplateId: 3,
-    workspaceId: 1,
     name: 'Template C',
     description: '',
     isSystem: false,
-    properties: [{ name: 'P1', defaultValue: '' }, { name: 'P2', defaultValue: '' }],
+    properties: [{ category: 'General', name: 'P1' }, { category: 'General', name: 'P2' }],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 
-function createMockContext(overrides: Partial<ReturnType<typeof useDataMock>> = {}) {
-  const base = {
-    collections: [],
-    categories: [],
-    items: [],
+function createMockContext(overrides: Record<string, unknown> = {}) {
+  return createMockDataContextValue(vi, {
     itemTemplates: mockTemplates,
-    propertySuggestions: [],
-    loading: false,
-    error: null,
-    categoriesLoading: false,
-    categoriesError: null,
-    itemsLoading: false,
-    itemsError: null,
-    collectionsLoading: false,
-    collectionsError: null,
-    itemTemplatesLoading: false,
-    itemTemplatesError: null,
-    loadCollections: vi.fn(),
-    addCollection: vi.fn(),
-    updateCollection: vi.fn(),
-    deleteCollection: vi.fn(),
-    loadCategories: vi.fn(),
-    addCategory: vi.fn(),
-    updateCategory: vi.fn(),
-    deleteCategory: vi.fn(),
-    loadItems: vi.fn(),
-    addItem: vi.fn(),
-    updateItem: vi.fn(),
-    deleteItem: vi.fn(),
-    uploadImage: vi.fn(),
     loadItemTemplates: vi.fn().mockResolvedValue(mockTemplates),
-    addItemTemplate: vi.fn(),
-    updateItemTemplate: vi.fn(),
-    deleteItemTemplate: vi.fn(),
     loadCollectionTemplates: vi.fn().mockResolvedValue([mockTemplates[0]]),
     associateTemplateWithCollection: vi.fn().mockResolvedValue(undefined),
     disassociateTemplateFromCollection: vi.fn().mockResolvedValue(undefined),
-    loadPropertySuggestions: vi.fn(),
-    syncPropertySuggestions: vi.fn(),
-    setSelectedCategoryId: vi.fn(),
-    selectedCategoryId: null,
-  };
-  return { ...base, ...overrides };
-}
-
-function useDataMock() {
-  return createMockContext();
+    ...overrides,
+  });
 }
 
 describe('CollectionTemplateEditor', () => {
@@ -325,7 +293,7 @@ describe('CollectionTemplateEditor', () => {
 
   it('shows saving state during save operation', async () => {
     // Create a promise we can control
-    let resolveAssociate: () => void;
+    let resolveAssociate: (value?: unknown) => void;
     mockContext.associateTemplateWithCollection = vi.fn().mockImplementation(
       () => new Promise((resolve) => { resolveAssociate = resolve; })
     );
@@ -350,7 +318,7 @@ describe('CollectionTemplateEditor', () => {
   });
 
   it('disables checkboxes during save', async () => {
-    let resolveAssociate: () => void;
+    let resolveAssociate: (value?: unknown) => void;
     mockContext.associateTemplateWithCollection = vi.fn().mockImplementation(
       () => new Promise((resolve) => { resolveAssociate = resolve; })
     );

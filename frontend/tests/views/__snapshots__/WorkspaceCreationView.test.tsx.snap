@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`WorkspaceCreationView > snapshots > should match snapshot 1`] = `
+<div>
+  <div
+    data-testid="workspace-setup-wizard"
+  >
+    <span
+      data-testid="show-terms"
+    >
+      false
+    </span>
+    <span
+      data-testid="is-welcome"
+    >
+      false
+    </span>
+    <button>
+      Complete Workspace Setup
+    </button>
+    <button>
+      Cancel Workspace Setup
+    </button>
+  </div>
+</div>
+`;

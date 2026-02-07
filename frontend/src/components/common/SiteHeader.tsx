@@ -1,3 +1,4 @@
+import React from 'react';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 interface SiteHeaderProps {

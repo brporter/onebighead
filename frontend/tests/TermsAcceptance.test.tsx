@@ -80,7 +80,7 @@ describe('TermsAcceptance', () => {
 
   it('shows loading state while submitting', async () => {
     const user = userEvent.setup();
-    let resolveAccept: () => void;
+    let resolveAccept: (value?: unknown) => void;
     (authApi.acceptTerms as ReturnType<typeof vi.fn>).mockImplementation(
       () => new Promise((resolve) => { resolveAccept = resolve; })
     );

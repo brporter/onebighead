@@ -10,6 +10,13 @@ exports[`PropertyEditor > snapshots > should render with empty properties 1`] = 
     >
       Properties
     </label>
+    <div
+      class="propertyEditor__empty"
+    >
+      <p>
+        No properties yet. Add properties to describe your item.
+      </p>
+    </div>
     <button
       class="propertyEditor__add"
       type="button"
@@ -51,67 +58,200 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
       Properties
     </label>
     <div
-      class="propertyEditor__row"
+      class="propertyEditor__list"
     >
-      <input
-        class="propertyEditor__input propertyEditor__input--category"
-        list="property-category-suggestions"
-        placeholder="Category"
-        type="text"
-        value="General"
-      />
-      <input
-        class="propertyEditor__input propertyEditor__input--name"
-        list="property-name-suggestions"
-        placeholder="Name"
-        type="text"
-        value="Prop1"
-      />
-      <input
-        class="propertyEditor__input propertyEditor__input--value"
-        placeholder="Value"
-        type="text"
-        value="Value1"
-      />
-      <button
-        aria-label="Remove property"
-        class="propertyEditor__remove"
-        type="button"
+      <div
+        class="propertyEditor__categoryGroup"
       >
-        ×
-      </button>
+        <div
+          class="propertyEditor__categoryHeader"
+        >
+          General
+        </div>
+        <div
+          class="propertyEditor__row "
+        >
+          <div
+            aria-describedby="DndDescribedBy-0"
+            aria-disabled="false"
+            aria-roledescription="sortable"
+            class="drag-handle"
+            role="button"
+            tabindex="0"
+          >
+            <svg
+              aria-hidden="true"
+              fill="currentColor"
+              height="16"
+              viewBox="0 0 16 16"
+              width="16"
+            >
+              <circle
+                cx="5"
+                cy="3"
+                r="1.5"
+              />
+              <circle
+                cx="11"
+                cy="3"
+                r="1.5"
+              />
+              <circle
+                cx="5"
+                cy="8"
+                r="1.5"
+              />
+              <circle
+                cx="11"
+                cy="8"
+                r="1.5"
+              />
+              <circle
+                cx="5"
+                cy="13"
+                r="1.5"
+              />
+              <circle
+                cx="11"
+                cy="13"
+                r="1.5"
+              />
+            </svg>
+          </div>
+          <input
+            class="propertyEditor__input propertyEditor__input--category"
+            list="property-category-suggestions"
+            placeholder="Category"
+            type="text"
+            value="General"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--name"
+            list="property-name-suggestions"
+            placeholder="Name"
+            type="text"
+            value="Prop1"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--value"
+            placeholder="Value"
+            type="text"
+            value="Value1"
+          />
+          <button
+            aria-label="Remove property"
+            class="propertyEditor__remove"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+      <div
+        class="propertyEditor__categoryGroup"
+      >
+        <div
+          class="propertyEditor__categoryHeader"
+        >
+          Technical
+        </div>
+        <div
+          class="propertyEditor__row "
+        >
+          <div
+            aria-describedby="DndDescribedBy-0"
+            aria-disabled="false"
+            aria-roledescription="sortable"
+            class="drag-handle"
+            role="button"
+            tabindex="0"
+          >
+            <svg
+              aria-hidden="true"
+              fill="currentColor"
+              height="16"
+              viewBox="0 0 16 16"
+              width="16"
+            >
+              <circle
+                cx="5"
+                cy="3"
+                r="1.5"
+              />
+              <circle
+                cx="11"
+                cy="3"
+                r="1.5"
+              />
+              <circle
+                cx="5"
+                cy="8"
+                r="1.5"
+              />
+              <circle
+                cx="11"
+                cy="8"
+                r="1.5"
+              />
+              <circle
+                cx="5"
+                cy="13"
+                r="1.5"
+              />
+              <circle
+                cx="11"
+                cy="13"
+                r="1.5"
+              />
+            </svg>
+          </div>
+          <input
+            class="propertyEditor__input propertyEditor__input--category"
+            list="property-category-suggestions"
+            placeholder="Category"
+            type="text"
+            value="Technical"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--name"
+            list="property-name-suggestions"
+            placeholder="Name"
+            type="text"
+            value="Prop2"
+          />
+          <input
+            class="propertyEditor__input propertyEditor__input--value"
+            placeholder="Value"
+            type="text"
+            value="Value2"
+          />
+          <button
+            aria-label="Remove property"
+            class="propertyEditor__remove"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+      </div>
     </div>
     <div
-      class="propertyEditor__row"
+      id="DndDescribedBy-0"
+      style="display: none;"
     >
-      <input
-        class="propertyEditor__input propertyEditor__input--category"
-        list="property-category-suggestions"
-        placeholder="Category"
-        type="text"
-        value="Technical"
-      />
-      <input
-        class="propertyEditor__input propertyEditor__input--name"
-        list="property-name-suggestions"
-        placeholder="Name"
-        type="text"
-        value="Prop2"
-      />
-      <input
-        class="propertyEditor__input propertyEditor__input--value"
-        placeholder="Value"
-        type="text"
-        value="Value2"
-      />
-      <button
-        aria-label="Remove property"
-        class="propertyEditor__remove"
-        type="button"
-      >
-        ×
-      </button>
+      
+    To pick up a draggable item, press the space bar.
+    While dragging, use the arrow keys to move the item.
+    Press space again to drop the item in its new position, or press escape to cancel.
+  
     </div>
+    <div
+      aria-atomic="true"
+      aria-live="assertive"
+      id="DndLiveRegion-0"
+      role="status"
+      style="position: fixed; top: 0px; left: 0px; width: 1px; height: 1px; margin: -1px; border: 0px; padding: 0px; overflow: hidden; clip: rect(0px); clip-path: inset(100%); white-space: nowrap;"
+    />
     <button
       class="propertyEditor__add"
       type="button"

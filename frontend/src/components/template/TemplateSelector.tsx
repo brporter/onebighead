@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../../contexts/DataContext';
 import type { ItemTemplate, ItemProperty } from '../../utils/types';
 
@@ -20,34 +20,38 @@ function TemplateSelector({ collectionId, categoryId, isOpen, onClose, onSelect 
   const category = categoryId ? categories.find(c => c.categoryId === categoryId) : null;
 
   useEffect(() => {
-    if (isOpen) {
-      setLoading(true);
-      const promises: Promise<unknown>[] = [
-        loadCollectionTemplates(collectionId),
-        loadItemTemplates(),
-      ];
-      
-      // Load category templates if a category is selected
-      if (categoryId) {
-        promises.push(getCategoryTemplates(categoryId));
-      }
-      
-      Promise.all(promises).then(([colTemplates, , categoryTemplateIds]) => {
-        setCollectionTemplates(colTemplates as ItemTemplate[]);
-        const catTemplates = (categoryTemplateIds as number[] | undefined) ?? [];
-        setRecommendedTemplateIds(catTemplates);
-        
-        // Set default tab based on available templates
-        if (catTemplates.length > 0) {
-          setActiveTab('recommended');
-        } else if ((colTemplates as ItemTemplate[]).length > 0) {
-          setActiveTab('collection');
-        } else {
-          setActiveTab('library');
-        }
-        setLoading(false);
-      });
+    if (!isOpen) return;
+
+    let cancelled = false;
+
+    const promises: Promise<unknown>[] = [
+      loadCollectionTemplates(collectionId),
+      loadItemTemplates(),
+    ];
+
+    // Load category templates if a category is selected
+    if (categoryId) {
+      promises.push(getCategoryTemplates(categoryId));
     }
+
+    Promise.all(promises).then(([colTemplates, , categoryTemplateIds]) => {
+      if (cancelled) return;
+      setCollectionTemplates(colTemplates as ItemTemplate[]);
+      const catTemplates = (categoryTemplateIds as number[] | undefined) ?? [];
+      setRecommendedTemplateIds(catTemplates);
+
+      // Set default tab based on available templates
+      if (catTemplates.length > 0) {
+        setActiveTab('recommended');
+      } else if ((colTemplates as ItemTemplate[]).length > 0) {
+        setActiveTab('collection');
+      } else {
+        setActiveTab('library');
+      }
+      setLoading(false);
+    });
+
+    return () => { cancelled = true; };
   }, [isOpen, collectionId, categoryId, loadCollectionTemplates, loadItemTemplates, getCategoryTemplates]);
 
   useEffect(() => {

@@ -1,9 +1,11 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import RequireAuth from '../src/components/common/RequireAuth';
 import * as UserContext from '../src/contexts/UserContext';
-import type { CurrentUser } from '../src/utils/types';
+import type { CurrentUser, WorkspaceMembership } from '../src/utils/types';
+import { WorkspaceRole } from '../src/utils/types';
 
 vi.mock('../src/contexts/UserContext', () => ({
   useUser: vi.fn(),
@@ -30,19 +32,28 @@ function renderWithRouter(children: React.ReactNode, initialRoute = '/collection
   );
 }
 
-const createUser = (overrides: Partial<CurrentUser> = {}): CurrentUser => ({
-  userId: 1,
-  email: 'test@example.com',
-  workspaceId: 1,
-  workspaceName: 'Test Workspace',
-  workspaces: [{ id: 1, name: 'Test Workspace' }],
-  hasCompletedWelcome: true,
-  hasAcceptedTerms: true,
-  isSystemAdministrator: false,
-  workspaceRole: 'Normal' as const,
-  isWorkspaceAdmin: false,
-  ...overrides,
-});
+const createUser = (overrides: Partial<CurrentUser> = {}): CurrentUser => {
+  const activeWorkspace: WorkspaceMembership = {
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
+    workspaceRole: WorkspaceRole.Normal,
+    hasCompletedWelcome: true,
+  };
+  return {
+    userId: 1,
+    email: 'test@example.com',
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
+    activeWorkspace,
+    workspaces: [activeWorkspace],
+    hasCompletedWelcome: true,
+    hasAcceptedTerms: true,
+    isSystemAdministrator: false,
+    workspaceRole: WorkspaceRole.Normal,
+    isWorkspaceAdmin: false,
+    ...overrides,
+  };
+};
 
 describe('RequireAuth', () => {
   beforeEach(() => {

@@ -1,5 +1,6 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import SettingsView from '../../src/views/SettingsView';
@@ -8,6 +9,7 @@ import * as DataContext from '../../src/contexts/DataContext';
 import * as exportApiModule from '../../src/api/export';
 import { WorkspaceRole, Visibility } from '../../src/utils/types';
 import type { Collection } from '../../src/utils/types';
+import { createMockDataContextValue } from '../testUtils';
 
 // Mock the contexts
 vi.mock('../../src/contexts/UserContext', () => ({
@@ -184,23 +186,23 @@ describe('SettingsView', () => {
   const mockCollections: Collection[] = [
     {
       collectionId: 1,
+      workspaceId: 1,
       name: 'Test Collection 1',
       description: 'First collection description',
       heroImageUrl: 'https://example.com/hero1.jpg',
       visibility: Visibility.Public,
       effectiveIsPublic: true,
       slug: 'test-collection-1',
-      createdAt: '2024-01-01T00:00:00Z',
     },
     {
       collectionId: 2,
+      workspaceId: 1,
       name: 'Test Collection 2',
       description: 'Second collection description',
       heroImageUrl: null,
       visibility: Visibility.Private,
       effectiveIsPublic: false,
       slug: 'test-collection-2',
-      createdAt: '2024-01-02T00:00:00Z',
     },
   ];
 
@@ -229,32 +231,13 @@ describe('SettingsView', () => {
       logout: vi.fn(),
     });
 
-    vi.mocked(DataContext.useData).mockReturnValue({
+    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
       collections: mockCollections,
       addCollection: mockAddCollection,
       updateCollection: mockUpdateCollection,
       deleteCollection: mockDeleteCollection,
       loadCollections: mockLoadCollections,
-      // Add other required DataContext properties
-      categories: [],
-      items: [],
-      themes: [],
-      templates: [],
-      loading: false,
-      error: null,
-      selectedCollectionId: null,
-      setSelectedCollectionId: vi.fn(),
-      loadCategories: vi.fn(),
-      loadItems: vi.fn(),
-      addCategory: vi.fn(),
-      updateCategory: vi.fn(),
-      deleteCategory: vi.fn(),
-      addItem: vi.fn(),
-      updateItem: vi.fn(),
-      deleteItem: vi.fn(),
-      loadThemes: vi.fn(),
-      loadTemplates: vi.fn(),
-    });
+    }));
 
     vi.mocked(exportApiModule.exportApi.downloadExport).mockResolvedValue({
       blob: new Blob(['test data'], { type: 'application/zip' }),
@@ -494,31 +477,13 @@ describe('SettingsView', () => {
     });
 
     it('should hide Delete button when only one collection exists', () => {
-      vi.mocked(DataContext.useData).mockReturnValue({
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
         collections: [mockCollections[0]],
         addCollection: mockAddCollection,
         updateCollection: mockUpdateCollection,
         deleteCollection: mockDeleteCollection,
         loadCollections: mockLoadCollections,
-        categories: [],
-        items: [],
-        themes: [],
-        templates: [],
-        loading: false,
-        error: null,
-        selectedCollectionId: null,
-        setSelectedCollectionId: vi.fn(),
-        loadCategories: vi.fn(),
-        loadItems: vi.fn(),
-        addCategory: vi.fn(),
-        updateCategory: vi.fn(),
-        deleteCategory: vi.fn(),
-        addItem: vi.fn(),
-        updateItem: vi.fn(),
-        deleteItem: vi.fn(),
-        loadThemes: vi.fn(),
-        loadTemplates: vi.fn(),
-      });
+      }));
 
       renderWithRouter();
 

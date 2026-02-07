@@ -672,7 +672,7 @@ describe('CategoryEditorModal', () => {
     it('should disable delete button during submission', async () => {
       const user = userEvent.setup();
       const existingCategory: Category = mockCategories[0];
-      let resolvePromise: () => void;
+      let resolvePromise: (value?: unknown) => void;
       mockUpdateCategory.mockImplementation(() => new Promise((resolve) => {
         resolvePromise = resolve;
       }));

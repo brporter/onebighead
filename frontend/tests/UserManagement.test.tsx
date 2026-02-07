@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import UserManagement from '../src/components/user/UserManagement';
 import * as UserContext from '../src/contexts/UserContext';
 import * as usersApiModule from '../src/api/users';
-import type { WorkspaceUser } from '../src/utils/types';
+import type { WorkspaceUser, CurrentUser } from '../src/utils/types';
 import { WorkspaceRole } from '../src/utils/types';
 
 vi.mock('../src/contexts/UserContext', () => ({
@@ -27,15 +27,25 @@ window.alert = mockAlert;
 window.confirm = mockConfirm;
 
 describe('UserManagement', () => {
-  const mockCurrentUser = {
+  const mockActiveWorkspace = {
+    workspaceId: 1,
+    workspaceName: 'Test Workspace',
+    workspaceRole: WorkspaceRole.WorkspaceAdmin,
+    hasCompletedWelcome: true,
+  };
+
+  const mockCurrentUser: CurrentUser = {
     userId: 1,
     email: 'admin@example.com',
     workspaceId: 1,
     workspaceName: 'Test Workspace',
     hasCompletedWelcome: true,
+    hasAcceptedTerms: true,
     isSystemAdministrator: false,
     workspaceRole: WorkspaceRole.WorkspaceAdmin,
     isWorkspaceAdmin: true,
+    activeWorkspace: mockActiveWorkspace,
+    workspaces: [mockActiveWorkspace],
   };
 
   const mockUsers: WorkspaceUser[] = [

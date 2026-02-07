@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, act, waitFor } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { DataProvider, useData } from '../src/contexts/DataContext';
 import type { Item, Category, Collection } from '../src/utils/types';
 import { UserFlag, Visibility } from '../src/utils/types';
@@ -374,6 +374,9 @@ describe('DataContext', () => {
         description: 'Description',
         properties: [],
         images: [],
+        visibility: Visibility.Default,
+        effectiveIsPublic: false,
+        userFlag: UserFlag.None,
       };
 
       const itemId = await act(async () => {

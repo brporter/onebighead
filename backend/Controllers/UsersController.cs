@@ -1,11 +1,11 @@
 using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Extensions;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace OneBigHead.Server.Controllers;
@@ -18,24 +18,24 @@ public class UsersController : ApiControllerBase
     private readonly IUserRepository _userRepository;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
     private readonly IUserDeletionService _userDeletionService;
+    private readonly IWorkspaceRepository _workspaceRepository;
     private readonly AuthenticationSettings _authSettings;
     private readonly ILogger<UsersController> _logger;
-    private readonly AppDbContext _context;
 
     public UsersController(
         IUserRepository userRepository,
         IWorkspaceUserRepository workspaceUserRepository,
         IUserDeletionService userDeletionService,
+        IWorkspaceRepository workspaceRepository,
         IOptions<AuthenticationSettings> authSettings,
-        ILogger<UsersController> logger,
-        AppDbContext context)
+        ILogger<UsersController> logger)
     {
         _userRepository = userRepository;
         _workspaceUserRepository = workspaceUserRepository;
         _userDeletionService = userDeletionService;
+        _workspaceRepository = workspaceRepository;
         _authSettings = authSettings.Value;
         _logger = logger;
-        _context = context;
     }
 
     /// <summary>
@@ -189,41 +189,20 @@ public class UsersController : ApiControllerBase
     public async Task<IActionResult> GetRestorableWorkspaces()
     {
         var userId = GetUserId();
-        _logger.LogInformation("GetRestorableWorkspaces called for user {UserId}", userId);
 
-        // First get all workspace memberships for this user where they are WorkspaceAdmin
-        var adminMemberships = await _context.WorkspaceUsers
-            .Include(wu => wu.Workspace)
-            .Where(wu => wu.UserId == userId && wu.WorkspaceRole == WorkspaceRole.WorkspaceAdmin)
-            .ToListAsync();
-
-        _logger.LogInformation("User {UserId} has {Count} WorkspaceAdmin memberships", userId, adminMemberships.Count);
+        // Get all workspace memberships for this user where they are WorkspaceAdmin
+        var adminMemberships = await _workspaceUserRepository.GetAdminMembershipsIncludingDeletedAsync(userId);
 
         // Filter to only deleted workspaces and build response
         var restorableWorkspaces = new List<RestorableWorkspaceResponse>();
         foreach (var membership in adminMemberships)
         {
-            if (membership.Workspace == null)
-            {
-                _logger.LogWarning("WorkspaceUser membership for user {UserId}, workspace {WorkspaceId} has null Workspace", userId, membership.WorkspaceId);
-                continue;
-            }
-
-            _logger.LogInformation("Checking workspace {WorkspaceId} ({WorkspaceName}): IsDeleted={IsDeleted}",
-                membership.WorkspaceId, membership.Workspace.Name, membership.Workspace.IsDeleted);
-
-            if (!membership.Workspace.IsDeleted)
+            if (membership.Workspace == null || !membership.Workspace.IsDeleted)
             {
                 continue;
             }
 
-            var stats = new RestorableWorkspaceStats
-            {
-                CollectionCount = await _context.Collections.CountAsync(c => c.WorkspaceId == membership.WorkspaceId),
-                ItemCount = await _context.Items.CountAsync(i => i.WorkspaceId == membership.WorkspaceId),
-                CategoryCount = await _context.Categories.CountAsync(c => c.WorkspaceId == membership.WorkspaceId),
-                ImageCount = await _context.StoredImages.CountAsync(i => i.WorkspaceId == membership.WorkspaceId)
-            };
+            var stats = await _workspaceRepository.GetStatsAsync(membership.WorkspaceId);
 
             restorableWorkspaces.Add(new RestorableWorkspaceResponse
             {
@@ -231,11 +210,16 @@ public class UsersController : ApiControllerBase
                 Name = membership.Workspace.Name,
                 DeletedAt = membership.Workspace.DeletedAt!.Value,
                 DaysRemaining = Math.Max(0, 30 - (DateTime.UtcNow - membership.Workspace.DeletedAt!.Value).Days),
-                Stats = stats
+                Stats = new RestorableWorkspaceStats
+                {
+                    CollectionCount = stats.CollectionCount,
+                    ItemCount = stats.ItemCount,
+                    CategoryCount = stats.CategoryCount,
+                    ImageCount = stats.ImageCount
+                }
             });
         }
 
-        _logger.LogInformation("Returning {Count} restorable workspaces for user {UserId}", restorableWorkspaces.Count, userId);
         return Ok(restorableWorkspaces);
     }
 
@@ -256,22 +240,8 @@ public class UsersController : ApiControllerBase
         }
 
         // Clear the auth cookie to log out the user
-        ClearAuthCookie();
+        Response.ClearAuthCookie(_authSettings);
 
         return Ok(result);
-    }
-
-    private void ClearAuthCookie()
-    {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = _authSettings.Cookie.Secure,
-            SameSite = Enum.Parse<SameSiteMode>(_authSettings.Cookie.SameSite, true),
-            Expires = DateTimeOffset.UtcNow.AddDays(-1),
-            Path = "/"
-        };
-
-        Response.Cookies.Append(_authSettings.Cookie.Name, "", cookieOptions);
     }
 }

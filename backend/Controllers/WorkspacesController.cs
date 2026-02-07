@@ -1,18 +1,19 @@
 using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Extensions;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
+using OneBigHead.Server.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.Text.RegularExpressions;
 
 namespace OneBigHead.Server.Controllers;
 
 [Route("api/[controller]")]
 [Authorize]
-public partial class WorkspacesController : ApiControllerBase
+public class WorkspacesController : ApiControllerBase
 {
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
@@ -142,9 +143,9 @@ public partial class WorkspacesController : ApiControllerBase
 
         _logger.LogInformation("User {UserId} created new workspace {WorkspaceId} ({WorkspaceName}) via setup", userId, workspace.Id, workspace.Name);
 
-        // Determine collection name (default to "My Collection" if not provided)
+        // Determine collection name (default if not provided)
         var collectionName = string.IsNullOrWhiteSpace(request.CollectionName)
-            ? "My Collection"
+            ? Constants.CollectionNames.MyCollection
             : request.CollectionName.Trim();
 
         // Get the theme (default to General if not provided or invalid)
@@ -157,11 +158,11 @@ public partial class WorkspacesController : ApiControllerBase
         {
             // Find the General theme as default
             var themes = await _themeRepository.GetAllAsync();
-            theme = themes.FirstOrDefault(t => t.Name == "General") ?? themes.FirstOrDefault();
+            theme = themes.FirstOrDefault(t => t.Name == Constants.ThemeNames.General) ?? themes.FirstOrDefault();
         }
 
         // Create the collection
-        var slug = GenerateSlug(collectionName);
+        var slug = SlugHelper.GenerateSlug(collectionName);
         var existing = await _collectionRepository.GetBySlugAsync(slug, workspace.Id);
         if (existing != null)
         {
@@ -184,8 +185,8 @@ public partial class WorkspacesController : ApiControllerBase
         {
             WorkspaceId = workspace.Id,
             CollectionId = createdCollection.Id,
-            Name = "Unassigned Items",
-            Description = "Items that have not been assigned to a category",
+            Name = Constants.CategoryNames.UnassignedItems,
+            Description = Constants.CategoryNames.UnassignedItemsDescription,
             IsSystem = true
         };
         await _categoryRepository.CreateAsync(unassignedCategory);
@@ -214,7 +215,7 @@ public partial class WorkspacesController : ApiControllerBase
         if (user != null)
         {
             var appToken = _tokenService.GenerateAppToken(user, WorkspaceRole.WorkspaceAdmin);
-            SetAuthCookie(appToken);
+            Response.SetAuthCookie(appToken, _settings);
         }
 
         return Ok(new SetupWorkspaceResponse
@@ -278,17 +279,6 @@ public partial class WorkspacesController : ApiControllerBase
             }
         }
     }
-
-    private static string GenerateSlug(string name)
-    {
-        var slug = name.ToLowerInvariant();
-        slug = SlugRegex().Replace(slug, "-");
-        slug = slug.Trim('-');
-        return string.IsNullOrEmpty(slug) ? "collection" : slug;
-    }
-
-    [GeneratedRegex(@"[^a-z0-9]+")]
-    private static partial Regex SlugRegex();
 
     /// <summary>
     /// Update a workspace's details (requires WorkspaceAdmin role)
@@ -361,7 +351,7 @@ public partial class WorkspacesController : ApiControllerBase
 
         // Generate new JWT with updated workspace
         var appToken = _tokenService.GenerateAppToken(user, membership.WorkspaceRole);
-        SetAuthCookie(appToken);
+        Response.SetAuthCookie(appToken, _settings);
 
         _logger.LogInformation("User {UserId} switched to workspace {WorkspaceId}", userId, workspaceId);
 
@@ -433,7 +423,7 @@ public partial class WorkspacesController : ApiControllerBase
                 if (user != null)
                 {
                     var appToken = _tokenService.GenerateAppToken(user, nextWorkspace.WorkspaceRole);
-                    SetAuthCookie(appToken);
+                    Response.SetAuthCookie(appToken, _settings);
                 }
             }
         }
@@ -504,7 +494,7 @@ public partial class WorkspacesController : ApiControllerBase
             if (user != null && newMembership != null)
             {
                 var appToken = _tokenService.GenerateAppToken(user, newMembership.WorkspaceRole);
-                SetAuthCookie(appToken);
+                Response.SetAuthCookie(appToken, _settings);
             }
         }
 
@@ -569,7 +559,7 @@ public partial class WorkspacesController : ApiControllerBase
             if (user != null)
             {
                 var appToken = _tokenService.GenerateAppToken(user, WorkspaceRole.WorkspaceAdmin);
-                SetAuthCookie(appToken);
+                Response.SetAuthCookie(appToken, _settings);
             }
         }
 
@@ -661,23 +651,9 @@ public partial class WorkspacesController : ApiControllerBase
         if (user != null && user.ActiveWorkspaceId == workspaceId)
         {
             var appToken = _tokenService.GenerateAppToken(user, WorkspaceRole.Normal);
-            SetAuthCookie(appToken);
+            Response.SetAuthCookie(appToken, _settings);
         }
 
         return Ok(new TransferAdminResponse { Success = true });
-    }
-
-    private void SetAuthCookie(string token)
-    {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = _settings.Cookie.Secure,
-            SameSite = Enum.Parse<SameSiteMode>(_settings.Cookie.SameSite, true),
-            Expires = DateTimeOffset.UtcNow.AddDays(_settings.Jwt.AbsoluteExpirationDays),
-            Path = "/"
-        };
-
-        Response.Cookies.Append(_settings.Cookie.Name, token, cookieOptions);
     }
 }

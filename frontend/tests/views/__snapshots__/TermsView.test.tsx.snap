@@ -1,0 +1,41 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TermsView > snapshots > should match snapshot 1`] = `
+<div>
+  <div
+    class="terms-view"
+  >
+    <header
+      class="terms-view__header"
+    >
+      <div
+        class="terms-view__header-content"
+      >
+        <span
+          class="terms-view__logo"
+        >
+          OneBigHead
+        </span>
+      </div>
+    </header>
+    <main
+      class="terms-view__main"
+    >
+      <div
+        class="terms-view__container"
+      >
+        <div
+          data-testid="terms-acceptance"
+        >
+          <button>
+            Accept Terms
+          </button>
+          <button>
+            Skip/Sign Out
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+`;

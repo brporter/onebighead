@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemEditor from '../src/components/item/ItemEditor';
-import type { Item } from '../src/utils/types';
+import type { Item, Collection } from '../src/utils/types';
 import { UserFlag, Visibility } from '../src/utils/types';
 
 // Mock DataContext for PropertyEditor and ImageEditor
@@ -44,8 +44,20 @@ describe('ItemEditor', () => {
     { workspaceId: 1, collectionId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
+  const mockCollection: Collection = {
+    collectionId: 1,
+    workspaceId: 1,
+    name: 'Test Collection',
+    description: 'Test description',
+    heroImageUrl: null,
+    slug: 'test-collection',
+    visibility: Visibility.Private,
+    effectiveIsPublic: false,
+  };
+
   const defaultProps = {
     categories: mockCategories,
+    collection: mockCollection,
     onSave: vi.fn(),
     onCancel: vi.fn(),
   };
@@ -128,7 +140,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleSave = vi.fn();
 
-      render(<ItemEditor item={mockItem} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+      render(<ItemEditor item={mockItem} categories={mockCategories} collection={mockCollection} onSave={handleSave} onCancel={vi.fn()} />);
 
       const nameInput = screen.getByLabelText('Name');
       await user.clear(nameInput);
@@ -145,7 +157,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleCancel = vi.fn();
 
-      render(<ItemEditor item={mockItem} categories={mockCategories} onSave={vi.fn()} onCancel={handleCancel} />);
+      render(<ItemEditor item={mockItem} categories={mockCategories} collection={mockCollection} onSave={vi.fn()} onCancel={handleCancel} />);
 
       await user.click(screen.getByText('Cancel'));
 
@@ -223,7 +235,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleCancel = vi.fn();
 
-      render(<ItemEditor item={null} categories={mockCategories} onSave={vi.fn()} onCancel={handleCancel} />);
+      render(<ItemEditor item={null} categories={mockCategories} collection={mockCollection} onSave={vi.fn()} onCancel={handleCancel} />);
 
       await user.click(screen.getByText('Cancel'));
 
@@ -234,7 +246,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleSave = vi.fn();
 
-      render(<ItemEditor item={null} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+      render(<ItemEditor item={null} categories={mockCategories} collection={mockCollection} onSave={handleSave} onCancel={vi.fn()} />);
 
       await user.type(screen.getByLabelText('Name'), 'New Item');
       await user.type(screen.getByLabelText('Summary'), 'New summary');
@@ -445,7 +457,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleSave = vi.fn();
 
-      render(<ItemEditor item={mockItem} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+      render(<ItemEditor item={mockItem} categories={mockCategories} collection={mockCollection} onSave={handleSave} onCancel={vi.fn()} />);
 
       const wantRadio = screen.getByRole('radio', { name: 'I Want This' });
       await user.click(wantRadio);
@@ -470,7 +482,7 @@ describe('ItemEditor', () => {
       const handleSave = vi.fn();
       const itemWithHaveFlag = { ...mockItem, userFlag: UserFlag.Have };
 
-      render(<ItemEditor item={itemWithHaveFlag} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+      render(<ItemEditor item={itemWithHaveFlag} categories={mockCategories} collection={mockCollection} onSave={handleSave} onCancel={vi.fn()} />);
 
       // Verify initial state
       expect(screen.getByRole('radio', { name: 'I Have This' })).toBeChecked();
@@ -492,7 +504,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleSave = vi.fn();
 
-      render(<ItemEditor item={null} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+      render(<ItemEditor item={null} categories={mockCategories} collection={mockCollection} onSave={handleSave} onCancel={vi.fn()} />);
 
       // Fill required fields
       await user.type(screen.getByLabelText('Name'), 'New Item');
@@ -513,7 +525,7 @@ describe('ItemEditor', () => {
       const user = userEvent.setup();
       const handleSave = vi.fn();
 
-      render(<ItemEditor item={null} categories={mockCategories} onSave={handleSave} onCancel={vi.fn()} />);
+      render(<ItemEditor item={null} categories={mockCategories} collection={mockCollection} onSave={handleSave} onCancel={vi.fn()} />);
 
       // Verify None is checked by default
       expect(screen.getByRole('radio', { name: 'None' })).toBeChecked();

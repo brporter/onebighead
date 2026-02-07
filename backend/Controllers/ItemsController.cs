@@ -186,7 +186,7 @@ public class ItemsController : ApiControllerBase
             var category = item.CategoryId.HasValue 
                 ? categoryList.FirstOrDefault(c => c.Id == item.CategoryId.Value) 
                 : null;
-            _visibilityService.ComputeEffectiveVisibility(item, collection, category, categoryList);
+            _visibilityService.ComputeEffectiveVisibility(item, collection, category);
         }
         
         return Ok(item);
