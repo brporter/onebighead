@@ -179,6 +179,9 @@ SQL_DB_NAME="${APP_NAME}"
 CONTAINER_ENV_NAME="${APP_NAME}-env"
 CONTAINER_APP_NAME="${APP_NAME}-app"
 IDENTITY_NAME="${APP_NAME}-identity"
+APP_INSIGHTS_NAME="${APP_NAME}-appinsights"
+LOG_ANALYTICS_NAME="${APP_NAME}-logs"
+GRAFANA_NAME="${APP_NAME}-grafana"
 
 # SQL Server name handling: use existing if skipping infra, otherwise generate new
 if [[ "$SKIP_INFRA" = true ]]; then
@@ -301,6 +304,33 @@ if [[ "$SKIP_INFRA" = false ]]; then
         --location "$LOCATION" \
         --output none
     
+    # Create Log Analytics Workspace (required by Application Insights)
+    echo -e "${YELLOW}Creating Log Analytics Workspace...${NC}"
+    az monitor log-analytics workspace create \
+        --resource-group "$RESOURCE_GROUP" \
+        --workspace-name "$LOG_ANALYTICS_NAME" \
+        --location "$LOCATION" --output none
+
+    LOG_ANALYTICS_ID=$(az monitor log-analytics workspace show \
+        --resource-group "$RESOURCE_GROUP" \
+        --workspace-name "$LOG_ANALYTICS_NAME" --query id -o tsv)
+
+    # Create Application Insights
+    echo -e "${YELLOW}Creating Application Insights...${NC}"
+    az monitor app-insights component create \
+        --app "$APP_INSIGHTS_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --location "$LOCATION" \
+        --workspace "$LOG_ANALYTICS_ID" \
+        --kind web --application-type web --output none
+
+    # Create Azure Managed Grafana
+    echo -e "${YELLOW}Creating Azure Managed Grafana...${NC}"
+    az grafana create \
+        --name "$GRAFANA_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --location "$LOCATION" --output none
+
     echo -e "${GREEN}Infrastructure created.${NC}"
     echo ""
 fi
@@ -352,6 +382,19 @@ az role assignment create \
     --role AcrPull \
     --scope "$ACR_ID" \
     --output none 2>/dev/null || echo "Role assignment may already exist"
+
+# Grant Grafana Monitoring Reader access to the resource group
+echo -e "${YELLOW}Granting Monitoring Reader role to Grafana...${NC}"
+GRAFANA_PRINCIPAL_ID=$(az grafana show --name "$GRAFANA_NAME" \
+    --resource-group "$RESOURCE_GROUP" --query "identity.principalId" -o tsv 2>/dev/null)
+RESOURCE_GROUP_ID=$(az group show --name "$RESOURCE_GROUP" --query id -o tsv)
+
+if [[ -n "$GRAFANA_PRINCIPAL_ID" ]]; then
+    az role assignment create \
+        --assignee "$GRAFANA_PRINCIPAL_ID" \
+        --role "Monitoring Reader" \
+        --scope "$RESOURCE_GROUP_ID" --output none 2>/dev/null || true
+fi
 
 echo -e "${GREEN}Managed identity configured.${NC}"
 echo ""
@@ -434,6 +477,14 @@ if [[ -n "$APPLE_CLIENT_ID" ]]; then
 fi
 if [[ -n "$APPLE_CLIENT_SECRET" ]]; then
     ENV_VARS+=("Authentication__Providers__Apple__ClientSecret=secretref:apple-client-secret")
+fi
+
+# Add Application Insights connection string
+APP_INSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
+    --app "$APP_INSIGHTS_NAME" --resource-group "$RESOURCE_GROUP" \
+    --query connectionString -o tsv 2>/dev/null)
+if [[ -n "$APP_INSIGHTS_CONNECTION_STRING" ]]; then
+    ENV_VARS+=("APPLICATIONINSIGHTS_CONNECTION_STRING=$APP_INSIGHTS_CONNECTION_STRING")
 fi
 
 # Check if container app exists
@@ -593,11 +644,20 @@ echo ""
 echo -e "${CYAN}Application URL: https://${APP_URL}${NC}"
 echo ""
 echo "Resources:"
-echo "  Resource Group:   $RESOURCE_GROUP"
-echo "  Container App:    $CONTAINER_APP_NAME"
-echo "  Managed Identity: $IDENTITY_NAME"
-echo "  SQL Server:       $SQL_SERVER_NAME"
-echo "  Database:         $SQL_DB_NAME"
+echo "  Resource Group:    $RESOURCE_GROUP"
+echo "  Container App:     $CONTAINER_APP_NAME"
+echo "  Managed Identity:  $IDENTITY_NAME"
+echo "  SQL Server:        $SQL_SERVER_NAME"
+echo "  Database:          $SQL_DB_NAME"
+echo "  App Insights:      $APP_INSIGHTS_NAME"
+echo "  Log Analytics:     $LOG_ANALYTICS_NAME"
+if [[ -n "$GRAFANA_NAME" ]]; then
+    GRAFANA_URL=$(az grafana show --name "$GRAFANA_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.endpoint" -o tsv 2>/dev/null)
+    echo "  Grafana:           $GRAFANA_NAME"
+    if [[ -n "$GRAFANA_URL" ]]; then
+        echo "  Grafana URL:       $GRAFANA_URL"
+    fi
+fi
 echo ""
 
 # Show OAuth status

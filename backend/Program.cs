@@ -7,6 +7,8 @@ using OneBigHead.Server.Telemetry;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Azure.Monitor.OpenTelemetry.Exporter;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -138,7 +140,8 @@ builder.Services.AddRateLimiter(options =>
 // Configure OpenTelemetry (skip in Testing environment)
 if (!builder.Environment.IsEnvironment("Testing"))
 {
-    var otlpEndpoint = builder.Configuration.GetValue<string>("OpenTelemetry:OtlpEndpoint") ?? "http://localhost:4317";
+    var otlpEndpoint = builder.Configuration.GetValue<string>("OpenTelemetry:OtlpEndpoint");
+    var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
 
     builder.Services.AddOpenTelemetry()
         .ConfigureResource(resource => resource.AddService(DiagnosticsConfig.ServiceName))
@@ -157,8 +160,13 @@ if (!builder.Environment.IsEnvironment("Testing"))
                 .AddEntityFrameworkCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddSource(DiagnosticsConfig.AppActivitySource.Name)
-                .AddSource(DiagnosticsConfig.RepositoryActivitySource.Name)
-                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+                .AddSource(DiagnosticsConfig.RepositoryActivitySource.Name);
+
+            if (!string.IsNullOrEmpty(appInsightsConnectionString))
+                tracing.AddAzureMonitorTraceExporter(o => o.ConnectionString = appInsightsConnectionString);
+
+            if (!string.IsNullOrEmpty(otlpEndpoint))
+                tracing.AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint));
         })
         .WithMetrics(metrics =>
         {
@@ -166,9 +174,26 @@ if (!builder.Environment.IsEnvironment("Testing"))
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
-                .AddPrometheusExporter()
-                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+                .AddPrometheusExporter();
+
+            if (!string.IsNullOrEmpty(appInsightsConnectionString))
+                metrics.AddAzureMonitorMetricExporter(o => o.ConnectionString = appInsightsConnectionString);
+
+            if (!string.IsNullOrEmpty(otlpEndpoint))
+                metrics.AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint));
         });
+
+    builder.Logging.AddOpenTelemetry(logging =>
+    {
+        logging.IncludeScopes = true;
+        logging.IncludeFormattedMessage = true;
+
+        if (!string.IsNullOrEmpty(appInsightsConnectionString))
+            logging.AddAzureMonitorLogExporter(o => o.ConnectionString = appInsightsConnectionString);
+
+        if (!string.IsNullOrEmpty(otlpEndpoint))
+            logging.AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint));
+    });
 }
 
 var app = builder.Build();
