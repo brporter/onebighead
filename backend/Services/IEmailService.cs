@@ -1,5 +1,8 @@
+using OneBigHead.Server.Telemetry;
+
 namespace OneBigHead.Server.Services;
 
+[GenerateTracingProxy]
 public interface IEmailService
 {
     /// <summary>

@@ -1,7 +1,9 @@
 using OneBigHead.Server.Models;
+using OneBigHead.Server.Telemetry;
 
 namespace OneBigHead.Server.Data;
 
+[GenerateTracingProxy]
 public interface ISupportRepository
 {
     /// <summary>

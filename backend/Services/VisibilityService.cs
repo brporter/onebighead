@@ -1,7 +1,9 @@
 using OneBigHead.Server.Models;
+using OneBigHead.Server.Telemetry;
 
 namespace OneBigHead.Server.Services;
 
+[GenerateTracingProxy]
 public interface IVisibilityService
 {
     void ComputeEffectiveVisibility(Category category, Collection collection, IEnumerable<Category> allCategories);

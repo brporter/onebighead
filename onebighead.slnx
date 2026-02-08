@@ -4,5 +4,6 @@
     <Project Path="tools/dbseed/dbseed.csproj" />
   </Folder>
   <Project Path="backend/backend.csproj" />
+  <Project Path="backend.generators/backend.generators.csproj" />
   <Project Path="backend.tests/backend.tests.csproj" />
 </Solution>

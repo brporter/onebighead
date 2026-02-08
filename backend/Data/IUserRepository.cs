@@ -1,7 +1,9 @@
 using OneBigHead.Server.Models;
+using OneBigHead.Server.Telemetry;
 
 namespace OneBigHead.Server.Data;
 
+[GenerateTracingProxy]
 public interface IUserRepository
 {
     Task<User?> GetByEmailAsync(string email);
