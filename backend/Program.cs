@@ -140,7 +140,8 @@ builder.Services.AddRateLimiter(options =>
 // Configure OpenTelemetry (skip in Testing environment)
 if (!builder.Environment.IsEnvironment("Testing"))
 {
-    var otlpEndpoint = builder.Configuration.GetValue<string>("OpenTelemetry:OtlpEndpoint");
+    var otlpEndpoint = builder.Configuration.GetValue<string>("OpenTelemetry:OtlpEndpoint")
+        ?? Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
     var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
 
     builder.Services.AddOpenTelemetry()

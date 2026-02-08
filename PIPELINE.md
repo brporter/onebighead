@@ -40,6 +40,9 @@ The pipeline does **not** provision infrastructure. You must run the deployment 
 - Container Apps Environment: `<app-name>-env`
 - Container App: `<app-name>-app`
 - Managed Identity: `<app-name>-identity`
+- Log Analytics Workspace: `<app-name>-logs`
+- Application Insights: `<app-name>-appinsights`
+- Azure Managed Grafana: `<app-name>-grafana`
 
 **Save these values** from the deployment output:
 - SQL admin password (if auto-generated)

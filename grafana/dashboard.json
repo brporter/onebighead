@@ -1,0 +1,989 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Request Health",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 95 },
+              { "color": "green", "value": 99 }
+            ]
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "title": "Success Rate",
+      "type": "stat",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| summarize success_rate = round(100.0 * countif(success == true) / count(), 2)\n| project success_rate",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 10000 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "title": "Total Requests",
+      "type": "stat",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| count",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 10 },
+              { "color": "red", "value": 100 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "title": "Failed Requests",
+      "type": "stat",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where success == false\n| count",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 500 },
+              { "color": "red", "value": 2000 }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "title": "Avg Response Time",
+      "type": "stat",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| summarize avg_duration = round(avg(duration), 1)\n| project avg_duration",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 500 },
+              { "color": "red", "value": 2000 }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 1 },
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "title": "P95 Response Time",
+      "type": "stat",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| summarize p95 = round(percentile(duration, 95), 1)\n| project p95",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 500 },
+              { "color": "red", "value": 2000 }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 1 },
+      "id": 6,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "title": "P99 Response Time",
+      "type": "stat",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| summarize p99 = round(percentile(duration, 99), 1)\n| project p99",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": { "mode": "normal" },
+            "lineWidth": 0,
+            "pointSize": 5,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "failed" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "succeeded" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 7,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Request Volume (Success vs Failure)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| summarize\n    succeeded = countif(success == true),\n    failed = countif(success == false)\n    by bin(timestamp, $__interval)\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 8,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Response Time Percentiles",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| summarize\n    p50 = percentile(duration, 50),\n    p90 = percentile(duration, 90),\n    p95 = percentile(duration, 95),\n    p99 = percentile(duration, 99)\n    by bin(timestamp, $__interval)\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 101,
+      "title": "Errors",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "spanNulls": false
+          },
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "id": 10,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Error Rate (%)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| summarize\n    error_rate = round(100.0 * countif(success == false) / count(), 2)\n    by bin(timestamp, $__interval)\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": { "mode": "normal" },
+            "lineWidth": 0
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "id": 11,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Errors by HTTP Status Code",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where success == false\n| summarize count() by bin(timestamp, $__interval), resultCode\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+      "id": 12,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "count_" }]
+      },
+      "title": "Top Exceptions",
+      "type": "table",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "exceptions\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| summarize count() by type, outerMessage\n| order by count_ desc\n| take 20",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "id": 102,
+      "title": "By Workspace (Tenant)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "avg_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "p95_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
+      "id": 20,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "request_count" }]
+      },
+      "title": "Top Workspaces by Request Volume",
+      "type": "table",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "dependencies\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where isnotempty(customDimensions.workspace_id)\n| extend workspace_id = tostring(customDimensions.workspace_id)\n| summarize\n    request_count = count(),\n    avg_duration = round(avg(duration), 1),\n    p95_duration = round(percentile(duration, 95), 1),\n    error_count = countif(success == false),\n    error_rate = round(100.0 * countif(success == false) / count(), 2)\n    by workspace_id\n| order by request_count desc\n| take 25",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": { "mode": "normal" },
+            "lineWidth": 0
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
+      "id": 21,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Request Volume by Workspace Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "dependencies\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where isnotempty(customDimensions.workspace_id)\n| extend workspace_id = tostring(customDimensions.workspace_id)\n| summarize count() by bin(timestamp, $__interval), workspace_id\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
+      "id": 22,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Error Rate by Workspace Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "dependencies\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where isnotempty(customDimensions.workspace_id)\n| extend workspace_id = tostring(customDimensions.workspace_id)\n| summarize error_rate = round(100.0 * countif(success == false) / count(), 2)\n    by bin(timestamp, $__interval), workspace_id\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 48 },
+      "id": 103,
+      "title": "Most Expensive Requests",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "avg_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "p95_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "p99_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "max_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 49 },
+      "id": 30,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "p95_duration" }]
+      },
+      "title": "Slowest Endpoints (by P95)",
+      "type": "table",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| extend endpoint = strcat(name)\n| summarize\n    request_count = count(),\n    avg_duration = round(avg(duration), 1),\n    p95_duration = round(percentile(duration, 95), 1),\n    p99_duration = round(percentile(duration, 99), 1),\n    max_duration = round(max(duration), 1)\n    by endpoint\n| where request_count >= 5\n| order by p95_duration desc\n| take 25",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "avg_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "total_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 57 },
+      "id": 31,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "total_duration" }]
+      },
+      "title": "Most Time-Consuming Endpoints (Total Server Time)",
+      "type": "table",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "requests\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| extend endpoint = strcat(name)\n| summarize\n    request_count = count(),\n    avg_duration = round(avg(duration), 1),\n    total_duration = round(sum(duration), 0)\n    by endpoint\n| order by total_duration desc\n| take 25",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "avg_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "max_duration" },
+            "properties": [{ "id": "unit", "value": "ms" }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 65 },
+      "id": 32,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "avg_duration" }]
+      },
+      "title": "Slowest SQL Dependencies",
+      "type": "table",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "dependencies\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where type == \"SQL\" or type has \"EntityFramework\"\n| summarize\n    call_count = count(),\n    avg_duration = round(avg(duration), 1),\n    max_duration = round(max(duration), 1),\n    error_count = countif(success == false)\n    by name\n| order by avg_duration desc\n| take 25",
+              "timeColumn": ""
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 73 },
+      "id": 104,
+      "title": "ASP.NET Runtime Health",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 74 },
+      "id": 40,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "GC Collections by Generation",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "customMetrics\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where name startswith \"process.runtime.dotnet.gc.collections\"\n| extend generation = tostring(customDimensions.generation)\n| summarize value = sum(valueSum) by bin(timestamp, $__interval), generation\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 74 },
+      "id": 41,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "GC Heap Size",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "customMetrics\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where name == \"process.runtime.dotnet.gc.heap.size\" or name == \"process.runtime.dotnet.gc.committed_memory.size\"\n| summarize value = avg(valueSum) by bin(timestamp, $__interval), name\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 82 },
+      "id": 42,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "ThreadPool Threads",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "customMetrics\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where name == \"process.runtime.dotnet.thread_pool.threads.count\"\n| summarize value = avg(valueSum) by bin(timestamp, $__interval)\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 82 },
+      "id": 43,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "ThreadPool Queue Length",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "customMetrics\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where name == \"process.runtime.dotnet.thread_pool.queue.length\"\n| summarize value = avg(valueSum) by bin(timestamp, $__interval)\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 90 },
+      "id": 44,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Active HTTP Connections",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "customMetrics\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| where name == \"http.server.active_requests\" or name == \"http.server.request.duration\"\n| summarize value = avg(valueSum) by bin(timestamp, $__interval), name\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "${ds}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 90 },
+      "id": 45,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Exception Count Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "azureMonitor": {
+            "appInsights": {
+              "query": "exceptions\n| where timestamp >= $__timeFrom and timestamp <= $__timeTo\n| summarize count() by bin(timestamp, $__interval)\n| order by timestamp asc",
+              "timeColumn": "timestamp"
+            },
+            "queryType": "Azure Log Analytics",
+            "resource": "$resource"
+          },
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["onebighead", "asp.net", "application-insights"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "label": "Data Source",
+        "name": "ds",
+        "options": [],
+        "query": "grafana-azure-monitor-datasource",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "label": "Resource",
+        "name": "resource",
+        "query": "",
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "OneBigHead - Application Health",
+  "uid": "onebighead-app-health",
+  "version": 1
+}
