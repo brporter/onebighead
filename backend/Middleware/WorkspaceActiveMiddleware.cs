@@ -47,7 +47,7 @@ public class WorkspaceActiveMiddleware
         // Skip excluded paths (auth endpoints, deletion info, health check, themes)
         if (ExcludedPrefixes.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
         {
-            activity?.SetTag("obh.workspace_check.outcome", "skipped");
+            activity?.SetTag("workspace_check.outcome", "skipped");
             _logger.LogDebug("Path {Path} matched excluded prefix, skipping workspace check", path);
             await _next(context);
             return;
@@ -115,8 +115,8 @@ public class WorkspaceActiveMiddleware
             var isUserDeleted = await workspaceDeletionService.IsUserDeletedAsync(userId);
             if (isUserDeleted)
             {
-                activity?.SetTag("obh.workspace_check.outcome", "user_deleted");
-                activity?.SetTag("obh.user_id", userId);
+                activity?.SetTag("workspace_check.outcome", "user_deleted");
+                activity?.SetTag("user_id", userId);
                 _logger.LogWarning("Request blocked for deleted user {UserId} at path {Path}",
                     userId, path);
 
@@ -138,8 +138,8 @@ public class WorkspaceActiveMiddleware
             var hasActiveWorkspace = await workspaceDeletionService.HasUserAnyActiveWorkspaceAsync(userId);
             if (!hasActiveWorkspace)
             {
-                activity?.SetTag("obh.workspace_check.outcome", "no_active_workspaces");
-                activity?.SetTag("obh.user_id", userId);
+                activity?.SetTag("workspace_check.outcome", "no_active_workspaces");
+                activity?.SetTag("user_id", userId);
                 _logger.LogWarning("Request blocked for user {UserId} with no active workspaces at path {Path}",
                     userId, path);
 
@@ -171,8 +171,8 @@ public class WorkspaceActiveMiddleware
         var isDeleted = await workspaceDeletionService.IsWorkspaceDeletedAsync(workspaceId);
         if (isDeleted)
         {
-            activity?.SetTag("obh.workspace_check.outcome", "workspace_deleted");
-            activity?.SetTag("obh.workspace_id", workspaceId);
+            activity?.SetTag("workspace_check.outcome", "workspace_deleted");
+            activity?.SetTag("workspace_id", workspaceId);
             _logger.LogWarning("Request blocked for deleted workspace {WorkspaceId} at path {Path}",
                 workspaceId, path);
 
@@ -191,8 +191,8 @@ public class WorkspaceActiveMiddleware
             return;
         }
 
-        activity?.SetTag("obh.workspace_check.outcome", "passed");
-        activity?.SetTag("obh.workspace_id", workspaceId);
+        activity?.SetTag("workspace_check.outcome", "passed");
+        activity?.SetTag("workspace_id", workspaceId);
         await _next(context);
     }
 }

@@ -76,8 +76,11 @@ public class TracingProxyGenerator : IIncrementalGenerator
             {
                 if (member is IMethodSymbol method && method.MethodKind == MethodKind.Ordinary)
                 {
-                    // Avoid duplicates
-                    if (!methods.Any(m => m.Name == method.Name && m.Parameters.Count == method.Parameters.Length))
+                    // Avoid duplicates — compare name and full parameter type signatures
+                    var paramTypes = method.Parameters.Select(p => p.Type.ToDisplayString()).ToList();
+                    if (!methods.Any(m => m.Name == method.Name
+                        && m.Parameters.Count == paramTypes.Count
+                        && m.Parameters.Select(p => p.Type).SequenceEqual(paramTypes)))
                     {
                         methods.Add(ExtractMethodInfo(method));
                     }
@@ -104,7 +107,7 @@ public class TracingProxyGenerator : IIncrementalGenerator
             ReturnType = returnType,
             ReturnKind = returnKind,
             Parameters = parameters,
-            InnerReturnType = GetInnerReturnType(method.ReturnType)
+            InnerReturnType = GetInnerReturnType(method.ReturnType, returnKind)
         };
     }
 
@@ -133,29 +136,34 @@ public class TracingProxyGenerator : IIncrementalGenerator
         return ReturnKind.Sync;
     }
 
-    private static string? GetInnerReturnType(ITypeSymbol returnType)
+    private static string? GetInnerReturnType(ITypeSymbol returnType, ReturnKind returnKind)
     {
-        if (returnType is INamedTypeSymbol named && named.IsGenericType && named.TypeArguments.Length == 1)
+        if ((returnKind == ReturnKind.TaskOfT || returnKind == ReturnKind.ValueTaskOfT)
+            && returnType is INamedTypeSymbol named && named.TypeArguments.Length == 1)
         {
-            var originalDef = named.OriginalDefinition.ToDisplayString();
-            if (originalDef == "System.Threading.Tasks.Task<TResult>" ||
-                originalDef == "System.Threading.Tasks.ValueTask<TResult>")
-            {
-                return named.TypeArguments[0].ToDisplayString();
-            }
+            return named.TypeArguments[0].ToDisplayString();
         }
         return null;
     }
 
     private static bool IsTaggableType(ITypeSymbol type)
     {
-        // Only tag simple value types: int, long, string, Guid, bool, enum
         switch (type.SpecialType)
         {
-            case SpecialType.System_Int32:
-            case SpecialType.System_Int64:
-            case SpecialType.System_String:
             case SpecialType.System_Boolean:
+            case SpecialType.System_Byte:
+            case SpecialType.System_SByte:
+            case SpecialType.System_Char:
+            case SpecialType.System_Int16:
+            case SpecialType.System_UInt16:
+            case SpecialType.System_Int32:
+            case SpecialType.System_UInt32:
+            case SpecialType.System_Int64:
+            case SpecialType.System_UInt64:
+            case SpecialType.System_Single:
+            case SpecialType.System_Double:
+            case SpecialType.System_Decimal:
+            case SpecialType.System_String:
                 return true;
         }
 
@@ -170,18 +178,7 @@ public class TracingProxyGenerator : IIncrementalGenerator
 
     private static string GetTagName(string parameterName)
     {
-        return parameterName switch
-        {
-            "workspaceId" => "obh.workspace_id",
-            "collectionId" => "obh.collection_id",
-            "categoryId" => "obh.category_id",
-            "itemId" => "obh.item_id",
-            "templateId" => "obh.template_id",
-            "userId" => "obh.user_id",
-            "requestId" => "obh.request_id",
-            "id" => "obh.entity_id",
-            _ => $"obh.{ToSnakeCase(parameterName)}"
-        };
+        return ToSnakeCase(parameterName);
     }
 
     private static string ToSnakeCase(string name)
