@@ -406,5 +406,62 @@ public class PropertyDiffServiceTests
         Assert.Equal("CPU", target[0].Name);
     }
 
+    [Fact]
+    public void ComputeDiff_And_ApplyDiff_RenameAndReorderSameProperty()
+    {
+        // Scenario: user moves "CPU" from position 3 to position 1 AND renames it to "Foobar"
+        var oldProps = new List<PropertyIdentifier>
+        {
+            new("Specs", "RAM"),
+            new("Details", "Color"),
+            new("Specs", "CPU"),
+        };
+        var newProps = new List<PropertyIdentifier>
+        {
+            new("Specs", "Foobar"),
+            new("Specs", "RAM"),
+            new("Details", "Color"),
+        };
+        var renameMappings = new List<PropertyRenameMapping>
+        {
+            new("Specs", "CPU", "Specs", "Foobar"),
+        };
+
+        // ComputeDiff should produce a Renamed change but NOT a redundant Reordered for Foobar
+        var diff = _service.ComputeDiff(oldProps, newProps, renameMappings);
+
+        Assert.Contains(diff.Changes, c =>
+            c.Type == PropertyChangeType.Renamed &&
+            c.Category == "Specs" && c.Name == "CPU" &&
+            c.NewCategory == "Specs" && c.NewName == "Foobar");
+        Assert.DoesNotContain(diff.Changes, c =>
+            c.Type == PropertyChangeType.Added && c.Name == "Foobar");
+        Assert.DoesNotContain(diff.Changes, c =>
+            c.Type == PropertyChangeType.Removed && c.Name == "CPU");
+
+        // Now apply to an item that has CPU at position 3 with a value
+        var targetItem = new List<ItemProperty>
+        {
+            new("Specs", "RAM", "16GB"),
+            new("Details", "Color", "Black"),
+            new("Specs", "CPU", "Intel i7"),
+            new("Custom", "Serial", "ABC123"),
+        };
+
+        var result = _service.ApplyDiff(targetItem, diff, newProps);
+
+        // Foobar should be at position 1 with the original value preserved
+        Assert.Equal(4, result.Count);
+        Assert.Equal("Foobar", result[0].Name);
+        Assert.Equal("Specs", result[0].Category);
+        Assert.Equal("Intel i7", result[0].Value);
+        // Template props follow in new order
+        Assert.Equal("RAM", result[1].Name);
+        Assert.Equal("Color", result[2].Name);
+        // Custom prop stays at the end
+        Assert.Equal("Serial", result[3].Name);
+        Assert.Equal("ABC123", result[3].Value);
+    }
+
     #endregion
 }
