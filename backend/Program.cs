@@ -3,9 +3,13 @@ using OneBigHead.Server.Data;
 using OneBigHead.Server.Middleware;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Services.Seeding;
+using OneBigHead.Server.Telemetry;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
@@ -34,31 +38,48 @@ if (!builder.Environment.IsEnvironment("Testing"))
         options.UseSqlServer(connectionString));
 }
 
-// Register repositories
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<ICollectionRepository, CollectionRepository>();
-builder.Services.AddScoped<IItemRepository, ItemRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
-builder.Services.AddScoped<IWorkspaceUserRepository, WorkspaceUserRepository>();
-builder.Services.AddScoped<IPropertySuggestionRepository, PropertySuggestionRepository>();
-builder.Services.AddScoped<IItemTemplateRepository, ItemTemplateRepository>();
-builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
-builder.Services.AddScoped<ISupportRepository, SupportRepository>();
+// Register repositories and services with tracing decorators (skip in Testing environment)
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    var repoSource = DiagnosticsConfig.RepositoryActivitySource;
+    var appSource = DiagnosticsConfig.AppActivitySource;
 
-// Register image provider
-builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
-
-// Register visibility service
-builder.Services.AddScoped<IVisibilityService, VisibilityService>();
-
-// Register deletion services
-builder.Services.AddScoped<IWorkspaceDeletionService, WorkspaceDeletionService>();
-builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
-
-// Configure email service
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
-builder.Services.AddScoped<IEmailService, AzureEmailService>();
+    builder.Services.AddTracingDecorator<ICategoryRepository, CategoryRepository>(repoSource);
+    builder.Services.AddTracingDecorator<ICollectionRepository, CollectionRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IItemRepository, ItemRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IUserRepository, UserRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IWorkspaceRepository, WorkspaceRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IWorkspaceUserRepository, WorkspaceUserRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IPropertySuggestionRepository, PropertySuggestionRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IItemTemplateRepository, ItemTemplateRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IThemeRepository, ThemeRepository>(repoSource);
+    builder.Services.AddTracingDecorator<ISupportRepository, SupportRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IImageProvider, DatabaseImageProvider>(repoSource);
+    builder.Services.AddTracingDecorator<IVisibilityService, VisibilityService>(appSource);
+    builder.Services.AddTracingDecorator<IWorkspaceDeletionService, WorkspaceDeletionService>(appSource);
+    builder.Services.AddTracingDecorator<IUserDeletionService, UserDeletionService>(appSource);
+    builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+    builder.Services.AddTracingDecorator<IEmailService, AzureEmailService>(appSource);
+}
+else
+{
+    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+    builder.Services.AddScoped<ICollectionRepository, CollectionRepository>();
+    builder.Services.AddScoped<IItemRepository, ItemRepository>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+    builder.Services.AddScoped<IWorkspaceUserRepository, WorkspaceUserRepository>();
+    builder.Services.AddScoped<IPropertySuggestionRepository, PropertySuggestionRepository>();
+    builder.Services.AddScoped<IItemTemplateRepository, ItemTemplateRepository>();
+    builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
+    builder.Services.AddScoped<ISupportRepository, SupportRepository>();
+    builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
+    builder.Services.AddScoped<IVisibilityService, VisibilityService>();
+    builder.Services.AddScoped<IWorkspaceDeletionService, WorkspaceDeletionService>();
+    builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
+    builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+    builder.Services.AddScoped<IEmailService, AzureEmailService>();
+}
 
 // Configure authentication
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));
@@ -114,6 +135,42 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+// Configure OpenTelemetry (skip in Testing environment)
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    var otlpEndpoint = builder.Configuration.GetValue<string>("OpenTelemetry:OtlpEndpoint") ?? "http://localhost:4317";
+
+    builder.Services.AddOpenTelemetry()
+        .ConfigureResource(resource => resource.AddService(DiagnosticsConfig.ServiceName))
+        .WithTracing(tracing =>
+        {
+            tracing
+                .AddAspNetCoreInstrumentation(options =>
+                {
+                    options.Filter = httpContext =>
+                    {
+                        var path = httpContext.Request.Path.Value ?? "";
+                        return !path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) &&
+                               !path.StartsWith("/assets/", StringComparison.OrdinalIgnoreCase);
+                    };
+                })
+                .AddEntityFrameworkCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddSource(DiagnosticsConfig.AppActivitySource.Name)
+                .AddSource(DiagnosticsConfig.RepositoryActivitySource.Name)
+                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+        })
+        .WithMetrics(metrics =>
+        {
+            metrics
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation()
+                .AddPrometheusExporter()
+                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+        });
+}
+
 var app = builder.Build();
 
 // In Development: run migrations and seed automatically
@@ -155,7 +212,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseWorkspaceActiveCheck();
-app.UseAuditLogging();
 
 // Serve static assets from wwwroot (CSS, favicon, etc.)
 app.MapStaticAssets();
@@ -253,6 +309,12 @@ app.MapControllers();
 
 // Simple health check endpoint for deployment verification
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
+// Prometheus metrics scrape endpoint
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.MapPrometheusScrapingEndpoint("/metrics");
+}
 
 app.Run();
 

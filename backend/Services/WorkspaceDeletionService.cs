@@ -2,9 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
+using OneBigHead.Server.Telemetry;
 
 namespace OneBigHead.Server.Services;
 
+[GenerateTracingProxy]
 public interface IWorkspaceDeletionService
 {
     Task<WorkspaceStatsResponse?> GetWorkspaceStatsAsync(int workspaceId);

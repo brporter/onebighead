@@ -1,4 +1,5 @@
 using OneBigHead.Server.Models;
+using OneBigHead.Server.Telemetry;
 
 namespace OneBigHead.Server.Data;
 
@@ -12,6 +13,7 @@ public enum AdminCheckResult
     WouldRemoveLastAdmin
 }
 
+[GenerateTracingProxy]
 public interface IWorkspaceUserRepository
 {
     Task<WorkspaceUser?> GetMembershipAsync(int userId, int workspaceId);

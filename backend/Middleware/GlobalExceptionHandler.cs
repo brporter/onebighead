@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace OneBigHead.Server.Middleware;
@@ -22,6 +23,10 @@ public class GlobalExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
+        // Record exception on the current Activity for OpenTelemetry
+        Activity.Current?.SetStatus(ActivityStatusCode.Error, exception.Message);
+        Activity.Current?.AddException(exception);
+
         // Log the full exception details server-side
         _logger.LogError(
             exception,
