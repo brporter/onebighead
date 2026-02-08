@@ -14,3 +14,4 @@ export { default as SiteHeader } from './SiteHeader';
 export { WorkspaceSwitcher } from './WorkspaceSwitcher';
 export { TermsAcceptance } from './TermsAcceptance';
 export { default as VisibilityToggle } from './VisibilityToggle';
+export { BulkUpdateModal, type ScopeOption } from './BulkUpdateModal';

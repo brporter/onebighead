@@ -1,11 +1,12 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import ItemDetail from '../components/item/ItemDetail';
 import ItemEditor from '../components/item/ItemEditor';
-import { BackNav, Loading } from '../components/common';
+import { BackNav, Loading, BulkUpdateModal, type ScopeOption } from '../components/common';
 import CategoryTree from '../components/category/CategoryTree';
 import TemplateSelector from '../components/template/TemplateSelector';
+import { bulkUpdatesApi } from '../api/bulkUpdates';
 import { createEmptyItem } from '../utils/itemUtils';
 import type { Item, ItemProperty } from '../utils/types';
 
@@ -29,6 +30,7 @@ function ItemView() {
     updateItem,
     deleteItem,
     loadPropertySuggestions,
+    invalidateItemCache,
   } = useData();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -37,6 +39,13 @@ function ItemView() {
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [selectedTemplateProperties, setSelectedTemplateProperties] = useState<ItemProperty[] | null>(null);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
+
+  // Bulk update state
+  const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
+  const [bulkUpdateScopeOptions, setBulkUpdateScopeOptions] = useState<ScopeOption[]>([]);
+  const [bulkUpdateOldProps, setBulkUpdateOldProps] = useState<{ category: string; name: string }[]>([]);
+  const [bulkUpdateNewProps, setBulkUpdateNewProps] = useState<{ category: string; name: string }[]>([]);
+  const originalItemPropsRef = useRef<ItemProperty[]>([]);
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const isNewItem = itemId === 'new';
@@ -148,6 +157,10 @@ function ItemView() {
   }
 
   function handleEditItem() {
+    // Capture original properties for bulk update comparison
+    if (selectedItem) {
+      originalItemPropsRef.current = [...selectedItem.properties];
+    }
     setIsEditing(true);
   }
 
@@ -166,6 +179,69 @@ function ItemView() {
     } else if (itemIdNum != null) {
       await updateItem(itemIdNum, itemData);
       setIsEditing(false);
+
+      // Check if properties changed - offer bulk update for siblings
+      const oldProps = originalItemPropsRef.current;
+      const newProps = itemData.properties;
+      const propsChanged = oldProps.length !== newProps.length ||
+        oldProps.some((op, i) => op.category !== newProps[i]?.category || op.name !== newProps[i]?.name);
+
+      if (propsChanged && itemData.categoryId) {
+        try {
+          const scopeOptions: ScopeOption[] = [];
+
+          const categoryPreview = await bulkUpdatesApi.preview({
+            scope: 'category',
+            categoryId: itemData.categoryId,
+            excludeItemId: itemIdNum,
+          });
+          if (categoryPreview.affectedItemCount > 0) {
+            const cat = categories.find(c => c.categoryId === itemData.categoryId);
+            scopeOptions.push({
+              scope: 'category',
+              label: `in "${cat?.name ?? 'this category'}"`,
+              count: categoryPreview.affectedItemCount,
+              categoryId: itemData.categoryId,
+            });
+          }
+
+          const collectionPreview = await bulkUpdatesApi.preview({
+            scope: 'collection',
+            collectionId: itemData.collectionId,
+            excludeItemId: itemIdNum,
+          });
+          if (collectionPreview.affectedItemCount > 0) {
+            scopeOptions.push({
+              scope: 'collection',
+              label: 'in this collection',
+              count: collectionPreview.affectedItemCount,
+              collectionId: itemData.collectionId,
+            });
+          }
+
+          if (scopeOptions.length > 0) {
+            setBulkUpdateOldProps(oldProps.map(p => ({ category: p.category, name: p.name })));
+            setBulkUpdateNewProps(newProps.map(p => ({ category: p.category, name: p.name })));
+            setBulkUpdateScopeOptions(scopeOptions);
+            setShowBulkUpdateModal(true);
+          }
+        } catch {
+          // Preview failed - skip bulk update offer
+        }
+      }
+    }
+  }
+
+  function handleBulkUpdateClose() {
+    setShowBulkUpdateModal(false);
+  }
+
+  function handleBulkUpdateComplete() {
+    setShowBulkUpdateModal(false);
+    // Invalidate item cache so next navigation shows updated data
+    invalidateItemCache();
+    if (detailItem?.categoryId) {
+      loadItemsForCategory(detailItem.categoryId);
     }
   }
 
@@ -252,6 +328,15 @@ function ItemView() {
             />
           )}
         </article>
+        <BulkUpdateModal
+          isOpen={showBulkUpdateModal}
+          onClose={handleBulkUpdateClose}
+          onComplete={handleBulkUpdateComplete}
+          scopeOptions={bulkUpdateScopeOptions}
+          oldProperties={bulkUpdateOldProps}
+          newProperties={bulkUpdateNewProps}
+          excludeItemId={itemIdNum ?? undefined}
+        />
       </main>
     </div>
   );

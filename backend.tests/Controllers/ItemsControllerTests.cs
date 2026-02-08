@@ -3,6 +3,7 @@ using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.BulkUpdate;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -17,6 +18,7 @@ public class ItemsControllerTests
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
     private readonly Mock<IVisibilityService> _mockVisibilityService;
+    private readonly Mock<IBulkUpdateQueue> _mockBulkUpdateQueue;
     private readonly ItemsController _controller;
     private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 1;
@@ -28,11 +30,13 @@ public class ItemsControllerTests
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockCollectionRepository = new Mock<ICollectionRepository>();
         _mockVisibilityService = new Mock<IVisibilityService>();
+        _mockBulkUpdateQueue = new Mock<IBulkUpdateQueue>();
         _controller = new ItemsController(
-            _mockItemRepository.Object, 
+            _mockItemRepository.Object,
             _mockCategoryRepository.Object,
             _mockCollectionRepository.Object,
-            _mockVisibilityService.Object);
+            _mockVisibilityService.Object,
+            _mockBulkUpdateQueue.Object);
 
         var claims = new List<Claim>
         {

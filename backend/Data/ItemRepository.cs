@@ -80,5 +80,40 @@ public class ItemRepository : IItemRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<IEnumerable<Item>> GetByTemplateKeyAsync(Guid templateKey, int workspaceId)
+    {
+        return await _context.Items
+            .Where(i => i.WorkspaceId == workspaceId && i.TemplateKey == templateKey)
+            .ToListAsync();
+    }
+
+    public async Task<int> CountByTemplateKeyAsync(Guid templateKey, int workspaceId)
+    {
+        return await _context.Items
+            .AsNoTracking()
+            .CountAsync(i => i.WorkspaceId == workspaceId && i.TemplateKey == templateKey);
+    }
+
+    public async Task<IEnumerable<Item>> GetByCollectionIdAsync(int collectionId, int workspaceId)
+    {
+        return await _context.Items
+            .Where(i => i.WorkspaceId == workspaceId && i.CollectionId == collectionId)
+            .ToListAsync();
+    }
+
+    public async Task<int> CountByCollectionIdAsync(int collectionId, int workspaceId)
+    {
+        return await _context.Items
+            .AsNoTracking()
+            .CountAsync(i => i.WorkspaceId == workspaceId && i.CollectionId == collectionId);
+    }
+
+    public async Task<int> CountByCategoryIdAsync(int categoryId, int workspaceId)
+    {
+        return await _context.Items
+            .AsNoTracking()
+            .CountAsync(i => i.WorkspaceId == workspaceId && i.CategoryId == categoryId);
+    }
 }
 

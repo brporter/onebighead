@@ -2,6 +2,7 @@ using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Middleware;
 using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.BulkUpdate;
 using OneBigHead.Server.Services.Seeding;
 using OneBigHead.Server.Telemetry;
 using Microsoft.AspNetCore.RateLimiting;
@@ -82,6 +83,11 @@ else
     builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
     builder.Services.AddScoped<IEmailService, AzureEmailService>();
 }
+
+// Register bulk update services (environment-independent)
+builder.Services.AddScoped<IPropertyDiffService, PropertyDiffService>();
+builder.Services.AddSingleton<IBulkUpdateQueue, BulkUpdateQueue>();
+builder.Services.AddHostedService<BulkUpdateWorker>();
 
 // Configure authentication
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));

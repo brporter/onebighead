@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import CategoryTree from '../components/category/CategoryTree';
@@ -6,6 +6,8 @@ import ItemList from '../components/item/ItemList';
 import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
 import { BackNav, Loading } from '../components/common';
 import { getCategoryAndDescendantIds } from '../utils/categoryUtils';
+import { bulkUpdatesApi, type BulkUpdateJobResponse } from '../api';
+import '../styles/components/BulkUpdateModal.css';
 
 function CategoryView() {
   const { collectionId, categoryId } = useParams<{ collectionId: string; categoryId?: string }>();
@@ -29,6 +31,8 @@ function CategoryView() {
   const [subcategoryFilter, setSubcategoryFilter] = useState<number | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeBulkJob, setActiveBulkJob] = useState<BulkUpdateJobResponse | null>(null);
+  const bulkPollRef = useRef<number | null>(null);
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
@@ -71,6 +75,53 @@ function CategoryView() {
     setSubcategoryFilter(null);
     setPageIndex(0);
   }, [categoryIdNum, loadItemsForCategory]);
+
+  // Check for active bulk update on collection load
+  const checkBulkUpdate = useCallback(async (colId: number) => {
+    try {
+      const job = await bulkUpdatesApi.getCollectionStatus(colId);
+      if (job && (job.status === 'Queued' || job.status === 'Running')) {
+        setActiveBulkJob(job);
+        // Start polling
+        if (bulkPollRef.current) clearInterval(bulkPollRef.current);
+        bulkPollRef.current = window.setInterval(async () => {
+          try {
+            const status = await bulkUpdatesApi.getStatus(job.jobId);
+            setActiveBulkJob(status);
+            if (status.status === 'Completed' || status.status === 'Failed') {
+              if (bulkPollRef.current) clearInterval(bulkPollRef.current);
+              bulkPollRef.current = null;
+              // Refresh items after completion
+              setTimeout(() => {
+                setActiveBulkJob(null);
+                if (categoryIdNum) loadItemsForCategory(categoryIdNum);
+              }, 1500);
+            }
+          } catch {
+            if (bulkPollRef.current) clearInterval(bulkPollRef.current);
+            bulkPollRef.current = null;
+            setActiveBulkJob(null);
+          }
+        }, 500);
+      } else {
+        setActiveBulkJob(null);
+      }
+    } catch {
+      // Ignore errors
+    }
+  }, [categoryIdNum, loadItemsForCategory]);
+
+  useEffect(() => {
+    if (collectionIdNum && currentCollection) {
+      checkBulkUpdate(collectionIdNum);
+    }
+    return () => {
+      if (bulkPollRef.current) {
+        clearInterval(bulkPollRef.current);
+        bulkPollRef.current = null;
+      }
+    };
+  }, [collectionIdNum, currentCollection, checkBulkUpdate]);
 
   const directSubcategories = useMemo(() => {
     if (categoryIdNum == null) return [];
@@ -200,6 +251,23 @@ function CategoryView() {
         </div>
         <section className="app__items">
           <BackNav label="Categories" onClick={handleBackToCategories} />
+          {activeBulkJob && (
+            <div className="bulk-update-banner">
+              <p className="bulk-update-banner__text">
+                Updating item properties...
+              </p>
+              <div className="bulk-update-banner__bar-container">
+                <div
+                  className="bulk-update-banner__bar-fill"
+                  style={{ width: `${activeBulkJob.totalItems > 0 ? Math.round(((activeBulkJob.processedItems + activeBulkJob.failedItems) / activeBulkJob.totalItems) * 100) : 0}%` }}
+                />
+              </div>
+              <p className="bulk-update-banner__detail">
+                {activeBulkJob.processedItems + activeBulkJob.failedItems} / {activeBulkJob.totalItems} items
+                {activeBulkJob.status === 'Queued' && ' (queued)'}
+              </p>
+            </div>
+          )}
           {showSubcategoryDropdown && (
             <SubcategoryDropdown
               subcategories={directSubcategories}

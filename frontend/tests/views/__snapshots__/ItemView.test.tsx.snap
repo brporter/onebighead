@@ -342,6 +342,57 @@ exports[`ItemView > snapshots > should match snapshot for existing item 1`] = `
           </div>
         </section>
       </article>
+      <dialog
+        class="modal-dialog"
+      >
+        <div
+          class="modal bulk-update-modal"
+        >
+          <div
+            class="modal__header"
+          >
+            <h3
+              class="modal__title"
+            >
+              Apply Property Changes
+            </h3>
+            <button
+              class="modal__close"
+              type="button"
+            >
+              ×
+            </button>
+          </div>
+          <div
+            class="modal__body"
+          >
+            <p
+              class="modal__info"
+            >
+              Apply these property changes to other existing items?
+            </p>
+            <div
+              class="bulk-update-modal__scopes"
+            />
+            <div
+              class="modal__actions"
+            >
+              <button
+                class="modal__button modal__button--primary"
+                type="button"
+              >
+                Apply
+              </button>
+              <button
+                class="modal__button modal__button--secondary"
+                type="button"
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        </div>
+      </dialog>
     </main>
   </div>
 </div>

@@ -135,6 +135,9 @@ public class AppDbContext : DbContext
             entity.HasIndex(i => i.CollectionId);
             entity.HasIndex(i => i.CategoryId);
 
+            // Composite index for workspace-scoped template key queries (bulk updates)
+            entity.HasIndex(i => new { i.WorkspaceId, i.TemplateKey });
+
             // Index for user flag queries (finding items by Have/Want/Trade status)
             entity.HasIndex(i => i.UserFlag);
             // Composite index for workspace-scoped flag queries (most common use case)

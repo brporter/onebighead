@@ -2,6 +2,7 @@ using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.BulkUpdate;
 using OneBigHead.Server.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,17 +19,20 @@ public class ItemsController : ApiControllerBase
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICollectionRepository _collectionRepository;
     private readonly IVisibilityService _visibilityService;
+    private readonly IBulkUpdateQueue _bulkUpdateQueue;
 
     public ItemsController(
-        IItemRepository itemRepository, 
+        IItemRepository itemRepository,
         ICategoryRepository categoryRepository,
         ICollectionRepository collectionRepository,
-        IVisibilityService visibilityService)
+        IVisibilityService visibilityService,
+        IBulkUpdateQueue bulkUpdateQueue)
     {
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
         _collectionRepository = collectionRepository;
         _visibilityService = visibilityService;
+        _bulkUpdateQueue = bulkUpdateQueue;
     }
 
     [HttpGet]
@@ -197,6 +201,13 @@ public class ItemsController : ApiControllerBase
     {
         var workspaceId = GetWorkspaceId();
 
+        // Check for active bulk update on this collection
+        var activeJob = _bulkUpdateQueue.GetActiveJobForCollection(request.CollectionId, workspaceId);
+        if (activeJob != null)
+        {
+            return Conflict("A bulk update is in progress for this collection. Please wait for it to complete.");
+        }
+
         // Validate CollectionId belongs to workspace
         var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, workspaceId);
         if (collection is null)
@@ -221,6 +232,13 @@ public class ItemsController : ApiControllerBase
     public async Task<ActionResult<Item>> UpdateItem(int id, UpdateItemRequest request)
     {
         var workspaceId = GetWorkspaceId();
+
+        // Check for active bulk update on this collection
+        var activeJob = _bulkUpdateQueue.GetActiveJobForCollection(request.CollectionId, workspaceId);
+        if (activeJob != null)
+        {
+            return Conflict("A bulk update is in progress for this collection. Please wait for it to complete.");
+        }
 
         // Validate CollectionId belongs to workspace
         var collection = await _collectionRepository.GetByIdAsync(request.CollectionId, workspaceId);

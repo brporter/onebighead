@@ -98,6 +98,9 @@ export interface DataContextValue {
   associateTemplateWithCollection: (collectionId: number, templateId: number) => Promise<void>;
   disassociateTemplateFromCollection: (collectionId: number, templateId: number) => Promise<void>;
 
+  // Bulk update
+  invalidateItemCache: () => void;
+
   // Category tree UI state
   expandedCategoryIds: Set<number>;
   toggleCategoryExpanded: (categoryId: number) => void;
@@ -151,6 +154,7 @@ const defaultContextValue: DataContextValue = {
   deleteItemTemplate: async () => {},
   associateTemplateWithCollection: async () => {},
   disassociateTemplateFromCollection: async () => {},
+  invalidateItemCache: () => {},
   expandedCategoryIds: new Set(),
   toggleCategoryExpanded: () => {},
 };
@@ -502,6 +506,10 @@ export function DataProvider({ children }: DataProviderProps) {
     return await imagesApi.upload(file);
   }, []);
 
+  const invalidateItemCache = useCallback(() => {
+    itemsCacheRef.current.clear();
+  }, []);
+
   // Item template operations
   const loadItemTemplates = useCallback(async (filter?: 'shared' | 'personal') => {
     try {
@@ -595,6 +603,7 @@ export function DataProvider({ children }: DataProviderProps) {
     deleteItemTemplate,
     associateTemplateWithCollection,
     disassociateTemplateFromCollection,
+    invalidateItemCache,
     expandedCategoryIds,
     toggleCategoryExpanded,
   };

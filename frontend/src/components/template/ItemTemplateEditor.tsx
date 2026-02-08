@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useData } from '../../contexts/DataContext';
-import { SortablePropertyList, type BaseProperty, type FieldConfig } from '../common';
+import { SortablePropertyList, type BaseProperty, type FieldConfig, BulkUpdateModal, type ScopeOption } from '../common';
+import { bulkUpdatesApi } from '../../api/bulkUpdates';
 import '../../styles/ItemTemplateEditor.css';
 import type { ItemTemplate, ItemTemplateProperty } from '../../utils/types';
 import { generateUniqueId } from '../../utils/idUtils';
@@ -59,6 +60,13 @@ function ItemTemplateEditor({ onDirtyChange, isFullPage = false }: ItemTemplateE
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filter, setFilter] = useState<'all' | 'system' | 'workspace'>('all');
+
+  // Bulk update modal state
+  const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
+  const [bulkUpdateScopeOptions, setBulkUpdateScopeOptions] = useState<ScopeOption[]>([]);
+  const [bulkUpdateOldProps, setBulkUpdateOldProps] = useState<{ category: string; name: string }[]>([]);
+  const [bulkUpdateNewProps, setBulkUpdateNewProps] = useState<{ category: string; name: string }[]>([]);
+  const [bulkUpdateRenameMappings, setBulkUpdateRenameMappings] = useState<{ oldCategory: string; oldName: string; newCategory: string; newName: string }[]>([]);
 
   const hasUnsavedChanges = useCallback(() => {
     if (!isAdding && editingTemplate === null) return false;
@@ -143,6 +151,32 @@ function ItemTemplateEditor({ onDirtyChange, isFullPage = false }: ItemTemplateE
     }));
   };
 
+  const propertiesChanged = useCallback(() => {
+    if (formData.properties.length !== originalFormData.properties.length) return true;
+    for (let i = 0; i < formData.properties.length; i++) {
+      const curr = formData.properties[i];
+      const orig = originalFormData.properties[i];
+      if (!orig || curr.category !== orig.category || curr.name !== orig.name) return true;
+    }
+    return false;
+  }, [formData.properties, originalFormData.properties]);
+
+  const computeRenameMappings = useCallback(() => {
+    return formData.properties
+      .map((curr) => {
+        const orig = originalFormData.properties.find((o) => o.id === curr.id);
+        if (!orig) return null;
+        if (orig.category === curr.category && orig.name === curr.name) return null;
+        return {
+          oldCategory: orig.category.trim(),
+          oldName: orig.name.trim(),
+          newCategory: curr.category.trim(),
+          newName: curr.name.trim(),
+        };
+      })
+      .filter((m): m is NonNullable<typeof m> => m !== null);
+  }, [formData.properties, originalFormData.properties]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
@@ -172,16 +206,62 @@ function ItemTemplateEditor({ onDirtyChange, isFullPage = false }: ItemTemplateE
 
       if (isAdding) {
         await createItemTemplate(request);
+        setIsAdding(false);
+        setEditingTemplate(null);
       } else if (editingTemplate) {
         await updateItemTemplate(editingTemplate.itemTemplateId, request);
+
+        // Check if properties changed - offer bulk update
+        if (propertiesChanged()) {
+          try {
+            const preview = await bulkUpdatesApi.preview({
+              scope: 'template',
+              templateKey: editingTemplate.templateKey,
+            });
+
+            if (preview.affectedItemCount > 0) {
+              const oldProps = originalFormData.properties.map((p) => ({
+                category: p.category.trim(),
+                name: p.name.trim(),
+              }));
+              const newProps = formData.properties.map((p) => ({
+                category: p.category.trim(),
+                name: p.name.trim(),
+              }));
+
+              setBulkUpdateOldProps(oldProps);
+              setBulkUpdateNewProps(newProps);
+              setBulkUpdateRenameMappings(computeRenameMappings());
+              setBulkUpdateScopeOptions([{
+                scope: 'template',
+                label: 'created from this template',
+                count: preview.affectedItemCount,
+                templateKey: editingTemplate.templateKey,
+              }]);
+              setShowBulkUpdateModal(true);
+              // Don't close editor yet - modal will handle it
+              setIsSubmitting(false);
+              return;
+            }
+          } catch {
+            // Preview failed - just close without offering bulk update
+          }
+        }
+
+        setIsAdding(false);
+        setEditingTemplate(null);
       }
-      setIsAdding(false);
-      setEditingTemplate(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleBulkUpdateClose = () => {
+    setShowBulkUpdateModal(false);
+    setIsAdding(false);
+    setEditingTemplate(null);
   };
 
   const handleDelete = async (templateId: number) => {
@@ -404,6 +484,15 @@ function ItemTemplateEditor({ onDirtyChange, isFullPage = false }: ItemTemplateE
     return (
       <div className={`template-editor ${isFullPage ? 'template-editor--fullpage' : ''}`}>
         {renderForm()}
+        <BulkUpdateModal
+          isOpen={showBulkUpdateModal}
+          onClose={handleBulkUpdateClose}
+          onComplete={handleBulkUpdateClose}
+          scopeOptions={bulkUpdateScopeOptions}
+          oldProperties={bulkUpdateOldProps}
+          newProperties={bulkUpdateNewProps}
+          renameMappings={bulkUpdateRenameMappings}
+        />
       </div>
     );
   }

@@ -3,6 +3,7 @@ using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.BulkUpdate;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,8 @@ public class ItemsControllerIntegrationTests : IDisposable
             itemRepository,
             categoryRepository,
             collectionRepository,
-            visibilityService);
+            visibilityService,
+            new BulkUpdateQueue());
 
         // Configure claims
         var claims = new List<Claim>
