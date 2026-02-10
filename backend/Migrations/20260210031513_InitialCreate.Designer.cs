@@ -12,7 +12,7 @@ using OneBigHead.Server.Data;
 namespace OneBigHead.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260207221527_InitialCreate")]
+    [Migration("20260210031513_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -311,6 +311,8 @@ namespace OneBigHead.Server.Migrations
                     b.HasIndex("UserFlag");
 
                     b.HasIndex("WorkspaceId");
+
+                    b.HasIndex("WorkspaceId", "TemplateKey");
 
                     b.HasIndex("WorkspaceId", "UserFlag");
 

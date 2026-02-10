@@ -533,6 +533,11 @@ namespace OneBigHead.Server.Migrations
                 column: "WorkspaceId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Items_WorkspaceId_TemplateKey",
+                table: "Items",
+                columns: new[] { "WorkspaceId", "TemplateKey" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Items_WorkspaceId_UserFlag",
                 table: "Items",
                 columns: new[] { "WorkspaceId", "UserFlag" });
