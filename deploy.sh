@@ -1,27 +1,19 @@
 #!/bin/bash
 #
-# Deploy OneBigHead to Azure Container Apps with SQL Azure
-# Uses user-assigned managed identity for all cross-service authentication
+# Provision OneBigHead Azure infrastructure via Bicep
+#
+# This script handles ONLY infrastructure provisioning and SQL identity setup.
+# Application deployment (build, push, secrets, revisions) is handled by the
+# GitHub Actions workflow (.github/workflows/deploy.yml).
 #
 # Prerequisites:
 #   - Azure CLI installed and authenticated (az login)
-#   - Docker installed
-#   - sqlcmd installed (for migration execution)
+#   - Azure CLI Bicep extension (az bicep install)
+#   - sqlcmd installed (for SQL identity user creation)
+#   - jq installed (for parsing deployment outputs)
 #
 # Usage:
-#   ./deploy.sh [options]
-#
-# Required parameters (via env vars or command line):
-#   APP_NAME           - Base name for all Azure resources
-#   LOCATION           - Azure region (e.g., eastus)
-#   JWT_SIGNING_KEY    - JWT signing key (min 32 characters)
-#
-# Optional parameters:
-#   SQL_ADMIN_USER     - SQL admin username (default: sqladmin)
-#   SQL_ADMIN_PASSWORD - SQL admin password (generated if not provided)
-#   MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET - Microsoft OAuth credentials
-#   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET - Google OAuth credentials
-#   APPLE_CLIENT_ID, APPLE_CLIENT_SECRET - Apple OAuth credentials
+#   ./deploy.sh --name <app-name> --location <region> [options]
 #
 
 set -e
@@ -36,40 +28,25 @@ NC='\033[0m'
 print_usage() {
     echo "Usage: $0 [options]"
     echo ""
+    echo "Provision Azure infrastructure for OneBigHead."
+    echo "Application deployment is handled by GitHub Actions."
+    echo ""
     echo "Required Options:"
-    echo "  -n, --name NAME           Base name for Azure resources"
+    echo "  -n, --name NAME           Base name for Azure resources (3-16 chars)"
     echo "  -l, --location LOCATION   Azure region (e.g., eastus)"
-    echo "  -j, --jwt-key KEY         JWT signing key (min 32 chars)"
     echo ""
-    echo "SQL Options:"
-    echo "  -u, --sql-user USER       SQL admin username (default: sqladmin)"
-    echo "  -p, --sql-password PASS   SQL admin password (generated if not set)"
-    echo ""
-    echo "OAuth Options (at least one provider recommended):"
-    echo "  --microsoft-client-id ID      Microsoft OAuth client ID"
-    echo "  --microsoft-client-secret SEC Microsoft OAuth client secret"
-    echo "  --google-client-id ID         Google OAuth client ID"
-    echo "  --google-client-secret SEC    Google OAuth client secret"
-    echo "  --apple-client-id ID          Apple OAuth client ID"
-    echo "  --apple-client-secret SEC     Apple OAuth client secret"
+    echo "Optional:"
+    echo "  --grafana-location LOC    Azure region for Grafana (defaults to LOCATION)"
     echo ""
     echo "Workflow Options:"
-    echo "  --skip-infra              Skip infrastructure creation"
-    echo "  --skip-build              Skip application build"
-    echo "  --skip-migration          Skip database migration"
+    echo "  --skip-infra              Skip Bicep provisioning (re-read outputs, re-run SQL user)"
+    echo "  --skip-app                Skip Container App resource in Bicep (for infra-only re-runs)"
     echo "  -h, --help                Show this help message"
-    echo ""
-    echo "Environment variables (alternative to command line):"
-    echo "  APP_NAME, LOCATION, JWT_SIGNING_KEY, SQL_ADMIN_USER, SQL_ADMIN_PASSWORD"
-    echo "  MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET"
-    echo "  GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET"
-    echo "  APPLE_CLIENT_ID, APPLE_CLIENT_SECRET"
 }
 
 # Parse command line arguments
 SKIP_INFRA=false
-SKIP_BUILD=false
-SKIP_MIGRATION=false
+SKIP_APP=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -81,52 +58,16 @@ while [[ $# -gt 0 ]]; do
             LOCATION="$2"
             shift 2
             ;;
-        -j|--jwt-key)
-            JWT_SIGNING_KEY="$2"
-            shift 2
-            ;;
-        -u|--sql-user)
-            SQL_ADMIN_USER="$2"
-            shift 2
-            ;;
-        -p|--sql-password)
-            SQL_ADMIN_PASSWORD="$2"
-            shift 2
-            ;;
-        --microsoft-client-id)
-            MICROSOFT_CLIENT_ID="$2"
-            shift 2
-            ;;
-        --microsoft-client-secret)
-            MICROSOFT_CLIENT_SECRET="$2"
-            shift 2
-            ;;
-        --google-client-id)
-            GOOGLE_CLIENT_ID="$2"
-            shift 2
-            ;;
-        --google-client-secret)
-            GOOGLE_CLIENT_SECRET="$2"
-            shift 2
-            ;;
-        --apple-client-id)
-            APPLE_CLIENT_ID="$2"
-            shift 2
-            ;;
-        --apple-client-secret)
-            APPLE_CLIENT_SECRET="$2"
+        --grafana-location)
+            GRAFANA_LOCATION="$2"
             shift 2
             ;;
         --skip-infra)
             SKIP_INFRA=true
             shift
             ;;
-        --skip-build)
-            SKIP_BUILD=true
-            shift
-            ;;
-        --skip-migration)
-            SKIP_MIGRATION=true
+        --skip-app)
+            SKIP_APP=true
             shift
             ;;
         -h|--help)
@@ -154,431 +95,118 @@ if [[ -z "$LOCATION" ]]; then
     exit 1
 fi
 
-if [[ -z "$JWT_SIGNING_KEY" ]]; then
-    echo -e "${RED}Error: JWT_SIGNING_KEY is required${NC}"
-    print_usage
-    exit 1
-fi
-
-if [[ ${#JWT_SIGNING_KEY} -lt 32 ]]; then
-    echo -e "${RED}Error: JWT_SIGNING_KEY must be at least 32 characters${NC}"
-    exit 1
-fi
-
-# Set defaults
-SQL_ADMIN_USER="${SQL_ADMIN_USER:-sqladmin}"
-if [[ -z "$SQL_ADMIN_PASSWORD" ]]; then
-    SQL_ADMIN_PASSWORD=$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9!@#$%' | head -c 24)
-    echo -e "${YELLOW}Generated SQL admin password (save this): $SQL_ADMIN_PASSWORD${NC}"
-fi
-
 # Derive resource names
 RESOURCE_GROUP="${APP_NAME}-rg"
-ACR_NAME="${APP_NAME}acr"
-SQL_DB_NAME="${APP_NAME}"
-CONTAINER_ENV_NAME="${APP_NAME}-env"
-CONTAINER_APP_NAME="${APP_NAME}-app"
-IDENTITY_NAME="${APP_NAME}-identity"
-APP_INSIGHTS_NAME="${APP_NAME}-appinsights"
-LOG_ANALYTICS_NAME="${APP_NAME}-logs"
-GRAFANA_NAME="${APP_NAME}-grafana"
-
-# SQL Server name handling: use existing if skipping infra, otherwise generate new
-if [[ "$SKIP_INFRA" = true ]]; then
-    # Look up existing SQL server name from resource group
-    SQL_SERVER_NAME=$(az sql server list --resource-group "$RESOURCE_GROUP" --query "[0].name" -o tsv 2>/dev/null)
-    if [[ -z "$SQL_SERVER_NAME" ]]; then
-        echo -e "${RED}Error: No SQL server found in resource group $RESOURCE_GROUP${NC}"
-        echo -e "${RED}Cannot use --skip-infra without existing infrastructure${NC}"
-        exit 1
-    fi
-else
-    # Generate a short random suffix for globally unique SQL server name
-    RANDOM_SUFFIX=$(openssl rand -hex 3)
-    SQL_SERVER_NAME="${APP_NAME}-sql-${RANDOM_SUFFIX}"
-fi
+DEPLOYMENT_NAME="${APP_NAME}-infra"
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo -e "${CYAN}========================================${NC}"
-echo -e "${CYAN}OneBigHead Azure Deployment${NC}"
+echo -e "${CYAN}OneBigHead Infrastructure Provisioning${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
 echo "Configuration:"
 echo "  App Name:        $APP_NAME"
 echo "  Location:        $LOCATION"
 echo "  Resource Group:  $RESOURCE_GROUP"
-echo "  ACR:             $ACR_NAME"
-echo "  SQL Server:      $SQL_SERVER_NAME"
-echo "  Database:        $SQL_DB_NAME"
-echo "  Identity:        $IDENTITY_NAME"
 echo ""
 
 # ============================================
-# Step 1: Build Application
+# Step 1: Provision Infrastructure (Bicep)
 # ============================================
-if [[ "$SKIP_BUILD" = false ]]; then
-    echo -e "${CYAN}----------------------------------------${NC}"
-    echo -e "${CYAN}Step 1: Building Application${NC}"
-    echo -e "${CYAN}----------------------------------------${NC}"
-    
-    "$SCRIPT_DIR/build/build.sh" --clean -o publish
-    
-    # Generate migration script using EF Core
-    echo -e "${YELLOW}Generating migration script...${NC}"
-    cd "$SCRIPT_DIR/backend"
-    dotnet ef migrations script --idempotent -o "$SCRIPT_DIR/publish/migrate.sql"
-    cd "$SCRIPT_DIR"
-    
-    echo -e "${GREEN}Build complete.${NC}"
-    echo ""
-fi
+echo -e "${CYAN}----------------------------------------${NC}"
+echo -e "${CYAN}Step 1: Provisioning Infrastructure${NC}"
+echo -e "${CYAN}----------------------------------------${NC}"
 
-# ============================================
-# Step 2: Create Azure Infrastructure
-# ============================================
 if [[ "$SKIP_INFRA" = false ]]; then
-    echo -e "${CYAN}----------------------------------------${NC}"
-    echo -e "${CYAN}Step 2: Creating Azure Infrastructure${NC}"
-    echo -e "${CYAN}----------------------------------------${NC}"
-    
-    # Create resource group
-    echo -e "${YELLOW}Creating resource group...${NC}"
-    az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output none
-    
-    # Create Azure Container Registry
-    echo -e "${YELLOW}Creating Azure Container Registry...${NC}"
-    az acr create \
-        --resource-group "$RESOURCE_GROUP" \
-        --name "$ACR_NAME" \
-        --sku Basic \
-        --output none
-    
-    # Create SQL Server
-    echo -e "${YELLOW}Creating SQL Server...${NC}"
-    az sql server create \
-        --resource-group "$RESOURCE_GROUP" \
-        --name "$SQL_SERVER_NAME" \
-        --location "$LOCATION" \
-        --admin-user "$SQL_ADMIN_USER" \
-        --admin-password "$SQL_ADMIN_PASSWORD" \
-        --output none
-    
-    # Enable Azure AD authentication on SQL Server
-    echo -e "${YELLOW}Configuring Azure AD authentication for SQL Server...${NC}"
-    CURRENT_USER_ID=$(az ad signed-in-user show --query id -o tsv)
-    CURRENT_USER_NAME=$(az ad signed-in-user show --query userPrincipalName -o tsv)
-    
-    az sql server ad-admin create \
-        --resource-group "$RESOURCE_GROUP" \
-        --server "$SQL_SERVER_NAME" \
-        --display-name "$CURRENT_USER_NAME" \
-        --object-id "$CURRENT_USER_ID" \
-        --output none
-    
-    # Create SQL Database
-    echo -e "${YELLOW}Creating SQL Database...${NC}"
-    az sql db create \
-        --resource-group "$RESOURCE_GROUP" \
-        --server "$SQL_SERVER_NAME" \
-        --name "$SQL_DB_NAME" \
-        --service-objective S0 \
-        --output none
-    
-    # Allow Azure services to access SQL Server
-    echo -e "${YELLOW}Configuring SQL Server firewall...${NC}"
-    az sql server firewall-rule create \
-        --resource-group "$RESOURCE_GROUP" \
-        --server "$SQL_SERVER_NAME" \
-        --name AllowAzureServices \
-        --start-ip-address 0.0.0.0 \
-        --end-ip-address 0.0.0.0 \
-        --output none
-    
-    # Create Container Apps Environment
-    echo -e "${YELLOW}Creating Container Apps Environment...${NC}"
-    az containerapp env create \
-        --name "$CONTAINER_ENV_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --location "$LOCATION" \
-        --output none
-    
-    # Create Log Analytics Workspace (required by Application Insights)
-    echo -e "${YELLOW}Creating Log Analytics Workspace...${NC}"
-    az monitor log-analytics workspace create \
-        --resource-group "$RESOURCE_GROUP" \
-        --workspace-name "$LOG_ANALYTICS_NAME" \
-        --location "$LOCATION" --output none
+    # Look up current user's Entra ID for SQL admin
+    echo -e "${YELLOW}Looking up current user's Entra ID...${NC}"
+    SQL_AD_ADMIN_OBJECT_ID=$(az ad signed-in-user show --query id -o tsv)
+    SQL_AD_ADMIN_DISPLAY_NAME=$(az ad signed-in-user show --query userPrincipalName -o tsv)
+    echo "  SQL AD Admin: $SQL_AD_ADMIN_DISPLAY_NAME ($SQL_AD_ADMIN_OBJECT_ID)"
 
-    LOG_ANALYTICS_ID=$(az monitor log-analytics workspace show \
-        --resource-group "$RESOURCE_GROUP" \
-        --workspace-name "$LOG_ANALYTICS_NAME" --query id -o tsv)
+    # Build Bicep parameters
+    BICEP_PARAMS=(
+        "appName=$APP_NAME"
+        "location=$LOCATION"
+        "sqlAdAdminObjectId=$SQL_AD_ADMIN_OBJECT_ID"
+        "sqlAdAdminDisplayName=$SQL_AD_ADMIN_DISPLAY_NAME"
+    )
 
-    # Create Application Insights
-    echo -e "${YELLOW}Creating Application Insights...${NC}"
-    az monitor app-insights component create \
-        --app "$APP_INSIGHTS_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --location "$LOCATION" \
-        --workspace "$LOG_ANALYTICS_ID" \
-        --kind web --application-type web --output none
-
-    # Create Azure Managed Grafana
-    echo -e "${YELLOW}Creating Azure Managed Grafana...${NC}"
-    az grafana create \
-        --name "$GRAFANA_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --location "$LOCATION" --output none
-
-    echo -e "${GREEN}Infrastructure created.${NC}"
-    echo ""
-fi
-
-# ============================================
-# Step 3: Create User-Assigned Managed Identity
-# ============================================
-echo -e "${CYAN}----------------------------------------${NC}"
-echo -e "${CYAN}Step 3: Creating Managed Identity${NC}"
-echo -e "${CYAN}----------------------------------------${NC}"
-
-# Check if identity exists
-if az identity show --name "$IDENTITY_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
-    echo -e "${YELLOW}Managed identity already exists, retrieving...${NC}"
-else
-    echo -e "${YELLOW}Creating user-assigned managed identity...${NC}"
-    az identity create \
-        --name "$IDENTITY_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --output none
-fi
-
-# Get identity details
-IDENTITY_PRINCIPAL_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RESOURCE_GROUP" --query principalId -o tsv)
-IDENTITY_CLIENT_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RESOURCE_GROUP" --query clientId -o tsv)
-IDENTITY_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RESOURCE_GROUP" --query id -o tsv)
-
-echo "Identity Principal ID: $IDENTITY_PRINCIPAL_ID"
-echo "Identity Client ID: $IDENTITY_CLIENT_ID"
-
-# Wait for identity to propagate to Azure AD
-echo -e "${YELLOW}Waiting for identity to propagate to Azure AD...${NC}"
-for i in {1..30}; do
-    if az ad sp show --id "$IDENTITY_PRINCIPAL_ID" &>/dev/null; then
-        echo -e "${GREEN}Identity propagated successfully${NC}"
-        break
+    if [[ -n "$GRAFANA_LOCATION" ]]; then
+        BICEP_PARAMS+=("grafanaLocation=$GRAFANA_LOCATION")
     fi
-    echo "  Waiting for identity propagation ($i/30)..."
-    sleep 5
-done
 
-# Get ACR resource ID and grant AcrPull role
-ACR_ID=$(az acr show --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --query "id" -o tsv)
-ACR_LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv)
+    if [[ "$SKIP_APP" = true ]]; then
+        BICEP_PARAMS+=("deployContainerApp=false")
+        echo -e "${YELLOW}Container App will be skipped (--skip-app).${NC}"
+    fi
 
-echo -e "${YELLOW}Granting AcrPull role to managed identity...${NC}"
-az role assignment create \
-    --assignee "$IDENTITY_PRINCIPAL_ID" \
-    --role AcrPull \
-    --scope "$ACR_ID" \
-    --output none 2>/dev/null || echo "Role assignment may already exist"
-
-# Grant Grafana Monitoring Reader access to the resource group
-echo -e "${YELLOW}Granting Monitoring Reader role to Grafana...${NC}"
-GRAFANA_PRINCIPAL_ID=$(az grafana show --name "$GRAFANA_NAME" \
-    --resource-group "$RESOURCE_GROUP" --query "identity.principalId" -o tsv 2>/dev/null)
-RESOURCE_GROUP_ID=$(az group show --name "$RESOURCE_GROUP" --query id -o tsv)
-
-if [[ -n "$GRAFANA_PRINCIPAL_ID" ]]; then
-    az role assignment create \
-        --assignee "$GRAFANA_PRINCIPAL_ID" \
-        --role "Monitoring Reader" \
-        --scope "$RESOURCE_GROUP_ID" --output none 2>/dev/null || true
-fi
-
-echo -e "${GREEN}Managed identity configured.${NC}"
-echo ""
-
-# ============================================
-# Step 4: Build and Push Docker Image
-# ============================================
-echo -e "${CYAN}----------------------------------------${NC}"
-echo -e "${CYAN}Step 4: Building and Pushing Docker Image${NC}"
-echo -e "${CYAN}----------------------------------------${NC}"
-
-# Login to ACR
-echo -e "${YELLOW}Logging in to ACR...${NC}"
-az acr login --name "$ACR_NAME"
-
-# Build and push image
-IMAGE_TAG="${ACR_LOGIN_SERVER}/${APP_NAME}:$(date +%Y%m%d%H%M%S)"
-IMAGE_LATEST="${ACR_LOGIN_SERVER}/${APP_NAME}:latest"
-
-echo -e "${YELLOW}Building Docker image for linux/amd64...${NC}"
-docker build --platform linux/amd64 -t "$IMAGE_TAG" -t "$IMAGE_LATEST" "$SCRIPT_DIR"
-
-echo -e "${YELLOW}Pushing Docker image...${NC}"
-docker push "$IMAGE_TAG"
-docker push "$IMAGE_LATEST"
-
-echo -e "${GREEN}Image pushed: $IMAGE_TAG${NC}"
-echo ""
-
-# ============================================
-# Step 5: Create/Update Container App
-# ============================================
-echo -e "${CYAN}----------------------------------------${NC}"
-echo -e "${CYAN}Step 5: Deploying Container App${NC}"
-echo -e "${CYAN}----------------------------------------${NC}"
-
-# Build connection string for managed identity (include client ID for user-assigned identity)
-SQL_CONNECTION_STRING="Server=tcp:${SQL_SERVER_NAME}.database.windows.net,1433;Database=${SQL_DB_NAME};Authentication=Active Directory Managed Identity;User Id=${IDENTITY_CLIENT_ID};Encrypt=True;TrustServerCertificate=False;"
-
-# Build secrets array (only sensitive values)
-SECRETS=("jwt-signing-key=$JWT_SIGNING_KEY")
-if [[ -n "$MICROSOFT_CLIENT_SECRET" ]]; then
-    SECRETS+=("microsoft-client-secret=$MICROSOFT_CLIENT_SECRET")
-fi
-if [[ -n "$GOOGLE_CLIENT_SECRET" ]]; then
-    SECRETS+=("google-client-secret=$GOOGLE_CLIENT_SECRET")
-fi
-if [[ -n "$APPLE_CLIENT_SECRET" ]]; then
-    SECRETS+=("apple-client-secret=$APPLE_CLIENT_SECRET")
-fi
-
-# Build environment variables array
-# Note: Client IDs are not secrets (they're public identifiers), only client secrets need protection
-ENV_VARS=("ASPNETCORE_ENVIRONMENT=Production")
-ENV_VARS+=("ConnectionStrings__DefaultConnection=$SQL_CONNECTION_STRING")
-ENV_VARS+=("Authentication__Jwt__SigningKey=secretref:jwt-signing-key")
-
-# Microsoft OAuth
-if [[ -n "$MICROSOFT_CLIENT_ID" ]]; then
-    ENV_VARS+=("Authentication__Providers__Microsoft__ClientId=$MICROSOFT_CLIENT_ID")
-    ENV_VARS+=("Authentication__Providers__Microsoft__Enabled=true")
-fi
-if [[ -n "$MICROSOFT_CLIENT_SECRET" ]]; then
-    ENV_VARS+=("Authentication__Providers__Microsoft__ClientSecret=secretref:microsoft-client-secret")
-fi
-
-# Google OAuth
-if [[ -n "$GOOGLE_CLIENT_ID" ]]; then
-    ENV_VARS+=("Authentication__Providers__Google__ClientId=$GOOGLE_CLIENT_ID")
-    ENV_VARS+=("Authentication__Providers__Google__Enabled=true")
-fi
-if [[ -n "$GOOGLE_CLIENT_SECRET" ]]; then
-    ENV_VARS+=("Authentication__Providers__Google__ClientSecret=secretref:google-client-secret")
-fi
-
-# Apple OAuth
-if [[ -n "$APPLE_CLIENT_ID" ]]; then
-    ENV_VARS+=("Authentication__Providers__Apple__ClientId=$APPLE_CLIENT_ID")
-    ENV_VARS+=("Authentication__Providers__Apple__Enabled=true")
-fi
-if [[ -n "$APPLE_CLIENT_SECRET" ]]; then
-    ENV_VARS+=("Authentication__Providers__Apple__ClientSecret=secretref:apple-client-secret")
-fi
-
-# Add Application Insights connection string
-APP_INSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
-    --app "$APP_INSIGHTS_NAME" --resource-group "$RESOURCE_GROUP" \
-    --query connectionString -o tsv 2>/dev/null)
-if [[ -n "$APP_INSIGHTS_CONNECTION_STRING" ]]; then
-    ENV_VARS+=("APPLICATIONINSIGHTS_CONNECTION_STRING=$APP_INSIGHTS_CONNECTION_STRING")
-fi
-
-# Check if container app exists
-if az containerapp show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
-    echo -e "${YELLOW}Updating existing Container App...${NC}"
-    
-    # Get the existing app URL for OAuth base URL
-    APP_URL=$(az containerapp show \
-        --name "$CONTAINER_APP_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --query "properties.configuration.ingress.fqdn" \
-        -o tsv)
-    ENV_VARS+=("Authentication__OAuth__BaseUrl=https://${APP_URL}")
-    
-    # Update secrets first
-    echo -e "${YELLOW}Updating secrets...${NC}"
-    az containerapp secret set \
-        --name "$CONTAINER_APP_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --secrets "${SECRETS[@]}" \
+    echo -e "${YELLOW}Deploying Bicep template...${NC}"
+    az deployment sub create \
+        --name "$DEPLOYMENT_NAME" \
+        --location "$LOCATION" \
+        --template-file "$SCRIPT_DIR/infra/main.bicep" \
+        --parameters "${BICEP_PARAMS[@]}" \
         --output none
-    
-    # Update image and environment variables
-    az containerapp update \
-        --name "$CONTAINER_APP_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --image "$IMAGE_TAG" \
-        --set-env-vars "${ENV_VARS[@]}" \
-        --output none
+
+    echo -e "${GREEN}Infrastructure provisioned.${NC}"
 else
-    echo -e "${YELLOW}Creating Container App with user-assigned managed identity...${NC}"
-    
-    az containerapp create \
-        --name "$CONTAINER_APP_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --environment "$CONTAINER_ENV_NAME" \
-        --image "$IMAGE_TAG" \
-        --user-assigned "$IDENTITY_ID" \
-        --registry-server "$ACR_LOGIN_SERVER" \
-        --registry-identity "$IDENTITY_ID" \
-        --target-port 8080 \
-        --ingress external \
-        --min-replicas 1 \
-        --max-replicas 3 \
-        --secrets "${SECRETS[@]}" \
-        --env-vars "${ENV_VARS[@]}" \
-        --output none
-    
-    # Get the newly created app URL and set OAuth base URL
-    echo -e "${YELLOW}Configuring OAuth base URL...${NC}"
-    APP_URL=$(az containerapp show \
-        --name "$CONTAINER_APP_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --query "properties.configuration.ingress.fqdn" \
-        -o tsv)
-    
-    az containerapp update \
-        --name "$CONTAINER_APP_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --set-env-vars "Authentication__OAuth__BaseUrl=https://${APP_URL}" \
-        --output none
+    echo -e "${YELLOW}Skipping infrastructure provisioning (--skip-infra).${NC}"
 fi
-
-echo -e "${GREEN}Container App deployed.${NC}"
 echo ""
 
 # ============================================
-# Step 6: Configure SQL Azure Access for Managed Identity
+# Step 2: Read Deployment Outputs
 # ============================================
 echo -e "${CYAN}----------------------------------------${NC}"
-echo -e "${CYAN}Step 6: Configuring SQL Azure Access${NC}"
+echo -e "${CYAN}Step 2: Reading Deployment Outputs${NC}"
 echo -e "${CYAN}----------------------------------------${NC}"
 
-echo -e "${YELLOW}Granting SQL database access to managed identity...${NC}"
+DEPLOYMENT_OUTPUTS=$(az deployment sub show \
+    --name "$DEPLOYMENT_NAME" \
+    --query "properties.outputs" -o json)
 
-# Allow current client IP for migration
-echo -e "${YELLOW}Adding current IP to SQL Server firewall for migration...${NC}"
+ACR_LOGIN_SERVER=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.acrLoginServer.value')
+ACR_NAME=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.acrName.value')
+SQL_SERVER_NAME=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.sqlServerName.value')
+SQL_SERVER_FQDN=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.sqlServerFqdn.value')
+SQL_DB_NAME=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.sqlDatabaseName.value')
+IDENTITY_NAME=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.identityName.value')
+IDENTITY_CLIENT_ID=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.identityClientId.value')
+IDENTITY_ID=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.identityId.value')
+CONTAINER_ENV_NAME=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.containerEnvName.value')
+APP_INSIGHTS_CONNECTION_STRING=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.appInsightsConnectionString.value')
+GRAFANA_ENDPOINT=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.grafanaEndpoint.value')
+CONTAINER_APP_NAME=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.containerAppName.value // empty')
+CONTAINER_APP_FQDN=$(echo "$DEPLOYMENT_OUTPUTS" | jq -r '.containerAppFqdn.value // empty')
+
+echo "  ACR:             $ACR_LOGIN_SERVER"
+echo "  SQL Server:      $SQL_SERVER_NAME"
+echo "  Identity:        $IDENTITY_NAME ($IDENTITY_CLIENT_ID)"
+echo "  Container App:   ${CONTAINER_APP_NAME:-not deployed}"
+echo ""
+
+# ============================================
+# Step 3: Configure SQL Managed Identity User
+# ============================================
+echo -e "${CYAN}----------------------------------------${NC}"
+echo -e "${CYAN}Step 3: Configuring SQL Managed Identity User${NC}"
+echo -e "${CYAN}----------------------------------------${NC}"
+
+echo -e "${YELLOW}Adding current IP to SQL Server firewall...${NC}"
 CURRENT_IP=$(curl -s https://api.ipify.org)
+FIREWALL_RULE_NAME="DeploymentClient-$(date +%s)"
 az sql server firewall-rule create \
     --resource-group "$RESOURCE_GROUP" \
     --server "$SQL_SERVER_NAME" \
-    --name "DeploymentClient-$(date +%s)" \
+    --name "$FIREWALL_RULE_NAME" \
     --start-ip-address "$CURRENT_IP" \
     --end-ip-address "$CURRENT_IP" \
     --output none
 
-# Create SQL user for managed identity
-SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
-
 echo -e "${YELLOW}Creating SQL user for managed identity...${NC}"
-echo -e "${CYAN}Executing SQL commands to create managed identity user...${NC}"
-
-# Create the SQL user for the user-assigned managed identity
-# Using ActiveDirectoryDefault to authenticate with current Azure CLI credentials
 sqlcmd -S "$SQL_SERVER_FQDN" \
     -d "$SQL_DB_NAME" \
     --authentication-method=ActiveDirectoryDefault \
@@ -593,112 +221,74 @@ ALTER ROLE db_ddladmin ADD MEMBER [${IDENTITY_NAME}];
 PRINT 'User ${IDENTITY_NAME} configured successfully';
 "
 
+echo -e "${YELLOW}Removing temporary firewall rule...${NC}"
+az sql server firewall-rule delete \
+    --resource-group "$RESOURCE_GROUP" \
+    --server "$SQL_SERVER_NAME" \
+    --name "$FIREWALL_RULE_NAME" \
+    --output none || true
+
 echo -e "${GREEN}SQL access configured.${NC}"
 echo ""
 
 # ============================================
-# Step 7: Run Database Migrations
+# Step 4: Summary
 # ============================================
-if [[ "$SKIP_MIGRATION" = false ]]; then
-    echo -e "${CYAN}----------------------------------------${NC}"
-    echo -e "${CYAN}Step 7: Running Database Migrations${NC}"
-    echo -e "${CYAN}----------------------------------------${NC}"
-    
-    # Ensure migration script exists (in case --skip-build was used)
-    if [[ ! -f "$SCRIPT_DIR/publish/migrate.sql" ]]; then
-        mkdir -p "$SCRIPT_DIR/publish"
-        echo -e "${YELLOW}Generating migration script...${NC}"
-        cd "$SCRIPT_DIR/backend"
-        dotnet ef migrations script --idempotent -o "$SCRIPT_DIR/publish/migrate.sql"
-        cd "$SCRIPT_DIR"
-    fi
-    
-    echo -e "${YELLOW}Applying migrations to SQL Azure...${NC}"
-    
-    sqlcmd -S "$SQL_SERVER_FQDN" \
-        -d "$SQL_DB_NAME" \
-        --authentication-method=ActiveDirectoryDefault \
-        -i "$SCRIPT_DIR/publish/migrate.sql"
-    
-    echo -e "${GREEN}Migrations applied.${NC}"
-    echo ""
-fi
-
-# ============================================
-# Step 8: Deployment Complete
-# ============================================
-
-# Get final app URL (may have been set earlier, but ensure we have it)
-if [[ -z "$APP_URL" ]]; then
-    APP_URL=$(az containerapp show \
-        --name "$CONTAINER_APP_NAME" \
-        --resource-group "$RESOURCE_GROUP" \
-        --query "properties.configuration.ingress.fqdn" \
-        -o tsv)
-fi
-
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}Deployment Successful!${NC}"
+echo -e "${GREEN}Infrastructure Provisioning Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
-echo ""
-echo -e "${CYAN}Application URL: https://${APP_URL}${NC}"
 echo ""
 echo "Resources:"
 echo "  Resource Group:    $RESOURCE_GROUP"
-echo "  Container App:     $CONTAINER_APP_NAME"
-echo "  Managed Identity:  $IDENTITY_NAME"
+echo "  Container Registry: $ACR_NAME ($ACR_LOGIN_SERVER)"
 echo "  SQL Server:        $SQL_SERVER_NAME"
 echo "  Database:          $SQL_DB_NAME"
-echo "  App Insights:      $APP_INSIGHTS_NAME"
-echo "  Log Analytics:     $LOG_ANALYTICS_NAME"
-if [[ -n "$GRAFANA_NAME" ]]; then
-    GRAFANA_URL=$(az grafana show --name "$GRAFANA_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.endpoint" -o tsv 2>/dev/null)
-    echo "  Grafana:           $GRAFANA_NAME"
-    if [[ -n "$GRAFANA_URL" ]]; then
-        echo "  Grafana URL:       $GRAFANA_URL"
-    fi
+echo "  Managed Identity:  $IDENTITY_NAME"
+echo "  Container Env:     $CONTAINER_ENV_NAME"
+echo "  App Insights:      ${APP_NAME}-appinsights"
+echo "  Grafana:           ${APP_NAME}-grafana ($GRAFANA_ENDPOINT)"
+if [[ -n "$CONTAINER_APP_NAME" && "$CONTAINER_APP_NAME" != "" ]]; then
+    echo "  Container App:     $CONTAINER_APP_NAME (https://${CONTAINER_APP_FQDN})"
 fi
 echo ""
 
-# Show OAuth status
-echo "OAuth Providers Configured:"
-if [[ -n "$MICROSOFT_CLIENT_ID" ]]; then
-    echo "  Microsoft: Enabled"
-else
-    echo "  Microsoft: Not configured"
-fi
-if [[ -n "$GOOGLE_CLIENT_ID" ]]; then
-    echo "  Google: Enabled"
-else
-    echo "  Google: Not configured"
-fi
-if [[ -n "$APPLE_CLIENT_ID" ]]; then
-    echo "  Apple: Enabled"
-else
-    echo "  Apple: Not configured"
-fi
+echo -e "${CYAN}Next: Configure GitHub Actions${NC}"
 echo ""
-
-echo -e "${YELLOW}Next steps:${NC}"
-echo "  1. Configure OAuth redirect URIs in provider consoles:"
-echo "     Redirect URI: https://${APP_URL}/api/auth/callback/{provider}"
+echo "1. Create a service principal with Contributor access:"
 echo ""
-if [[ -z "$MICROSOFT_CLIENT_ID" && -z "$GOOGLE_CLIENT_ID" && -z "$APPLE_CLIENT_ID" ]]; then
-echo "  2. Add OAuth providers (if not configured during deployment):"
-echo "     az containerapp secret set \\"
-echo "       --name $CONTAINER_APP_NAME \\"
-echo "       --resource-group $RESOURCE_GROUP \\"
-echo "       --secrets \"microsoft-client-id=<id>\" \"microsoft-client-secret=<secret>\""
+echo "   az ad sp create-for-rbac \\"
+echo "     --name \"${APP_NAME}-github-actions\" \\"
+echo "     --role Contributor \\"
+echo "     --scopes /subscriptions/\$(az account show --query id -o tsv)/resourceGroups/${RESOURCE_GROUP}"
 echo ""
-echo "     az containerapp update \\"
-echo "       --name $CONTAINER_APP_NAME \\"
-echo "       --resource-group $RESOURCE_GROUP \\"
-echo "       --set-env-vars \\"
-echo "         \"Authentication__Providers__Microsoft__ClientId=secretref:microsoft-client-id\" \\"
-echo "         \"Authentication__Providers__Microsoft__ClientSecret=secretref:microsoft-client-secret\" \\"
-echo "         \"Authentication__Providers__Microsoft__Enabled=true\""
+echo "2. Configure the service principal as SQL AD admin:"
 echo ""
-fi
-echo "  View logs:"
-echo "     az containerapp logs show --name $CONTAINER_APP_NAME --resource-group $RESOURCE_GROUP --follow"
+echo "   SP_OBJECT_ID=\$(az ad sp show --id <clientId-from-step-1> --query id -o tsv)"
+echo "   az sql server ad-admin create \\"
+echo "     --resource-group ${RESOURCE_GROUP} \\"
+echo "     --server ${SQL_SERVER_NAME} \\"
+echo "     --display-name \"GitHub Actions\" \\"
+echo "     --object-id \$SP_OBJECT_ID"
+echo ""
+echo "3. Add these GitHub repository secrets:"
+echo ""
+echo "   Required:"
+echo "     AZURE_CLIENT_ID          = <clientId from step 1>"
+echo "     AZURE_TENANT_ID          = $(az account show --query tenantId -o tsv 2>/dev/null || echo '<your-tenant-id>')"
+echo "     AZURE_SUBSCRIPTION_ID    = $(az account show --query id -o tsv 2>/dev/null || echo '<your-subscription-id>')"
+echo "     AZURE_APP_NAME           = $APP_NAME"
+echo "     JWT_SIGNING_KEY          = <your-jwt-key-min-32-chars>"
+echo ""
+echo "   Optional:"
+echo "     APP_DOMAIN               = <custom-domain>"
+echo "     MICROSOFT_CLIENT_ID      = <microsoft-oauth-client-id>"
+echo "     MICROSOFT_CLIENT_SECRET  = <microsoft-oauth-client-secret>"
+echo "     GOOGLE_CLIENT_ID         = <google-oauth-client-id>"
+echo "     GOOGLE_CLIENT_SECRET     = <google-oauth-client-secret>"
+echo "     APPLE_CLIENT_ID          = <apple-oauth-client-id>"
+echo "     APPLE_CLIENT_SECRET      = <apple-oauth-client-secret>"
+echo "     EMAIL_CONNECTION_STRING  = <azure-communication-services>"
+echo "     EMAIL_SENDER_ADDRESS     = <verified-sender-address>"
+echo ""
+echo "4. Trigger a deployment by merging a PR to main or running the workflow manually."
 echo ""

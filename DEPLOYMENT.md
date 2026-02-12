@@ -1,262 +1,200 @@
 # Deploying to Azure Container Apps
 
-This guide provides step-by-step instructions for deploying the OneBigHead application to Azure Container Apps.
+Deployment is split into two phases:
 
-## Quick Start (Automated Deployment)
+1. **Infrastructure provisioning** — run `deploy.sh` (or `deploy.ps1` on Windows) to create all Azure resources via Bicep
+2. **Application deployment** — GitHub Actions builds, pushes, and deploys your app on every merge to `main`
 
-The `deploy.sh` script automates the entire deployment process including infrastructure creation, managed identity configuration, and database migration:
-
-```bash
-./deploy.sh \
-  --name onebighead \
-  --location eastus \
-  --jwt-key "your-jwt-signing-key-at-least-32-chars"
-```
-
-This script:
-- Creates all Azure resources (Resource Group, ACR, SQL Azure, Container Apps)
-- Configures managed identity for ACR pull access
-- Configures managed identity for SQL Azure authentication
-- Runs database migrations automatically
-- Deploys the application
-
-### Script Options
-
-| Option | Description |
-|--------|-------------|
-| `-n, --name` | Base name for Azure resources (required) |
-| `-l, --location` | Azure region (required, e.g., eastus) |
-| `-j, --jwt-key` | JWT signing key (required, min 32 chars) |
-| `-u, --sql-user` | SQL admin username (default: sqladmin) |
-| `-p, --sql-password` | SQL admin password (auto-generated if not set) |
-| `--skip-infra` | Skip infrastructure creation (for redeployments) |
-| `--skip-build` | Skip application build |
-| `--skip-migration` | Skip database migration |
-
-### Redeployment
-
-For subsequent deployments after infrastructure exists:
+## Quick Start
 
 ```bash
-./deploy.sh \
-  --name onebighead \
-  --location eastus \
-  --jwt-key "your-jwt-signing-key" \
-  --skip-infra
+# 1. Provision infrastructure
+./deploy.sh --name onebighead --location eastus
+
+# 2. Configure GitHub secrets (the script prints what's needed)
+
+# 3. Merge a PR to main (or trigger the workflow manually)
 ```
-
----
-
-## Manual Deployment
-
-If you prefer manual deployment or need more control, follow the steps below.
 
 ## Prerequisites
 
-- [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) installed and authenticated
-- [Docker](https://docs.docker.com/get-docker/) installed
-- [sqlcmd](https://docs.microsoft.com/en-us/sql/tools/sqlcmd-utility) installed (for migrations)
-- An Azure subscription
-- Application built and ready for containerization
+- [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) with Bicep (`az bicep install`)
+- [sqlcmd](https://docs.microsoft.com/en-us/sql/tools/sqlcmd-utility) (for SQL identity user creation)
+- [jq](https://jqlang.github.io/jq/) (for bash script; not needed for PowerShell)
+- An Azure subscription with permissions to create resources
 
-## Step 1: Build the Application
+## Phase 1: Infrastructure Provisioning
 
-Build the application and create the Docker image:
+### Running the Script
+
+**Bash (macOS/Linux):**
 
 ```bash
-# Build the application
-./build/build.sh --clean -o publish
-
-# Build the Docker image
-docker build -t onebighead .
+./deploy.sh --name onebighead --location eastus
 ```
 
-## Step 2: Set Up Azure Resources
+**PowerShell (Windows):**
 
-### Create a Resource Group
-
-```bash
-az group create --name onebighead-rg --location eastus
+```powershell
+./deploy.ps1 -Name onebighead -Location eastus
 ```
 
-### Create an Azure Container Registry (ACR)
+### Script Options
+
+| Option | Bash | PowerShell | Description |
+|--------|------|------------|-------------|
+| App name | `-n, --name` | `-Name` | Base name for Azure resources (3-16 chars, required) |
+| Location | `-l, --location` | `-Location` | Azure region (required) |
+| Skip infra | `--skip-infra` | `-SkipInfra` | Re-read outputs and re-run SQL user without Bicep |
+| Skip app | `--skip-app` | `-SkipApp` | Omit Container App from Bicep (for infra-only re-runs) |
+
+### What Gets Created
+
+| Resource | Name Pattern | Notes |
+|----------|-------------|-------|
+| Resource Group | `{name}-rg` | Created at subscription scope |
+| Container Registry | `{name}acr` | Basic SKU |
+| User-Assigned Managed Identity | `{name}-identity` | Used by Container App for ACR pull and SQL access |
+| SQL Server | `{name}-sql-{unique}` | Entra-only auth (no SQL passwords) |
+| SQL Database | `{name}` | General Purpose Serverless (auto-pause after 60 min) |
+| SQL Firewall Rule | `AllowAzureServices` | Allows Azure service access |
+| Log Analytics Workspace | `{name}-logs` | PerGB2018 SKU |
+| Application Insights | `{name}-appinsights` | Linked to Log Analytics |
+| Container Apps Environment | `{name}-env` | Linked to Log Analytics |
+| Container App | `{name}-app` | Placeholder image; workflow deploys the real image |
+| Azure Managed Grafana | `{name}-grafana` | Monitoring Reader on resource group |
+
+The Container App is created with a placeholder image (`mcr.microsoft.com/k8se/quickstart:latest`). The GitHub Actions workflow replaces it with your application image on the first deployment.
+
+### Bicep Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `appName` | string | — | Base name for all resources (3-16 chars) |
+| `location` | string | — | Azure region (e.g., `eastus`) |
+| `sqlAdAdminObjectId` | string | — | Entra ID object ID for SQL admin |
+| `sqlAdAdminDisplayName` | string | — | Entra ID display name for SQL admin |
+| `deployContainerApp` | bool | `true` | Set `false` to skip Container App on re-runs |
+
+### Bicep Outputs
+
+| Output | Description |
+|--------|-------------|
+| `acrLoginServer` | ACR login server (e.g., `onebigheadacr.azurecr.io`) |
+| `acrName` | ACR name |
+| `sqlServerName` | SQL Server name |
+| `sqlServerFqdn` | SQL Server FQDN |
+| `sqlDatabaseName` | SQL database name |
+| `identityName` | Managed identity name |
+| `identityClientId` | Managed identity client ID |
+| `identityId` | Managed identity resource ID |
+| `containerEnvName` | Container Apps Environment name |
+| `appInsightsConnectionString` | Application Insights connection string |
+| `grafanaEndpoint` | Grafana dashboard URL |
+| `containerAppName` | Container App name (empty if `deployContainerApp=false`) |
+| `containerAppFqdn` | Container App FQDN (empty if `deployContainerApp=false`) |
+
+## Phase 2: Configure GitHub Actions
+
+### 1. Create a Service Principal
 
 ```bash
-az acr create --resource-group onebighead-rg --name onebigheadacr --sku Basic
+az ad sp create-for-rbac \
+  --name "onebighead-github-actions" \
+  --role Contributor \
+  --scopes /subscriptions/<subscription-id>/resourceGroups/onebighead-rg
 ```
 
-### Create a Container Apps Environment
+### 2. Configure as SQL AD Admin
+
+The service principal needs to be a SQL AD admin to run migrations and create the managed identity user:
 
 ```bash
-az containerapp env create \
-  --name onebighead-env \
+SP_OBJECT_ID=$(az ad sp show --id <clientId> --query id -o tsv)
+
+az sql server ad-admin create \
   --resource-group onebighead-rg \
-  --location eastus
+  --server <sql-server-name> \
+  --display-name "GitHub Actions" \
+  --object-id $SP_OBJECT_ID
 ```
 
-### Create an Azure SQL Database (Optional)
+### 3. Add GitHub Secrets
 
-If using SQL Azure for production:
+| Secret | Required | Description |
+|--------|----------|-------------|
+| `AZURE_CLIENT_ID` | Yes | Service principal client ID |
+| `AZURE_TENANT_ID` | Yes | Azure AD tenant ID |
+| `AZURE_SUBSCRIPTION_ID` | Yes | Azure subscription ID |
+| `AZURE_APP_NAME` | Yes | Base name for Azure resources |
+| `JWT_SIGNING_KEY` | Yes | JWT signing key (min 32 characters) |
+| `APP_DOMAIN` | No | Custom domain (if not set, uses Container App URL) |
+| `MICROSOFT_CLIENT_ID` | No | Microsoft OAuth client ID |
+| `MICROSOFT_CLIENT_SECRET` | No | Microsoft OAuth client secret |
+| `GOOGLE_CLIENT_ID` | No | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | No | Google OAuth client secret |
+| `APPLE_CLIENT_ID` | No | Apple OAuth client ID |
+| `APPLE_CLIENT_SECRET` | No | Apple OAuth client secret |
+| `EMAIL_CONNECTION_STRING` | No | Azure Communication Services connection string |
+| `EMAIL_SENDER_ADDRESS` | No | Verified sender address |
+
+### 4. Trigger First Deployment
+
+Merge a PR to `main` or run the workflow manually from the Actions tab.
+
+The workflow will:
+1. Run unit and integration tests
+2. Build frontend and backend
+3. Push Docker image to ACR
+4. Set Container App secrets and update image/env vars
+5. Create the SQL managed identity user (idempotent)
+6. Run database migrations
+7. Seed reference data
+8. Verify health check
+
+## Re-provisioning Infrastructure
+
+When you need to add new Azure resources (e.g., Redis Cache), update the Bicep templates and re-run the deploy script.
+
+### Adding New Resources
+
+Use `--skip-app` to leave the Container App untouched while provisioning new infrastructure:
 
 ```bash
-# Create SQL Server
-az sql server create \
-  --name onebighead-sql \
-  --resource-group onebighead-rg \
-  --location eastus \
-  --admin-user sqladmin \
-  --admin-password '<YourStrongPassword>'
-
-# Create database
-az sql db create \
-  --resource-group onebighead-rg \
-  --server onebighead-sql \
-  --name onebighead \
-  --service-objective S0
+./deploy.sh --name onebighead --location eastus --skip-app
 ```
 
-## Step 3: Push the Docker Image to ACR
+This passes `deployContainerApp=false` to Bicep. Since Bicep uses ARM incremental mode, omitting the Container App from the template does **not** delete it — ARM only adds or updates resources that are in the template, never removes ones that aren't.
+
+### Re-running SQL User Setup
+
+Use `--skip-infra` to skip Bicep entirely and just re-run the SQL managed identity user creation:
 
 ```bash
-# Log in to ACR
-az acr login --name onebigheadacr
-
-# Tag the image
-docker tag onebighead onebigheadacr.azurecr.io/onebighead:latest
-
-# Push the image
-docker push onebigheadacr.azurecr.io/onebighead:latest
+./deploy.sh --name onebighead --location eastus --skip-infra
 ```
 
-## Step 4: Configure Secrets in Azure Container Apps
-
-Azure Container Apps supports secrets for sensitive configuration values. Create secrets for all sensitive environment variables:
-
-```bash
-az containerapp secret set \
-  --name onebighead-app \
-  --resource-group onebighead-rg \
-  --secrets \
-    "db-connection-string=<your-sql-connection-string>" \
-    "jwt-signing-key=<your-jwt-signing-key>" \
-    "microsoft-client-id=<your-microsoft-client-id>" \
-    "microsoft-client-secret=<your-microsoft-client-secret>" \
-    "google-client-id=<your-google-client-id>" \
-    "google-client-secret=<your-google-client-secret>" \
-    "apple-client-id=<your-apple-client-id>" \
-    "apple-client-secret=<your-apple-client-secret>"
-```
-
-## Step 5: Deploy the Container App
-
-Create the Container App with environment variables mapped to secrets:
-
-```bash
-az containerapp create \
-  --name onebighead-app \
-  --resource-group onebighead-rg \
-  --environment onebighead-env \
-  --image onebigheadacr.azurecr.io/onebighead:latest \
-  --registry-server onebigheadacr.azurecr.io \
-  --target-port 8080 \
-  --ingress external \
-  --min-replicas 1 \
-  --max-replicas 3 \
-  --secrets \
-    "db-connection-string=<your-sql-connection-string>" \
-    "jwt-signing-key=<your-jwt-signing-key>" \
-    "microsoft-client-id=<your-microsoft-client-id>" \
-    "microsoft-client-secret=<your-microsoft-client-secret>" \
-    "google-client-id=<your-google-client-id>" \
-    "google-client-secret=<your-google-client-secret>" \
-    "apple-client-id=<your-apple-client-id>" \
-    "apple-client-secret=<your-apple-client-secret>" \
-  --env-vars \
-    "ConnectionStrings__DefaultConnection=secretref:db-connection-string" \
-    "Authentication__Jwt__SigningKey=secretref:jwt-signing-key" \
-    "Authentication__OAuth__BaseUrl=https://onebighead-app.<region>.azurecontainerapps.io" \
-    "Authentication__Providers__Microsoft__ClientId=secretref:microsoft-client-id" \
-    "Authentication__Providers__Microsoft__ClientSecret=secretref:microsoft-client-secret" \
-    "Authentication__Providers__Microsoft__Enabled=true" \
-    "Authentication__Providers__Google__ClientId=secretref:google-client-id" \
-    "Authentication__Providers__Google__ClientSecret=secretref:google-client-secret" \
-    "Authentication__Providers__Google__Enabled=false" \
-    "Authentication__Providers__Apple__ClientId=secretref:apple-client-id" \
-    "Authentication__Providers__Apple__ClientSecret=secretref:apple-client-secret" \
-    "Authentication__Providers__Apple__Enabled=false"
-```
-
-> **Note:** Replace `<region>` with your actual region (e.g., `eastus`) in the `Authentication__OAuth__BaseUrl` value after deployment, or use a custom domain.
-
-## Step 6: Configure ACR Access
-
-Grant the Container App access to pull images from ACR:
-
-```bash
-az containerapp registry set \
-  --name onebighead-app \
-  --resource-group onebighead-rg \
-  --server onebigheadacr.azurecr.io \
-  --identity system
-```
+This reads deployment outputs from the last Bicep run and re-runs the idempotent SQL user setup.
 
 ## Environment Variables Reference
 
-The following environment variables must be configured:
+These environment variables are set on the Container App:
 
-| Variable | Description | Secret |
-|----------|-------------|--------|
-| `ConnectionStrings__DefaultConnection` | SQL Server connection string | Yes |
-| `Authentication__Jwt__SigningKey` | JWT signing key (min 32 characters) | Yes |
-| `Authentication__OAuth__BaseUrl` | Public URL of your application | No |
-| `Authentication__Providers__Microsoft__ClientId` | Microsoft OAuth client ID | Yes |
-| `Authentication__Providers__Microsoft__ClientSecret` | Microsoft OAuth client secret | Yes |
-| `Authentication__Providers__Microsoft__Enabled` | Enable Microsoft OAuth (`true`/`false`) | No |
-| `Authentication__Providers__Google__ClientId` | Google OAuth client ID | Yes |
-| `Authentication__Providers__Google__ClientSecret` | Google OAuth client secret | Yes |
-| `Authentication__Providers__Google__Enabled` | Enable Google OAuth (`true`/`false`) | No |
-| `Authentication__Providers__Apple__ClientId` | Apple OAuth service ID | Yes |
-| `Authentication__Providers__Apple__ClientSecret` | Apple OAuth client secret | Yes |
-| `Authentication__Providers__Apple__Enabled` | Enable Apple OAuth (`true`/`false`) | No |
-
-## Updating Environment Variables
-
-To update environment variables after deployment:
-
-```bash
-az containerapp update \
-  --name onebighead-app \
-  --resource-group onebighead-rg \
-  --set-env-vars "Authentication__Providers__Google__Enabled=true"
-```
-
-To update secrets:
-
-```bash
-az containerapp secret set \
-  --name onebighead-app \
-  --resource-group onebighead-rg \
-  --secrets "google-client-secret=<new-secret-value>"
-```
-
-## Applying Database Migrations
-
-Before the application can run, apply database migrations to SQL Azure:
-
-```bash
-# Generate idempotent migration script for SQL Server
-cd backend
-dotnet ef migrations script --idempotent -o ../publish/migrate.sql
-
-# Apply to SQL Azure
-sqlcmd -S onebighead-sql.database.windows.net -d onebighead -U sqladmin -P '<YourPassword>' -i ../publish/migrate.sql
-```
-
-> **Note:** The project includes a `DesignTimeDbContextFactory` that configures EF Core to use SQL Server when generating migration scripts, enabling idempotent script generation.
+| Variable | Set By | Description |
+|----------|--------|-------------|
+| `ASPNETCORE_ENVIRONMENT` | Bicep | Always `Production` |
+| `ConnectionStrings__DefaultConnection` | Bicep | SQL connection string (managed identity) |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | Bicep | Application Insights telemetry |
+| `Authentication__Jwt__SigningKey` | Workflow | JWT signing key (secret ref) |
+| `Authentication__OAuth__BaseUrl` | Workflow | Public URL for OAuth callbacks |
+| `Authentication__Providers__*__ClientId` | Workflow | OAuth client IDs |
+| `Authentication__Providers__*__ClientSecret` | Workflow | OAuth client secrets (secret refs) |
+| `Authentication__Providers__*__Enabled` | Workflow | OAuth provider toggle |
+| `Email__ConnectionString` | Workflow | Email service (secret ref) |
+| `Email__SenderAddress` | Workflow | Email sender address |
+| `Email__AppBaseUrl` | Workflow | App URL for email links |
 
 ## Custom Domain Configuration
-
-To configure a custom domain:
 
 ```bash
 # Add custom domain
@@ -274,14 +212,7 @@ az containerapp hostname bind \
   --validation-method CNAME
 ```
 
-After configuring a custom domain, update the OAuth base URL:
-
-```bash
-az containerapp update \
-  --name onebighead-app \
-  --resource-group onebighead-rg \
-  --set-env-vars "Authentication__OAuth__BaseUrl=https://yourdomain.com"
-```
+Then set the `APP_DOMAIN` GitHub secret to your domain so the workflow uses it for OAuth and health checks.
 
 ## Viewing Logs
 
@@ -296,7 +227,7 @@ az containerapp logs show \
 
 ### Container fails to start
 
-Check the logs for startup errors:
+Check system logs:
 
 ```bash
 az containerapp logs show --name onebighead-app --resource-group onebighead-rg --type system
@@ -306,169 +237,14 @@ az containerapp logs show --name onebighead-app --resource-group onebighead-rg -
 
 1. Verify `Authentication__OAuth__BaseUrl` matches your application's public URL
 2. Ensure OAuth redirect URIs are configured in each provider's developer console
-3. Check that client IDs and secrets are correctly set
+3. Check that client IDs and secrets are correctly set in GitHub Secrets
 
 ### Database connection fails
 
-1. Verify the connection string format for SQL Azure
-2. Ensure the Container App's outbound IP is allowed in SQL Server firewall rules:
+1. Verify the managed identity user has been created (both `deploy.sh` and the workflow do this)
+2. Check that the `AllowAzureServices` firewall rule exists on the SQL Server
+3. Ensure the connection string uses `Active Directory Managed Identity` authentication
 
-```bash
-az sql server firewall-rule create \
-  --resource-group onebighead-rg \
-  --server onebighead-sql \
-  --name AllowContainerApp \
-  --start-ip-address <container-app-ip> \
-  --end-ip-address <container-app-ip>
-```
+### First deployment shows placeholder app
 
----
-
-## CI/CD Pipeline (GitHub Actions)
-
-The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automatically deploys to Azure when a PR is merged to `main`.
-
-### Pipeline Features
-
-- **Automatic deployment** on PR merge to main
-- **Test execution** (unit and integration tests) before deployment
-- **Container image build and push** to Azure Container Registry
-- **Database migrations** run automatically against SQL Azure
-- **Revision management** - new deployments create new Container App revisions, automatically deactivating old containers
-- **Health check verification** after deployment
-
-### Infrastructure Provisioning
-
-**The pipeline does NOT handle infrastructure provisioning.** Infrastructure must be created once before the first pipeline run using the manual deployment script.
-
-This is intentional because:
-1. Infrastructure changes are infrequent and require careful review
-2. SQL Server names must be globally unique (generated with random suffix)
-3. Service principal permissions need one-time setup
-4. OAuth provider configuration requires manual registration
-
-### Prerequisites (One-Time Setup)
-
-Before the pipeline can run for the first time:
-
-#### 1. Provision Azure Infrastructure
-
-Run the deployment script to create all Azure resources:
-
-```bash
-./deploy.sh \
-  --name onebighead \
-  --location eastus \
-  --jwt-key "your-jwt-signing-key-at-least-32-chars" \
-  --microsoft-client-id "<your-id>" \
-  --microsoft-client-secret "<your-secret>"
-```
-
-This creates:
-- Resource Group
-- Azure Container Registry
-- SQL Azure Server and Database
-- Container Apps Environment
-- User-assigned Managed Identity with appropriate permissions
-
-#### 2. Create Azure Service Principal
-
-Create a service principal with permissions to deploy:
-
-```bash
-# Create service principal with Contributor role on the resource group
-az ad sp create-for-rbac \
-  --name "onebighead-github-actions" \
-  --role Contributor \
-  --scopes /subscriptions/<subscription-id>/resourceGroups/onebighead-rg \
-  --sdk-auth
-```
-
-Save the JSON output - you'll need it for GitHub secrets.
-
-Additionally, grant the service principal SQL Azure admin access for migrations:
-
-```bash
-# Get the service principal object ID
-SP_OBJECT_ID=$(az ad sp show --id <clientId-from-json> --query id -o tsv)
-
-# Add as SQL Azure AD admin
-az sql server ad-admin create \
-  --resource-group onebighead-rg \
-  --server <sql-server-name> \
-  --display-name "GitHub Actions" \
-  --object-id $SP_OBJECT_ID
-```
-
-#### 3. Configure GitHub Repository Secrets
-
-In your GitHub repository, go to **Settings → Secrets and variables → Actions** and add:
-
-| Secret Name | Description | Required |
-|-------------|-------------|----------|
-| `AZURE_CREDENTIALS` | Full JSON output from service principal creation | Yes |
-| `AZURE_APP_NAME` | Base name for Azure resources (e.g., `onebighead`) | Yes |
-| `AZURE_LOCATION` | Azure region (e.g., `eastus`) | Yes |
-| `JWT_SIGNING_KEY` | JWT signing key (min 32 characters) | Yes |
-| `SQL_ADMIN_PASSWORD` | SQL admin password (from initial deployment) | Yes |
-| `MICROSOFT_CLIENT_ID` | Microsoft OAuth client ID | If using Microsoft auth |
-| `MICROSOFT_CLIENT_SECRET` | Microsoft OAuth client secret | If using Microsoft auth |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | If using Google auth |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | If using Google auth |
-| `APPLE_CLIENT_ID` | Apple OAuth client ID | If using Apple auth |
-| `APPLE_CLIENT_SECRET` | Apple OAuth client secret | If using Apple auth |
-
-#### 4. Configure GitHub Environment (Optional but Recommended)
-
-Create a `production` environment in **Settings → Environments**:
-- Add required reviewers for deployment approval
-- Configure environment-specific secrets if needed
-- Set deployment branch restrictions to `main`
-
-### Pipeline Workflow
-
-When a PR is merged to `main`:
-
-1. **Test Job** runs unit and integration tests
-2. **Deploy Job** (requires test success):
-   - Builds frontend and backend
-   - Generates migration script
-   - Builds and pushes Docker image to ACR
-   - Updates Container App with new image (creates new revision)
-   - Runs database migrations
-   - Verifies health check
-
-### Container Revision Management
-
-Azure Container Apps automatically manages revisions:
-- Each deployment creates a new revision with the commit SHA as the image tag
-- The `az containerapp update` command activates the new revision
-- Old revisions are automatically deactivated (but retained for rollback)
-- Traffic automatically routes to the new active revision
-
-To rollback to a previous revision:
-
-```bash
-# List revisions
-az containerapp revision list \
-  --name onebighead-app \
-  --resource-group onebighead-rg \
-  --output table
-
-# Activate a specific revision
-az containerapp revision activate \
-  --name onebighead-app \
-  --resource-group onebighead-rg \
-  --revision <revision-name>
-```
-
-### Monitoring Deployments
-
-View deployment logs in GitHub Actions, or check Container App logs:
-
-```bash
-az containerapp logs show \
-  --name onebighead-app \
-  --resource-group onebighead-rg \
-  --follow
-```
+The Container App starts with a placeholder image. It will be replaced on the first workflow run. Trigger the workflow manually from the Actions tab if you haven't merged a PR yet.

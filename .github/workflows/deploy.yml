@@ -2,8 +2,8 @@
 # Triggered when a PR is merged to main
 #
 # Prerequisites (one-time setup before first pipeline run):
-#   1. Azure infrastructure must be provisioned using deploy.sh (without --skip-infra)
-#   2. GitHub repository secrets must be configured (see PIPELINE.md)
+#   1. Azure infrastructure must be provisioned using deploy.sh or deploy.ps1
+#   2. GitHub repository secrets must be configured (see DEPLOYMENT.md)
 #   3. Azure service principal must have OIDC federated credentials configured
 #
 # Required GitHub Secrets:
@@ -11,7 +11,6 @@
 #   AZURE_TENANT_ID          - Azure AD tenant ID
 #   AZURE_SUBSCRIPTION_ID    - Azure subscription ID
 #   AZURE_APP_NAME           - Base name for Azure resources (e.g., "onebighead")
-#   AZURE_LOCATION           - Azure region (e.g., "eastus")
 #   JWT_SIGNING_KEY          - JWT signing key (min 32 characters)
 #
 # Optional GitHub Secrets:
@@ -21,6 +20,9 @@
 #   APPLE_CLIENT_ID, APPLE_CLIENT_SECRET
 #   EMAIL_CONNECTION_STRING  - Azure Communication Services connection string (for support emails)
 #   EMAIL_SENDER_ADDRESS     - Verified sender address (e.g., "noreply@your-domain.com")
+#
+# Infrastructure is provisioned via Bicep templates (infra/main.bicep) using deploy.sh/deploy.ps1.
+# This workflow assumes all infrastructure (including the Container App) already exists.
 
 name: Deploy to Azure
 
@@ -133,7 +135,6 @@ jobs:
           echo "RESOURCE_GROUP=${APP_NAME}-rg" >> $GITHUB_ENV
           echo "ACR_NAME=${APP_NAME}acr" >> $GITHUB_ENV
           echo "SQL_DB_NAME=${APP_NAME}" >> $GITHUB_ENV
-          echo "CONTAINER_ENV_NAME=${APP_NAME}-env" >> $GITHUB_ENV
           echo "CONTAINER_APP_NAME=${APP_NAME}-app" >> $GITHUB_ENV
           echo "IDENTITY_NAME=${APP_NAME}-identity" >> $GITHUB_ENV
 
@@ -189,43 +190,21 @@ jobs:
         run: |
           IMAGE_TAG="${ACR_LOGIN_SERVER}/${{ secrets.AZURE_APP_NAME }}:${{ github.sha }}"
           IMAGE_LATEST="${ACR_LOGIN_SERVER}/${{ secrets.AZURE_APP_NAME }}:latest"
-          
+
           docker build --platform linux/amd64 -t "$IMAGE_TAG" -t "$IMAGE_LATEST" .
           docker push "$IMAGE_TAG"
           docker push "$IMAGE_LATEST"
-          
+
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
-      # Get managed identity details
-      - name: Get managed identity details
+      # Deploy Container App (secrets + image + env vars in one step)
+      - name: Deploy Container App
+        env:
+          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
         run: |
-          IDENTITY_CLIENT_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RESOURCE_GROUP" --query clientId -o tsv)
-          IDENTITY_ID=$(az identity show --name "$IDENTITY_NAME" --resource-group "$RESOURCE_GROUP" --query id -o tsv)
-          echo "IDENTITY_CLIENT_ID=$IDENTITY_CLIENT_ID" >> $GITHUB_ENV
-          echo "IDENTITY_ID=$IDENTITY_ID" >> $GITHUB_ENV
-
-      # Build connection string
-      - name: Build connection string
-        run: |
-          SQL_CONNECTION_STRING="Server=tcp:${SQL_SERVER_NAME}.database.windows.net,1433;Database=${SQL_DB_NAME};Authentication=Active Directory Managed Identity;User Id=${IDENTITY_CLIENT_ID};Encrypt=True;TrustServerCertificate=False;"
-          echo "SQL_CONNECTION_STRING=$SQL_CONNECTION_STRING" >> $GITHUB_ENV
-
-      # Get Application Insights connection string
-      - name: Get Application Insights connection string
-        run: |
-          APP_INSIGHTS_NAME="${{ secrets.AZURE_APP_NAME }}-appinsights"
-          APP_INSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
-            --app "$APP_INSIGHTS_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --query connectionString -o tsv 2>/dev/null || echo "")
-          echo "APP_INSIGHTS_CONNECTION_STRING=$APP_INSIGHTS_CONNECTION_STRING" >> $GITHUB_ENV
-
-      # Update Container App (this will automatically create a new revision and deactivate old ones)
-      - name: Update Container App secrets
-        run: |
-          # Build secrets array
+          # --- Set secrets ---
           SECRETS=("jwt-signing-key=${{ secrets.JWT_SIGNING_KEY }}")
-          
+
           if [ -n "${{ secrets.MICROSOFT_CLIENT_SECRET }}" ]; then
             SECRETS+=("microsoft-client-secret=${{ secrets.MICROSOFT_CLIENT_SECRET }}")
           fi
@@ -238,44 +217,32 @@ jobs:
           if [ -n "${{ secrets.EMAIL_CONNECTION_STRING }}" ]; then
             SECRETS+=("email-connection-string=${{ secrets.EMAIL_CONNECTION_STRING }}")
           fi
-          
+
           az containerapp secret set \
             --name "$CONTAINER_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
             --secrets "${SECRETS[@]}" \
             --output none
 
-      - name: Update Container App
-        env:
-          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
-        run: |
-          # Use custom domain if provided, otherwise use Container App URL
-          echo "=============================================="
-          echo "Determining OAuth Base URL..."
-          echo "=============================================="
+          # --- Determine OAuth base URL ---
           if [ -n "$APP_DOMAIN" ]; then
             APP_URL="$APP_DOMAIN"
-            echo "✓ APP_DOMAIN secret is SET"
-            echo "✓ Using CUSTOM DOMAIN for OAuth: https://$APP_URL"
+            echo "Using custom domain for OAuth: https://$APP_URL"
           else
-            echo "✗ APP_DOMAIN secret is NOT set"
             APP_URL=$(az containerapp show \
               --name "$CONTAINER_APP_NAME" \
               --resource-group "$RESOURCE_GROUP" \
               --query "properties.configuration.ingress.fqdn" \
               -o tsv)
-            echo "✓ Using AUTO-DETECTED Container App URL: https://$APP_URL"
+            echo "Using Container App URL for OAuth: https://$APP_URL"
           fi
-          echo "=============================================="
-          
-          # Build environment variables array
+
+          # --- Build env vars (only secrets + OAuth config; connection string and App Insights set by Bicep) ---
           ENV_VARS=(
-            "ASPNETCORE_ENVIRONMENT=Production"
-            "ConnectionStrings__DefaultConnection=$SQL_CONNECTION_STRING"
             "Authentication__Jwt__SigningKey=secretref:jwt-signing-key"
             "Authentication__OAuth__BaseUrl=https://${APP_URL}"
           )
-          
+
           if [ -n "${{ secrets.MICROSOFT_CLIENT_ID }}" ]; then
             ENV_VARS+=("Authentication__Providers__Microsoft__ClientId=${{ secrets.MICROSOFT_CLIENT_ID }}")
             ENV_VARS+=("Authentication__Providers__Microsoft__Enabled=true")
@@ -291,13 +258,8 @@ jobs:
             ENV_VARS+=("Authentication__Providers__Apple__Enabled=true")
             ENV_VARS+=("Authentication__Providers__Apple__ClientSecret=secretref:apple-client-secret")
           fi
-          
-          # Application Insights telemetry
-          if [ -n "$APP_INSIGHTS_CONNECTION_STRING" ]; then
-            ENV_VARS+=("APPLICATIONINSIGHTS_CONNECTION_STRING=$APP_INSIGHTS_CONNECTION_STRING")
-          fi
 
-          # Email service configuration (for support system)
+          # Email service configuration
           if [ -n "${{ secrets.EMAIL_CONNECTION_STRING }}" ]; then
             ENV_VARS+=("Email__ConnectionString=secretref:email-connection-string")
             ENV_VARS+=("Email__AppBaseUrl=https://${APP_URL}")
@@ -305,8 +267,8 @@ jobs:
           if [ -n "${{ secrets.EMAIL_SENDER_ADDRESS }}" ]; then
             ENV_VARS+=("Email__SenderAddress=${{ secrets.EMAIL_SENDER_ADDRESS }}")
           fi
-          
-          # Update container app with new image (creates new revision, deactivates old)
+
+          # --- Update container app with new image ---
           az containerapp update \
             --name "$CONTAINER_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
@@ -314,7 +276,7 @@ jobs:
             --set-env-vars "${ENV_VARS[@]}" \
             --output none
 
-      # Run database migrations
+      # Database setup
       - name: Install sqlcmd
         run: |
           curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
@@ -357,6 +319,25 @@ jobs:
           echo "::error::SQL Azure database did not become ready within 2 minutes"
           exit 1
 
+      - name: Create SQL managed identity user
+        run: |
+          SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
+          echo "Ensuring managed identity user exists in database..."
+          sqlcmd -S "$SQL_SERVER_FQDN" \
+            -d "$SQL_DB_NAME" \
+            --authentication-method=ActiveDirectoryDefault \
+            -b \
+            -Q "
+          IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '${IDENTITY_NAME}')
+          BEGIN
+              CREATE USER [${IDENTITY_NAME}] FROM EXTERNAL PROVIDER;
+          END
+          ALTER ROLE db_datareader ADD MEMBER [${IDENTITY_NAME}];
+          ALTER ROLE db_datawriter ADD MEMBER [${IDENTITY_NAME}];
+          ALTER ROLE db_ddladmin ADD MEMBER [${IDENTITY_NAME}];
+          PRINT 'User ${IDENTITY_NAME} configured successfully';
+          "
+
       - name: Run database migrations
         run: |
           SQL_SERVER_FQDN="${SQL_SERVER_NAME}.database.windows.net"
@@ -393,13 +374,8 @@ jobs:
         env:
           APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
         run: |
-          # Use custom domain for health check if configured
-          echo "=============================================="
-          echo "Verifying deployment..."
-          echo "=============================================="
           if [ -n "$APP_DOMAIN" ]; then
             HEALTH_URL="https://${APP_DOMAIN}/health"
-            echo "✓ Using CUSTOM DOMAIN for health check"
           else
             APP_URL=$(az containerapp show \
               --name "$CONTAINER_APP_NAME" \
@@ -407,14 +383,10 @@ jobs:
               --query "properties.configuration.ingress.fqdn" \
               -o tsv)
             HEALTH_URL="https://${APP_URL}/health"
-            echo "✓ Using AUTO-DETECTED URL for health check"
           fi
-          
+
           echo "Health check URL: $HEALTH_URL"
-          echo "=============================================="
-          
-          # Brief health check - new revisions take a moment to become active
-          echo "Verifying application health..."
+
           for i in {1..6}; do
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
             if [ "$HTTP_STATUS" = "200" ]; then
@@ -424,7 +396,7 @@ jobs:
             echo "  Waiting for health check ($i/6)... Status: $HTTP_STATUS"
             sleep 5
           done
-          
+
           echo "::warning::Health check did not return 200 within 30 seconds. The app may still be starting up."
 
       - name: Output deployment summary
@@ -434,7 +406,7 @@ jobs:
             --resource-group "$RESOURCE_GROUP" \
             --query "properties.configuration.ingress.fqdn" \
             -o tsv)
-          
+
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
@@ -443,6 +415,3 @@ jobs:
           echo "| Container App | $CONTAINER_APP_NAME |" >> $GITHUB_STEP_SUMMARY
           echo "| Image Tag | $IMAGE_TAG |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
-          if [ -n "$APP_INSIGHTS_CONNECTION_STRING" ]; then
-            echo "| Application Insights | ${{ secrets.AZURE_APP_NAME }}-appinsights |" >> $GITHUB_STEP_SUMMARY
-          fi
