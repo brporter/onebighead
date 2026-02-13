@@ -2,6 +2,7 @@ using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SkiaSharp;
 
 namespace OneBigHead.Server.Controllers;
 
@@ -11,15 +12,17 @@ namespace OneBigHead.Server.Controllers;
 public class ImagesController : ApiControllerBase
 {
     private readonly IImageProvider _imageProvider;
+
+    private static readonly Dictionary<SKEncodedImageFormat, string> AllowedFormats = new()
     private readonly IImageProcessor _imageProcessor;
 
     private static readonly Dictionary<string, byte[][]> FileSignatures = new()
     {
-        { "image/jpeg", new[] { new byte[] { 0xFF, 0xD8, 0xFF } } },
-        { "image/jpg", new[] { new byte[] { 0xFF, 0xD8, 0xFF } } },
-        { "image/png", new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } } },
-        { "image/gif", new[] { new byte[] { 0x47, 0x49, 0x46, 0x38, 0x37, 0x61 }, new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 } } },
-        { "image/webp", new[] { new byte[] { 0x52, 0x49, 0x46, 0x46 } } } // RIFF header, WebP also has WEBP at offset 8
+        { SKEncodedImageFormat.Jpeg, "image/jpeg" },
+        { SKEncodedImageFormat.Png,  "image/png"  },
+        { SKEncodedImageFormat.Gif,  "image/gif"  },
+        { SKEncodedImageFormat.Webp, "image/webp" },
+        { SKEncodedImageFormat.Avif, "image/avif" },
     };
 
     private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
@@ -30,52 +33,14 @@ public class ImagesController : ApiControllerBase
         _imageProcessor = imageProcessor;
     }
 
-    private static bool VerifyFileSignature(byte[] fileData, string contentType)
+    private static string? DetectImageFormat(byte[] fileData)
     {
-        if (!FileSignatures.TryGetValue(contentType.ToLowerInvariant(), out var signatures))
-            return false;
+        using var data = SKData.CreateCopy(fileData);
+        using var codec = SKCodec.Create(data);
+        if (codec == null)
+            return null;
 
-        foreach (var signature in signatures)
-        {
-            if (fileData.Length >= signature.Length)
-            {
-                var headerMatches = true;
-                for (int i = 0; i < signature.Length; i++)
-                {
-                    if (fileData[i] != signature[i])
-                    {
-                        headerMatches = false;
-                        break;
-                    }
-                }
-                
-                if (headerMatches)
-                {
-                    // Additional check for WebP: verify WEBP marker at offset 8
-                    if (contentType.Equals("image/webp", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (fileData.Length >= 12)
-                        {
-                            var webpMarker = new byte[] { 0x57, 0x45, 0x42, 0x50 }; // "WEBP"
-                            var markerMatches = true;
-                            for (int i = 0; i < 4; i++)
-                            {
-                                if (fileData[8 + i] != webpMarker[i])
-                                {
-                                    markerMatches = false;
-                                    break;
-                                }
-                            }
-                            return markerMatches;
-                        }
-                        return false;
-                    }
-                    return true;
-                }
-            }
-        }
-        
-        return false;
+        return AllowedFormats.GetValueOrDefault(codec.EncodedFormat);
     }
 
     private static string SanitizeFileName(string fileName)
@@ -126,22 +91,17 @@ public class ImagesController : ApiControllerBase
             return BadRequest(new { error = "No file provided" });
         }
 
-        if (!FileSignatures.ContainsKey(file.ContentType.ToLowerInvariant()))
-        {
-            return BadRequest(new { error = $"Content type '{file.ContentType}' is not allowed. Allowed types: JPEG, PNG, GIF, WebP" });
-        }
-
-        // Read file into memory to verify signature
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream);
         var fileData = memoryStream.ToArray();
 
-        if (!VerifyFileSignature(fileData, file.ContentType))
+        var detectedContentType = DetectImageFormat(fileData);
+        if (detectedContentType == null)
         {
-            return BadRequest(new { error = "File content does not match the declared file type. Please upload a valid image file." });
+            return BadRequest(new { error = "File is not a valid image or uses an unsupported format. Supported formats: JPEG, PNG, GIF, WebP, AVIF" });
         }
 
-        var (processedData, processedContentType) = _imageProcessor.ResizeIfNeeded(fileData, file.ContentType);
+        var (processedData, processedContentType) = _imageProcessor.ResizeIfNeeded(fileData, detectedContentType);
 
         var sanitizedFileName = SanitizeFileName(file.FileName);
 

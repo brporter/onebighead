@@ -208,17 +208,12 @@ if (!builder.Environment.IsEnvironment("Testing"))
 
 var app = builder.Build();
 
-// In Development: run migrations and seed automatically
-// In other environments: use migration bundles for deployments
+// In Development: seed database with system data (migrations applied via efbundle)
 if (app.Environment.IsDevelopment())
 {
-    using var scope = app.Services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.Migrate();
-
-    // Seed database with system data from JSON files
     var seedsPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "seeds");
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+    using var scope = app.Services.CreateScope();
     var seederLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
         .CreateLogger<JsonDatabaseSeeder>();
     var seeder = new JsonDatabaseSeeder(seedsPath, seederLogger);

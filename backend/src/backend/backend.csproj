@@ -27,7 +27,7 @@
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.2" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.11.2-beta.1" />
-    <PackageReference Include="SkiaSharp" Version="3.119.2" />
+    <PackageReference Include="SkiaSharp" Version="3.119.*" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.1" />
   </ItemGroup>
 
@@ -36,9 +36,6 @@
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <!-- Migration bundle configuration for production deployments -->
-  <Target Name="BundleMigrations" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
-    <Message Importance="High" Text="To create a migration bundle for production, run: dotnet ef migrations bundle --configuration Release --output $(PublishDir)efbundle.exe" />
-  </Target>
-  
+  <!-- Migration bundle is produced by dev-start scripts after build -->
+
 </Project>

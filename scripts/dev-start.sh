@@ -33,8 +33,8 @@ Options:
 
 This script will:
     1. Start the SQL Server Docker container if not running
-    2. Optionally reset the database
-    3. Run backend tests and build
+    2. Restore tools, run tests, and build backend (produces efbundle)
+    3. Apply migrations (or reset database if requested)
     4. Start the backend (displays PID)
     5. Build and start the frontend dev server
 EOF
@@ -115,19 +115,13 @@ else
     echo -e "${GREEN}      SQL Server is already running.${NC}"
 fi
 
-# Step 2: Reset database if requested
+# Step 2: Restore tools, run tests, and build backend
 echo ""
-if [ "$RESET_DATABASE" = true ]; then
-    echo -e "${YELLOW}[2/5] Resetting database...${NC}"
-    "$SCRIPT_DIR/reset-database.sh" --force
-    echo -e "${GREEN}      Database reset complete.${NC}"
-else
-    echo -e "${GRAY}[2/5] Skipping database reset (use --reset-database to reset)${NC}"
-fi
+echo -e "${YELLOW}[2/5] Building and testing backend...${NC}"
 
-# Step 3: Run backend tests and build
-echo ""
-echo -e "${YELLOW}[3/5] Building and testing backend...${NC}"
+echo -e "${CYAN}      Restoring tools...${NC}"
+cd "$REPO_ROOT"
+dotnet tool restore --verbosity minimal
 
 echo -e "${CYAN}      Restoring packages...${NC}"
 cd "$REPO_ROOT/backend/src/backend"
@@ -155,6 +149,31 @@ if ! dotnet build --no-restore --verbosity minimal; then
     exit 1
 fi
 echo -e "${GREEN}      Backend build succeeded!${NC}"
+
+echo -e "${CYAN}      Creating migration bundle...${NC}"
+cd "$REPO_ROOT/backend/src/backend"
+if ! dotnet ef migrations bundle --force --no-build; then
+    echo -e "${RED}      Migration bundle creation failed!${NC}"
+    exit 1
+fi
+echo -e "${GREEN}      Migration bundle created.${NC}"
+
+# Step 3: Apply migrations (or reset database if requested)
+echo ""
+if [ "$RESET_DATABASE" = true ]; then
+    echo -e "${YELLOW}[3/5] Resetting database...${NC}"
+    "$SCRIPT_DIR/reset-database.sh" --force
+    echo -e "${GREEN}      Database reset complete.${NC}"
+else
+    echo -e "${YELLOW}[3/5] Applying pending migrations...${NC}"
+    EFBUNDLE="$REPO_ROOT/backend/src/backend/efbundle"
+    if [ -f "$EFBUNDLE" ]; then
+        "$EFBUNDLE" --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=DevPassword123!;TrustServerCertificate=True"
+        echo -e "${GREEN}      Migrations applied.${NC}"
+    else
+        echo -e "${YELLOW}      Warning: efbundle not found.${NC}"
+    fi
+fi
 
 # Step 4: Start backend
 echo ""

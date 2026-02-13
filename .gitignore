@@ -518,3 +518,7 @@ $RECYCLE.BIN/
 *.db
 *.db-shm
 *.db-wal
+
+# EF Core migration bundle (build artifact)
+efbundle
+efbundle.exe

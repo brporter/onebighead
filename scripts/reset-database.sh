@@ -1,10 +1,11 @@
 #!/bin/bash
 # reset-database.sh
-# Resets the local development database by dropping and recreating it.
-# The database will be recreated automatically when the backend starts.
+# Resets the local development database by dropping it, applying migrations via efbundle, and seeding.
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 CONTAINER_NAME="onebighead-sqlserver"
 DATABASE_NAME="onebighead"
 SA_PASSWORD="${MSSQL_SA_PASSWORD:-DevPassword123!}"
@@ -83,6 +84,27 @@ else
     fi
 fi
 
+# Apply migrations via efbundle
+EFBUNDLE="$REPO_ROOT/backend/src/backend/efbundle"
+if [ -f "$EFBUNDLE" ]; then
+    echo -e "${CYAN}Applying migrations...${NC}"
+    "$EFBUNDLE" --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=$SA_PASSWORD;TrustServerCertificate=True"
+    echo -e "${GREEN}Migrations applied successfully.${NC}"
+else
+    echo -e "${YELLOW}Warning: efbundle not found. Run 'dotnet build' in backend/src/backend first.${NC}"
+fi
+
+# Seed database
+CONNECTION_STRING="Server=localhost,1433;Database=onebighead;User Id=sa;Password=$SA_PASSWORD;TrustServerCertificate=True"
+SEEDS_PATH="$REPO_ROOT/backend/seeds"
+DBSEED_PROJECT="$REPO_ROOT/backend/tools/dbseed/dbseed.csproj"
+if [ -f "$DBSEED_PROJECT" ]; then
+    echo -e "${CYAN}Seeding database...${NC}"
+    ConnectionStrings__DefaultConnection="$CONNECTION_STRING" dotnet run --project "$DBSEED_PROJECT" -- "$SEEDS_PATH" --force
+    echo -e "${GREEN}Database seeded successfully.${NC}"
+else
+    echo -e "${YELLOW}Warning: dbseed project not found at $DBSEED_PROJECT${NC}"
+fi
+
 echo ""
 echo -e "${GREEN}Database reset complete.${NC}"
-echo -e "${CYAN}Run 'dotnet run' in the backend folder to recreate the database with fresh migrations.${NC}"
