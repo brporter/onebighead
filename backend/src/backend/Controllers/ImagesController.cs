@@ -15,6 +15,9 @@ public class ImagesController : ApiControllerBase
     private readonly IImageProcessor _imageProcessor;
 
     private static readonly Dictionary<SKEncodedImageFormat, string> AllowedFormats = new()
+    private readonly IImageProcessor _imageProcessor;
+
+    private static readonly Dictionary<string, byte[][]> FileSignatures = new()
     {
         { SKEncodedImageFormat.Jpeg, "image/jpeg" },
         { SKEncodedImageFormat.Png,  "image/png"  },
