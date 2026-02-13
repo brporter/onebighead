@@ -12,11 +12,9 @@ namespace OneBigHead.Server.Controllers;
 public class ImagesController : ApiControllerBase
 {
     private readonly IImageProvider _imageProvider;
-
-    private static readonly Dictionary<SKEncodedImageFormat, string> AllowedFormats = new()
     private readonly IImageProcessor _imageProcessor;
 
-    private static readonly Dictionary<string, byte[][]> FileSignatures = new()
+    private static readonly Dictionary<SKEncodedImageFormat, string> AllowedFormats = new()
     {
         { SKEncodedImageFormat.Jpeg, "image/jpeg" },
         { SKEncodedImageFormat.Png,  "image/png"  },
@@ -25,7 +23,7 @@ public class ImagesController : ApiControllerBase
         { SKEncodedImageFormat.Avif, "image/avif" },
     };
 
-    private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
+    private const long MaxFileSize = 100 * 1024 * 1024; // 100 MB
 
     public ImagesController(IImageProvider imageProvider, IImageProcessor imageProcessor)
     {
