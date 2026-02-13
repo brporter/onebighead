@@ -14,6 +14,9 @@ public class ImagesController : ApiControllerBase
     private readonly IImageProvider _imageProvider;
 
     private static readonly Dictionary<SKEncodedImageFormat, string> AllowedFormats = new()
+    private readonly IImageProcessor _imageProcessor;
+
+    private static readonly Dictionary<string, byte[][]> FileSignatures = new()
     {
         { SKEncodedImageFormat.Jpeg, "image/jpeg" },
         { SKEncodedImageFormat.Png,  "image/png"  },
@@ -24,9 +27,10 @@ public class ImagesController : ApiControllerBase
 
     private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
 
-    public ImagesController(IImageProvider imageProvider)
+    public ImagesController(IImageProvider imageProvider, IImageProcessor imageProcessor)
     {
         _imageProvider = imageProvider;
+        _imageProcessor = imageProcessor;
     }
 
     private static string? DetectImageFormat(byte[] fileData)
@@ -97,10 +101,12 @@ public class ImagesController : ApiControllerBase
             return BadRequest(new { error = "File is not a valid image or uses an unsupported format. Supported formats: JPEG, PNG, GIF, WebP, AVIF" });
         }
 
+        var (processedData, processedContentType) = _imageProcessor.ResizeIfNeeded(fileData, detectedContentType);
+
         var sanitizedFileName = SanitizeFileName(file.FileName);
 
-        using var dataStream = new MemoryStream(fileData);
-        var result = await _imageProvider.StoreAsync(workspaceId.Value, sanitizedFileName, detectedContentType, dataStream);
+        using var dataStream = new MemoryStream(processedData);
+        var result = await _imageProvider.StoreAsync(workspaceId.Value, sanitizedFileName, processedContentType, dataStream);
 
         return Ok(new ImageUploadResponse(result.Key, result.Url));
     }

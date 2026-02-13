@@ -14,6 +14,7 @@ namespace OneBigHead.Server.Tests.Controllers;
 public class ImagesControllerTests
 {
     private readonly Mock<IImageProvider> _mockImageProvider;
+    private readonly Mock<IImageProcessor> _mockImageProcessor;
     private readonly ImagesController _controller;
     private const int TestWorkspaceId = 1;
 
@@ -52,7 +53,12 @@ public class ImagesControllerTests
     public ImagesControllerTests()
     {
         _mockImageProvider = new Mock<IImageProvider>();
-        _controller = new ImagesController(_mockImageProvider.Object);
+        _mockImageProcessor = new Mock<IImageProcessor>();
+        // Default passthrough: return input data unchanged
+        _mockImageProcessor
+            .Setup(p => p.ResizeIfNeeded(It.IsAny<byte[]>(), It.IsAny<string>()))
+            .Returns((byte[] data, string ct) => (data, ct));
+        _controller = new ImagesController(_mockImageProvider.Object, _mockImageProcessor.Object);
         SetupAuthenticatedUser(TestWorkspaceId);
     }
 
@@ -354,6 +360,29 @@ public class ImagesControllerTests
         Assert.NotNull(capturedFileName);
         Assert.True(capturedFileName.Length <= 200);
         Assert.EndsWith(".jpg", capturedFileName);
+    }
+
+    [Fact]
+    public async Task Upload_CallsResizeIfNeeded_BeforeStoring()
+    {
+        // Arrange
+        var imageKey = Guid.NewGuid();
+        var processedData = new byte[] { 0x01, 0x02, 0x03 };
+        _mockImageProcessor
+            .Setup(p => p.ResizeIfNeeded(It.IsAny<byte[]>(), "image/jpeg"))
+            .Returns((processedData, "image/jpeg"));
+        _mockImageProvider
+            .Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+            .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
+
+        var file = CreateMockFile(JpegSignature, "test.jpg", "image/jpeg");
+
+        // Act
+        await _controller.Upload(file);
+
+        // Assert
+        _mockImageProcessor.Verify(p => p.ResizeIfNeeded(It.IsAny<byte[]>(), "image/jpeg"), Times.Once);
+        _mockImageProvider.Verify(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()), Times.Once);
     }
 
     #endregion

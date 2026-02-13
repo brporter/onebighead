@@ -84,6 +84,9 @@ else
     builder.Services.AddScoped<IEmailService, AzureEmailService>();
 }
 
+// Register image processor (environment-independent, stateless singleton)
+builder.Services.AddSingleton<IImageProcessor, ImageProcessor>();
+
 // Register bulk update services (environment-independent)
 builder.Services.AddScoped<IPropertyDiffService, PropertyDiffService>();
 builder.Services.AddSingleton<IBulkUpdateQueue, BulkUpdateQueue>();
