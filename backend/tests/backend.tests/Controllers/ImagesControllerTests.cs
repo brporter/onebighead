@@ -4,6 +4,7 @@ using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using SkiaSharp;
 using System.Security.Claims;
 using System.Text;
 
@@ -15,13 +16,38 @@ public class ImagesControllerTests
     private readonly Mock<IImageProvider> _mockImageProvider;
     private readonly ImagesController _controller;
     private const int TestWorkspaceId = 1;
-    private const int OtherWorkspaceId = 2;
 
-    // Valid file signatures for testing
-    private static readonly byte[] JpegSignature = { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46 };
-    private static readonly byte[] PngSignature = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
-    private static readonly byte[] GifSignature = { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 };
-    private static readonly byte[] WebpSignature = { 0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50 };
+    // Valid encoded images for testing
+    private static readonly byte[] JpegImage = CreateTestImage(SKEncodedImageFormat.Jpeg);
+    private static readonly byte[] PngImage = CreateTestImage(SKEncodedImageFormat.Png);
+    private static readonly byte[] WebpImage = CreateTestImage(SKEncodedImageFormat.Webp);
+
+    // SkiaSharp can decode GIF but not encode it, so use a minimal valid GIF89a (1x1 red pixel)
+    private static readonly byte[] GifImage =
+    [
+        0x47, 0x49, 0x46, 0x38, 0x39, 0x61, // GIF89a
+        0x01, 0x00, 0x01, 0x00,             // 1x1
+        0x80, 0x00, 0x00,                   // GCT flag, 2 entries
+        0xFF, 0x00, 0x00,                   // Color 0: red
+        0x00, 0x00, 0x00,                   // Color 1: black
+        0x2C,                               // Image descriptor
+        0x00, 0x00, 0x00, 0x00,             // Left=0, Top=0
+        0x01, 0x00, 0x01, 0x00,             // 1x1
+        0x00,                               // No local color table
+        0x02,                               // LZW minimum code size
+        0x02, 0x44, 0x01,                   // Sub-block: 2 bytes of LZW data
+        0x00,                               // Block terminator
+        0x3B                                // Trailer
+    ];
+
+    private static byte[] CreateTestImage(SKEncodedImageFormat format)
+    {
+        using var bitmap = new SKBitmap(1, 1);
+        bitmap.SetPixel(0, 0, SKColors.Red);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(format, 75);
+        return data!.ToArray();
+    }
 
     public ImagesControllerTests()
     {
@@ -75,7 +101,7 @@ public class ImagesControllerTests
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        var file = CreateMockFile(JpegSignature, "test.jpg", "image/jpeg");
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
         _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
@@ -94,7 +120,7 @@ public class ImagesControllerTests
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        var file = CreateMockFile(PngSignature, "test.png", "image/png");
+        var file = CreateMockFile(PngImage, "test.png", "image/png");
         _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/png", It.IsAny<Stream>()))
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
@@ -111,7 +137,7 @@ public class ImagesControllerTests
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        var file = CreateMockFile(GifSignature, "test.gif", "image/gif");
+        var file = CreateMockFile(GifImage, "test.gif", "image/gif");
         _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/gif", It.IsAny<Stream>()))
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
@@ -128,7 +154,7 @@ public class ImagesControllerTests
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        var file = CreateMockFile(WebpSignature, "test.webp", "image/webp");
+        var file = CreateMockFile(WebpImage, "test.webp", "image/webp");
         _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/webp", It.IsAny<Stream>()))
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
@@ -166,37 +192,9 @@ public class ImagesControllerTests
     }
 
     [Fact]
-    public async Task Upload_ReturnsBadRequest_WhenContentTypeNotAllowed()
+    public async Task Upload_ReturnsBadRequest_WhenFileIsNotAValidImage()
     {
-        // Arrange
-        var file = CreateMockFile(Encoding.UTF8.GetBytes("<svg></svg>"), "test.svg", "image/svg+xml");
-
-        // Act
-        var result = await _controller.Upload(file);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        Assert.Contains("not allowed", badRequestResult.Value?.ToString());
-    }
-
-    [Fact]
-    public async Task Upload_ReturnsBadRequest_WhenFileSignatureDoesNotMatch()
-    {
-        // Arrange - File claims to be JPEG but has PNG signature
-        var file = CreateMockFile(PngSignature, "fake.jpg", "image/jpeg");
-
-        // Act
-        var result = await _controller.Upload(file);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        Assert.Contains("does not match", badRequestResult.Value?.ToString());
-    }
-
-    [Fact]
-    public async Task Upload_ReturnsBadRequest_WhenFileHasInvalidSignature()
-    {
-        // Arrange - Random bytes that don't match any known signature
+        // Arrange - Random bytes that aren't a valid image
         var invalidContent = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
         var file = CreateMockFile(invalidContent, "invalid.jpg", "image/jpeg");
 
@@ -205,7 +203,77 @@ public class ImagesControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        Assert.Contains("does not match", badRequestResult.Value?.ToString());
+        Assert.Contains("not a valid image", badRequestResult.Value?.ToString());
+    }
+
+    [Fact]
+    public async Task Upload_ReturnsBadRequest_WhenSvgFileProvided()
+    {
+        // Arrange - SVG is XML, not decodable by SkiaSharp
+        var file = CreateMockFile(Encoding.UTF8.GetBytes("<svg></svg>"), "test.svg", "image/svg+xml");
+
+        // Act
+        var result = await _controller.Upload(file);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Contains("not a valid image", badRequestResult.Value?.ToString());
+    }
+
+    [Fact]
+    public async Task Upload_ReturnsBadRequest_WhenTextFileRenamedToJpg()
+    {
+        // Arrange - Plain text file pretending to be a JPEG
+        var file = CreateMockFile(Encoding.UTF8.GetBytes("This is not an image"), "fake.jpg", "image/jpeg");
+
+        // Act
+        var result = await _controller.Upload(file);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Contains("not a valid image", badRequestResult.Value?.ToString());
+    }
+
+    [Fact]
+    public async Task Upload_DetectsRealFormat_WhenDeclaredTypeMismatches()
+    {
+        // Arrange - A real PNG file declared as image/jpeg should succeed
+        // and the detected type (image/png) should be stored
+        var imageKey = Guid.NewGuid();
+        string? capturedContentType = null;
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>()))
+            .Callback<int, string, string, Stream>((_, _, contentType, _) => capturedContentType = contentType)
+            .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
+
+        var file = CreateMockFile(PngImage, "mislabeled.jpg", "image/jpeg");
+
+        // Act
+        var result = await _controller.Upload(file);
+
+        // Assert
+        Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal("image/png", capturedContentType);
+    }
+
+    [Fact]
+    public async Task Upload_StoresDetectedContentType_NotDeclaredType()
+    {
+        // Arrange
+        var imageKey = Guid.NewGuid();
+        string? capturedContentType = null;
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>()))
+            .Callback<int, string, string, Stream>((_, _, contentType, _) => capturedContentType = contentType)
+            .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
+
+        // Declare as application/octet-stream but data is a valid JPEG
+        var file = CreateMockFile(JpegImage, "test.bin", "application/octet-stream");
+
+        // Act
+        var result = await _controller.Upload(file);
+
+        // Assert
+        Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal("image/jpeg", capturedContentType);
     }
 
     [Fact]
@@ -213,7 +281,7 @@ public class ImagesControllerTests
     {
         // Arrange
         SetupUnauthenticatedUser();
-        var file = CreateMockFile(JpegSignature, "test.jpg", "image/jpeg");
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
 
         // Act
         var result = await _controller.Upload(file);
@@ -228,11 +296,11 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         string? capturedFileName = null;
-        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>()))
             .Callback<int, string, string, Stream>((_, fileName, _, _) => capturedFileName = fileName)
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
-        var file = CreateMockFile(JpegSignature, "../../../etc/passwd.jpg", "image/jpeg");
+        var file = CreateMockFile(JpegImage, "../../../etc/passwd.jpg", "image/jpeg");
 
         // Act
         await _controller.Upload(file);
@@ -250,13 +318,13 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         string? capturedFileName = null;
-        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>()))
             .Callback<int, string, string, Stream>((_, fileName, _, _) => capturedFileName = fileName)
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
         // Create filename with actual null byte
         var fileNameWithNull = "test" + '\0' + ".jpg";
-        var file = CreateMockFile(JpegSignature, fileNameWithNull, "image/jpeg");
+        var file = CreateMockFile(JpegImage, fileNameWithNull, "image/jpeg");
 
         // Act
         await _controller.Upload(file);
@@ -272,12 +340,12 @@ public class ImagesControllerTests
         // Arrange
         var imageKey = Guid.NewGuid();
         string? capturedFileName = null;
-        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+        _mockImageProvider.Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>()))
             .Callback<int, string, string, Stream>((_, fileName, _, _) => capturedFileName = fileName)
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
         var longFileName = new string('a', 300) + ".jpg";
-        var file = CreateMockFile(JpegSignature, longFileName, "image/jpeg");
+        var file = CreateMockFile(JpegImage, longFileName, "image/jpeg");
 
         // Act
         await _controller.Upload(file);
