@@ -11,7 +11,8 @@ namespace OneBigHead.Server.Controllers;
 public class ImagesController : ApiControllerBase
 {
     private readonly IImageProvider _imageProvider;
-    
+    private readonly IImageProcessor _imageProcessor;
+
     private static readonly Dictionary<string, byte[][]> FileSignatures = new()
     {
         { "image/jpeg", new[] { new byte[] { 0xFF, 0xD8, 0xFF } } },
@@ -23,9 +24,10 @@ public class ImagesController : ApiControllerBase
 
     private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
 
-    public ImagesController(IImageProvider imageProvider)
+    public ImagesController(IImageProvider imageProvider, IImageProcessor imageProcessor)
     {
         _imageProvider = imageProvider;
+        _imageProcessor = imageProcessor;
     }
 
     private static bool VerifyFileSignature(byte[] fileData, string contentType)
@@ -139,10 +141,12 @@ public class ImagesController : ApiControllerBase
             return BadRequest(new { error = "File content does not match the declared file type. Please upload a valid image file." });
         }
 
+        var (processedData, processedContentType) = _imageProcessor.ResizeIfNeeded(fileData, file.ContentType);
+
         var sanitizedFileName = SanitizeFileName(file.FileName);
 
-        using var dataStream = new MemoryStream(fileData);
-        var result = await _imageProvider.StoreAsync(workspaceId.Value, sanitizedFileName, file.ContentType, dataStream);
+        using var dataStream = new MemoryStream(processedData);
+        var result = await _imageProvider.StoreAsync(workspaceId.Value, sanitizedFileName, processedContentType, dataStream);
 
         return Ok(new ImageUploadResponse(result.Key, result.Url));
     }
