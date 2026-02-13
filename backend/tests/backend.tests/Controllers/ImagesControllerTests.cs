@@ -375,7 +375,7 @@ public class ImagesControllerTests
             .Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
             .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
 
-        var file = CreateMockFile(JpegSignature, "test.jpg", "image/jpeg");
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
 
         // Act
         await _controller.Upload(file);
