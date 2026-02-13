@@ -22,8 +22,8 @@ Options:
 
 This script will:
     1. Start the SQL Server Docker container if not running
-    2. Optionally reset the database
-    3. Run backend tests and build
+    2. Restore tools, run tests, and build backend (produces efbundle)
+    3. Apply migrations (or reset database if requested)
     4. Start the backend (displays PID)
     5. Build and start the frontend dev server
 "@
@@ -72,24 +72,14 @@ if ($container -ne $containerName) {
     Write-Host "      SQL Server is already running." -ForegroundColor Green
 }
 
-# Step 2: Reset database if requested
-if ($ResetDatabase) {
-    Write-Host ""
-    Write-Host "[2/5] Resetting database..." -ForegroundColor Yellow
-    & "$rootDir\scripts\reset-database.ps1" -Force
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "      Database reset failed" -ForegroundColor Red
-        exit 1
-    }
-    Write-Host "      Database reset complete." -ForegroundColor Green
-} else {
-    Write-Host ""
-    Write-Host "[2/5] Skipping database reset (use -ResetDatabase to reset)" -ForegroundColor Gray
-}
-
-# Step 3: Run backend tests and build
+# Step 2: Restore tools, run tests, and build backend
 Write-Host ""
-Write-Host "[3/5] Building and testing backend..." -ForegroundColor Yellow
+Write-Host "[2/5] Building and testing backend..." -ForegroundColor Yellow
+
+Write-Host "      Restoring tools..." -ForegroundColor Cyan
+Push-Location $rootDir
+dotnet tool restore --verbosity minimal
+Pop-Location
 
 Write-Host "      Restoring packages..." -ForegroundColor Cyan
 Push-Location "$rootDir\backend\src\backend"
@@ -126,6 +116,42 @@ if ($LASTEXITCODE -ne 0) {
 }
 Pop-Location
 Write-Host "      Backend build succeeded!" -ForegroundColor Green
+
+Write-Host "      Creating migration bundle..." -ForegroundColor Cyan
+Push-Location "$rootDir\backend\src\backend"
+dotnet ef migrations bundle --force --no-build
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "      Migration bundle creation failed!" -ForegroundColor Red
+    Pop-Location
+    exit 1
+}
+Pop-Location
+Write-Host "      Migration bundle created." -ForegroundColor Green
+
+# Step 3: Apply migrations (or reset database if requested)
+Write-Host ""
+if ($ResetDatabase) {
+    Write-Host "[3/5] Resetting database..." -ForegroundColor Yellow
+    & "$rootDir\scripts\reset-database.ps1" -Force
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "      Database reset failed" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "      Database reset complete." -ForegroundColor Green
+} else {
+    Write-Host "[3/5] Applying pending migrations..." -ForegroundColor Yellow
+    $efBundle = Join-Path $rootDir "backend\src\backend\efbundle.exe"
+    if (Test-Path $efBundle) {
+        & $efBundle --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=DevPassword123!;TrustServerCertificate=True"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "      Migration bundle failed!" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "      Migrations applied." -ForegroundColor Green
+    } else {
+        Write-Host "      Warning: efbundle.exe not found." -ForegroundColor Yellow
+    }
+}
 
 # Step 4: Start backend
 Write-Host ""

@@ -1,7 +1,6 @@
 #!/usr/bin/env pwsh
 # reset-database.ps1
-# Resets the local development database by dropping and recreating it.
-# The database will be recreated automatically when the backend starts.
+# Resets the local development database by dropping it, applying migrations via efbundle, and seeding.
 
 param(
     [switch]$Force
@@ -10,6 +9,7 @@ param(
 $containerName = "onebighead-sqlserver"
 $databaseName = "onebighead"
 $saPassword = "DevPassword123!"
+$rootDir = Split-Path -Parent $PSScriptRoot
 
 # Check if container is running
 $container = docker ps --filter "name=$containerName" --format "{{.Names}}" 2>$null
@@ -39,6 +39,36 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "Database dropped successfully." -ForegroundColor Green
 }
 
+# Apply migrations via efbundle
+$efBundle = Join-Path $rootDir "backend\src\backend\efbundle.exe"
+if (Test-Path $efBundle) {
+    Write-Host "Applying migrations..." -ForegroundColor Cyan
+    & $efBundle --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=$saPassword;TrustServerCertificate=True"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Migration bundle failed!" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Migrations applied successfully." -ForegroundColor Green
+} else {
+    Write-Host "Warning: efbundle.exe not found. Run 'dotnet build' in backend/src/backend first." -ForegroundColor Yellow
+}
+
+# Seed database
+$connectionString = "Server=localhost,1433;Database=onebighead;User Id=sa;Password=$saPassword;TrustServerCertificate=True"
+$seedsPath = Join-Path $rootDir "backend\seeds"
+$dbseedProject = Join-Path $rootDir "backend\tools\dbseed\dbseed.csproj"
+if (Test-Path $dbseedProject) {
+    Write-Host "Seeding database..." -ForegroundColor Cyan
+    $env:ConnectionStrings__DefaultConnection = $connectionString
+    dotnet run --project $dbseedProject -- $seedsPath --force
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Database seeding failed!" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Database seeded successfully." -ForegroundColor Green
+} else {
+    Write-Host "Warning: dbseed project not found at $dbseedProject" -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Host "Database reset complete." -ForegroundColor Green
-Write-Host "Run 'dotnet run' in the backend folder to recreate the database with fresh migrations." -ForegroundColor Cyan

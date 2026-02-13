@@ -35,9 +35,6 @@
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <!-- Migration bundle configuration for production deployments -->
-  <Target Name="BundleMigrations" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
-    <Message Importance="High" Text="To create a migration bundle for production, run: dotnet ef migrations bundle --configuration Release --output $(PublishDir)efbundle.exe" />
-  </Target>
-  
+  <!-- Migration bundle is produced by dev-start scripts after build -->
+
 </Project>
