@@ -12,8 +12,8 @@ OneBigHead is a multi-workspace collection management application with a .NET 10
 
 ```bash
 # Full startup (recommended) - starts Docker SQL Server, runs tests, launches backend and frontend
-./dev-start.sh                    # macOS/Linux
-./dev-start.ps1                   # Windows
+./scripts/dev-start.sh                    # macOS/Linux
+./scripts/dev-start.ps1                   # Windows
 
 # Options
 --skip-tests / -SkipTests        # Skip tests for faster startup
@@ -23,9 +23,9 @@ OneBigHead is a multi-workspace collection management application with a .NET 10
 ### Backend (.NET 10)
 
 ```bash
-cd backend
+cd backend/src/backend
 dotnet run                        # Run the API server
-dotnet test ../backend.tests      # Run all backend tests
+dotnet test ../../tests/backend.tests     # Run all backend tests
 dotnet ef migrations add <Name>   # Create new migration after model changes
 ```
 
@@ -45,7 +45,7 @@ npm run test:coverage             # Tests with coverage
 
 ```bash
 docker compose up -d              # Start local SQL Server
-./reset-database.sh               # Reset local database (drop and recreate)
+./scripts/reset-database.sh       # Reset local database (drop and recreate)
 ```
 
 ## Architecture
@@ -54,12 +54,20 @@ docker compose up -d              # Start local SQL Server
 
 ```
 backend/
-├── Controllers/     # API endpoints (see "When to use ApiControllerBase" below)
-├── Models/          # EF Core entities
-├── Data/            # Repository pattern (I*Repository interfaces + implementations)
-├── DTOs/            # Request/response data transfer objects
-├── Services/        # Business logic services
-└── Authentication/  # Custom cookie-based JWT authentication
+├── src/
+│   ├── backend/             # Main API project
+│   │   ├── Controllers/     # API endpoints (see "When to use ApiControllerBase" below)
+│   │   ├── Models/          # EF Core entities
+│   │   ├── Data/            # Repository pattern (I*Repository interfaces + implementations)
+│   │   ├── DTOs/            # Request/response data transfer objects
+│   │   ├── Services/        # Business logic services
+│   │   └── Authentication/  # Custom cookie-based JWT authentication
+│   └── backend.generators/  # Roslyn source generators
+├── tests/
+│   └── backend.tests/       # xUnit tests
+├── grafana/                 # Grafana dashboard config
+├── seeds/                   # Database seed JSON files
+└── tools/                   # DB utilities (dbreset, dbseed)
 ```
 
 **Controllers:**

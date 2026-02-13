@@ -6,7 +6,7 @@ REM then combines them into a single unified output directory.
 setlocal enabledelayedexpansion
 
 set "SCRIPT_DIR=%~dp0"
-set "REPO_ROOT=%SCRIPT_DIR%.."
+set "REPO_ROOT=%SCRIPT_DIR%..\.."
 
 set "OUTPUT_PATH=publish"
 set "SKIP_FRONTEND=0"
@@ -54,7 +54,7 @@ echo Unknown option: %~1
 exit /b 1
 :end_parse
 
-set "BACKEND_DIR=%REPO_ROOT%\backend"
+set "BACKEND_DIR=%REPO_ROOT%\backend\src\backend"
 set "FRONTEND_DIR=%REPO_ROOT%\frontend"
 set "OUTPUT_DIR=%REPO_ROOT%\%OUTPUT_PATH%"
 

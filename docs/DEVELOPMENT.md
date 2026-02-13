@@ -39,7 +39,7 @@ The following secrets must be configured before running the backend:
 
 1. Navigate to the backend project directory:
    ```bash
-   cd backend
+   cd backend/src/backend
    ```
 
 2. Set the required secrets:
@@ -69,18 +69,18 @@ Use the development startup script to launch everything:
 
 **Windows (PowerShell):**
 ```powershell
-./dev-start.ps1              # Start everything
-./dev-start.ps1 -ResetDatabase   # Reset database first
-./dev-start.ps1 -SkipTests       # Skip tests for faster startup
-./dev-start.ps1 -Help            # Show all options
+./scripts/dev-start.ps1              # Start everything
+./scripts/dev-start.ps1 -ResetDatabase   # Reset database first
+./scripts/dev-start.ps1 -SkipTests       # Skip tests for faster startup
+./scripts/dev-start.ps1 -Help            # Show all options
 ```
 
 **macOS/Linux (Bash):**
 ```bash
-./dev-start.sh               # Start everything
-./dev-start.sh --reset-database  # Reset database first
-./dev-start.sh --skip-tests      # Skip tests for faster startup
-./dev-start.sh --help            # Show all options
+./scripts/dev-start.sh               # Start everything
+./scripts/dev-start.sh --reset-database  # Reset database first
+./scripts/dev-start.sh --skip-tests      # Skip tests for faster startup
+./scripts/dev-start.sh --help            # Show all options
 ```
 
 The script will:
@@ -95,7 +95,7 @@ The script will:
 #### Backend
 
 ```bash
-cd backend
+cd backend/src/backend
 dotnet run
 ```
 
@@ -116,7 +116,7 @@ In Debug builds, migrations run automatically on application startup. The databa
 To create a new migration after modifying models:
 
 ```bash
-cd backend
+cd backend/src/backend
 dotnet ef migrations add <MigrationName>
 ```
 
@@ -126,20 +126,20 @@ To reset the local development database (drop all data and start fresh):
 
 **Windows (PowerShell):**
 ```powershell
-./reset-database.ps1          # With confirmation prompt
-./reset-database.ps1 -Force   # Skip confirmation
+./scripts/reset-database.ps1          # With confirmation prompt
+./scripts/reset-database.ps1 -Force   # Skip confirmation
 ```
 
 **macOS/Linux (Bash):**
 ```bash
-./reset-database.sh           # With confirmation prompt
-./reset-database.sh --force   # Skip confirmation
+./scripts/reset-database.sh           # With confirmation prompt
+./scripts/reset-database.sh --force   # Skip confirmation
 ```
 
 After resetting, run the backend to recreate the database with fresh migrations:
 
 ```bash
-cd backend
+cd backend/src/backend
 dotnet run
 ```
 
@@ -150,8 +150,8 @@ Production uses a migration bundle strategy. The bundle is a self-contained exec
 #### Creating a Migration Bundle
 
 ```bash
-cd backend
-dotnet ef migrations bundle --configuration Release --output ../publish/efbundle.exe
+cd backend/src/backend
+dotnet ef migrations bundle --configuration Release --output ../../../publish/efbundle.exe
 ```
 
 #### Applying Migrations with the Bundle
@@ -175,7 +175,7 @@ For CI/CD pipelines, the bundle can be deployed alongside the application and ex
 System administrators are users with elevated privileges who can manage tenants, users, and system templates. After deployment, bootstrap initial administrators by running:
 
 ```sql
--- From backend/Scripts/bootstrap-admins.sql
+-- From backend/src/backend/Scripts/bootstrap-admins.sql
 UPDATE Users 
 SET IsSystemAdministrator = 1 
 WHERE Email = 'bryan@bryanporter.com';
@@ -184,7 +184,7 @@ WHERE Email = 'bryan@bryanporter.com';
 Or using sqlcmd:
 
 ```bash
-sqlcmd -S localhost -U sa -P "DevPassword123!" -d onebighead -i backend/Scripts/bootstrap-admins.sql
+sqlcmd -S localhost -U sa -P "DevPassword123!" -d onebighead -i backend/src/backend/Scripts/bootstrap-admins.sql
 ```
 
 ### Admin Capabilities
@@ -245,11 +245,11 @@ Routes are lazy-loaded using `React.lazy()` and `Suspense` for better initial lo
 ### Backend Tests
 
 ```bash
-cd backend.tests
+cd backend/tests/backend.tests
 dotnet test
 ```
 
-Coverage report is generated in `backend.tests/TestResults/`.
+Coverage report is generated in `backend/tests/backend.tests/TestResults/`.
 
 ### Frontend Tests
 

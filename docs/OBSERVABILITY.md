@@ -49,11 +49,11 @@ Azure Managed Grafana reads from Application Insights via the Azure Monitor data
 
 The backend checks for `APPLICATIONINSIGHTS_CONNECTION_STRING` at startup. When present, it registers Azure Monitor exporters for traces, metrics, and logs. When absent (local dev), those exporters are simply not registered.
 
-Both `deploy.sh` and the GitHub Actions pipeline set this environment variable on the Container App automatically.
+Both `deployment/deploy.sh` and the GitHub Actions pipeline set this environment variable on the Container App automatically.
 
 ### Resources created by deploy.sh
 
-The first run of `deploy.sh` (without `--skip-infra`) provisions:
+The first run of `deployment/deploy.sh` (without `--skip-infra`) provisions:
 
 | Resource | Naming Convention | Purpose |
 |----------|-------------------|---------|
@@ -106,7 +106,7 @@ This returns a string like:
 ### Step 4: Import the dashboard
 
 1. In Grafana, go to **Dashboards** > **New** > **Import**
-2. Upload or paste the contents of `grafana/dashboard.json`
+2. Upload or paste the contents of `backend/grafana/dashboard.json`
 3. Click **Import**
 
 ### Step 5: Configure dashboard variables

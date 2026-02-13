@@ -8,6 +8,7 @@ set -e
 RESET_DATABASE=false
 SKIP_TESTS=false
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 CONTAINER_NAME="onebighead-sqlserver"
 BACKEND_PID=""
 
@@ -89,7 +90,7 @@ echo ""
 echo -e "${YELLOW}[1/5] Checking SQL Server container...${NC}"
 if ! docker ps --filter "name=$CONTAINER_NAME" --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
     echo -e "${CYAN}      SQL Server not running. Starting via docker compose...${NC}"
-    cd "$SCRIPT_DIR"
+    cd "$REPO_ROOT"
     docker compose up -d
     
     # Wait for SQL Server to be ready
@@ -129,7 +130,7 @@ echo ""
 echo -e "${YELLOW}[3/5] Building and testing backend...${NC}"
 
 echo -e "${CYAN}      Restoring packages...${NC}"
-cd "$SCRIPT_DIR/backend"
+cd "$REPO_ROOT/backend/src/backend"
 if ! dotnet restore --verbosity minimal; then
     echo -e "${RED}      Package restore failed!${NC}"
     exit 1
@@ -137,7 +138,7 @@ fi
 
 if [ "$SKIP_TESTS" = false ]; then
     echo -e "${CYAN}      Running tests...${NC}"
-    cd "$SCRIPT_DIR/backend.tests"
+    cd "$REPO_ROOT/backend/tests/backend.tests"
     if ! dotnet test --no-restore --verbosity minimal; then
         echo -e "${RED}      Backend tests failed!${NC}"
         exit 1
@@ -148,7 +149,7 @@ else
 fi
 
 echo -e "${CYAN}      Building backend...${NC}"
-cd "$SCRIPT_DIR/backend"
+cd "$REPO_ROOT/backend/src/backend"
 if ! dotnet build --no-restore --verbosity minimal; then
     echo -e "${RED}      Backend build failed!${NC}"
     exit 1
@@ -158,7 +159,7 @@ echo -e "${GREEN}      Backend build succeeded!${NC}"
 # Step 4: Start backend
 echo ""
 echo -e "${YELLOW}[4/5] Starting backend...${NC}"
-cd "$SCRIPT_DIR/backend"
+cd "$REPO_ROOT/backend/src/backend"
 dotnet run --no-build &
 BACKEND_PID=$!
 
@@ -176,7 +177,7 @@ sleep 3
 # Step 5: Build and start frontend
 echo ""
 echo -e "${YELLOW}[5/5] Building and starting frontend...${NC}"
-cd "$SCRIPT_DIR/frontend"
+cd "$REPO_ROOT/frontend"
 
 echo -e "${CYAN}      Installing dependencies...${NC}"
 npm install --silent

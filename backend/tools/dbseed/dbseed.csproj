@@ -18,8 +18,8 @@
 
   <!-- Link shared seeding code from backend -->
   <ItemGroup>
-    <Compile Include="..\..\backend\Services\Seeding\SeedModels.cs" Link="Seeding\SeedModels.cs" />
-    <Compile Include="..\..\backend\Services\Seeding\JsonDatabaseSeeder.cs" Link="Seeding\JsonDatabaseSeeder.cs" />
+    <Compile Include="..\..\src\backend\Services\Seeding\SeedModels.cs" Link="Seeding\SeedModels.cs" />
+    <Compile Include="..\..\src\backend\Services\Seeding\JsonDatabaseSeeder.cs" Link="Seeding\JsonDatabaseSeeder.cs" />
   </ItemGroup>
 
 </Project>

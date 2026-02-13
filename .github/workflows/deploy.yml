@@ -21,7 +21,7 @@
 #   EMAIL_CONNECTION_STRING  - Azure Communication Services connection string (for support emails)
 #   EMAIL_SENDER_ADDRESS     - Verified sender address (e.g., "noreply@your-domain.com")
 #
-# Infrastructure is provisioned via Bicep templates (infra/main.bicep) using deploy.sh/deploy.ps1.
+# Infrastructure is provisioned via Bicep templates (deployment/infra/main.bicep) using deployment/deploy.sh/deploy.ps1.
 # This workflow assumes all infrastructure (including the Container App) already exists.
 
 name: Deploy to Azure
@@ -83,13 +83,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Restore backend dependencies
-        run: dotnet restore backend/backend.csproj
+        run: dotnet restore backend/src/backend/backend.csproj
 
       - name: Run unit tests
-        run: dotnet test backend.tests/backend.tests.csproj --filter "Category=Unit" --no-restore --verbosity normal
+        run: dotnet test backend/tests/backend.tests/backend.tests.csproj --filter "Category=Unit" --no-restore --verbosity normal
 
       - name: Run integration tests
-        run: dotnet test backend.tests/backend.tests.csproj --filter "Category=Integration" --no-restore --verbosity normal
+        run: dotnet test backend/tests/backend.tests/backend.tests.csproj --filter "Category=Integration" --no-restore --verbosity normal
 
       - name: Build frontend
         run: |
@@ -157,25 +157,25 @@ jobs:
 
       - name: Build backend
         run: |
-          dotnet publish backend/backend.csproj -c Release -o publish
+          dotnet publish backend/src/backend/backend.csproj -c Release -o publish
           mkdir -p publish/wwwroot/collections
           cp -r frontend/dist/* publish/wwwroot/collections/
 
       - name: Build database tools
         run: |
-          dotnet publish tools/dbreset/dbreset.csproj -c Release -r linux-x64 -o publish
-          dotnet publish tools/dbseed/dbseed.csproj -c Release -r linux-x64 -o publish
+          dotnet publish backend/tools/dbreset/dbreset.csproj -c Release -r linux-x64 -o publish
+          dotnet publish backend/tools/dbseed/dbseed.csproj -c Release -r linux-x64 -o publish
           # Copy seed data files from central location
-          cp -r seeds publish/seeds
+          cp -r backend/seeds publish/seeds
 
       # Generate migration assets
       - name: Generate migration script and bundle
         run: |
-          cd backend
+          cd backend/src/backend
           # SQL script for pipeline execution
-          dotnet ef migrations script --idempotent -o ../publish/migrate.sql
+          dotnet ef migrations script --idempotent -o ../../../publish/migrate.sql
           # Self-contained bundle for manual execution from container
-          dotnet ef migrations bundle --self-contained -r linux-x64 -o ../publish/efbundle --force
+          dotnet ef migrations bundle --self-contained -r linux-x64 -o ../../../publish/efbundle --force
 
       # Build and push Docker image
       - name: Get ACR details
@@ -191,7 +191,7 @@ jobs:
           IMAGE_TAG="${ACR_LOGIN_SERVER}/${{ secrets.AZURE_APP_NAME }}:${{ github.sha }}"
           IMAGE_LATEST="${ACR_LOGIN_SERVER}/${{ secrets.AZURE_APP_NAME }}:latest"
 
-          docker build --platform linux/amd64 -t "$IMAGE_TAG" -t "$IMAGE_LATEST" .
+          docker build --platform linux/amd64 -t "$IMAGE_TAG" -t "$IMAGE_LATEST" -f deployment/Dockerfile .
           docker push "$IMAGE_TAG"
           docker push "$IMAGE_LATEST"
 

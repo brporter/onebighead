@@ -32,7 +32,7 @@ This script will:
 
 $ErrorActionPreference = "Stop"
 $containerName = "onebighead-sqlserver"
-$rootDir = $PSScriptRoot
+$rootDir = Split-Path -Parent $PSScriptRoot
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  OneBigHead Development Startup" -ForegroundColor Cyan
@@ -76,7 +76,7 @@ if ($container -ne $containerName) {
 if ($ResetDatabase) {
     Write-Host ""
     Write-Host "[2/5] Resetting database..." -ForegroundColor Yellow
-    & "$rootDir\reset-database.ps1" -Force
+    & "$rootDir\scripts\reset-database.ps1" -Force
     if ($LASTEXITCODE -ne 0) {
         Write-Host "      Database reset failed" -ForegroundColor Red
         exit 1
@@ -92,7 +92,7 @@ Write-Host ""
 Write-Host "[3/5] Building and testing backend..." -ForegroundColor Yellow
 
 Write-Host "      Restoring packages..." -ForegroundColor Cyan
-Push-Location "$rootDir\backend"
+Push-Location "$rootDir\backend\src\backend"
 dotnet restore --verbosity minimal
 if ($LASTEXITCODE -ne 0) {
     Write-Host "      Package restore failed!" -ForegroundColor Red
@@ -103,7 +103,7 @@ Pop-Location
 
 if (-not $SkipTests) {
     Write-Host "      Running tests..." -ForegroundColor Cyan
-    Push-Location "$rootDir\backend.tests"
+    Push-Location "$rootDir\backend\tests\backend.tests"
     dotnet test --no-restore --verbosity minimal
     if ($LASTEXITCODE -ne 0) {
         Write-Host "      Backend tests failed!" -ForegroundColor Red
@@ -117,7 +117,7 @@ if (-not $SkipTests) {
 }
 
 Write-Host "      Building backend..." -ForegroundColor Cyan
-Push-Location "$rootDir\backend"
+Push-Location "$rootDir\backend\src\backend"
 dotnet build --no-restore --verbosity minimal
 if ($LASTEXITCODE -ne 0) {
     Write-Host "      Backend build failed!" -ForegroundColor Red
@@ -130,7 +130,7 @@ Write-Host "      Backend build succeeded!" -ForegroundColor Green
 # Step 4: Start backend
 Write-Host ""
 Write-Host "[4/5] Starting backend..." -ForegroundColor Yellow
-Push-Location "$rootDir\backend"
+Push-Location "$rootDir\backend\src\backend"
 $backendProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--no-build" -PassThru -WindowStyle Normal
 Pop-Location
 

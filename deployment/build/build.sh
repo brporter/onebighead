@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # Get script directory and repo root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 
 # Default values
 OUTPUT_PATH="./publish"
@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-BACKEND_DIR="$REPO_ROOT/backend"
+BACKEND_DIR="$REPO_ROOT/backend/src/backend"
 FRONTEND_DIR="$REPO_ROOT/frontend"
 OUTPUT_DIR="$REPO_ROOT/$OUTPUT_PATH"
 

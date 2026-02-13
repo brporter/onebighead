@@ -1,7 +1,7 @@
 services:
   sqlserver:
     build:
-      context: ./build/sqlserver
+      context: ./deployment/build/sqlserver
       dockerfile: Dockerfile
     image: onebighead-sqlserver:latest
     container_name: onebighead-sqlserver

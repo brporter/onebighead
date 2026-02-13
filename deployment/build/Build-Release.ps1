@@ -37,9 +37,9 @@ $ErrorActionPreference = "Stop"
 
 # Get the repository root (parent of the build directory)
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot = Split-Path -Parent $ScriptDir
+$RepoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 
-$BackendDir = Join-Path $RepoRoot "backend"
+$BackendDir = Join-Path $RepoRoot "backend" "src" "backend"
 $FrontendDir = Join-Path $RepoRoot "frontend"
 $OutputDir = Join-Path $RepoRoot $OutputPath
 

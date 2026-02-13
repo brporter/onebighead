@@ -18,7 +18,7 @@ The deployment pipeline automatically deploys to Azure Container Apps when a pul
 The pipeline does **not** provision infrastructure. You must run the deployment script once to create all Azure resources.
 
 ```bash
-./deploy.sh \
+./deployment/deploy.sh \
   --name <your-app-name> \
   --location <azure-region> \
   --jwt-key "<your-jwt-signing-key>"
@@ -26,7 +26,7 @@ The pipeline does **not** provision infrastructure. You must run the deployment 
 
 **Example:**
 ```bash
-./deploy.sh \
+./deployment/deploy.sh \
   --name onebighead \
   --location eastus \
   --jwt-key "MySecureJwtSigningKey32CharsMin!"
@@ -197,9 +197,9 @@ Navigate to your GitHub repository:
 | `AZURE_CLIENT_ID` | Service principal application (client) ID | The `appId` from Step 2.1 |
 | `AZURE_TENANT_ID` | Azure AD tenant ID | The `tenant` from Step 2.1, or run `az account show --query tenantId -o tsv` |
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | Run `az account show --query id -o tsv` |
-| `AZURE_APP_NAME` | Base name used for all Azure resources | The `--name` value you used in `deploy.sh` (e.g., `onebighead`) |
-| `AZURE_LOCATION` | Azure region where resources are deployed | The `--location` value you used in `deploy.sh` (e.g., `eastus`) |
-| `JWT_SIGNING_KEY` | Secret key for signing JWT tokens | The `--jwt-key` value you used in `deploy.sh` (minimum 32 characters) |
+| `AZURE_APP_NAME` | Base name used for all Azure resources | The `--name` value you used in `deployment/deploy.sh` (e.g., `onebighead`) |
+| `AZURE_LOCATION` | Azure region where resources are deployed | The `--location` value you used in `deployment/deploy.sh` (e.g., `eastus`) |
+| `JWT_SIGNING_KEY` | Secret key for signing JWT tokens | The `--jwt-key` value you used in `deployment/deploy.sh` (minimum 32 characters) |
 
 ### Optional Secrets
 
@@ -434,8 +434,8 @@ The pipeline is already configured to use the `production` environment.
 | `AZURE_CLIENT_ID` | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | `appId` from `az ad sp create-for-rbac` output |
 | `AZURE_TENANT_ID` | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | `az account show --query tenantId -o tsv` |
 | `AZURE_SUBSCRIPTION_ID` | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | `az account show --query id -o tsv` |
-| `AZURE_APP_NAME` | `onebighead` | Your chosen app name from `deploy.sh` |
-| `AZURE_LOCATION` | `eastus` | Azure region from `deploy.sh` |
+| `AZURE_APP_NAME` | `onebighead` | Your chosen app name from `deployment/deploy.sh` |
+| `AZURE_LOCATION` | `eastus` | Azure region from `deployment/deploy.sh` |
 | `JWT_SIGNING_KEY` | `MySecureJwtSigningKey32Characters!` | Same value used in `deploy.sh --jwt-key` |
 
 ### Optional Secrets

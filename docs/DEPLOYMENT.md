@@ -2,14 +2,14 @@
 
 Deployment is split into two phases:
 
-1. **Infrastructure provisioning** — run `deploy.sh` (or `deploy.ps1` on Windows) to create all Azure resources via Bicep
+1. **Infrastructure provisioning** — run `deployment/deploy.sh` (or `deployment/deploy.ps1` on Windows) to create all Azure resources via Bicep
 2. **Application deployment** — GitHub Actions builds, pushes, and deploys your app on every merge to `main`
 
 ## Quick Start
 
 ```bash
 # 1. Provision infrastructure
-./deploy.sh --name onebighead --location eastus
+./deployment/deploy.sh --name onebighead --location eastus
 
 # 2. Configure GitHub secrets (the script prints what's needed)
 
@@ -30,13 +30,13 @@ Deployment is split into two phases:
 **Bash (macOS/Linux):**
 
 ```bash
-./deploy.sh --name onebighead --location eastus
+./deployment/deploy.sh --name onebighead --location eastus
 ```
 
 **PowerShell (Windows):**
 
 ```powershell
-./deploy.ps1 -Name onebighead -Location eastus
+./deployment/deploy.ps1 -Name onebighead -Location eastus
 ```
 
 ### Script Options
@@ -161,7 +161,7 @@ When you need to add new Azure resources (e.g., Redis Cache), update the Bicep t
 Use `--skip-app` to leave the Container App untouched while provisioning new infrastructure:
 
 ```bash
-./deploy.sh --name onebighead --location eastus --skip-app
+./deployment/deploy.sh --name onebighead --location eastus --skip-app
 ```
 
 This passes `deployContainerApp=false` to Bicep. Since Bicep uses ARM incremental mode, omitting the Container App from the template does **not** delete it — ARM only adds or updates resources that are in the template, never removes ones that aren't.
@@ -171,7 +171,7 @@ This passes `deployContainerApp=false` to Bicep. Since Bicep uses ARM incrementa
 Use `--skip-infra` to skip Bicep entirely and just re-run the SQL managed identity user creation:
 
 ```bash
-./deploy.sh --name onebighead --location eastus --skip-infra
+./deployment/deploy.sh --name onebighead --location eastus --skip-infra
 ```
 
 This reads deployment outputs from the last Bicep run and re-runs the idempotent SQL user setup.
