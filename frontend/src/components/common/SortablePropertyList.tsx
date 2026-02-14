@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { DndContext, closestCenter, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -35,6 +35,7 @@ interface SortablePropertyRowProps<T extends BaseProperty> {
   onFieldChange: (id: string, field: keyof T, value: string) => void;
   onFieldBlur?: (id: string, field: keyof T) => void;
   onRemove: (id: string) => void;
+  onCategoryTab?: (id: string) => void;
 }
 
 function SortablePropertyRow<T extends BaseProperty>({
@@ -47,6 +48,7 @@ function SortablePropertyRow<T extends BaseProperty>({
   onFieldChange,
   onFieldBlur,
   onRemove,
+  onCategoryTab,
 }: SortablePropertyRowProps<T>) {
   const {
     attributes,
@@ -78,7 +80,14 @@ function SortablePropertyRow<T extends BaseProperty>({
           value={(property as unknown as Record<string, string>)[fieldConfig.field] || ''}
           onChange={(e) => onFieldChange(property.id, fieldConfig.field as keyof T, e.target.value)}
           onBlur={() => onFieldBlur?.(property.id, fieldConfig.field as keyof T)}
+          onKeyDown={fieldConfig.field === 'category' ? (e) => {
+            if (e.key === 'Tab' && !e.shiftKey) {
+              onCategoryTab?.(property.id);
+            }
+          } : undefined}
           list={fieldConfig.datalistId}
+          data-property-id={property.id}
+          data-field={fieldConfig.field}
         />
       ))}
       <button
@@ -110,6 +119,7 @@ interface SortablePropertyListProps<T extends BaseProperty> {
   onFieldChange: (id: string, field: keyof T, value: string) => void;
   onFieldBlur?: (id: string, field: keyof T) => void;
   onRemove: (id: string) => void;
+  onCategoryTab?: (id: string) => void;
 }
 
 export function SortablePropertyList<T extends BaseProperty>({
@@ -120,10 +130,13 @@ export function SortablePropertyList<T extends BaseProperty>({
   onFieldChange,
   onFieldBlur,
   onRemove,
+  onCategoryTab,
 }: SortablePropertyListProps<T>) {
   const [activeId, setActiveId] = useState<string | null>(null);
   // Counter to force re-render when grouping categories change
   const [groupingVersion, setGroupingVersion] = useState(0);
+  // Track which input to focus after a re-grouping render
+  const focusTargetRef = useRef<{ id: string; field: string } | null>(null);
   // Track stable grouping categories (only updated on blur, not on each keystroke)
   const [groupingCategories] = useState<Map<string, string>>(() => new Map());
 
@@ -157,6 +170,24 @@ export function SortablePropertyList<T extends BaseProperty>({
     }
     onFieldBlur?.(id, field);
   }, [handleCategoryBlur, onFieldBlur]);
+
+  // Handle Tab on category field - schedule focus to name field after re-grouping
+  const handleCategoryTab = useCallback((id: string) => {
+    focusTargetRef.current = { id, field: 'name' };
+    onCategoryTab?.(id);
+  }, [onCategoryTab]);
+
+  // Restore focus after re-grouping re-render
+  useEffect(() => {
+    if (focusTargetRef.current) {
+      const { id, field } = focusTargetRef.current;
+      focusTargetRef.current = null;
+      const input = document.querySelector<HTMLInputElement>(
+        `[data-property-id="${id}"][data-field="${field}"]`
+      );
+      input?.focus();
+    }
+  }, [groupingVersion]);
 
   // Create sortable items with stable grouping categories
   const sortableItems = useMemo(() =>
@@ -223,6 +254,7 @@ export function SortablePropertyList<T extends BaseProperty>({
                     onFieldChange={onFieldChange}
                     onFieldBlur={handleFieldBlur}
                     onRemove={onRemove}
+                    onCategoryTab={handleCategoryTab}
                   />
                 );
               })}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { ItemProperty } from '../../utils/types';
 import { useData } from '../../contexts/DataContext';
 import { SortablePropertyList, type PropertyWithValue, type FieldConfig } from '../common';
@@ -34,6 +34,9 @@ function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
     addLocalNameSuggestion,
   } = useData();
 
+  // Track when a new property was just added, to auto-focus it
+  const pendingFocusRef = useRef(false);
+
   // Add stable IDs to properties for drag-and-drop
   const [propertyIds] = useState<Map<number, string>>(() => new Map());
 
@@ -68,6 +71,18 @@ function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
     }
   }, [properties.length, propertyIds]);
 
+  // Focus the category field of a newly added property
+  useEffect(() => {
+    if (pendingFocusRef.current && propertiesWithIds.length > 0) {
+      pendingFocusRef.current = false;
+      const lastProp = propertiesWithIds[propertiesWithIds.length - 1];
+      const input = document.querySelector<HTMLInputElement>(
+        `[data-property-id="${lastProp.id}"][data-field="category"]`
+      );
+      input?.focus();
+    }
+  });
+
   function handleFieldChange(id: string, field: keyof PropertyWithValue, value: string) {
     const index = propertiesWithIds.findIndex((p) => p.id === id);
     if (index === -1) return;
@@ -90,6 +105,7 @@ function PropertyEditor({ properties, onChange }: PropertyEditorProps) {
 
   function handleAddProperty() {
     onChange([...properties, { category: '', name: '', value: '' }]);
+    pendingFocusRef.current = true;
   }
 
   function handleRemoveProperty(id: string) {
