@@ -13,6 +13,7 @@
  */
 
 export { api, ApiError, type RequestOptions } from './client';
+export { dashboardApi, type DashboardData, type DailyView } from './dashboard';
 export { collectionsApi, type CreateCollectionRequest, type UpdateCollectionRequest } from './collections';
 export { categoriesApi, type CreateCategoryRequest, type UpdateCategoryRequest } from './categories';
 export { itemsApi, type GetItemsOptions, type GetItemsResult } from './items';

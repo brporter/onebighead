@@ -20,19 +20,22 @@ public class ItemsController : ApiControllerBase
     private readonly ICollectionRepository _collectionRepository;
     private readonly IVisibilityService _visibilityService;
     private readonly IBulkUpdateQueue _bulkUpdateQueue;
+    private readonly IWorkspaceStatisticsRepository _statisticsRepository;
 
     public ItemsController(
         IItemRepository itemRepository,
         ICategoryRepository categoryRepository,
         ICollectionRepository collectionRepository,
         IVisibilityService visibilityService,
-        IBulkUpdateQueue bulkUpdateQueue)
+        IBulkUpdateQueue bulkUpdateQueue,
+        IWorkspaceStatisticsRepository statisticsRepository)
     {
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
         _collectionRepository = collectionRepository;
         _visibilityService = visibilityService;
         _bulkUpdateQueue = bulkUpdateQueue;
+        _statisticsRepository = statisticsRepository;
     }
 
     [HttpGet]
@@ -179,7 +182,7 @@ public class ItemsController : ApiControllerBase
         {
             return NotFound();
         }
-        
+
         // Compute effective visibility
         var collection = await _collectionRepository.GetByWorkspaceIdAsync(workspaceId);
         if (collection != null)
@@ -187,12 +190,12 @@ public class ItemsController : ApiControllerBase
             var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
             _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
-            var category = item.CategoryId.HasValue 
-                ? categoryList.FirstOrDefault(c => c.Id == item.CategoryId.Value) 
+            var category = item.CategoryId.HasValue
+                ? categoryList.FirstOrDefault(c => c.Id == item.CategoryId.Value)
                 : null;
             _visibilityService.ComputeEffectiveVisibility(item, collection, category);
         }
-        
+
         return Ok(item);
     }
 
@@ -272,6 +275,23 @@ public class ItemsController : ApiControllerBase
         if (!deleted)
         {
             return NotFound();
+        }
+        return NoContent();
+    }
+
+    [HttpPost("{id}/view")]
+    public async Task<IActionResult> RecordItemView(int id)
+    {
+        var workspaceId = GetWorkspaceId();
+        try
+        {
+            await _statisticsRepository.IncrementAsync(
+                workspaceId, Models.StatisticType.DailyItemView, 1,
+                DateOnly.FromDateTime(DateTime.UtcNow));
+        }
+        catch
+        {
+            // Non-critical — don't fail the request
         }
         return NoContent();
     }

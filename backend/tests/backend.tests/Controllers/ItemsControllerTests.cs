@@ -19,6 +19,7 @@ public class ItemsControllerTests
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
     private readonly Mock<IVisibilityService> _mockVisibilityService;
     private readonly Mock<IBulkUpdateQueue> _mockBulkUpdateQueue;
+    private readonly Mock<IWorkspaceStatisticsRepository> _mockStatisticsRepository;
     private readonly ItemsController _controller;
     private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 1;
@@ -31,12 +32,14 @@ public class ItemsControllerTests
         _mockCollectionRepository = new Mock<ICollectionRepository>();
         _mockVisibilityService = new Mock<IVisibilityService>();
         _mockBulkUpdateQueue = new Mock<IBulkUpdateQueue>();
+        _mockStatisticsRepository = new Mock<IWorkspaceStatisticsRepository>();
         _controller = new ItemsController(
             _mockItemRepository.Object,
             _mockCategoryRepository.Object,
             _mockCollectionRepository.Object,
             _mockVisibilityService.Object,
-            _mockBulkUpdateQueue.Object);
+            _mockBulkUpdateQueue.Object,
+            _mockStatisticsRepository.Object);
 
         var claims = new List<Claim>
         {

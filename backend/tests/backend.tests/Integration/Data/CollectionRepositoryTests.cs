@@ -1,6 +1,7 @@
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 
 namespace OneBigHead.Server.Tests.Integration.Data;
 
@@ -19,7 +20,7 @@ public class CollectionRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new CollectionRepository(_context);
+        _repository = new CollectionRepository(_context, new Mock<IWorkspaceStatisticsRepository>().Object);
     }
 
     public void Dispose()

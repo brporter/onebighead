@@ -4,7 +4,8 @@ import '../styles/App.css';
 import '../styles/SettingsView.css';
 import { useData } from '../contexts/DataContext';
 import { useUser } from '../contexts/UserContext';
-import { exportApi, workspacesApi } from '../api';
+import { exportApi, workspacesApi, dashboardApi } from '../api';
+import type { DashboardData } from '../api';
 import type { RestorableWorkspace } from '../api/workspaces';
 import ItemTemplateEditor from '../components/template/ItemTemplateEditor';
 import CollectionTemplateEditor from '../components/collection/CollectionTemplateEditor';
@@ -19,7 +20,7 @@ import { SiteHeader, SiteFooter } from '../components/common';
 import type { Collection, WorkspaceMembership } from '../utils/types';
 import { Visibility, WorkspaceRole } from '../utils/types';
 
-type SettingsSection = 'collections' | 'templates' | 'team' | 'workspaces' | 'export' | 'support' | 'account';
+type SettingsSection = 'dashboard' | 'collections' | 'templates' | 'team' | 'workspaces' | 'export' | 'support' | 'account';
 
 function SettingsView() {
   const navigate = useNavigate();
@@ -27,10 +28,10 @@ function SettingsView() {
   const { user } = useUser();
   const { collections, addCollection, updateCollection, deleteCollection, loadCollections } = useData();
   
-  // Initialize section from URL query param or default to collections
-  const initialSection = (searchParams.get('section') as SettingsSection) || 'collections';
+  // Initialize section from URL query param or default to dashboard
+  const initialSection = (searchParams.get('section') as SettingsSection) || 'dashboard';
   const [activeSection, setActiveSection] = useState<SettingsSection>(
-    ['collections', 'templates', 'team', 'workspaces', 'export', 'support', 'account'].includes(initialSection) ? initialSection : 'collections'
+    ['dashboard', 'collections', 'templates', 'team', 'workspaces', 'export', 'support', 'account'].includes(initialSection) ? initialSection : 'dashboard'
   );
 
   // Workspace management state
@@ -55,6 +56,8 @@ function SettingsView() {
   const [editingCollectionTemplates, setEditingCollectionTemplates] = useState<Collection | null>(null);
   const [collectionTemplateEditorDirty, setCollectionTemplateEditorDirty] = useState(false);
   const [teamManagementDirty, setTeamManagementDirty] = useState(false);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
 
   const hasUnsavedChanges = useCallback(() => {
     if (activeSection === 'templates' && templateEditorDirty) return true;
@@ -83,6 +86,18 @@ function SettingsView() {
   useEffect(() => {
     loadCollections();
   }, [loadCollections]);
+
+  // Load dashboard data when dashboard section is active
+  useEffect(() => {
+    if (activeSection !== 'dashboard') return;
+    let cancelled = false;
+    setDashboardLoading(true);
+    dashboardApi.get()
+      .then((data) => { if (!cancelled) setDashboardData(data); })
+      .catch(() => { /* silently fail */ })
+      .finally(() => { if (!cancelled) setDashboardLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeSection]);
 
   // Load deleted workspaces when workspaces section is active
   useEffect(() => {
@@ -224,6 +239,84 @@ function SettingsView() {
   };
 
   const isEditing = isAdding || editingId !== null;
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const value = bytes / Math.pow(1024, i);
+    return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+  };
+
+  const renderDashboardSection = () => {
+    if (dashboardLoading || !dashboardData) {
+      return (
+        <div className="settings-section">
+          <div className="settings-section__header">
+            <div>
+              <h2 className="settings-section__title">Dashboard</h2>
+              <p className="settings-section__description">Loading workspace statistics...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const maxView = Math.max(...dashboardData.dailyViews.map(d => d.viewCount), 1);
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return (
+      <div className="settings-section">
+        <div className="settings-section__header">
+          <div>
+            <h2 className="settings-section__title">Dashboard</h2>
+            <p className="settings-section__description">
+              Overview of your workspace activity and statistics.
+            </p>
+          </div>
+        </div>
+
+        <div className="dashboard-stats">
+          <div className="dashboard-stats__card">
+            <div className="dashboard-stats__value">{dashboardData.collectionCount}</div>
+            <div className="dashboard-stats__label">Collections</div>
+          </div>
+          <div className="dashboard-stats__card">
+            <div className="dashboard-stats__value">{dashboardData.itemCount}</div>
+            <div className="dashboard-stats__label">Items</div>
+          </div>
+          <div className="dashboard-stats__card">
+            <div className="dashboard-stats__value">{dashboardData.imageCount}</div>
+            <div className="dashboard-stats__label">Images</div>
+            <div className="dashboard-stats__detail">{formatBytes(dashboardData.imageTotalSizeBytes)}</div>
+          </div>
+        </div>
+
+        <div className="dashboard-chart">
+          <h3 className="dashboard-chart__title">Item Views (Last 7 Days)</h3>
+          <div className="dashboard-chart__bars">
+            {dashboardData.dailyViews.map((day) => {
+              const pct = maxView > 0 ? (day.viewCount / maxView) * 100 : 0;
+              const dateObj = new Date(day.date + 'T00:00:00');
+              const label = dayLabels[dateObj.getDay()];
+              return (
+                <div key={day.date} className="dashboard-chart__bar-wrapper">
+                  <div className="dashboard-chart__bar-count">{day.viewCount}</div>
+                  <div className="dashboard-chart__bar-track">
+                    <div
+                      className="dashboard-chart__bar"
+                      style={{ height: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="dashboard-chart__bar-label">{label}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderCollectionsSection = () => {
     if (showSetupWizard) {
@@ -685,6 +778,8 @@ function SettingsView() {
 
   const renderContent = () => {
     switch (activeSection) {
+      case 'dashboard':
+        return renderDashboardSection();
       case 'collections':
         return renderCollectionsSection();
       case 'templates':
@@ -700,12 +795,13 @@ function SettingsView() {
       case 'account':
         return renderAccountSection();
       default:
-        return renderCollectionsSection();
+        return renderDashboardSection();
     }
   };
 
   const navItems = useMemo(() => {
     const items: { id: SettingsSection; label: string; icon: string }[] = [
+      { id: 'dashboard', label: 'Dashboard', icon: '📊' },
       { id: 'collections', label: 'Collections', icon: '📚' },
     ];
 

@@ -7,6 +7,7 @@ using OneBigHead.Server.Services.BulkUpdate;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -34,9 +35,10 @@ public class ItemsControllerIntegrationTests : IDisposable
         _context = new AppDbContext(options);
 
         // Set up real repositories
-        var itemRepository = new ItemRepository(_context);
+        var mockStatsRepo = new Mock<IWorkspaceStatisticsRepository>().Object;
+        var itemRepository = new ItemRepository(_context, mockStatsRepo);
         var categoryRepository = new CategoryRepository(_context);
-        var collectionRepository = new CollectionRepository(_context);
+        var collectionRepository = new CollectionRepository(_context, mockStatsRepo);
         var visibilityService = new VisibilityService();
 
         _controller = new ItemsController(
@@ -44,7 +46,8 @@ public class ItemsControllerIntegrationTests : IDisposable
             categoryRepository,
             collectionRepository,
             visibilityService,
-            new BulkUpdateQueue());
+            new BulkUpdateQueue(),
+            new Mock<IWorkspaceStatisticsRepository>().Object);
 
         // Configure claims
         var claims = new List<Claim>

@@ -1178,3 +1178,98 @@
   font-size: 0.9rem;
   margin-bottom: var(--space-md);
 }
+
+/* Dashboard stats grid */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.dashboard-stats__card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.dashboard-stats__value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.dashboard-stats__label {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.dashboard-stats__detail {
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-xs);
+}
+
+/* Dashboard bar chart */
+.dashboard-chart {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  background: var(--color-bg);
+}
+
+.dashboard-chart__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-lg) 0;
+}
+
+.dashboard-chart__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-md);
+  height: 200px;
+}
+
+.dashboard-chart__bar-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.dashboard-chart__bar-count {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+  min-height: 1.2em;
+}
+
+.dashboard-chart__bar-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.dashboard-chart__bar {
+  width: 70%;
+  max-width: 48px;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  min-height: 2px;
+  transition: height 0.3s ease;
+}
+
+.dashboard-chart__bar-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}

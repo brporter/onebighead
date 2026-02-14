@@ -1,6 +1,7 @@
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Services;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 
 namespace OneBigHead.Server.Tests.Services;
 
@@ -19,7 +20,7 @@ public class DatabaseImageProviderTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _provider = new DatabaseImageProvider(_context);
+        _provider = new DatabaseImageProvider(_context, new Mock<IWorkspaceStatisticsRepository>().Object);
     }
 
     public void Dispose()

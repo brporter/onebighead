@@ -6,10 +6,12 @@ namespace OneBigHead.Server.Data;
 public class ItemRepository : IItemRepository
 {
     private readonly AppDbContext _context;
+    private readonly IWorkspaceStatisticsRepository _statsRepository;
 
-    public ItemRepository(AppDbContext context)
+    public ItemRepository(AppDbContext context, IWorkspaceStatisticsRepository statsRepository)
     {
         _context = context;
+        _statsRepository = statsRepository;
     }
 
     public async Task<IEnumerable<Item>> GetAllAsync(int workspaceId)
@@ -40,6 +42,7 @@ public class ItemRepository : IItemRepository
     {
         _context.Items.Add(item);
         await _context.SaveChangesAsync();
+        await _statsRepository.IncrementAsync(item.WorkspaceId, Models.StatisticType.ItemCount);
         return item;
     }
 
@@ -78,6 +81,7 @@ public class ItemRepository : IItemRepository
 
         _context.Items.Remove(item);
         await _context.SaveChangesAsync();
+        await _statsRepository.DecrementAsync(workspaceId, Models.StatisticType.ItemCount);
         return true;
     }
 

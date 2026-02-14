@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
     public DbSet<SupportReply> SupportReplies => Set<SupportReply>();
     public DbSet<WorkspaceUser> WorkspaceUsers => Set<WorkspaceUser>();
+    public DbSet<WorkspaceStatistic> WorkspaceStatistics => Set<WorkspaceStatistic>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -325,6 +326,17 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(r => r.SupportRequestId);
             entity.HasIndex(r => new { r.SupportRequestId, r.IsFromAdmin, r.IsRead });
+        });
+
+        modelBuilder.Entity<WorkspaceStatistic>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+
+            entity.Property(s => s.StatisticType)
+                .HasConversion<int>();
+
+            entity.HasIndex(s => new { s.WorkspaceId, s.StatisticType, s.Date }).IsUnique();
+            entity.HasIndex(s => s.WorkspaceId);
         });
     }
 }

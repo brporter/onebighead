@@ -58,6 +58,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddTracingDecorator<IThemeRepository, ThemeRepository>(repoSource);
     builder.Services.AddTracingDecorator<ISupportRepository, SupportRepository>(repoSource);
     builder.Services.AddTracingDecorator<IImageProvider, DatabaseImageProvider>(repoSource);
+    builder.Services.AddTracingDecorator<IWorkspaceStatisticsRepository, WorkspaceStatisticsRepository>(repoSource);
     builder.Services.AddTracingDecorator<IVisibilityService, VisibilityService>(appSource);
     builder.Services.AddTracingDecorator<IWorkspaceDeletionService, WorkspaceDeletionService>(appSource);
     builder.Services.AddTracingDecorator<IUserDeletionService, UserDeletionService>(appSource);
@@ -77,6 +78,7 @@ else
     builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
     builder.Services.AddScoped<ISupportRepository, SupportRepository>();
     builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
+    builder.Services.AddScoped<IWorkspaceStatisticsRepository, WorkspaceStatisticsRepository>();
     builder.Services.AddScoped<IVisibilityService, VisibilityService>();
     builder.Services.AddScoped<IWorkspaceDeletionService, WorkspaceDeletionService>();
     builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();

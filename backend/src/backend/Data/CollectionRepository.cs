@@ -6,10 +6,12 @@ namespace OneBigHead.Server.Data;
 public class CollectionRepository : ICollectionRepository
 {
     private readonly AppDbContext _context;
+    private readonly IWorkspaceStatisticsRepository _statsRepository;
 
-    public CollectionRepository(AppDbContext context)
+    public CollectionRepository(AppDbContext context, IWorkspaceStatisticsRepository statsRepository)
     {
         _context = context;
+        _statsRepository = statsRepository;
     }
 
     public async Task<IEnumerable<Collection>> GetAllAsync(int workspaceId)
@@ -46,6 +48,7 @@ public class CollectionRepository : ICollectionRepository
     {
         _context.Collections.Add(collection);
         await _context.SaveChangesAsync();
+        await _statsRepository.IncrementAsync(collection.WorkspaceId, Models.StatisticType.CollectionCount);
         return collection;
     }
 
@@ -83,10 +86,18 @@ public class CollectionRepository : ICollectionRepository
         var items = await _context.Items
             .Where(i => i.CollectionId == id)
             .ToListAsync();
+        var itemCount = items.Count;
         _context.Items.RemoveRange(items);
 
         _context.Collections.Remove(collection);
         await _context.SaveChangesAsync();
+
+        await _statsRepository.DecrementAsync(workspaceId, Models.StatisticType.CollectionCount);
+        if (itemCount > 0)
+        {
+            await _statsRepository.DecrementAsync(workspaceId, Models.StatisticType.ItemCount, itemCount);
+        }
+
         return true;
     }
 

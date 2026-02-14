@@ -7,6 +7,7 @@ import { BackNav, Loading, BulkUpdateModal, type ScopeOption } from '../componen
 import CategoryTree from '../components/category/CategoryTree';
 import TemplateSelector from '../components/template/TemplateSelector';
 import { bulkUpdatesApi } from '../api/bulkUpdates';
+import { itemsApi } from '../api/items';
 import { createEmptyItem } from '../utils/itemUtils';
 import type { Item, ItemProperty } from '../utils/types';
 
@@ -123,6 +124,13 @@ function ItemView() {
     // First check items array, then fall back to deep linked item
     return items.find((item) => item.id === itemIdNum) ?? deepLinkedItem;
   }, [items, itemIdNum, deepLinkedItem]);
+
+  // Fire-and-forget view tracking
+  useEffect(() => {
+    if (selectedItem?.id) {
+      itemsApi.recordView(selectedItem.id).catch(() => {});
+    }
+  }, [selectedItem?.id]);
 
   const newItemTemplate = useMemo(() => {
     if (!isNewItem || categoryIdNum == null || !currentCollection) return null;

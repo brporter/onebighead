@@ -61,4 +61,8 @@ export const itemsApi = {
   delete(id: number): Promise<void> {
     return api.delete(`/items/${id}`);
   },
+
+  recordView(id: number): Promise<void> {
+    return api.post(`/items/${id}/view`);
+  },
 };

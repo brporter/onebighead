@@ -7,10 +7,12 @@ namespace OneBigHead.Server.Services;
 public class DatabaseImageProvider : IImageProvider
 {
     private readonly AppDbContext _context;
+    private readonly IWorkspaceStatisticsRepository _statsRepository;
 
-    public DatabaseImageProvider(AppDbContext context)
+    public DatabaseImageProvider(AppDbContext context, IWorkspaceStatisticsRepository statsRepository)
     {
         _context = context;
+        _statsRepository = statsRepository;
     }
 
     public async Task<StoredImageInfo> StoreAsync(int workspaceId, string fileName, string contentType, Stream data)
@@ -32,6 +34,9 @@ public class DatabaseImageProvider : IImageProvider
         _context.StoredImages.Add(image);
         await _context.SaveChangesAsync();
 
+        await _statsRepository.IncrementAsync(workspaceId, StatisticType.ImageCount);
+        await _statsRepository.IncrementAsync(workspaceId, StatisticType.TotalImageSizeBytes, imageData.Length);
+
         var url = $"/api/images/{image.Id}";
         return new StoredImageInfo(image.Id, url);
     }
@@ -52,11 +57,15 @@ public class DatabaseImageProvider : IImageProvider
     {
         var image = await _context.StoredImages
             .FirstOrDefaultAsync(i => i.Id == key && i.WorkspaceId == workspaceId);
-        
+
         if (image != null)
         {
+            var imageSize = image.Data.Length;
             _context.StoredImages.Remove(image);
             await _context.SaveChangesAsync();
+
+            await _statsRepository.DecrementAsync(workspaceId, StatisticType.ImageCount);
+            await _statsRepository.DecrementAsync(workspaceId, StatisticType.TotalImageSizeBytes, imageSize);
         }
     }
 }
