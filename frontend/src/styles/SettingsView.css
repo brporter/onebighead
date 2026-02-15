@@ -1273,3 +1273,78 @@
   color: var(--color-text-secondary);
   margin-top: var(--space-xs);
 }
+
+/* ==========================================================================
+   Public Access Section
+   ========================================================================== */
+
+.settings-public-access {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  max-width: 600px;
+  margin-top: var(--space-lg);
+}
+
+.settings-public-access__loading {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin: 0;
+  padding: var(--space-lg) 0;
+}
+
+.settings-public-access__success {
+  padding: var(--space-md);
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border, var(--color-success));
+  border-radius: var(--radius-md);
+  color: var(--color-success);
+  font-size: 0.9rem;
+}
+
+.settings-public-access__toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.settings-public-access__toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.settings-public-access__toggle-label input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-public-access__preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.settings-public-access__preview-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.settings-public-access__preview-url {
+  font-size: 0.9rem;
+  font-family: monospace;
+  color: var(--color-primary);
+  background: var(--color-bg);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
