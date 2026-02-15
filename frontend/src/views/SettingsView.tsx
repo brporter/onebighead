@@ -626,6 +626,7 @@ function SettingsView() {
     }
   };
 
+  // TODO: Extract toSlug to a utility module if needed elsewhere
   const toSlug = (name: string): string => {
     return name
       .toLowerCase()

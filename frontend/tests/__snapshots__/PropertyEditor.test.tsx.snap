@@ -120,6 +120,8 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
           </div>
           <input
             class="propertyEditor__input propertyEditor__input--category"
+            data-field="category"
+            data-property-id="item-prop-test-0"
             list="property-category-suggestions"
             placeholder="Category"
             type="text"
@@ -127,6 +129,8 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
           />
           <input
             class="propertyEditor__input propertyEditor__input--name"
+            data-field="name"
+            data-property-id="item-prop-test-0"
             list="property-name-suggestions"
             placeholder="Name"
             type="text"
@@ -134,6 +138,8 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
           />
           <input
             class="propertyEditor__input propertyEditor__input--value"
+            data-field="value"
+            data-property-id="item-prop-test-0"
             placeholder="Value"
             type="text"
             value="Value1"
@@ -207,6 +213,8 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
           </div>
           <input
             class="propertyEditor__input propertyEditor__input--category"
+            data-field="category"
+            data-property-id="item-prop-test-1"
             list="property-category-suggestions"
             placeholder="Category"
             type="text"
@@ -214,6 +222,8 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
           />
           <input
             class="propertyEditor__input propertyEditor__input--name"
+            data-field="name"
+            data-property-id="item-prop-test-1"
             list="property-name-suggestions"
             placeholder="Name"
             type="text"
@@ -221,6 +231,8 @@ exports[`PropertyEditor > snapshots > should render with properties 1`] = `
           />
           <input
             class="propertyEditor__input propertyEditor__input--value"
+            data-field="value"
+            data-property-id="item-prop-test-1"
             placeholder="Value"
             type="text"
             value="Value2"

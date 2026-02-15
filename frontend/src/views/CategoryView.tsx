@@ -113,6 +113,7 @@ function CategoryView() {
 
   useEffect(() => {
     if (collectionIdNum && currentCollection) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- checkBulkUpdate sets state asynchronously via API call callbacks, not synchronously
       checkBulkUpdate(collectionIdNum);
     }
     return () => {

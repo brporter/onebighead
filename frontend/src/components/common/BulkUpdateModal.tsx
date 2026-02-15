@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react';
 import { bulkUpdatesApi } from '../../api/bulkUpdates';
 import type { BulkUpdateJobResponse, EnqueueBulkUpdateRequest } from '../../api/bulkUpdates';
 import '../../styles/components/BulkUpdateModal.css';
@@ -42,12 +42,20 @@ function BulkUpdateModal({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const pollRef = useRef<number | null>(null);
 
+  const stopPolling = useCallback(() => {
+    if (pollRef.current !== null) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
   // Control dialog open/close
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
 
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state when dialog opens is intentional synchronization with the isOpen prop
       setPhase('prompt');
       setJob(null);
       setError(null);
@@ -70,19 +78,12 @@ function BulkUpdateModal({
 
     dialog.addEventListener('close', handleClose);
     return () => dialog.removeEventListener('close', handleClose);
-  }, [onClose]);
+  }, [onClose, stopPolling]);
 
   // Cleanup polling on unmount
   useEffect(() => {
     return () => stopPolling();
-  }, []);
-
-  const stopPolling = () => {
-    if (pollRef.current !== null) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  };
+  }, [stopPolling]);
 
   const startPolling = useCallback((jobId: string) => {
     stopPolling();
@@ -101,7 +102,7 @@ function BulkUpdateModal({
         setPhase('complete');
       }
     }, 500);
-  }, []);
+  }, [stopPolling]);
 
   const handleApply = async () => {
     const option = scopeOptions[selectedScope];
@@ -143,7 +144,7 @@ function BulkUpdateModal({
     onClose();
   };
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
+  const handleBackdropClick = (e: MouseEvent<HTMLDialogElement>) => {
     if (e.target === e.currentTarget && phase !== 'progress') {
       handleClose();
     }

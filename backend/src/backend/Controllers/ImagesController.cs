@@ -132,6 +132,8 @@ public class ImagesController : ApiControllerBase
     /// Get an image by key without authentication. Used for public collection browsing.
     /// Image GUIDs are unguessable, providing security through obscurity for the initial implementation.
     /// </summary>
+    // TODO: Consider adding workspace-level visibility checks (verify the image belongs to a
+    // workspace with public access enabled) in a future iteration.
     [HttpGet("public/{key:guid}")]
     [AllowAnonymous]
     [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]

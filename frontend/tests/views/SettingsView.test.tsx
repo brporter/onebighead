@@ -211,7 +211,7 @@ describe('SettingsView', () => {
   const mockDeleteCollection = vi.fn();
   const mockLoadCollections = vi.fn();
 
-  const renderWithRouter = (initialEntries: string[] = ['/settings']) => {
+  const renderWithRouter = (initialEntries: string[] = ['/settings?section=collections']) => {
     return render(
       <MemoryRouter initialEntries={initialEntries}>
         <SettingsView />
@@ -340,10 +340,10 @@ describe('SettingsView', () => {
   });
 
   describe('section navigation', () => {
-    it('should default to collections section', () => {
-      renderWithRouter();
+    it('should default to dashboard section', () => {
+      renderWithRouter(['/settings']);
 
-      expect(screen.getByText(/Manage your collections/)).toBeInTheDocument();
+      expect(screen.getByText(/Loading workspace statistics/)).toBeInTheDocument();
     });
 
     it('should switch to templates section', async () => {

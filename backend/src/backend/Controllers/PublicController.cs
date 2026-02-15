@@ -7,6 +7,7 @@ using OneBigHead.Server.Services;
 
 namespace OneBigHead.Server.Controllers;
 
+// TODO: Add rate limiting to public endpoints using the existing rate limiting infrastructure in Program.cs
 [ApiController]
 [Route("api/public")]
 [AllowAnonymous]
@@ -52,6 +53,8 @@ public class PublicController : ControllerBase
     /// <summary>
     /// List all public collections in a workspace.
     /// </summary>
+    // TODO: Add pagination when collection sizes warrant it. Note: EffectiveIsPublic is computed
+    // in-memory, so DB-level pagination requires denormalizing visibility into a persisted column.
     [HttpGet("{slug}/collections")]
     public async Task<ActionResult<List<PublicCollectionDto>>> GetCollections(string slug)
     {
@@ -67,7 +70,7 @@ public class PublicController : ControllerBase
                 Id = c.Id,
                 Name = c.Name,
                 Description = c.Description,
-                HeroImageUrl = c.HeroImageUrl,
+                HeroImageUrl = ToPublicImageUrl(c.HeroImageUrl),
                 Slug = c.Slug
             })
             .ToList();
@@ -113,7 +116,7 @@ public class PublicController : ControllerBase
                 Id = collection.Id,
                 Name = collection.Name,
                 Description = collection.Description,
-                HeroImageUrl = collection.HeroImageUrl,
+                HeroImageUrl = ToPublicImageUrl(collection.HeroImageUrl),
                 Slug = collection.Slug
             },
             Categories = publicCategories
@@ -123,6 +126,8 @@ public class PublicController : ControllerBase
     /// <summary>
     /// List public items in a collection, with optional category filter.
     /// </summary>
+    // TODO: Add pagination when collection sizes warrant it. Note: EffectiveIsPublic is computed
+    // in-memory, so DB-level pagination requires denormalizing visibility into a persisted column.
     [HttpGet("{slug}/collections/{collectionId:int}/items")]
     public async Task<ActionResult<List<PublicItemSummaryDto>>> GetItems(string slug, int collectionId, [FromQuery] int? categoryId)
     {
@@ -148,7 +153,7 @@ public class PublicController : ControllerBase
                 Id = i.Id ?? 0,
                 Name = i.Name,
                 Summary = i.Summary,
-                PrimaryImageUrl = i.Images.FirstOrDefault()?.Url,
+                PrimaryImageUrl = ToPublicImageUrl(i.Images.FirstOrDefault()?.Url),
                 CategoryId = i.CategoryId
             })
             .ToList();
@@ -202,12 +207,19 @@ public class PublicController : ControllerBase
             }).ToList(),
             Images = item.Images.Select(img => new PublicItemImageDto
             {
-                Url = img.Url,
+                Url = ToPublicImageUrl(img.Url)!,
                 Alt = img.Alt
             }).ToList(),
             CategoryId = item.CategoryId,
             CategoryName = category?.Name,
             TemplateKey = item.TemplateKey
         });
+    }
+
+    private static string? ToPublicImageUrl(string? url)
+    {
+        if (url != null && url.StartsWith("/api/images/") && !url.StartsWith("/api/images/public/"))
+            return url.Replace("/api/images/", "/api/images/public/");
+        return url;
     }
 }

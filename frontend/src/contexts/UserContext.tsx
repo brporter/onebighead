@@ -54,6 +54,7 @@ export function UserProvider({ children }: UserProviderProps) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- setLoading runs asynchronously via .finally(), not synchronously in the effect body
     fetchUser().finally(() => setLoading(false));
   }, [fetchUser]);
 

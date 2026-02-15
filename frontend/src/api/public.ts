@@ -43,7 +43,6 @@ export interface PublicItemProperty {
 export interface PublicItemImage {
   url: string;
   alt: string | null;
-  sortOrder: number;
 }
 
 export interface PublicItem {

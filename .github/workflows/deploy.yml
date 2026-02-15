@@ -101,7 +101,6 @@ jobs:
       - name: Build frontend
         run: |
           cd frontend
-          npm ci
           npm run build
 
   # Build and deploy to Azure
