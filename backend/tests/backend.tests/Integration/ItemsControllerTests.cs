@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 
@@ -45,7 +44,7 @@ public class ItemsControllerTests : IntegrationTestBase
             Name = "Test Category",
             CollectionId = 1
         };
-        var categoryResponse = await Client.PostAsJsonAsync("/api/categories", categoryRequest);
+        var categoryResponse = await PostJsonAsync("/api/categories", categoryRequest);
         var category = await DeserializeResponseAsync<Category>(categoryResponse);
 
         await CreateTestItem("Item in Category", categoryId: category!.Id);
@@ -180,7 +179,7 @@ public class ItemsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PostAsJsonAsync("/api/items", request);
+        var response = await PostJsonAsync("/api/items", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -205,7 +204,7 @@ public class ItemsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PostAsJsonAsync("/api/items", request);
+        var response = await PostJsonAsync("/api/items", request);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -235,7 +234,7 @@ public class ItemsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PostAsJsonAsync("/api/items", request);
+        var response = await PostJsonAsync("/api/items", request);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -253,7 +252,7 @@ public class ItemsControllerTests : IntegrationTestBase
             Name = "Item Category",
             CollectionId = 1
         };
-        var categoryResponse = await Client.PostAsJsonAsync("/api/categories", categoryRequest);
+        var categoryResponse = await PostJsonAsync("/api/categories", categoryRequest);
         var category = await DeserializeResponseAsync<Category>(categoryResponse);
 
         var request = new CreateItemRequest
@@ -264,7 +263,7 @@ public class ItemsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PostAsJsonAsync("/api/items", request);
+        var response = await PostJsonAsync("/api/items", request);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -290,7 +289,7 @@ public class ItemsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PutAsJsonAsync($"/api/items/{item.Id}", request);
+        var response = await PutJsonAsync($"/api/items/{item.Id}", request);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -313,7 +312,7 @@ public class ItemsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PutAsJsonAsync($"/api/items/{item.Id}", request);
+        var response = await PutJsonAsync($"/api/items/{item.Id}", request);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -332,7 +331,7 @@ public class ItemsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PutAsJsonAsync("/api/items/99999", request);
+        var response = await PutJsonAsync("/api/items/99999", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -348,7 +347,7 @@ public class ItemsControllerTests : IntegrationTestBase
             Name = "New Category",
             CollectionId = 1
         };
-        var categoryResponse = await Client.PostAsJsonAsync("/api/categories", newCategoryRequest);
+        var categoryResponse = await PostJsonAsync("/api/categories", newCategoryRequest);
         var newCategory = await DeserializeResponseAsync<Category>(categoryResponse);
 
         var request = new UpdateItemRequest
@@ -359,7 +358,7 @@ public class ItemsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PutAsJsonAsync($"/api/items/{item.Id}", request);
+        var response = await PutJsonAsync($"/api/items/{item.Id}", request);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -417,7 +416,7 @@ public class ItemsControllerTests : IntegrationTestBase
                 new("General", "Condition", "New")
             }
         };
-        var createResponse = await Client.PostAsJsonAsync("/api/items", createRequest);
+        var createResponse = await PostJsonAsync("/api/items", createRequest);
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var created = await DeserializeResponseAsync<Item>(createResponse);
 
@@ -440,7 +439,7 @@ public class ItemsControllerTests : IntegrationTestBase
                 new("General", "Condition", "Like New")
             }
         };
-        var updateResponse = await Client.PutAsJsonAsync($"/api/items/{created.Id}", updateRequest);
+        var updateResponse = await PutJsonAsync($"/api/items/{created.Id}", updateRequest);
         Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
         var updated = await DeserializeResponseAsync<Item>(updateResponse);
         Assert.Equal("Updated Round Trip Item", updated!.Name);
@@ -472,7 +471,7 @@ public class ItemsControllerTests : IntegrationTestBase
             UserFlag = userFlag
         };
 
-        var response = await Client.PostAsJsonAsync("/api/items", request);
+        var response = await PostJsonAsync("/api/items", request);
         response.EnsureSuccessStatusCode();
         return (await DeserializeResponseAsync<Item>(response))!;
     }
