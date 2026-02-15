@@ -33,19 +33,16 @@ export function UserProvider({ children }: UserProviderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
-      setLoading(true);
       setError(null);
       const data = await authApi.getCurrentUser();
       setUser(data);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to fetch user'));
       setUser(null);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -57,8 +54,8 @@ export function UserProvider({ children }: UserProviderProps) {
   }, []);
 
   useEffect(() => {
-    fetchUser();
-  }, []);
+    fetchUser().finally(() => setLoading(false));
+  }, [fetchUser]);
 
   return (
     <UserContext.Provider value={{ user, loading, error, refetch: fetchUser, logout }}>
