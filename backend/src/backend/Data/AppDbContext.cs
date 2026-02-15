@@ -39,6 +39,9 @@ public class AppDbContext : DbContext
             entity.HasKey(w => w.Id);
             entity.HasIndex(w => w.Name);
             entity.HasIndex(w => w.IsDeleted);
+            entity.HasIndex(w => w.Slug)
+                .IsUnique()
+                .HasFilter("[Slug] IS NOT NULL");
         });
 
         modelBuilder.Entity<User>(entity =>
