@@ -46,4 +46,10 @@ public class WorkspaceRepository : IWorkspaceRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(w => w.Slug == slug && w.IsPublicAccessEnabled && !w.IsDeleted);
     }
+
+    public async Task<bool> IsSlugTakenAsync(string slug, int? excludeWorkspaceId = null)
+    {
+        return await _context.Workspaces
+            .AnyAsync(w => w.Slug == slug && !w.IsDeleted && (!excludeWorkspaceId.HasValue || w.Id != excludeWorkspaceId.Value));
+    }
 }

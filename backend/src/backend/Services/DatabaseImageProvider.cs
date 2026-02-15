@@ -53,6 +53,18 @@ public class DatabaseImageProvider : IImageProvider
         return new RetrievedImage(image.Data, image.ContentType, image.FileName);
     }
 
+    public async Task<RetrievedImage?> RetrieveByKeyAsync(Guid key)
+    {
+        var image = await _context.StoredImages
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == key);
+
+        if (image == null)
+            return null;
+
+        return new RetrievedImage(image.Data, image.ContentType, image.FileName);
+    }
+
     public async Task DeleteAsync(Guid key, int workspaceId)
     {
         var image = await _context.StoredImages

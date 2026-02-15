@@ -128,6 +128,24 @@ public class ImagesController : ApiControllerBase
         return File(image.Data, image.ContentType, image.FileName);
     }
 
+    /// <summary>
+    /// Get an image by key without authentication. Used for public collection browsing.
+    /// Image GUIDs are unguessable, providing security through obscurity for the initial implementation.
+    /// </summary>
+    [HttpGet("public/{key:guid}")]
+    [AllowAnonymous]
+    [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
+    public async Task<IActionResult> GetPublic(Guid key)
+    {
+        var image = await _imageProvider.RetrieveByKeyAsync(key);
+        if (image == null)
+        {
+            return NotFound();
+        }
+
+        return File(image.Data, image.ContentType, image.FileName);
+    }
+
     [HttpDelete("{key:guid}")]
     public async Task<IActionResult> Delete(Guid key)
     {

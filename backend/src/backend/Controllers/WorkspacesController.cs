@@ -613,6 +613,100 @@ public class WorkspacesController : ApiControllerBase
     }
 
     /// <summary>
+    /// Update workspace public access settings (requires WorkspaceAdmin)
+    /// </summary>
+    [HttpPut("{workspaceId}/public-access")]
+    [Authorize(Policy = "WorkspaceAdmin")]
+    public async Task<IActionResult> UpdatePublicAccess(int workspaceId, [FromBody] UpdateWorkspacePublicAccessRequest request)
+    {
+        var userId = GetUserId();
+        var membership = await _workspaceUserRepository.GetMembershipAsync(userId, workspaceId);
+        if (membership == null || membership.WorkspaceRole != WorkspaceRole.WorkspaceAdmin)
+        {
+            return Forbid();
+        }
+
+        var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
+        if (workspace == null)
+        {
+            return NotFound();
+        }
+
+        if (request.IsPublicAccessEnabled && string.IsNullOrEmpty(request.Slug))
+        {
+            return BadRequest(new { error = "A slug is required to enable public access" });
+        }
+
+        if (!string.IsNullOrEmpty(request.Slug))
+        {
+            var slugTaken = await _workspaceRepository.IsSlugTakenAsync(request.Slug, excludeWorkspaceId: workspaceId);
+            if (slugTaken)
+            {
+                return Conflict(new { error = "This slug is already taken" });
+            }
+        }
+
+        workspace.Slug = request.Slug;
+        workspace.IsPublicAccessEnabled = request.IsPublicAccessEnabled;
+        await _workspaceRepository.UpdateAsync(workspace);
+
+        var publicUrl = request.IsPublicAccessEnabled && !string.IsNullOrEmpty(request.Slug)
+            ? $"/public/{request.Slug}"
+            : null;
+
+        return Ok(new UpdateWorkspacePublicAccessResponse
+        {
+            WorkspaceId = workspace.Id,
+            Slug = workspace.Slug,
+            IsPublicAccessEnabled = workspace.IsPublicAccessEnabled,
+            PublicUrl = publicUrl
+        });
+    }
+
+    /// <summary>
+    /// Get workspace public access settings (requires WorkspaceAdmin)
+    /// </summary>
+    [HttpGet("{workspaceId}/public-access")]
+    [Authorize(Policy = "WorkspaceAdmin")]
+    public async Task<IActionResult> GetPublicAccess(int workspaceId)
+    {
+        var userId = GetUserId();
+        var membership = await _workspaceUserRepository.GetMembershipAsync(userId, workspaceId);
+        if (membership == null || membership.WorkspaceRole != WorkspaceRole.WorkspaceAdmin)
+        {
+            return Forbid();
+        }
+
+        var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
+        if (workspace == null)
+        {
+            return NotFound();
+        }
+
+        var publicUrl = workspace.IsPublicAccessEnabled && !string.IsNullOrEmpty(workspace.Slug)
+            ? $"/public/{workspace.Slug}"
+            : null;
+
+        return Ok(new UpdateWorkspacePublicAccessResponse
+        {
+            WorkspaceId = workspace.Id,
+            Slug = workspace.Slug,
+            IsPublicAccessEnabled = workspace.IsPublicAccessEnabled,
+            PublicUrl = publicUrl
+        });
+    }
+
+    /// <summary>
+    /// Check if a workspace slug is available
+    /// </summary>
+    [HttpGet("check-slug/{slug}")]
+    public async Task<IActionResult> CheckSlug(string slug)
+    {
+        var slugTaken = await _workspaceRepository.IsSlugTakenAsync(slug);
+        return Ok(new CheckSlugResponse { IsAvailable = !slugTaken });
+    }
+
+    /// <summary>
     /// Transfer admin role to another user (requires WorkspaceAdmin role)
     /// </summary>
     [HttpPost("{workspaceId}/transfer-admin")]
