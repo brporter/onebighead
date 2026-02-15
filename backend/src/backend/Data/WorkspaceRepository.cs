@@ -39,4 +39,11 @@ public class WorkspaceRepository : IWorkspaceRepository
             ImageCount = await _context.StoredImages.CountAsync(i => i.WorkspaceId == workspaceId)
         };
     }
+
+    public async Task<Workspace?> GetBySlugAsync(string slug)
+    {
+        return await _context.Workspaces
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Slug == slug && w.IsPublicAccessEnabled && !w.IsDeleted);
+    }
 }

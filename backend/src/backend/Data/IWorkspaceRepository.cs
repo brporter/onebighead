@@ -15,6 +15,11 @@ public interface IWorkspaceRepository
     /// Used for displaying workspace stats before deletion or restoration.
     /// </summary>
     Task<WorkspaceStats> GetStatsAsync(int workspaceId);
+
+    /// <summary>
+    /// Gets a workspace by its public slug. Only returns workspaces with public access enabled.
+    /// </summary>
+    Task<Workspace?> GetBySlugAsync(string slug);
 }
 
 /// <summary>
