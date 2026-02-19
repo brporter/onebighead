@@ -14,6 +14,10 @@ const SystemAdmin = lazy(() => import('./views/SystemAdmin'));
 const WorkspaceCreationView = lazy(() => import('./views/WorkspaceCreationView'));
 const TermsView = lazy(() => import('./views/TermsView'));
 const WelcomeView = lazy(() => import('./views/WelcomeView'));
+const PublicLayout = lazy(() => import('./components/public/PublicLayout'));
+const PublicCollectionsView = lazy(() => import('./views/PublicCollectionsView'));
+const PublicCollectionDetailView = lazy(() => import('./views/PublicCollectionDetailView'));
+const PublicItemView = lazy(() => import('./views/PublicItemView'));
 
 // Loading fallback component - inline to avoid separate file
 // eslint-disable-next-line react-refresh/only-export-components
@@ -133,5 +137,39 @@ export const router = createBrowserRouter([
         </Suspense>
       </RequireAuth>
     ),
+  },
+  {
+    path: '/public/:slug',
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <PublicLayout />
+      </Suspense>
+    ),
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <PublicCollectionsView />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'collections/:collectionId',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <PublicCollectionDetailView />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'items/:itemId',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <PublicItemView />
+          </Suspense>
+        ),
+      },
+    ],
   },
 ]);

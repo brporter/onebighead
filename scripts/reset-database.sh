@@ -84,14 +84,28 @@ else
     fi
 fi
 
-# Apply migrations via efbundle
+# Build and apply migrations via efbundle
 EFBUNDLE="$REPO_ROOT/backend/src/backend/efbundle"
+BACKEND_PROJECT="$REPO_ROOT/backend/src/backend/backend.csproj"
+
+echo -e "${CYAN}Building migration bundle...${NC}"
+dotnet ef migrations bundle \
+    --project "$BACKEND_PROJECT" \
+    --force \
+    --output "$EFBUNDLE" \
+    --no-build 2>/dev/null || \
+dotnet ef migrations bundle \
+    --project "$BACKEND_PROJECT" \
+    --force \
+    --output "$EFBUNDLE"
+
 if [ -f "$EFBUNDLE" ]; then
     echo -e "${CYAN}Applying migrations...${NC}"
     "$EFBUNDLE" --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=$SA_PASSWORD;TrustServerCertificate=True"
     echo -e "${GREEN}Migrations applied successfully.${NC}"
 else
-    echo -e "${YELLOW}Warning: efbundle not found. Run 'dotnet build' in backend/src/backend first.${NC}"
+    echo -e "${RED}Error: Failed to create migration bundle.${NC}"
+    exit 1
 fi
 
 # Seed database

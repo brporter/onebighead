@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 
@@ -104,7 +103,7 @@ public class CollectionsControllerTests : IntegrationTestBase
     {
         // Arrange - Create a collection we can reliably test
         var createRequest = new CreateCollectionRequest { Name = "Get Test Collection" };
-        var createResponse = await Client.PostAsJsonAsync("/api/collections", createRequest);
+        var createResponse = await PostJsonAsync("/api/collections", createRequest);
         createResponse.EnsureSuccessStatusCode();
         var created = await DeserializeResponseAsync<Collection>(createResponse);
 
@@ -171,7 +170,7 @@ public class CollectionsControllerTests : IntegrationTestBase
     {
         // Arrange - Create a collection with a known slug
         var createRequest = new CreateCollectionRequest { Name = "Slug Test Collection" };
-        var createResponse = await Client.PostAsJsonAsync("/api/collections", createRequest);
+        var createResponse = await PostJsonAsync("/api/collections", createRequest);
         createResponse.EnsureSuccessStatusCode();
         var created = await DeserializeResponseAsync<Collection>(createResponse);
 
@@ -212,7 +211,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PostAsJsonAsync("/api/collections", request);
+        var response = await PostJsonAsync("/api/collections", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -240,7 +239,7 @@ public class CollectionsControllerTests : IntegrationTestBase
             Name = "Duplicate Slug Base",
             Description = "First collection"
         };
-        var firstResponse = await Client.PostAsJsonAsync("/api/collections", firstRequest);
+        var firstResponse = await PostJsonAsync("/api/collections", firstRequest);
         firstResponse.EnsureSuccessStatusCode();
         var first = await DeserializeResponseAsync<Collection>(firstResponse);
 
@@ -252,7 +251,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PostAsJsonAsync("/api/collections", secondRequest);
+        var response = await PostJsonAsync("/api/collections", secondRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -269,7 +268,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         var request = new CreateCollectionRequest { Name = "Collection With Category" };
 
         // Act
-        var response = await Client.PostAsJsonAsync("/api/collections", request);
+        var response = await PostJsonAsync("/api/collections", request);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -300,7 +299,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PutAsJsonAsync("/api/collections/1", request);
+        var response = await PutJsonAsync("/api/collections/1", request);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -319,7 +318,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         var request = new UpdateCollectionRequest { Name = "Updated" };
 
         // Act
-        var response = await Client.PutAsJsonAsync("/api/collections/999", request);
+        var response = await PutJsonAsync("/api/collections/999", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -380,7 +379,7 @@ public class CollectionsControllerTests : IntegrationTestBase
     {
         // Arrange - Create a second collection
         var createRequest = new CreateCollectionRequest { Name = "Second Collection" };
-        var createResponse = await Client.PostAsJsonAsync("/api/collections", createRequest);
+        var createResponse = await PostJsonAsync("/api/collections", createRequest);
         var secondCollection = await DeserializeResponseAsync<Collection>(createResponse);
 
         // Act - Delete the second collection
@@ -465,7 +464,7 @@ public class CollectionsControllerTests : IntegrationTestBase
     {
         // Arrange - Create a new collection for this test to avoid conflicts
         var createRequest = new CreateCollectionRequest { Name = "Template Test Collection" };
-        var createResponse = await Client.PostAsJsonAsync("/api/collections", createRequest);
+        var createResponse = await PostJsonAsync("/api/collections", createRequest);
         createResponse.EnsureSuccessStatusCode();
         var collection = await DeserializeResponseAsync<Collection>(createResponse);
 
@@ -487,7 +486,7 @@ public class CollectionsControllerTests : IntegrationTestBase
     {
         // Arrange - Create a new collection and associate a template
         var createRequest = new CreateCollectionRequest { Name = "Disassociate Test Collection" };
-        var createResponse = await Client.PostAsJsonAsync("/api/collections", createRequest);
+        var createResponse = await PostJsonAsync("/api/collections", createRequest);
         createResponse.EnsureSuccessStatusCode();
         var collection = await DeserializeResponseAsync<Collection>(createResponse);
 

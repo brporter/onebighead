@@ -5,6 +5,12 @@ import ItemEditor from '../src/components/item/ItemEditor';
 import type { Item, Collection } from '../src/utils/types';
 import { UserFlag, Visibility } from '../src/utils/types';
 
+// Mock generateUniqueId for deterministic snapshots
+let idCounter = 0;
+vi.mock('../src/utils/idUtils', () => ({
+  generateUniqueId: (prefix: string) => `${prefix}-test-${idCounter++}`,
+}));
+
 // Mock DataContext for PropertyEditor and ImageEditor
 vi.mock('../src/contexts/DataContext', () => ({
   useData: () => ({
@@ -65,6 +71,7 @@ describe('ItemEditor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    idCounter = 0;
   });
 
   describe('snapshots', () => {

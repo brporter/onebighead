@@ -4,6 +4,12 @@ import userEvent from '@testing-library/user-event';
 import PropertyEditor from '../src/components/item/PropertyEditor';
 import type { ItemProperty } from '../src/utils/types';
 
+// Mock generateUniqueId for deterministic snapshots
+let idCounter = 0;
+vi.mock('../src/utils/idUtils', () => ({
+  generateUniqueId: (prefix: string) => `${prefix}-test-${idCounter++}`,
+}));
+
 const mockAddLocalCategorySuggestion = vi.fn();
 const mockAddLocalNameSuggestion = vi.fn();
 
@@ -24,6 +30,7 @@ describe('PropertyEditor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    idCounter = 0;
   });
 
   describe('snapshots', () => {

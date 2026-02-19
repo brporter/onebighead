@@ -390,7 +390,7 @@ public class ImagesControllerTests
     #region Get Tests
 
     [Fact]
-    public async Task Get_ReturnsFile_WhenImageExists()
+    public async Task Get_ReturnsFile_WhenAuthenticatedAndImageExistsInWorkspace()
     {
         // Arrange
         var imageKey = Guid.NewGuid();
@@ -409,11 +409,13 @@ public class ImagesControllerTests
     }
 
     [Fact]
-    public async Task Get_ReturnsNotFound_WhenImageDoesNotExist()
+    public async Task Get_ReturnsNotFound_WhenAuthenticatedAndImageDoesNotExist()
     {
         // Arrange
         var imageKey = Guid.NewGuid();
         _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
+            .ReturnsAsync((RetrievedImage?)null);
+        _mockImageProvider.Setup(p => p.RetrievePublicAsync(imageKey))
             .ReturnsAsync((RetrievedImage?)null);
 
         // Act
@@ -424,37 +426,62 @@ public class ImagesControllerTests
     }
 
     [Fact]
-    public async Task Get_ReturnsNotFound_WhenImageBelongsToDifferentWorkspace()
+    public async Task Get_FallsBackToPublic_WhenAuthenticatedButNotInWorkspace()
     {
         // Arrange
         var imageKey = Guid.NewGuid();
-        // Image exists but belongs to different workspace - provider returns null due to workspace filter
+        var imageData = new byte[] { 0xFF, 0xD8, 0xFF };
+        // Not found in user's workspace
         _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
             .ReturnsAsync((RetrievedImage?)null);
+        // But available publicly
+        _mockImageProvider.Setup(p => p.RetrievePublicAsync(imageKey))
+            .ReturnsAsync(new RetrievedImage(imageData, "image/jpeg", "test.jpg"));
 
         // Act
         var result = await _controller.Get(imageKey);
 
         // Assert
-        Assert.IsType<NotFoundResult>(result);
+        var fileResult = Assert.IsType<FileContentResult>(result);
+        Assert.Equal("image/jpeg", fileResult.ContentType);
     }
 
     [Fact]
-    public async Task Get_ReturnsUnauthorized_WhenWorkspaceIdMissing()
+    public async Task Get_ReturnsFile_WhenUnauthenticatedAndImageIsPublic()
     {
         // Arrange
         SetupUnauthenticatedUser();
         var imageKey = Guid.NewGuid();
+        var imageData = new byte[] { 0xFF, 0xD8, 0xFF };
+        _mockImageProvider.Setup(p => p.RetrievePublicAsync(imageKey))
+            .ReturnsAsync(new RetrievedImage(imageData, "image/jpeg", "test.jpg"));
 
         // Act
         var result = await _controller.Get(imageKey);
 
         // Assert
-        Assert.IsType<UnauthorizedObjectResult>(result);
+        var fileResult = Assert.IsType<FileContentResult>(result);
+        Assert.Equal("image/jpeg", fileResult.ContentType);
     }
 
     [Fact]
-    public async Task Get_PassesWorkspaceIdToProvider()
+    public async Task Get_ReturnsNotFound_WhenUnauthenticatedAndImageIsNotPublic()
+    {
+        // Arrange
+        SetupUnauthenticatedUser();
+        var imageKey = Guid.NewGuid();
+        _mockImageProvider.Setup(p => p.RetrievePublicAsync(imageKey))
+            .ReturnsAsync((RetrievedImage?)null);
+
+        // Act
+        var result = await _controller.Get(imageKey);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task Get_PassesWorkspaceIdToProvider_WhenAuthenticated()
     {
         // Arrange
         var imageKey = Guid.NewGuid();

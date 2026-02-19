@@ -39,8 +39,16 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "Database dropped successfully." -ForegroundColor Green
 }
 
-# Apply migrations via efbundle
+# Build and apply migrations via efbundle
+$backendProject = Join-Path $rootDir "backend\src\backend\backend.csproj"
 $efBundle = Join-Path $rootDir "backend\src\backend\efbundle.exe"
+
+Write-Host "Building migration bundle..." -ForegroundColor Cyan
+dotnet ef migrations bundle --project $backendProject --force --output $efBundle --no-build 2>$null
+if ($LASTEXITCODE -ne 0) {
+    dotnet ef migrations bundle --project $backendProject --force --output $efBundle
+}
+
 if (Test-Path $efBundle) {
     Write-Host "Applying migrations..." -ForegroundColor Cyan
     & $efBundle --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=$saPassword;TrustServerCertificate=True"
@@ -50,7 +58,8 @@ if (Test-Path $efBundle) {
     }
     Write-Host "Migrations applied successfully." -ForegroundColor Green
 } else {
-    Write-Host "Warning: efbundle.exe not found. Run 'dotnet build' in backend/src/backend first." -ForegroundColor Yellow
+    Write-Host "Error: Failed to create migration bundle." -ForegroundColor Red
+    exit 1
 }
 
 # Seed database

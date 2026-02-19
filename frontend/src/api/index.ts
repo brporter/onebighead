@@ -26,6 +26,7 @@ export { exportApi } from './export';
 export { themesApi } from './themes';
 export { usersApi } from './users';
 export { bulkUpdatesApi, type BulkUpdateJobResponse, type PropertyIdentifierDto, type PropertyRenameMappingDto, type EnqueueBulkUpdateRequest, type BulkUpdatePreviewRequest, type BulkUpdatePreviewResponse } from './bulkUpdates';
-export { workspacesApi, type CreateWorkspaceRequest, type CreateWorkspaceResponse, type SwitchWorkspaceResponse, type LeaveWorkspaceResponse, type WorkspaceStats, type WorkspaceDeletionResponse, type TransferAdminRequest, type TransferAdminResponse } from './workspaces';
+export { workspacesApi, type CreateWorkspaceRequest, type CreateWorkspaceResponse, type SwitchWorkspaceResponse, type LeaveWorkspaceResponse, type WorkspaceStats, type WorkspaceDeletionResponse, type TransferAdminRequest, type TransferAdminResponse, type UpdatePublicAccessRequest, type UpdatePublicAccessResponse, type CheckSlugResponse } from './workspaces';
 export { accountApi, type UserDeletionInfo, type WorkspaceMembershipDeletionInfo, type DeleteAccountRequest, type DeleteAccountResponse, WorkspaceActionType, DeletionBlockerReason } from './account';
 export * from './support';
+export { publicApi, type PublicWorkspace, type PublicCollection, type PublicCollectionDetail, type PublicCategory, type PublicItemSummary, type PublicItem, type PublicItemProperty, type PublicItemImage } from './public';
