@@ -28,6 +28,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.11.2-beta.1" />
     <PackageReference Include="SkiaSharp" Version="3.119.*" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.*" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.1" />
   </ItemGroup>
 
