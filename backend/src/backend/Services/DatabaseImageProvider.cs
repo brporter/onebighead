@@ -53,11 +53,12 @@ public class DatabaseImageProvider : IImageProvider
         return new RetrievedImage(image.Data, image.ContentType, image.FileName);
     }
 
-    public async Task<RetrievedImage?> RetrieveByKeyAsync(Guid key)
+    public async Task<RetrievedImage?> RetrievePublicAsync(Guid key)
     {
         var image = await _context.StoredImages
             .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == key);
+            .Include(i => i.Workspace)
+            .FirstOrDefaultAsync(i => i.Id == key && i.Workspace != null && i.Workspace.IsPublicAccessEnabled);
 
         if (image == null)
             return null;

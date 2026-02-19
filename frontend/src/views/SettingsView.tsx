@@ -637,7 +637,7 @@ function SettingsView() {
   };
 
   const isValidSlug = (slug: string): boolean => {
-    return /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(slug) && slug.length >= 3 && slug.length <= 50;
+    return /^[a-z0-9]([a-z0-9]|-(?!-))*[a-z0-9]$/.test(slug) && slug.length >= 3 && slug.length <= 50;
   };
 
   const handlePublicAccessSave = async () => {

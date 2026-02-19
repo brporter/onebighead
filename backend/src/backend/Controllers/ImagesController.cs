@@ -8,7 +8,6 @@ namespace OneBigHead.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class ImagesController : ApiControllerBase
 {
     private readonly IImageProvider _imageProvider;
@@ -48,20 +47,20 @@ public class ImagesController : ApiControllerBase
 
         // Get just the filename without any path components
         fileName = Path.GetFileName(fileName);
-        
+
         // Remove null bytes and control characters
         fileName = new string(fileName.Where(c => c >= 32 && c != 127).ToArray());
-        
+
         // Replace unsafe characters with underscores
         var invalidChars = Path.GetInvalidFileNameChars()
             .Concat(new[] { '/', '\\', ':', '*', '?', '"', '<', '>', '|', '\0' })
             .ToHashSet();
-        
+
         var sanitized = new string(fileName.Select(c => invalidChars.Contains(c) ? '_' : c).ToArray());
-        
+
         // Remove leading/trailing dots and spaces
         sanitized = sanitized.Trim('.', ' ');
-        
+
         // Limit length
         if (sanitized.Length > 200)
         {
@@ -70,11 +69,12 @@ public class ImagesController : ApiControllerBase
             var maxNameLength = 200 - extension.Length;
             sanitized = name[..Math.Min(name.Length, maxNameLength)] + extension;
         }
-        
+
         return string.IsNullOrWhiteSpace(sanitized) ? "image" : sanitized;
     }
 
     [HttpPost]
+    [Authorize]
     [RequestSizeLimit(MaxFileSize)]
     public async Task<ActionResult<ImageUploadResponse>> Upload(IFormFile file)
     {
@@ -110,45 +110,29 @@ public class ImagesController : ApiControllerBase
     }
 
     [HttpGet("{key:guid}")]
-    [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any, VaryByHeader = "Authorization")]
-    public async Task<IActionResult> Get(Guid key)
-    {
-        var workspaceId = TryGetWorkspaceId();
-        if (workspaceId == null)
-        {
-            return Unauthorized(new { error = "Invalid or missing workspace information" });
-        }
-
-        var image = await _imageProvider.RetrieveAsync(key, workspaceId.Value);
-        if (image == null)
-        {
-            return NotFound();
-        }
-
-        return File(image.Data, image.ContentType, image.FileName);
-    }
-
-    /// <summary>
-    /// Get an image by key without authentication. Used for public collection browsing.
-    /// Image GUIDs are unguessable, providing security through obscurity for the initial implementation.
-    /// </summary>
-    // TODO: Consider adding workspace-level visibility checks (verify the image belongs to a
-    // workspace with public access enabled) in a future iteration.
-    [HttpGet("public/{key:guid}")]
     [AllowAnonymous]
     [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
-    public async Task<IActionResult> GetPublic(Guid key)
+    public async Task<IActionResult> Get(Guid key)
     {
-        var image = await _imageProvider.RetrieveByKeyAsync(key);
-        if (image == null)
+        // If user is authenticated with a workspace, try workspace-scoped retrieval first
+        var workspaceId = TryGetWorkspaceId();
+        if (workspaceId != null)
         {
-            return NotFound();
+            var image = await _imageProvider.RetrieveAsync(key, workspaceId.Value);
+            if (image != null)
+                return File(image.Data, image.ContentType, image.FileName);
         }
 
-        return File(image.Data, image.ContentType, image.FileName);
+        // Fall back to public access: only serves images from public-enabled workspaces
+        var publicImage = await _imageProvider.RetrievePublicAsync(key);
+        if (publicImage != null)
+            return File(publicImage.Data, publicImage.ContentType, publicImage.FileName);
+
+        return NotFound();
     }
 
     [HttpDelete("{key:guid}")]
+    [Authorize]
     public async Task<IActionResult> Delete(Guid key)
     {
         var workspaceId = TryGetWorkspaceId();

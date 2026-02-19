@@ -617,7 +617,7 @@ public class WorkspacesController : ApiControllerBase
     /// </summary>
     [HttpPut("{workspaceId}/public-access")]
     [Authorize(Policy = "WorkspaceAdmin")]
-    public async Task<IActionResult> UpdatePublicAccess(int workspaceId, [FromBody] UpdateWorkspacePublicAccessRequest request)
+    public async Task<IActionResult> UpdatePublicAccessAsync(int workspaceId, [FromBody] UpdateWorkspacePublicAccessRequest request)
     {
         var userId = GetUserId();
         var membership = await _workspaceUserRepository.GetMembershipAsync(userId, workspaceId);
@@ -627,7 +627,7 @@ public class WorkspacesController : ApiControllerBase
         }
 
         var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
-        if (workspace == null)
+        if (workspace == null || workspace.IsDeleted)
         {
             return NotFound();
         }
@@ -668,7 +668,7 @@ public class WorkspacesController : ApiControllerBase
     /// </summary>
     [HttpGet("{workspaceId}/public-access")]
     [Authorize(Policy = "WorkspaceAdmin")]
-    public async Task<IActionResult> GetPublicAccess(int workspaceId)
+    public async Task<IActionResult> GetPublicAccessAsync(int workspaceId)
     {
         var userId = GetUserId();
         var membership = await _workspaceUserRepository.GetMembershipAsync(userId, workspaceId);
@@ -678,7 +678,7 @@ public class WorkspacesController : ApiControllerBase
         }
 
         var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
-        if (workspace == null)
+        if (workspace == null || workspace.IsDeleted)
         {
             return NotFound();
         }
@@ -700,7 +700,7 @@ public class WorkspacesController : ApiControllerBase
     /// Check if a workspace slug is available
     /// </summary>
     [HttpGet("check-slug/{slug}")]
-    public async Task<IActionResult> CheckSlug(string slug)
+    public async Task<IActionResult> CheckSlugAsync(string slug)
     {
         var slugTaken = await _workspaceRepository.IsSlugTakenAsync(slug);
         return Ok(new CheckSlugResponse { IsAvailable = !slugTaken });

@@ -37,7 +37,7 @@ public class PublicController : ControllerBase
     /// Get a workspace by its public slug.
     /// </summary>
     [HttpGet("{slug}")]
-    public async Task<ActionResult<PublicWorkspaceDto>> GetWorkspace(string slug)
+    public async Task<ActionResult<PublicWorkspaceDto>> GetWorkspaceAsync(string slug)
     {
         var workspace = await _workspaceRepository.GetBySlugAsync(slug);
         if (workspace == null)
@@ -56,7 +56,7 @@ public class PublicController : ControllerBase
     // TODO: Add pagination when collection sizes warrant it. Note: EffectiveIsPublic is computed
     // in-memory, so DB-level pagination requires denormalizing visibility into a persisted column.
     [HttpGet("{slug}/collections")]
-    public async Task<ActionResult<List<PublicCollectionDto>>> GetCollections(string slug)
+    public async Task<ActionResult<List<PublicCollectionDto>>> GetCollectionsAsync(string slug)
     {
         var workspace = await _workspaceRepository.GetBySlugAsync(slug);
         if (workspace == null)
@@ -70,7 +70,7 @@ public class PublicController : ControllerBase
                 Id = c.Id,
                 Name = c.Name,
                 Description = c.Description,
-                HeroImageUrl = ToPublicImageUrl(c.HeroImageUrl),
+                HeroImageUrl = c.HeroImageUrl,
                 Slug = c.Slug
             })
             .ToList();
@@ -82,7 +82,7 @@ public class PublicController : ControllerBase
     /// Get collection detail with public categories.
     /// </summary>
     [HttpGet("{slug}/collections/{collectionId:int}")]
-    public async Task<ActionResult<PublicCollectionDetailDto>> GetCollectionDetail(string slug, int collectionId)
+    public async Task<ActionResult<PublicCollectionDetailDto>> GetCollectionDetailAsync(string slug, int collectionId)
     {
         var workspace = await _workspaceRepository.GetBySlugAsync(slug);
         if (workspace == null)
@@ -116,7 +116,7 @@ public class PublicController : ControllerBase
                 Id = collection.Id,
                 Name = collection.Name,
                 Description = collection.Description,
-                HeroImageUrl = ToPublicImageUrl(collection.HeroImageUrl),
+                HeroImageUrl = collection.HeroImageUrl,
                 Slug = collection.Slug
             },
             Categories = publicCategories
@@ -129,7 +129,7 @@ public class PublicController : ControllerBase
     // TODO: Add pagination when collection sizes warrant it. Note: EffectiveIsPublic is computed
     // in-memory, so DB-level pagination requires denormalizing visibility into a persisted column.
     [HttpGet("{slug}/collections/{collectionId:int}/items")]
-    public async Task<ActionResult<List<PublicItemSummaryDto>>> GetItems(string slug, int collectionId, [FromQuery] int? categoryId)
+    public async Task<ActionResult<List<PublicItemSummaryDto>>> GetItemsAsync(string slug, int collectionId, [FromQuery] int? categoryId)
     {
         var workspace = await _workspaceRepository.GetBySlugAsync(slug);
         if (workspace == null)
@@ -153,7 +153,7 @@ public class PublicController : ControllerBase
                 Id = i.Id ?? 0,
                 Name = i.Name,
                 Summary = i.Summary,
-                PrimaryImageUrl = ToPublicImageUrl(i.Images.FirstOrDefault()?.Url),
+                PrimaryImageUrl = i.Images.FirstOrDefault()?.Url,
                 CategoryId = i.CategoryId
             })
             .ToList();
@@ -165,7 +165,7 @@ public class PublicController : ControllerBase
     /// Get public item detail with properties and images.
     /// </summary>
     [HttpGet("{slug}/items/{itemId:int}")]
-    public async Task<ActionResult<PublicItemDto>> GetItem(string slug, int itemId)
+    public async Task<ActionResult<PublicItemDto>> GetItemAsync(string slug, int itemId)
     {
         var workspace = await _workspaceRepository.GetBySlugAsync(slug);
         if (workspace == null)
@@ -207,19 +207,12 @@ public class PublicController : ControllerBase
             }).ToList(),
             Images = item.Images.Select(img => new PublicItemImageDto
             {
-                Url = ToPublicImageUrl(img.Url)!,
+                Url = img.Url,
                 Alt = img.Alt
             }).ToList(),
             CategoryId = item.CategoryId,
             CategoryName = category?.Name,
             TemplateKey = item.TemplateKey
         });
-    }
-
-    private static string? ToPublicImageUrl(string? url)
-    {
-        if (url != null && url.StartsWith("/api/images/") && !url.StartsWith("/api/images/public/"))
-            return url.Replace("/api/images/", "/api/images/public/");
-        return url;
     }
 }
