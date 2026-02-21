@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OneBigHead is a multi-workspace collection management application with a .NET 10 backend API and React 19 frontend. Users can create collections of items organized into hierarchical categories, with support for custom item templates, image uploads, and public/private visibility controls.
 
+This project is worked on from different machines running different operating systems. When on Windows, use cmd or PowerShell when navigating the project and executing commands (such as building, etc.)
+
+When making edits, always first execute unit tests and verify that all unit tests are passing BEFORE performing any edits. When your edits are complete, re-run ALL unit tests, and verify that all unit tests are passing. Even if a unit test is failing and it is not related to a change you made, that unit test MUST be fixed completely prior to proceeding.
+
+Ensure ALL new code or edits include corresponding unit tests. Code coverage MUST be 100% for all new code or edits.
+
 ## Commands
 
 ### Development Startup

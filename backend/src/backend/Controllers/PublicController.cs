@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
@@ -7,10 +8,10 @@ using OneBigHead.Server.Services;
 
 namespace OneBigHead.Server.Controllers;
 
-// TODO: Add rate limiting to public endpoints using the existing rate limiting infrastructure in Program.cs
 [ApiController]
 [Route("api/public")]
 [AllowAnonymous]
+[EnableRateLimiting("public-read")]
 public class PublicController : ControllerBase
 {
     private readonly IWorkspaceRepository _workspaceRepository;

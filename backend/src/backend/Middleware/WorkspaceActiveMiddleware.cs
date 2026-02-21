@@ -91,7 +91,6 @@ public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeH
                 logger.LogWarning("Request blocked for deleted user {UserId} at path {Path}",
                     userId, path);
 
-                // TODO: throw a custom exception here and rely on the GlobalExceptionHandler to convert to an error response
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.ContentType = "application/json";
                 context.Response.Headers.CacheControl = "no-store";
@@ -115,7 +114,6 @@ public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeH
                 logger.LogWarning("Request blocked for user {UserId} with no active workspaces at path {Path}",
                     userId, path);
 
-                // TODO: throw a custom exception here and rely on the GlobalExceptionHandler to convert to an error response
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.ContentType = "application/json";
                 context.Response.Headers.CacheControl = "no-store";
@@ -149,7 +147,6 @@ public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeH
             logger.LogWarning("Request blocked for deleted workspace {WorkspaceId} at path {Path}",
                 workspaceId, path);
 
-            // TODO: throw a custom exception here and rely on the GlobalExceptionHandler to convert to an error response
             context.Response.StatusCode = StatusCodes.Status410Gone;
             context.Response.ContentType = "application/json";
             // Prevent browsers from caching 410 responses - user may create/restore a workspace
