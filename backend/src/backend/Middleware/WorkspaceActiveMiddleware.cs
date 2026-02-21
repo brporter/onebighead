@@ -8,11 +8,6 @@ using OneBigHead.Server.Utilities;
 
 namespace OneBigHead.Server.Middleware;
 
-public readonly struct AllowedPathDefinition
-{
-    public string RouteTemplate { get; init; }
-    public string Method { get; init; }
-}
 
 /// <summary>
 /// Middleware that checks if the user and their current workspace are active.
@@ -21,6 +16,12 @@ public readonly struct AllowedPathDefinition
 /// </summary>
 public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeHelper, ILogger<WorkspaceActiveMiddleware> logger)
 {
+    private readonly struct AllowedPathDefinition
+    {
+        public string RouteTemplate { get; init; }
+        public string Method { get; init; }
+    }
+
     // Paths that should be accessible even when workspace is deleted
     private static readonly string[] ExcludedPrefixes =
     {
