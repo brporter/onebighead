@@ -56,7 +56,7 @@ public class Item
     /// User's relationship with this item (Have, Want, Trade/Sell).
     /// </summary>
     [JsonPropertyName("userFlag")]
-    public UserFlag UserFlag { get; set; } = UserFlag.None;
+    public UserFlag UserFlag { get; set; } = UserFlag.Have;
 
     [JsonIgnore]
     [ForeignKey(nameof(WorkspaceId))]

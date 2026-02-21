@@ -16,7 +16,6 @@ export interface ItemImage {
  * Note: Uses string values to match backend JsonStringEnumConverter serialization.
  */
 export enum UserFlag {
-  None = "None",
   Have = "Have",
   Want = "Want",
   TradeOrSell = "TradeOrSell",

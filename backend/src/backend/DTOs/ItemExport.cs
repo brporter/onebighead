@@ -24,7 +24,7 @@ public class ItemExport
     public string Description { get; set; } = string.Empty;
 
     [JsonPropertyName("userFlag")]
-    public UserFlag UserFlag { get; set; } = UserFlag.None;
+    public UserFlag UserFlag { get; set; } = UserFlag.Have;
 
     [JsonPropertyName("properties")]
     public List<ItemProperty> Properties { get; set; } = new();

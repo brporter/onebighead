@@ -30,7 +30,7 @@ function ItemEditor({
       // Ensure userFlag has a default value even if not present in loaded item
       return {
         ...item,
-        userFlag: item.userFlag ?? UserFlag.None,
+        userFlag: item.userFlag ?? UserFlag.Have,
       };
     }
     return {
@@ -46,7 +46,7 @@ function ItemEditor({
       images: [],
       visibility: Visibility.Default,
       effectiveIsPublic: false,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     };
   });
 
@@ -150,16 +150,6 @@ function ItemEditor({
         <fieldset className="detail__fieldset">
           <legend className="detail__legend">My Relationship to This Item</legend>
           <div className="detail__radioGroup">
-            <label className="detail__radioLabel">
-              <input
-                type="radio"
-                name="userFlag"
-                className="detail__radioInput"
-                checked={formData.userFlag === UserFlag.None}
-                onChange={() => handleFieldChange('userFlag', UserFlag.None)}
-              />
-              <span className="detail__radioText">None</span>
-            </label>
             <label className="detail__radioLabel">
               <input
                 type="radio"

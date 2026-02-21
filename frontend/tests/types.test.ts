@@ -18,7 +18,7 @@ describe('types', () => {
         images: [],
         visibility: Visibility.Default,
         effectiveIsPublic: false,
-        userFlag: UserFlag.None,
+        userFlag: UserFlag.Have,
       };
 
       expect(item.id).toBe(1);
@@ -39,7 +39,7 @@ describe('types', () => {
         images: [],
         visibility: Visibility.Default,
         effectiveIsPublic: false,
-        userFlag: UserFlag.None,
+        userFlag: UserFlag.Have,
       };
 
       expect(item.id).toBeNull();
@@ -59,7 +59,7 @@ describe('types', () => {
         images: [],
         visibility: Visibility.Default,
         effectiveIsPublic: false,
-        userFlag: UserFlag.None,
+        userFlag: UserFlag.Have,
       };
 
       expect(item.categoryId).toBeNull();

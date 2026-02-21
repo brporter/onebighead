@@ -14,7 +14,7 @@ const mockCategories: Category[] = [
 ];
 
 const mockItems: Item[] = [
-  { id: 1, workspaceId: 1, collectionId: 1, categoryId: 1, templateKey: null, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.None },
+  { id: 1, workspaceId: 1, collectionId: 1, categoryId: 1, templateKey: null, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.Have },
   { id: 2, workspaceId: 1, collectionId: 1, categoryId: 2, templateKey: null, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.Have },
 ];
 
@@ -377,7 +377,7 @@ describe('DataContext', () => {
         images: [],
         visibility: Visibility.Default,
         effectiveIsPublic: false,
-        userFlag: UserFlag.None,
+        userFlag: UserFlag.Have,
       };
 
       const itemId = await act(async () => {

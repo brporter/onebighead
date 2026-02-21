@@ -55,7 +55,7 @@ describe('CategoryView', () => {
       images: [],
       visibility: Visibility.Default,
       effectiveIsPublic: true,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     },
     {
       id: 2,
@@ -70,7 +70,7 @@ describe('CategoryView', () => {
       images: [],
       visibility: Visibility.Default,
       effectiveIsPublic: true,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     },
   ];
 

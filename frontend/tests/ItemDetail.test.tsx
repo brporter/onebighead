@@ -26,7 +26,7 @@ describe('ItemDetail', () => {
     ],
     visibility: Visibility.Default,
     effectiveIsPublic: true,
-    userFlag: UserFlag.None,
+    userFlag: UserFlag.Have,
   };
 
   beforeEach(() => {
@@ -142,12 +142,6 @@ describe('ItemDetail', () => {
   });
 
   describe('user flag ribbon', () => {
-    it('should not show ribbon for None flag', () => {
-      render(<ItemDetail item={{ ...mockItem, userFlag: UserFlag.None }} />);
-      expect(screen.queryByText('I Want This!')).not.toBeInTheDocument();
-      expect(screen.queryByText('For Trade/Sale')).not.toBeInTheDocument();
-    });
-
     it('should not show ribbon for Have flag', () => {
       render(<ItemDetail item={{ ...mockItem, userFlag: UserFlag.Have }} />);
       expect(screen.queryByText('I Want This!')).not.toBeInTheDocument();
@@ -162,13 +156,6 @@ describe('ItemDetail', () => {
     it('should show Trade/Sell ribbon', () => {
       render(<ItemDetail item={{ ...mockItem, userFlag: UserFlag.TradeOrSell }} />);
       expect(screen.getByText('For Trade/Sale')).toBeInTheDocument();
-    });
-
-    it('should render snapshot with None flag (no ribbon)', () => {
-      const { container } = render(
-        <ItemDetail item={{ ...mockItem, userFlag: UserFlag.None }} onEdit={() => {}} />
-      );
-      expect(container).toMatchSnapshot();
     });
 
     it('should render snapshot with Have flag (no ribbon)', () => {

@@ -402,7 +402,7 @@ public class ItemsControllerTests
     }
 
     [Fact]
-    public async Task CreateItem_DefaultsUserFlagToNone_WhenNotProvided()
+    public async Task CreateItem_DefaultsUserFlagToHave_WhenNotProvided()
     {
         // Arrange
         var request = new CreateItemRequest
@@ -410,7 +410,7 @@ public class ItemsControllerTests
             Name = "Item without Flag",
             CategoryId = TestCategoryId,
             CollectionId = TestCollectionId
-            // UserFlag not set - should default to None
+            // UserFlag not set - should default to Have
         };
         var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
         var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category" };
@@ -436,7 +436,7 @@ public class ItemsControllerTests
 
         // Assert
         Assert.NotNull(capturedItem);
-        Assert.Equal(UserFlag.None, capturedItem!.UserFlag);
+        Assert.Equal(UserFlag.Have, capturedItem!.UserFlag);
     }
 
     [Fact]
@@ -483,7 +483,6 @@ public class ItemsControllerTests
     }
 
     [Theory]
-    [InlineData(UserFlag.None)]
     [InlineData(UserFlag.Have)]
     [InlineData(UserFlag.Want)]
     [InlineData(UserFlag.TradeOrSell)]

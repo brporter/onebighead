@@ -76,7 +76,6 @@ public class ItemRequestsTests
     }
 
     [Theory]
-    [InlineData(0, UserFlag.None)]
     [InlineData(1, UserFlag.Have)]
     [InlineData(2, UserFlag.Want)]
     [InlineData(3, UserFlag.TradeOrSell)]
