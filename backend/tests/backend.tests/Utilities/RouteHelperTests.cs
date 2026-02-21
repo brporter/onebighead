@@ -78,6 +78,38 @@ public class RouteHelperTests
     }
 
     [Fact]
+    public void IsMatch_SameTemplate_MatchThenNonMatch()
+    {
+        // Arrange
+        var helper = new RouteHelper();
+        var template = "/api/items/{id}";
+
+        // Act - first call matches, second call with different path must not reuse that result
+        var firstResult = helper.IsMatch(template, "/api/items/123");
+        var secondResult = helper.IsMatch(template, "/api/users/123");
+
+        // Assert
+        Assert.True(firstResult);
+        Assert.False(secondResult);
+    }
+
+    [Fact]
+    public void IsMatch_SameTemplate_NonMatchThenMatch()
+    {
+        // Arrange
+        var helper = new RouteHelper();
+        var template = "/api/items/{id}";
+
+        // Act - first call does not match, second call with different path must not reuse that result
+        var firstResult = helper.IsMatch(template, "/api/users/123");
+        var secondResult = helper.IsMatch(template, "/api/items/456");
+
+        // Assert
+        Assert.False(firstResult);
+        Assert.True(secondResult);
+    }
+
+    [Fact]
     public void IsMatch_MultipleTemplates_CachesIndependently()
     {
         // Arrange
