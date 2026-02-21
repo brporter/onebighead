@@ -1,7 +1,5 @@
 namespace OneBigHead.Server.Authentication;
 
-// TODO: One Type Per File
-
 public class AuthenticationSettings
 {
     public JwtSettings Jwt { get; set; } = new();
