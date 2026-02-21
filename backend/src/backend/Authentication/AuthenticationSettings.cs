@@ -1,5 +1,7 @@
 namespace OneBigHead.Server.Authentication;
 
+// TODO: One Type Per File
+
 public class AuthenticationSettings
 {
     public JwtSettings Jwt { get; set; } = new();
@@ -44,7 +46,7 @@ public class CookieSettings
 {
     public string Name { get; set; } = "auth_token";
     public bool Secure { get; set; } = true;
-    public string SameSite { get; set; } = "Strict";
+    public string SameSite { get; set; } = "Strict"; // TODO: Convert to enum in code
 }
 
 

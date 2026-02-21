@@ -16,20 +16,20 @@ public interface IWorkspaceDeletionService
     Task<bool> HasUserAnyActiveWorkspaceAsync(int userId);
 }
 
-public class WorkspaceDeletionService : IWorkspaceDeletionService
+public class WorkspaceService : IWorkspaceDeletionService
 {
     private readonly AppDbContext _context;
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
     private readonly IUserRepository _userRepository;
-    private readonly ILogger<WorkspaceDeletionService> _logger;
+    private readonly ILogger<WorkspaceService> _logger;
 
-    public WorkspaceDeletionService(
+    public WorkspaceService(
         AppDbContext context,
         IWorkspaceRepository workspaceRepository,
         IWorkspaceUserRepository workspaceUserRepository,
         IUserRepository userRepository,
-        ILogger<WorkspaceDeletionService> logger)
+        ILogger<WorkspaceService> logger)
     {
         _context = context;
         _workspaceRepository = workspaceRepository;
