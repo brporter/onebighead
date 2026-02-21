@@ -3,8 +3,6 @@ using OneBigHead.Server.Telemetry;
 
 namespace OneBigHead.Server.Data;
 
-public record DailyStatistic(DateOnly Date, long Value);
-
 [GenerateTracingProxy]
 public interface IWorkspaceStatisticsRepository
 {

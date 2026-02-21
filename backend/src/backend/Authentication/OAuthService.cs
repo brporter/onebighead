@@ -6,23 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace OneBigHead.Server.Authentication;
 
-public interface IOAuthService
-{
-    string GenerateAuthorizationUrl(IdentityProvider provider, string state, string? nonce = null);
-    Task<OAuthTokenResponse> ExchangeCodeForTokensAsync(string code, IdentityProvider provider);
-    string GenerateSecureState();
-    bool ValidateState(string state, string storedState);
-}
-
-public class OAuthTokenResponse
-{
-    public bool Success { get; set; }
-    public string? IdToken { get; set; }
-    public string? AccessToken { get; set; }
-    public string? RefreshToken { get; set; }
-    public string? Error { get; set; }
-}
-
 public class OAuthService : IOAuthService
 {
     private readonly AuthenticationSettings _settings;

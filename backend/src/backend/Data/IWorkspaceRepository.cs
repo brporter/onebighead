@@ -27,14 +27,3 @@ public interface IWorkspaceRepository
     /// </summary>
     Task<bool> IsSlugTakenAsync(string slug, int? excludeWorkspaceId = null);
 }
-
-/// <summary>
-/// Statistics for a workspace.
-/// </summary>
-public class WorkspaceStats
-{
-    public int CollectionCount { get; set; }
-    public int ItemCount { get; set; }
-    public int CategoryCount { get; set; }
-    public int ImageCount { get; set; }
-}

@@ -7,19 +7,6 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace OneBigHead.Server.Authentication;
 
-public interface IOidcTokenValidator
-{
-    Task<OidcValidationResult> ValidateTokenAsync(string token, IdentityProvider provider);
-}
-
-public class OidcValidationResult
-{
-    public bool IsValid { get; set; }
-    public string? Email { get; set; }
-    public string? Subject { get; set; }
-    public string? Error { get; set; }
-}
-
 public class OidcTokenValidator : IOidcTokenValidator
 {
     private readonly AuthenticationSettings _settings;

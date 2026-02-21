@@ -1,4 +1,3 @@
-using OneBigHead.Server.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -6,12 +5,6 @@ using System.Security.Claims;
 namespace OneBigHead.Server.Tests.Controllers;
 
 // Concrete implementation to test abstract base class
-public class TestableApiController : ApiControllerBase
-{
-    public int TestGetWorkspaceId() => GetWorkspaceId();
-    public int? TestTryGetWorkspaceId() => TryGetWorkspaceId();
-    public int TestGetUserId() => GetUserId();
-}
 
 [Trait("Category", "Unit")]
 public class ApiControllerBaseTests
