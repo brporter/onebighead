@@ -19,20 +19,20 @@ public class UserDeletionService : IUserDeletionService
     private readonly AppDbContext _context;
     private readonly IUserRepository _userRepository;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
-    private readonly IWorkspaceDeletionService _workspaceDeletionService;
+    private readonly IWorkspaceService _workspaceService;
     private readonly ILogger<UserDeletionService> _logger;
 
     public UserDeletionService(
         AppDbContext context,
         IUserRepository userRepository,
         IWorkspaceUserRepository workspaceUserRepository,
-        IWorkspaceDeletionService workspaceDeletionService,
+        IWorkspaceService workspaceService,
         ILogger<UserDeletionService> logger)
     {
         _context = context;
         _userRepository = userRepository;
         _workspaceUserRepository = workspaceUserRepository;
-        _workspaceDeletionService = workspaceDeletionService;
+        _workspaceService = workspaceService;
         _logger = logger;
     }
 
@@ -215,7 +215,7 @@ public class UserDeletionService : IUserDeletionService
                     };
                 }
 
-                var deleteResult = await _workspaceDeletionService.SoftDeleteWorkspaceAsync(membership.WorkspaceId, userId);
+                var deleteResult = await _workspaceService.SoftDeleteWorkspaceAsync(membership.WorkspaceId, userId);
                 if (!deleteResult.Success)
                 {
                     return new DeleteUserResponse

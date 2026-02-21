@@ -23,7 +23,7 @@ public class WorkspacesController : ApiControllerBase
     private readonly IItemTemplateRepository _itemTemplateRepository;
     private readonly IThemeRepository _themeRepository;
     private readonly ITokenService _tokenService;
-    private readonly IWorkspaceDeletionService _workspaceDeletionService;
+    private readonly IWorkspaceService _workspaceService;
     private readonly AuthenticationSettings _settings;
     private readonly ILogger<WorkspacesController> _logger;
 
@@ -36,7 +36,7 @@ public class WorkspacesController : ApiControllerBase
         IItemTemplateRepository itemTemplateRepository,
         IThemeRepository themeRepository,
         ITokenService tokenService,
-        IWorkspaceDeletionService workspaceDeletionService,
+        IWorkspaceService workspaceService,
         IOptions<AuthenticationSettings> settings,
         ILogger<WorkspacesController> logger)
     {
@@ -48,7 +48,7 @@ public class WorkspacesController : ApiControllerBase
         _itemTemplateRepository = itemTemplateRepository;
         _themeRepository = themeRepository;
         _tokenService = tokenService;
-        _workspaceDeletionService = workspaceDeletionService;
+        _workspaceService = workspaceService;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -451,7 +451,7 @@ public class WorkspacesController : ApiControllerBase
             return Forbid();
         }
 
-        var stats = await _workspaceDeletionService.GetWorkspaceStatsAsync(workspaceId);
+        var stats = await _workspaceService.GetWorkspaceStatsAsync(workspaceId);
         if (stats == null)
         {
             return NotFound(new { error = "Workspace not found" });
@@ -480,7 +480,7 @@ public class WorkspacesController : ApiControllerBase
             return Forbid();
         }
 
-        var result = await _workspaceDeletionService.SoftDeleteWorkspaceAsync(workspaceId, userId);
+        var result = await _workspaceService.SoftDeleteWorkspaceAsync(workspaceId, userId);
         if (!result.Success)
         {
             return BadRequest(new { error = "Failed to delete workspace" });

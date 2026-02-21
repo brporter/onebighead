@@ -11,7 +11,7 @@ namespace OneBigHead.Server.Tests.Integration;
 public class WorkspaceUserSoftDeleteIntegrationTests : IDisposable
 {
     private readonly AppDbContext _context;
-    private readonly WorkspaceDeletionService _service;
+    private readonly WorkspaceService _service;
 
     public WorkspaceUserSoftDeleteIntegrationTests()
     {
@@ -20,13 +20,13 @@ public class WorkspaceUserSoftDeleteIntegrationTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        var loggerMock = new Mock<ILogger<WorkspaceDeletionService>>();
+        var loggerMock = new Mock<ILogger<WorkspaceService>>();
 
         var workspaceRepo = new WorkspaceRepository(_context);
         var workspaceUserRepo = new WorkspaceUserRepository(_context);
         var userRepo = new UserRepository(_context);
 
-        _service = new WorkspaceDeletionService(
+        _service = new WorkspaceService(
             _context, workspaceRepo, workspaceUserRepo, userRepo, loggerMock.Object);
     }
 

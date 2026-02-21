@@ -7,26 +7,26 @@ using OneBigHead.Server.Services;
 
 namespace OneBigHead.Server.Tests.Unit.Services;
 
-public class WorkspaceDeletionServiceTests : IDisposable
+public class WorkspaceServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
-    private readonly WorkspaceDeletionService _service;
-    private readonly Mock<ILogger<WorkspaceDeletionService>> _loggerMock;
+    private readonly WorkspaceService _service;
+    private readonly Mock<ILogger<WorkspaceService>> _loggerMock;
 
-    public WorkspaceDeletionServiceTests()
+    public WorkspaceServiceTests()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
         _context = new AppDbContext(options);
-        _loggerMock = new Mock<ILogger<WorkspaceDeletionService>>();
+        _loggerMock = new Mock<ILogger<WorkspaceService>>();
 
         var workspaceRepo = new WorkspaceRepository(_context);
         var workspaceUserRepo = new WorkspaceUserRepository(_context);
         var userRepo = new UserRepository(_context);
 
-        _service = new WorkspaceDeletionService(
+        _service = new WorkspaceService(
             _context, workspaceRepo, workspaceUserRepo, userRepo, _loggerMock.Object);
     }
 

@@ -34,8 +34,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             httpContext.TraceIdentifier,
             httpContext.Request.Path,
             httpContext.Request.Method);
-
-        // Build the response based on environment
+        
         var (statusCode, message) = GetErrorResponse(exception);
 
         httpContext.Response.StatusCode = statusCode;

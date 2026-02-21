@@ -4,18 +4,23 @@ using System.Text.Json;
 using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Telemetry;
+using OneBigHead.Server.Utilities;
 
 namespace OneBigHead.Server.Middleware;
+
 
 /// <summary>
 /// Middleware that checks if the user and their current workspace are active.
 /// Returns 401 Unauthorized with USER_DELETED code if user is soft-deleted or has no active workspaces.
 /// Returns 410 Gone if the workspace is deleted, allowing the client to handle the situation.
 /// </summary>
-public class WorkspaceActiveMiddleware
+public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeHelper, ILogger<WorkspaceActiveMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<WorkspaceActiveMiddleware> _logger;
+    private readonly struct AllowedPathDefinition
+    {
+        public string RouteTemplate { get; init; }
+        public string Method { get; init; }
+    }
 
     // Paths that should be accessible even when workspace is deleted
     private static readonly string[] ExcludedPrefixes =
@@ -27,84 +32,49 @@ public class WorkspaceActiveMiddleware
         "/health"
     };
 
-    // Paths that need workspace context but should be accessible (for workspace switching)
-    private static readonly string[] WorkspaceManagementPaths =
+    private static readonly AllowedPathDefinition[] AllowedPaths =
     {
-        "/api/workspaces"
+        new() { RouteTemplate = "/api/workspaces", Method = HttpMethod.Get.ToString() }, // List workspaces
+        new() { RouteTemplate = "/api/workspaces", Method = HttpMethod.Post.ToString() }, // Create workspace
+        new() { RouteTemplate = "/api/workspaces/{id}/switch", Method = HttpMethod.Post.ToString() }, // Switch workspace
+        new() { RouteTemplate = "/api/workspaces/setup", Method = HttpMethod.Post.ToString() }, // Setup new workspace
+        new() { RouteTemplate = "/api/workspaces/restore", Method = HttpMethod.Post.ToString() }, // Restore multiple workspaces
+        new() { RouteTemplate = "/api/workspaces/{id}/restore", Method = HttpMethod.Post.ToString() } // Restore single workspace
     };
 
-    public WorkspaceActiveMiddleware(RequestDelegate next, ILogger<WorkspaceActiveMiddleware> logger)
+    public async Task InvokeAsync(HttpContext context, IWorkspaceService workspaceService)
     {
-        _next = next;
-        _logger = logger;
-    }
-
-    public async Task InvokeAsync(HttpContext context, IWorkspaceDeletionService workspaceDeletionService)
-    {
-        using var activity = DiagnosticsConfig.AppActivitySource.StartActivity("WorkspaceActiveCheck", ActivityKind.Internal);
+        using var activity = DiagnosticsConfig.AppActivitySource.StartActivity(nameof(WorkspaceActiveMiddleware), ActivityKind.Internal);
         var path = context.Request.Path.Value ?? "";
 
         // Skip excluded paths (auth endpoints, deletion info, health check, themes)
         if (ExcludedPrefixes.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
         {
             activity?.SetTag("workspace_check.outcome", "skipped");
-            _logger.LogDebug("Path {Path} matched excluded prefix, skipping workspace check", path);
-            await _next(context);
+            logger.LogDebug("Path {Path} matched excluded prefix, skipping workspace check", path);
+            await next(context);
             return;
         }
 
-        _logger.LogDebug("Path {Path} did not match any excluded prefix", path);
+        logger.LogDebug("Path {Path} did not match any excluded prefix", path);
 
-        // Allow workspace listing and switching (GET /api/workspaces, POST /api/workspaces/{id}/switch)
-        if (path.StartsWith("/api/workspaces", StringComparison.OrdinalIgnoreCase))
+        if (AllowedPaths.Any(apd =>
+            {
+                var isMatch = routeHelper.IsMatch(apd.RouteTemplate, path)
+                              && string.Equals(context.Request.Method, apd.Method,
+                                  StringComparison.OrdinalIgnoreCase);
+
+                if (isMatch)
+                {
+                    logger.LogDebug("Path {Path} with method {Method} matched allowed path template {Template}",
+                        path, context.Request.Method, apd.RouteTemplate);
+                }
+
+                return isMatch;
+            }))
         {
-            // Allow GET /api/workspaces (list workspaces)
-            if (path.Equals("/api/workspaces", StringComparison.OrdinalIgnoreCase) &&
-                context.Request.Method == "GET")
-            {
-                await _next(context);
-                return;
-            }
-
-            // Allow POST /api/workspaces/{id}/switch (switch workspace)
-            if (path.EndsWith("/switch", StringComparison.OrdinalIgnoreCase) &&
-                context.Request.Method == "POST")
-            {
-                await _next(context);
-                return;
-            }
-
-            // Allow POST /api/workspaces (create new workspace)
-            if (path.Equals("/api/workspaces", StringComparison.OrdinalIgnoreCase) &&
-                context.Request.Method == "POST")
-            {
-                await _next(context);
-                return;
-            }
-
-            // Allow POST /api/workspaces/setup (setup new workspace)
-            if (path.Equals("/api/workspaces/setup", StringComparison.OrdinalIgnoreCase) &&
-                context.Request.Method == "POST")
-            {
-                await _next(context);
-                return;
-            }
-
-            // Allow POST /api/workspaces/restore (restore multiple workspaces)
-            if (path.Equals("/api/workspaces/restore", StringComparison.OrdinalIgnoreCase) &&
-                context.Request.Method == "POST")
-            {
-                await _next(context);
-                return;
-            }
-
-            // Allow POST /api/workspaces/{id}/restore (restore single workspace)
-            if (path.EndsWith("/restore", StringComparison.OrdinalIgnoreCase) &&
-                context.Request.Method == "POST")
-            {
-                await _next(context);
-                return;
-            }
+            await next(context);
+            return;
         }
 
         // Get user ID from claims
@@ -112,14 +82,16 @@ public class WorkspaceActiveMiddleware
         if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out var userId))
         {
             // Check if user is soft-deleted
-            var isUserDeleted = await workspaceDeletionService.IsUserDeletedAsync(userId);
+            var isUserDeleted = await workspaceService.IsUserDeletedAsync(userId);
             if (isUserDeleted)
             {
                 activity?.SetTag("workspace_check.outcome", "user_deleted");
                 activity?.SetTag("user_id", userId);
-                _logger.LogWarning("Request blocked for deleted user {UserId} at path {Path}",
+
+                logger.LogWarning("Request blocked for deleted user {UserId} at path {Path}",
                     userId, path);
 
+                // TODO: throw a custom exception here and rely on the GlobalExceptionHandler to convert to an error response
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.ContentType = "application/json";
                 context.Response.Headers.CacheControl = "no-store";
@@ -135,14 +107,15 @@ public class WorkspaceActiveMiddleware
             }
 
             // Check if user has any active workspaces
-            var hasActiveWorkspace = await workspaceDeletionService.HasUserAnyActiveWorkspaceAsync(userId);
+            var hasActiveWorkspace = await workspaceService.HasUserAnyActiveWorkspaceAsync(userId);
             if (!hasActiveWorkspace)
             {
                 activity?.SetTag("workspace_check.outcome", "no_active_workspaces");
                 activity?.SetTag("user_id", userId);
-                _logger.LogWarning("Request blocked for user {UserId} with no active workspaces at path {Path}",
+                logger.LogWarning("Request blocked for user {UserId} with no active workspaces at path {Path}",
                     userId, path);
 
+                // TODO: throw a custom exception here and rely on the GlobalExceptionHandler to convert to an error response
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.ContentType = "application/json";
                 context.Response.Headers.CacheControl = "no-store";
@@ -163,19 +136,20 @@ public class WorkspaceActiveMiddleware
         if (string.IsNullOrEmpty(workspaceIdClaim) || !int.TryParse(workspaceIdClaim, out var workspaceId))
         {
             // No workspace in token, let the request proceed (will likely fail auth)
-            await _next(context);
+            await next(context);
             return;
         }
 
         // Check if workspace is deleted
-        var isDeleted = await workspaceDeletionService.IsWorkspaceDeletedAsync(workspaceId);
+        var isDeleted = await workspaceService.IsWorkspaceDeletedAsync(workspaceId);
         if (isDeleted)
         {
             activity?.SetTag("workspace_check.outcome", "workspace_deleted");
             activity?.SetTag("workspace_id", workspaceId);
-            _logger.LogWarning("Request blocked for deleted workspace {WorkspaceId} at path {Path}",
+            logger.LogWarning("Request blocked for deleted workspace {WorkspaceId} at path {Path}",
                 workspaceId, path);
 
+            // TODO: throw a custom exception here and rely on the GlobalExceptionHandler to convert to an error response
             context.Response.StatusCode = StatusCodes.Status410Gone;
             context.Response.ContentType = "application/json";
             // Prevent browsers from caching 410 responses - user may create/restore a workspace
@@ -193,7 +167,7 @@ public class WorkspaceActiveMiddleware
 
         activity?.SetTag("workspace_check.outcome", "passed");
         activity?.SetTag("workspace_id", workspaceId);
-        await _next(context);
+        await next(context);
     }
 }
 
