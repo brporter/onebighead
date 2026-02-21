@@ -4,12 +4,6 @@ using System.Text.Json.Serialization;
 
 namespace OneBigHead.Server.Models;
 
-public enum PropertySuggestionType
-{
-    Category,
-    Name
-}
-
 public class PropertySuggestion
 {
     [Key]

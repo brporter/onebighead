@@ -7,12 +7,6 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace OneBigHead.Server.Authentication;
 
-public interface ITokenService
-{
-    string GenerateAppToken(User user, WorkspaceRole workspaceRole);
-    ClaimsPrincipal? ValidateAppToken(string token);
-}
-
 public class TokenService : ITokenService
 {
     private readonly AuthenticationSettings _settings;

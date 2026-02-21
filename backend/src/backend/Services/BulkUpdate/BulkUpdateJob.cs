@@ -1,20 +1,5 @@
 namespace OneBigHead.Server.Services.BulkUpdate;
 
-public enum BulkUpdateScope
-{
-    Template,
-    Category,
-    Collection
-}
-
-public enum BulkUpdateJobStatus
-{
-    Queued,
-    Running,
-    Completed,
-    Failed
-}
-
 public class BulkUpdateJob
 {
     public Guid JobId { get; set; } = Guid.NewGuid();

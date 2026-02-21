@@ -4,10 +4,6 @@ using System.Text.Json.Serialization;
 
 namespace OneBigHead.Server.Models;
 
-public record ItemProperty(string Category, string Name, string Value);
-
-public record ItemImage(string Url, string Alt);
-
 public class Item
 {
     [Key]

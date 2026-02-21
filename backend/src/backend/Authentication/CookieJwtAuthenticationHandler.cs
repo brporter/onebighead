@@ -42,22 +42,3 @@ public class CookieJwtAuthenticationHandler : AuthenticationHandler<CookieJwtAut
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }
-
-public class CookieJwtAuthenticationOptions : AuthenticationSchemeOptions
-{
-}
-
-public static class CookieJwtAuthenticationExtensions
-{
-    public const string SchemeName = "CookieJwt";
-
-    public static AuthenticationBuilder AddCookieJwtAuthentication(
-        this AuthenticationBuilder builder,
-        Action<CookieJwtAuthenticationOptions>? configureOptions = null)
-    {
-        return builder.AddScheme<CookieJwtAuthenticationOptions, CookieJwtAuthenticationHandler>(
-            SchemeName,
-            configureOptions ?? (_ => { }));
-    }
-}
-

@@ -59,7 +59,3 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthSchemeOptions>
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }
-
-public class TestAuthSchemeOptions : AuthenticationSchemeOptions
-{
-}
