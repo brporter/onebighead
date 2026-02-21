@@ -6,11 +6,11 @@ namespace OneBigHead.Server.Utilities;
 public class RouteHelper
     : IRouteHelper
 {
-    private readonly ConcurrentDictionary<string, bool> _matchHistory = new();
+    private readonly ConcurrentDictionary<(string, string), bool> _matchHistory = new();
 
     public bool IsMatch(string routeTemplate, string requestPath)
     {
-        if (_matchHistory.TryGetValue(routeTemplate, out var match))
+        if (_matchHistory.TryGetValue( (routeTemplate, requestPath), out var match))
             return match;
 
         var template = TemplateParser.Parse(routeTemplate);
@@ -18,10 +18,10 @@ public class RouteHelper
         var isMatch = matcher.TryMatch(requestPath, new RouteValueDictionary());
         
         _matchHistory.AddOrUpdate(
-            routeTemplate, 
+            (routeTemplate, requestPath), 
             isMatch, 
             (key, oldValue) => oldValue);
 
-        return _matchHistory[routeTemplate];
+        return _matchHistory[(routeTemplate, requestPath)];
     }
 }
