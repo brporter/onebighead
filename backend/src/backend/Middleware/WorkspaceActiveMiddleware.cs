@@ -61,7 +61,7 @@ public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeH
         if (AllowedPaths.Any(apd =>
             {
                 var isMatch = routeHelper.IsMatch(apd.RouteTemplate, path)
-                              && string.Equals(context.Request.Method, apd.Method.ToString(),
+                              && string.Equals(context.Request.Method, apd.Method,
                                   StringComparison.OrdinalIgnoreCase);
 
                 if (isMatch)
