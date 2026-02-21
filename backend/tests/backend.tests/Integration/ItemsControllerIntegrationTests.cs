@@ -137,13 +137,13 @@ public class ItemsControllerIntegrationTests : IDisposable
     [Fact]
     public async Task UpdateItem_WithUserFlag_PersistsAndReturnsFlag()
     {
-        // Arrange - Create an item with None flag first
+        // Arrange - Create an item with Have flag first
         var existingItem = new Item
         {
             WorkspaceId = TestWorkspaceId,
             CollectionId = TestCollectionId,
             Name = "Existing Item",
-            UserFlag = UserFlag.None
+            UserFlag = UserFlag.Have
         };
         _context.Items.Add(existingItem);
         await _context.SaveChangesAsync();

@@ -56,7 +56,7 @@ describe('App with Router', () => {
       images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       visibility: Visibility.Default,
       effectiveIsPublic: true,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     },
     {
       id: 2,
@@ -71,7 +71,7 @@ describe('App with Router', () => {
       images: [],
       visibility: Visibility.Default,
       effectiveIsPublic: true,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     },
   ];
 

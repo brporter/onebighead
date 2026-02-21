@@ -19,7 +19,7 @@ describe('createEmptyItem', () => {
       images: [],
       visibility: Visibility.Default,
       effectiveIsPublic: true,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     });
   });
 
@@ -39,7 +39,7 @@ describe('createEmptyItem', () => {
       images: [],
       visibility: Visibility.Default,
       effectiveIsPublic: true,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     });
   });
 
@@ -59,7 +59,7 @@ describe('createEmptyItem', () => {
       images: [],
       visibility: Visibility.Default,
       effectiveIsPublic: true,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     });
   });
 });

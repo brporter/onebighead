@@ -5,11 +5,6 @@ import { UserFlag } from '../src/utils/types';
 
 describe('ItemFlagRibbon', () => {
   describe('snapshots', () => {
-    it('should render null for None flag', () => {
-      const { container } = render(<ItemFlagRibbon userFlag={UserFlag.None} />);
-      expect(container).toMatchSnapshot();
-    });
-
     it('should render null for Have flag', () => {
       const { container } = render(<ItemFlagRibbon userFlag={UserFlag.Have} />);
       expect(container).toMatchSnapshot();
@@ -27,11 +22,6 @@ describe('ItemFlagRibbon', () => {
   });
 
   describe('rendering', () => {
-    it('should not render anything for UserFlag.None', () => {
-      const { container } = render(<ItemFlagRibbon userFlag={UserFlag.None} />);
-      expect(container.firstChild).toBeNull();
-    });
-
     it('should not render anything for UserFlag.Have', () => {
       const { container } = render(<ItemFlagRibbon userFlag={UserFlag.Have} />);
       expect(container.firstChild).toBeNull();

@@ -53,7 +53,7 @@ describe('ItemView', () => {
       images: [{ url: 'https://example.com/img.jpg', alt: 'Test image' }],
       visibility: Visibility.Default,
       effectiveIsPublic: true,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     },
   ];
 

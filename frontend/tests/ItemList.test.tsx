@@ -20,7 +20,7 @@ describe('ItemList', () => {
       images: [],
       visibility: Visibility.Default,
       effectiveIsPublic: false,
-      userFlag: UserFlag.None,
+      userFlag: UserFlag.Have,
     }));
   };
 
@@ -184,7 +184,7 @@ describe('ItemList', () => {
         images: [],
         visibility: Visibility.Default,
         effectiveIsPublic: false,
-        userFlag: UserFlag.None,
+        userFlag: UserFlag.Have,
       }];
 
       render(<ItemList {...defaultProps} items={items} />);
@@ -209,7 +209,7 @@ describe('ItemList', () => {
         images: [],
         visibility: Visibility.Default,
         effectiveIsPublic: false,
-        userFlag: UserFlag.None,
+        userFlag: UserFlag.Have,
       }];
 
       render(<ItemList {...defaultProps} items={itemsWithNullId} onSelect={handleSelect} />);
@@ -237,7 +237,7 @@ describe('ItemList', () => {
         images: [],
         visibility: Visibility.Default,
         effectiveIsPublic: false,
-        userFlag: UserFlag.None,
+        userFlag: UserFlag.Have,
       }];
 
       render(<ItemList {...defaultProps} items={itemsWithNullId} onSelect={handleSelect} />);

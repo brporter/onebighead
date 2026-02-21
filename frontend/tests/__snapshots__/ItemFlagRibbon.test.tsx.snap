@@ -29,5 +29,3 @@ exports[`ItemFlagRibbon > snapshots > should render Want ribbon 1`] = `
 `;
 
 exports[`ItemFlagRibbon > snapshots > should render null for Have flag 1`] = `<div />`;
-
-exports[`ItemFlagRibbon > snapshots > should render null for None flag 1`] = `<div />`;

@@ -6,9 +6,6 @@ namespace OneBigHead.Server.Models;
 /// </summary>
 public enum UserFlag
 {
-    /// <summary>No flag set - item has no special user status.</summary>
-    None = 0,
-
     /// <summary>User has this item in their collection.</summary>
     Have = 1,
 

@@ -569,20 +569,6 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
             <span
               class="detail__radioText"
             >
-              None
-            </span>
-          </label>
-          <label
-            class="detail__radioLabel"
-          >
-            <input
-              class="detail__radioInput"
-              name="userFlag"
-              type="radio"
-            />
-            <span
-              class="detail__radioText"
-            >
               I Have This
             </span>
           </label>
@@ -860,20 +846,6 @@ exports[`ItemEditor > snapshots > should render new item mode 1`] = `
           >
             <input
               checked=""
-              class="detail__radioInput"
-              name="userFlag"
-              type="radio"
-            />
-            <span
-              class="detail__radioText"
-            >
-              None
-            </span>
-          </label>
-          <label
-            class="detail__radioLabel"
-          >
-            <input
               class="detail__radioInput"
               name="userFlag"
               type="radio"
@@ -1159,20 +1131,6 @@ exports[`ItemEditor > user flag selector > should render snapshot for new item w
           >
             <input
               checked=""
-              class="detail__radioInput"
-              name="userFlag"
-              type="radio"
-            />
-            <span
-              class="detail__radioText"
-            >
-              None
-            </span>
-          </label>
-          <label
-            class="detail__radioLabel"
-          >
-            <input
               class="detail__radioInput"
               name="userFlag"
               type="radio"
@@ -1792,20 +1750,6 @@ exports[`ItemEditor > user flag selector > should render snapshot with Have flag
         <div
           class="detail__radioGroup"
         >
-          <label
-            class="detail__radioLabel"
-          >
-            <input
-              class="detail__radioInput"
-              name="userFlag"
-              type="radio"
-            />
-            <span
-              class="detail__radioText"
-            >
-              None
-            </span>
-          </label>
           <label
             class="detail__radioLabel"
           >
@@ -2440,20 +2384,6 @@ exports[`ItemEditor > user flag selector > should render snapshot with Want flag
             <span
               class="detail__radioText"
             >
-              None
-            </span>
-          </label>
-          <label
-            class="detail__radioLabel"
-          >
-            <input
-              class="detail__radioInput"
-              name="userFlag"
-              type="radio"
-            />
-            <span
-              class="detail__radioText"
-            >
               I Have This
             </span>
           </label>
@@ -3071,20 +3001,6 @@ exports[`ItemEditor > user flag selector > should render snapshot with user flag
           >
             <input
               checked=""
-              class="detail__radioInput"
-              name="userFlag"
-              type="radio"
-            />
-            <span
-              class="detail__radioText"
-            >
-              None
-            </span>
-          </label>
-          <label
-            class="detail__radioLabel"
-          >
-            <input
               class="detail__radioInput"
               name="userFlag"
               type="radio"

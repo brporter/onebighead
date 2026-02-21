@@ -24,7 +24,7 @@ export const mockItems: Item[] = [
     images: [{ url: 'https://example.com/image1.jpg', alt: 'Image 1' }],
     visibility: Visibility.Default,
     effectiveIsPublic: false,
-    userFlag: UserFlag.None,
+    userFlag: UserFlag.Have,
   },
   {
     id: 2,
@@ -39,7 +39,7 @@ export const mockItems: Item[] = [
     images: [],
     visibility: Visibility.Default,
     effectiveIsPublic: false,
-    userFlag: UserFlag.None,
+    userFlag: UserFlag.Have,
   },
 ];
 

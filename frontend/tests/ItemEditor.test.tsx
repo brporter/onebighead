@@ -43,7 +43,7 @@ describe('ItemEditor', () => {
     ],
     visibility: Visibility.Default,
     effectiveIsPublic: true,
-    userFlag: UserFlag.None,
+    userFlag: UserFlag.Have,
   };
 
   const mockCategories = [
@@ -415,17 +415,16 @@ describe('ItemEditor', () => {
     it('should display all flag options', () => {
       render(<ItemEditor item={mockItem} {...defaultProps} />);
 
-      expect(screen.getByText('None')).toBeInTheDocument();
       expect(screen.getByText('I Have This')).toBeInTheDocument();
       expect(screen.getByText('I Want This')).toBeInTheDocument();
       expect(screen.getByText('For Trade/Sale')).toBeInTheDocument();
     });
 
-    it('should have None selected by default', () => {
+    it('should have Have selected by default', () => {
       render(<ItemEditor item={mockItem} {...defaultProps} />);
 
-      const noneRadio = screen.getByRole('radio', { name: 'None' });
-      expect(noneRadio).toBeChecked();
+      const haveRadio = screen.getByRole('radio', { name: 'I Have This' });
+      expect(haveRadio).toBeChecked();
     });
 
     it('should select Have flag', async () => {
@@ -529,21 +528,21 @@ describe('ItemEditor', () => {
       }));
     });
 
-    it('should default to None flag for new items', async () => {
+    it('should default to Have flag for new items', async () => {
       const user = userEvent.setup();
       const handleSave = vi.fn();
 
       render(<ItemEditor item={null} categories={mockCategories} collection={mockCollection} onSave={handleSave} onCancel={vi.fn()} />);
 
-      // Verify None is checked by default
-      expect(screen.getByRole('radio', { name: 'None' })).toBeChecked();
+      // Verify Have is checked by default
+      expect(screen.getByRole('radio', { name: 'I Have This' })).toBeChecked();
 
       // Fill required fields and save without changing flag
       await user.type(screen.getByLabelText('Name'), 'New Item Without Flag');
       await user.click(screen.getByText('Create Item'));
 
       expect(handleSave).toHaveBeenCalledWith(expect.objectContaining({
-        userFlag: UserFlag.None,
+        userFlag: UserFlag.Have,
       }));
     });
 

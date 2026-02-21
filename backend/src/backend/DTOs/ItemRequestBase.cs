@@ -34,7 +34,7 @@ public abstract class ItemRequestBase
 
     public Visibility Visibility { get; set; } = Visibility.Default;
 
-    public UserFlag UserFlag { get; set; } = UserFlag.None;
+    public UserFlag UserFlag { get; set; } = UserFlag.Have;
 
     /// <summary>
     /// Populates the shared properties on an Item entity.

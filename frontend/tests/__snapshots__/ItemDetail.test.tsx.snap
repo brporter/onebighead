@@ -374,7 +374,7 @@ exports[`ItemDetail > user flag ribbon > should render snapshot with Have flag (
         class="gallery__controls"
       >
         <button
-          aria-controls="_r_h_"
+          aria-controls="_r_f_"
           class="gallery__button"
           type="button"
         >
@@ -383,161 +383,14 @@ exports[`ItemDetail > user flag ribbon > should render snapshot with Have flag (
         <div
           aria-live="polite"
           class="gallery__status"
-          id="_r_h_"
+          id="_r_f_"
         >
           1
            / 
           2
         </div>
         <button
-          aria-controls="_r_h_"
-          class="gallery__button"
-          type="button"
-        >
-          Next
-        </button>
-      </div>
-    </section>
-    <div
-      class="detail__properties"
-    >
-      <section
-        class="detail__property-group"
-      >
-        <h3
-          class="detail__property-group-title"
-        >
-          General
-        </h3>
-        <dl
-          class="detail__property-group-list"
-        >
-          <div
-            class="detail__property-row"
-          >
-            <dt
-              class="detail__property-name"
-            >
-              Prop1
-            </dt>
-            <dd
-              class="detail__property-value"
-            >
-              Value1
-            </dd>
-          </div>
-          <div
-            class="detail__property-row"
-          >
-            <dt
-              class="detail__property-name"
-            >
-              Prop2
-            </dt>
-            <dd
-              class="detail__property-value"
-            >
-              Value2
-            </dd>
-          </div>
-        </dl>
-      </section>
-      <section
-        class="detail__property-group"
-      >
-        <h3
-          class="detail__property-group-title"
-        >
-          Technical
-        </h3>
-        <dl
-          class="detail__property-group-list"
-        >
-          <div
-            class="detail__property-row"
-          >
-            <dt
-              class="detail__property-name"
-            >
-              Prop3
-            </dt>
-            <dd
-              class="detail__property-value"
-            >
-              Value3
-            </dd>
-          </div>
-        </dl>
-      </section>
-    </div>
-  </section>
-</div>
-`;
-
-exports[`ItemDetail > user flag ribbon > should render snapshot with None flag (no ribbon) 1`] = `
-<div>
-  <section
-    class="detail"
-  >
-    <div
-      class="detail__header"
-    >
-      <h2
-        class="detail__title"
-      >
-        Test Item
-      </h2>
-      <div
-        class="detail__headerActions"
-      >
-        <button
-          class="detail__btn detail__btn--secondary"
-          type="button"
-        >
-          Edit
-        </button>
-      </div>
-    </div>
-    <p
-      class="detail__description"
-    >
-      Test description
-    </p>
-    <section
-      aria-label="Test Item"
-      class="gallery"
-    >
-      <div
-        class="gallery__viewport"
-      >
-        <img
-          alt="Image 1"
-          class="gallery__image"
-          loading="lazy"
-          src="https://example.com/image1.jpg"
-        />
-      </div>
-      <div
-        class="gallery__controls"
-      >
-        <button
-          aria-controls="_r_g_"
-          class="gallery__button"
-          type="button"
-        >
-          Prev
-        </button>
-        <div
-          aria-live="polite"
-          class="gallery__status"
-          id="_r_g_"
-        >
-          1
-           / 
-          2
-        </div>
-        <button
-          aria-controls="_r_g_"
+          aria-controls="_r_f_"
           class="gallery__button"
           type="button"
         >
@@ -677,7 +530,7 @@ exports[`ItemDetail > user flag ribbon > should render snapshot with TradeOrSell
         class="gallery__controls"
       >
         <button
-          aria-controls="_r_j_"
+          aria-controls="_r_h_"
           class="gallery__button"
           type="button"
         >
@@ -686,14 +539,14 @@ exports[`ItemDetail > user flag ribbon > should render snapshot with TradeOrSell
         <div
           aria-live="polite"
           class="gallery__status"
-          id="_r_j_"
+          id="_r_h_"
         >
           1
            / 
           2
         </div>
         <button
-          aria-controls="_r_j_"
+          aria-controls="_r_h_"
           class="gallery__button"
           type="button"
         >
@@ -833,7 +686,7 @@ exports[`ItemDetail > user flag ribbon > should render snapshot with Want flag (
         class="gallery__controls"
       >
         <button
-          aria-controls="_r_i_"
+          aria-controls="_r_g_"
           class="gallery__button"
           type="button"
         >
@@ -842,14 +695,14 @@ exports[`ItemDetail > user flag ribbon > should render snapshot with Want flag (
         <div
           aria-live="polite"
           class="gallery__status"
-          id="_r_i_"
+          id="_r_g_"
         >
           1
            / 
           2
         </div>
         <button
-          aria-controls="_r_i_"
+          aria-controls="_r_g_"
           class="gallery__button"
           type="button"
         >

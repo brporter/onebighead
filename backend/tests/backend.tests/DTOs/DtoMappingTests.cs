@@ -378,7 +378,7 @@ public class DtoMappingTests
         Assert.Equal("Minimal Item", item.Name);
         Assert.Equal(string.Empty, item.Description);
         Assert.Null(item.CategoryId);
-        Assert.Equal(UserFlag.None, item.UserFlag);
+        Assert.Equal(UserFlag.Have, item.UserFlag);
         Assert.Equal(Visibility.Default, item.Visibility);
         Assert.Equal(2, item.WorkspaceId);
     }

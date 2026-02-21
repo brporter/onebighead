@@ -36,7 +36,7 @@ export function createMockItem(overrides: Partial<Item> = {}): Item {
     images: [],
     visibility: Visibility.Default,
     effectiveIsPublic: false,
-    userFlag: UserFlag.None,
+    userFlag: UserFlag.Have,
     ...overrides,
   };
 }

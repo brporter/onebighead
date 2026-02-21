@@ -303,7 +303,7 @@ public class ItemsControllerTests : IntegrationTestBase
     public async Task UpdateItem_ChangeUserFlag_UpdatesFlag()
     {
         // Arrange
-        var item = await CreateTestItem("Flag Item", userFlag: UserFlag.None);
+        var item = await CreateTestItem("Flag Item", userFlag: UserFlag.Have);
         var request = new UpdateItemRequest
         {
             Name = "Flag Item",
@@ -461,7 +461,7 @@ public class ItemsControllerTests : IntegrationTestBase
     private async Task<Item> CreateTestItem(
         string name,
         int? categoryId = null,
-        UserFlag userFlag = UserFlag.None)
+        UserFlag userFlag = UserFlag.Have)
     {
         var request = new CreateItemRequest
         {
