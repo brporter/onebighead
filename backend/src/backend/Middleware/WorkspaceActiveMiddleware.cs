@@ -41,7 +41,7 @@ public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeH
         new() { RouteTemplate = "/api/workspaces/{id}/restore", Method = HttpMethod.Post.ToString() } // Restore single workspace
     };
 
-    public async Task InvokeAsync(HttpContext context, IWorkspaceDeletionService workspaceDeletionService)
+    public async Task InvokeAsync(HttpContext context, IWorkspaceService workspaceService)
     {
         using var activity = DiagnosticsConfig.AppActivitySource.StartActivity(nameof(WorkspaceActiveMiddleware), ActivityKind.Internal);
         var path = context.Request.Path.Value ?? "";
@@ -81,7 +81,7 @@ public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeH
         if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out var userId))
         {
             // Check if user is soft-deleted
-            var isUserDeleted = await workspaceDeletionService.IsUserDeletedAsync(userId);
+            var isUserDeleted = await workspaceService.IsUserDeletedAsync(userId);
             if (isUserDeleted)
             {
                 activity?.SetTag("workspace_check.outcome", "user_deleted");
@@ -106,7 +106,7 @@ public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeH
             }
 
             // Check if user has any active workspaces
-            var hasActiveWorkspace = await workspaceDeletionService.HasUserAnyActiveWorkspaceAsync(userId);
+            var hasActiveWorkspace = await workspaceService.HasUserAnyActiveWorkspaceAsync(userId);
             if (!hasActiveWorkspace)
             {
                 activity?.SetTag("workspace_check.outcome", "no_active_workspaces");
@@ -140,7 +140,7 @@ public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeH
         }
 
         // Check if workspace is deleted
-        var isDeleted = await workspaceDeletionService.IsWorkspaceDeletedAsync(workspaceId);
+        var isDeleted = await workspaceService.IsWorkspaceDeletedAsync(workspaceId);
         if (isDeleted)
         {
             activity?.SetTag("workspace_check.outcome", "workspace_deleted");

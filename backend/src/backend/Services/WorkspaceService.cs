@@ -7,7 +7,7 @@ using OneBigHead.Server.Telemetry;
 namespace OneBigHead.Server.Services;
 
 [GenerateTracingProxy]
-public interface IWorkspaceDeletionService
+public interface IWorkspaceService
 {
     Task<WorkspaceStatsResponse?> GetWorkspaceStatsAsync(int workspaceId);
     Task<WorkspaceDeletionResponse> SoftDeleteWorkspaceAsync(int workspaceId, int deletedByUserId);
@@ -16,7 +16,7 @@ public interface IWorkspaceDeletionService
     Task<bool> HasUserAnyActiveWorkspaceAsync(int userId);
 }
 
-public class WorkspaceService : IWorkspaceDeletionService
+public class WorkspaceService : IWorkspaceService
 {
     private readonly AppDbContext _context;
     private readonly IWorkspaceRepository _workspaceRepository;
