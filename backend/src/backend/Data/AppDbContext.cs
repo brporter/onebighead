@@ -29,6 +29,7 @@ public class AppDbContext : DbContext
     public DbSet<SupportReply> SupportReplies => Set<SupportReply>();
     public DbSet<WorkspaceUser> WorkspaceUsers => Set<WorkspaceUser>();
     public DbSet<WorkspaceStatistic> WorkspaceStatistics => Set<WorkspaceStatistic>();
+    public DbSet<ContentScanLog> ContentScanLogs => Set<ContentScanLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -340,6 +341,15 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(s => new { s.WorkspaceId, s.StatisticType, s.Date }).IsUnique();
             entity.HasIndex(s => s.WorkspaceId);
+        });
+
+        modelBuilder.Entity<ContentScanLog>(entity =>
+        {
+            entity.HasKey(l => l.Id);
+
+            entity.HasIndex(l => l.WorkspaceId);
+            entity.HasIndex(l => l.IsMatch);
+            entity.HasIndex(l => l.ScannedAt);
         });
     }
 }

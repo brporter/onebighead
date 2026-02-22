@@ -1,4 +1,7 @@
+using System.Security.Cryptography;
+using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +15,10 @@ public class ImagesController : ApiControllerBase
 {
     private readonly IImageProvider _imageProvider;
     private readonly IImageProcessor _imageProcessor;
+    private readonly IContentScanner _contentScanner;
+    private readonly ICsamReportingService _csamReportingService;
+    private readonly IContentScanLogRepository _contentScanLogRepository;
+    private readonly ILogger<ImagesController> _logger;
 
     private static readonly Dictionary<SKEncodedImageFormat, string> AllowedFormats = new()
     {
@@ -24,10 +31,20 @@ public class ImagesController : ApiControllerBase
 
     private const long MaxFileSize = 100 * 1024 * 1024; // 100 MB
 
-    public ImagesController(IImageProvider imageProvider, IImageProcessor imageProcessor)
+    public ImagesController(
+        IImageProvider imageProvider,
+        IImageProcessor imageProcessor,
+        IContentScanner contentScanner,
+        ICsamReportingService csamReportingService,
+        IContentScanLogRepository contentScanLogRepository,
+        ILogger<ImagesController> logger)
     {
         _imageProvider = imageProvider;
         _imageProcessor = imageProcessor;
+        _contentScanner = contentScanner;
+        _csamReportingService = csamReportingService;
+        _contentScanLogRepository = contentScanLogRepository;
+        _logger = logger;
     }
 
     private static string? DetectImageFormat(byte[] fileData)
@@ -97,6 +114,43 @@ public class ImagesController : ApiControllerBase
         if (detectedContentType == null)
         {
             return BadRequest(new { error = "File is not a valid image or uses an unsupported format. Supported formats: JPEG, PNG, GIF, WebP, AVIF" });
+        }
+
+        // Scan image content before any further processing (fail-closed)
+        ContentScanResult scanResult;
+        try
+        {
+            scanResult = await _contentScanner.ScanAsync(fileData, detectedContentType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Content scanner threw an exception. Rejecting upload (fail-closed).");
+            return BadRequest(new { error = "Unable to process this image. Please try again later." });
+        }
+
+        if (scanResult.IsMatch)
+        {
+            var imageHash = Convert.ToHexString(SHA256.HashData(fileData));
+            var scanLog = new ContentScanLog
+            {
+                Id = Guid.NewGuid(),
+                WorkspaceId = workspaceId.Value,
+                UserId = TryGetUserId(),
+                ScannerName = scanResult.ScannerName,
+                IsMatch = true,
+                MatchScore = scanResult.MatchScore,
+                Details = scanResult.Details,
+                OriginalFileName = file.FileName,
+                ContentType = detectedContentType,
+                FileSizeBytes = fileData.Length,
+                ImageHash = imageHash,
+                ScannedAt = DateTime.UtcNow,
+            };
+
+            await _contentScanLogRepository.CreateAsync(scanLog);
+            await _csamReportingService.ReportAsync(scanLog);
+
+            return BadRequest(new { error = "Unable to process this image." });
         }
 
         var (processedData, processedContentType) = _imageProcessor.ResizeIfNeeded(fileData, detectedContentType);
