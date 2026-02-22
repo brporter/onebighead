@@ -65,6 +65,9 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddTracingDecorator<IUserDeletionService, UserDeletionService>(appSource);
     builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
     builder.Services.AddTracingDecorator<IEmailService, AzureEmailService>(appSource);
+    builder.Services.AddTracingDecorator<IContentScanLogRepository, ContentScanLogRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IContentScanner, NoOpContentScanner>(appSource);
+    builder.Services.AddTracingDecorator<ICsamReportingService, NoOpCsamReportingService>(appSource);
 }
 else
 {
@@ -85,6 +88,9 @@ else
     builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
     builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
     builder.Services.AddScoped<IEmailService, AzureEmailService>();
+    builder.Services.AddScoped<IContentScanLogRepository, ContentScanLogRepository>();
+    builder.Services.AddScoped<IContentScanner, NoOpContentScanner>();
+    builder.Services.AddScoped<ICsamReportingService, NoOpCsamReportingService>();
 }
 
 // Register image processor (environment-independent, stateless singleton)

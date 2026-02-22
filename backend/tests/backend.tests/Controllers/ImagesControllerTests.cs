@@ -1,8 +1,11 @@
 using OneBigHead.Server.Controllers;
+using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
+using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using SkiaSharp;
 using System.Security.Claims;
@@ -15,6 +18,10 @@ public class ImagesControllerTests
 {
     private readonly Mock<IImageProvider> _mockImageProvider;
     private readonly Mock<IImageProcessor> _mockImageProcessor;
+    private readonly Mock<IContentScanner> _mockContentScanner;
+    private readonly Mock<ICsamReportingService> _mockCsamReportingService;
+    private readonly Mock<IContentScanLogRepository> _mockScanLogRepository;
+    private readonly Mock<ILogger<ImagesController>> _mockLogger;
     private readonly ImagesController _controller;
     private const int TestWorkspaceId = 1;
 
@@ -54,11 +61,28 @@ public class ImagesControllerTests
     {
         _mockImageProvider = new Mock<IImageProvider>();
         _mockImageProcessor = new Mock<IImageProcessor>();
+        _mockContentScanner = new Mock<IContentScanner>();
+        _mockCsamReportingService = new Mock<ICsamReportingService>();
+        _mockScanLogRepository = new Mock<IContentScanLogRepository>();
+        _mockLogger = new Mock<ILogger<ImagesController>>();
+
         // Default passthrough: return input data unchanged
         _mockImageProcessor
             .Setup(p => p.ResizeIfNeeded(It.IsAny<byte[]>(), It.IsAny<string>()))
             .Returns((byte[] data, string ct) => (data, ct));
-        _controller = new ImagesController(_mockImageProvider.Object, _mockImageProcessor.Object);
+
+        // Default: scanner returns no match
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ContentScanResult(IsMatch: false, MatchScore: 0.0, ScannerName: "MockScanner"));
+
+        _controller = new ImagesController(
+            _mockImageProvider.Object,
+            _mockImageProcessor.Object,
+            _mockContentScanner.Object,
+            _mockCsamReportingService.Object,
+            _mockScanLogRepository.Object,
+            _mockLogger.Object);
         SetupAuthenticatedUser(TestWorkspaceId);
     }
 
@@ -383,6 +407,210 @@ public class ImagesControllerTests
         // Assert
         _mockImageProcessor.Verify(p => p.ResizeIfNeeded(It.IsAny<byte[]>(), "image/jpeg"), Times.Once);
         _mockImageProvider.Verify(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Upload_ReturnsBadRequest_WhenContentScannerDetectsMatch()
+    {
+        // Arrange
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ContentScanResult(IsMatch: true, MatchScore: 0.99, ScannerName: "TestScanner", Details: "test match"));
+        _mockScanLogRepository
+            .Setup(r => r.CreateAsync(It.IsAny<ContentScanLog>()))
+            .ReturnsAsync((ContentScanLog log) => log);
+
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
+
+        // Act
+        var result = await _controller.Upload(file);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Contains("Unable to process this image", badRequestResult.Value?.ToString());
+        // Should NOT reveal CSAM detection details
+        Assert.DoesNotContain("match", badRequestResult.Value?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Upload_LogsScanResult_WhenMatchDetected()
+    {
+        // Arrange
+        ContentScanLog? capturedLog = null;
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ContentScanResult(IsMatch: true, MatchScore: 0.95, ScannerName: "TestScanner", Details: "hash match"));
+        _mockScanLogRepository
+            .Setup(r => r.CreateAsync(It.IsAny<ContentScanLog>()))
+            .Callback<ContentScanLog>(log => capturedLog = log)
+            .ReturnsAsync((ContentScanLog log) => log);
+
+        var file = CreateMockFile(JpegImage, "malicious.jpg", "image/jpeg");
+
+        // Act
+        await _controller.Upload(file);
+
+        // Assert
+        Assert.NotNull(capturedLog);
+        Assert.True(capturedLog.IsMatch);
+        Assert.Equal(0.95, capturedLog.MatchScore);
+        Assert.Equal("TestScanner", capturedLog.ScannerName);
+        Assert.Equal("hash match", capturedLog.Details);
+        Assert.Equal(TestWorkspaceId, capturedLog.WorkspaceId);
+        Assert.Equal("malicious.jpg", capturedLog.OriginalFileName);
+        Assert.Equal("image/jpeg", capturedLog.ContentType);
+        Assert.Equal(JpegImage.Length, capturedLog.FileSizeBytes);
+        Assert.NotNull(capturedLog.ImageHash);
+    }
+
+    [Fact]
+    public async Task Upload_CallsReportingService_WhenMatchDetected()
+    {
+        // Arrange
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ContentScanResult(IsMatch: true, MatchScore: 0.99, ScannerName: "TestScanner"));
+        _mockScanLogRepository
+            .Setup(r => r.CreateAsync(It.IsAny<ContentScanLog>()))
+            .ReturnsAsync((ContentScanLog log) => log);
+
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
+
+        // Act
+        await _controller.Upload(file);
+
+        // Assert
+        _mockCsamReportingService.Verify(
+            s => s.ReportAsync(It.IsAny<ContentScanLog>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Upload_ReturnsBadRequest_WhenReportingServiceThrows()
+    {
+        // Arrange - Scanner detects a match, but reporting service throws
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ContentScanResult(IsMatch: true, MatchScore: 0.99, ScannerName: "TestScanner"));
+        _mockScanLogRepository
+            .Setup(r => r.CreateAsync(It.IsAny<ContentScanLog>()))
+            .ReturnsAsync((ContentScanLog log) => log);
+        _mockCsamReportingService
+            .Setup(s => s.ReportAsync(It.IsAny<ContentScanLog>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Reporting API unavailable"));
+
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
+
+        // Act
+        var result = await _controller.Upload(file);
+
+        // Assert - should still return BadRequest, not 500
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Contains("Unable to process this image", badRequestResult.Value?.ToString());
+        // Scan log should still have been created
+        _mockScanLogRepository.Verify(r => r.CreateAsync(It.IsAny<ContentScanLog>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Upload_Succeeds_WhenScannerReturnsNoMatch()
+    {
+        // Arrange
+        var imageKey = Guid.NewGuid();
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ContentScanResult(IsMatch: false, MatchScore: 0.0, ScannerName: "TestScanner"));
+        _mockImageProvider
+            .Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+            .ReturnsAsync(new StoredImageInfo(imageKey, $"/api/images/{imageKey}"));
+
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
+
+        // Act
+        var result = await _controller.Upload(file);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<ImageUploadResponse>(okResult.Value);
+        Assert.Equal(imageKey, response.Key);
+        // Should NOT log or report when no match
+        _mockScanLogRepository.Verify(r => r.CreateAsync(It.IsAny<ContentScanLog>()), Times.Never);
+        _mockCsamReportingService.Verify(s => s.ReportAsync(It.IsAny<ContentScanLog>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Upload_ScansBeforeResize()
+    {
+        // Arrange
+        var scanCallOrder = 0;
+        var resizeCallOrder = 0;
+        var callCounter = 0;
+
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback(() => scanCallOrder = ++callCounter)
+            .ReturnsAsync(new ContentScanResult(IsMatch: false, MatchScore: 0.0, ScannerName: "TestScanner"));
+        _mockImageProcessor
+            .Setup(p => p.ResizeIfNeeded(It.IsAny<byte[]>(), It.IsAny<string>()))
+            .Callback(() => resizeCallOrder = ++callCounter)
+            .Returns((byte[] data, string ct) => (data, ct));
+        _mockImageProvider
+            .Setup(p => p.StoreAsync(TestWorkspaceId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>()))
+            .ReturnsAsync(new StoredImageInfo(Guid.NewGuid(), "/api/images/test"));
+
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
+
+        // Act
+        await _controller.Upload(file);
+
+        // Assert - scan must happen before resize
+        Assert.True(scanCallOrder > 0, "Scanner should have been called");
+        Assert.True(resizeCallOrder > 0, "Resize should have been called");
+        Assert.True(scanCallOrder < resizeCallOrder, "Scanner should be called before resize");
+    }
+
+    [Fact]
+    public async Task Upload_HandlesScanner_Exception_Gracefully()
+    {
+        // Arrange - Scanner throws an exception (e.g. API timeout)
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Scanner API timeout"));
+
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
+
+        // Act
+        var result = await _controller.Upload(file);
+
+        // Assert - fail-closed: reject the upload
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Contains("Unable to process this image", badRequestResult.Value?.ToString());
+        // Should NOT have stored the image
+        _mockImageProvider.Verify(
+            p => p.StoreAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Upload_DoesNotCallResize_WhenScannerDetectsMatch()
+    {
+        // Arrange
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ContentScanResult(IsMatch: true, MatchScore: 0.99, ScannerName: "TestScanner"));
+        _mockScanLogRepository
+            .Setup(r => r.CreateAsync(It.IsAny<ContentScanLog>()))
+            .ReturnsAsync((ContentScanLog log) => log);
+
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
+
+        // Act
+        await _controller.Upload(file);
+
+        // Assert - should not proceed to resize or store
+        _mockImageProcessor.Verify(p => p.ResizeIfNeeded(It.IsAny<byte[]>(), It.IsAny<string>()), Times.Never);
+        _mockImageProvider.Verify(
+            p => p.StoreAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>()),
+            Times.Never);
     }
 
     #endregion
