@@ -58,6 +58,8 @@ public class Item
     [JsonPropertyName("userFlag")]
     public UserFlag UserFlag { get; set; } = UserFlag.Have;
 
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     [JsonIgnore]
     [ForeignKey(nameof(WorkspaceId))]
     public Workspace? Workspace { get; set; }

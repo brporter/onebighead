@@ -7,11 +7,13 @@ public class CollectionRepository : ICollectionRepository
 {
     private readonly AppDbContext _context;
     private readonly IWorkspaceStatisticsRepository _statsRepository;
+    private readonly ICollectionStatisticsRepository _collectionStatsRepository;
 
-    public CollectionRepository(AppDbContext context, IWorkspaceStatisticsRepository statsRepository)
+    public CollectionRepository(AppDbContext context, IWorkspaceStatisticsRepository statsRepository, ICollectionStatisticsRepository collectionStatsRepository)
     {
         _context = context;
         _statsRepository = statsRepository;
+        _collectionStatsRepository = collectionStatsRepository;
     }
 
     public async Task<IEnumerable<Collection>> GetAllAsync(int workspaceId)
@@ -97,6 +99,8 @@ public class CollectionRepository : ICollectionRepository
         {
             await _statsRepository.DecrementAsync(workspaceId, Models.StatisticType.ItemCount, itemCount);
         }
+
+        await _collectionStatsRepository.DeleteCollectionStatsAsync(id);
 
         return true;
     }

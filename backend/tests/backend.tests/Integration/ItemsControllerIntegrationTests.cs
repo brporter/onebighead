@@ -36,9 +36,10 @@ public class ItemsControllerIntegrationTests : IDisposable
 
         // Set up real repositories
         var mockStatsRepo = new Mock<IWorkspaceStatisticsRepository>().Object;
-        var itemRepository = new ItemRepository(_context, mockStatsRepo);
+        var mockCollectionStatsRepo = new Mock<ICollectionStatisticsRepository>().Object;
+        var itemRepository = new ItemRepository(_context, mockStatsRepo, mockCollectionStatsRepo);
         var categoryRepository = new CategoryRepository(_context);
-        var collectionRepository = new CollectionRepository(_context, mockStatsRepo);
+        var collectionRepository = new CollectionRepository(_context, mockStatsRepo, mockCollectionStatsRepo);
         var visibilityService = new VisibilityService();
 
         _controller = new ItemsController(
@@ -47,7 +48,8 @@ public class ItemsControllerIntegrationTests : IDisposable
             collectionRepository,
             visibilityService,
             new BulkUpdateQueue(),
-            new Mock<IWorkspaceStatisticsRepository>().Object);
+            new Mock<IWorkspaceStatisticsRepository>().Object,
+            new Mock<ICollectionStatisticsRepository>().Object);
 
         // Configure claims
         var claims = new List<Claim>

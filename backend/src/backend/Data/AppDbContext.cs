@@ -29,6 +29,8 @@ public class AppDbContext : DbContext
     public DbSet<SupportReply> SupportReplies => Set<SupportReply>();
     public DbSet<WorkspaceUser> WorkspaceUsers => Set<WorkspaceUser>();
     public DbSet<WorkspaceStatistic> WorkspaceStatistics => Set<WorkspaceStatistic>();
+    public DbSet<CollectionStatistic> CollectionStatistics => Set<CollectionStatistic>();
+    public DbSet<CollectionItemHighlight> CollectionItemHighlights => Set<CollectionItemHighlight>();
     public DbSet<ContentScanLog> ContentScanLogs => Set<ContentScanLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -147,6 +149,9 @@ public class AppDbContext : DbContext
             entity.HasIndex(i => i.UserFlag);
             // Composite index for workspace-scoped flag queries (most common use case)
             entity.HasIndex(i => new { i.WorkspaceId, i.UserFlag });
+
+            // Composite index for collection-scoped recently-added queries
+            entity.HasIndex(i => new { i.CollectionId, i.CreatedAt });
 
             // Configure JSON columns for Properties and Images
             var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -341,6 +346,30 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(s => new { s.WorkspaceId, s.StatisticType, s.Date }).IsUnique();
             entity.HasIndex(s => s.WorkspaceId);
+        });
+
+        modelBuilder.Entity<CollectionStatistic>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+
+            entity.Property(s => s.StatisticType)
+                .HasConversion<int>();
+
+            entity.HasIndex(s => new { s.CollectionId, s.StatisticType }).IsUnique();
+            entity.HasIndex(s => s.CollectionId);
+        });
+
+        modelBuilder.Entity<CollectionItemHighlight>(entity =>
+        {
+            entity.HasKey(h => h.Id);
+
+            entity.HasOne(h => h.Item)
+                .WithMany()
+                .HasForeignKey(h => h.ItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(h => new { h.CollectionId, h.ItemId }).IsUnique();
+            entity.HasIndex(h => new { h.CollectionId, h.ViewCount });
         });
 
         // ContentScanLog intentionally has no foreign key relationships to Workspace or User.
