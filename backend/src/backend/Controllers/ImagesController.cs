@@ -148,7 +148,19 @@ public class ImagesController : ApiControllerBase
             };
 
             await _contentScanLogRepository.CreateAsync(scanLog);
-            await _csamReportingService.ReportAsync(scanLog);
+
+            try
+            {
+                await _csamReportingService.ReportAsync(scanLog);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to report CSAM scan log for image {ImageHash} (ScanLogId: {ScanLogId})",
+                    scanLog.ImageHash,
+                    scanLog.Id);
+            }
 
             return BadRequest(new { error = "Unable to process this image." });
         }

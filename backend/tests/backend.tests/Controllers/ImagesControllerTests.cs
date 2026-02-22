@@ -429,7 +429,7 @@ public class ImagesControllerTests
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
         Assert.Contains("Unable to process this image", badRequestResult.Value?.ToString());
         // Should NOT reveal CSAM detection details
-        Assert.DoesNotContain("match", badRequestResult.Value?.ToString()?.ToLower() ?? "", StringComparison.Ordinal);
+        Assert.DoesNotContain("match", badRequestResult.Value?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -483,6 +483,32 @@ public class ImagesControllerTests
         _mockCsamReportingService.Verify(
             s => s.ReportAsync(It.IsAny<ContentScanLog>(), It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task Upload_ReturnsBadRequest_WhenReportingServiceThrows()
+    {
+        // Arrange - Scanner detects a match, but reporting service throws
+        _mockContentScanner
+            .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ContentScanResult(IsMatch: true, MatchScore: 0.99, ScannerName: "TestScanner"));
+        _mockScanLogRepository
+            .Setup(r => r.CreateAsync(It.IsAny<ContentScanLog>()))
+            .ReturnsAsync((ContentScanLog log) => log);
+        _mockCsamReportingService
+            .Setup(s => s.ReportAsync(It.IsAny<ContentScanLog>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Reporting API unavailable"));
+
+        var file = CreateMockFile(JpegImage, "test.jpg", "image/jpeg");
+
+        // Act
+        var result = await _controller.Upload(file);
+
+        // Assert - should still return BadRequest, not 500
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Contains("Unable to process this image", badRequestResult.Value?.ToString());
+        // Scan log should still have been created
+        _mockScanLogRepository.Verify(r => r.CreateAsync(It.IsAny<ContentScanLog>()), Times.Once);
     }
 
     [Fact]

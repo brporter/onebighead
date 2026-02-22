@@ -343,6 +343,8 @@ public class AppDbContext : DbContext
             entity.HasIndex(s => s.WorkspaceId);
         });
 
+        // ContentScanLog intentionally has no foreign key relationships to Workspace or User.
+        // Scan logs are compliance/audit records that must survive workspace or user deletion.
         modelBuilder.Entity<ContentScanLog>(entity =>
         {
             entity.HasKey(l => l.Id);

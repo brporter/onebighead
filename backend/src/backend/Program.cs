@@ -68,7 +68,6 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddTracingDecorator<IContentScanLogRepository, ContentScanLogRepository>(repoSource);
     builder.Services.AddTracingDecorator<IContentScanner, NoOpContentScanner>(appSource);
     builder.Services.AddTracingDecorator<ICsamReportingService, NoOpCsamReportingService>(appSource);
-    builder.Services.Configure<ContentScanningOptions>(builder.Configuration.GetSection("ContentScanning"));
 }
 else
 {
@@ -92,7 +91,6 @@ else
     builder.Services.AddScoped<IContentScanLogRepository, ContentScanLogRepository>();
     builder.Services.AddScoped<IContentScanner, NoOpContentScanner>();
     builder.Services.AddScoped<ICsamReportingService, NoOpCsamReportingService>();
-    builder.Services.Configure<ContentScanningOptions>(builder.Configuration.GetSection("ContentScanning"));
 }
 
 // Register image processor (environment-independent, stateless singleton)
