@@ -29,6 +29,8 @@ IF OBJECT_ID('dbo.StoredImages', 'U') IS NOT NULL DROP TABLE dbo.StoredImages;
 IF OBJECT_ID('dbo.ItemTemplateProperties', 'U') IS NOT NULL DROP TABLE dbo.ItemTemplateProperties;
 IF OBJECT_ID('dbo.CollectionThemeTemplates', 'U') IS NOT NULL DROP TABLE dbo.CollectionThemeTemplates;
 IF OBJECT_ID('dbo.CollectionThemeCategories', 'U') IS NOT NULL DROP TABLE dbo.CollectionThemeCategories;
+IF OBJECT_ID('dbo.ContentScanLogs', 'U') IS NOT NULL DROP TABLE dbo.ContentScanLogs;
+IF OBJECT_ID('dbo.CollectionItemHighlights', 'U') IS NOT NULL DROP TABLE dbo.CollectionItemHighlights;
 
 -- Level 2: Junction tables and tables referencing Categories/Collections
 IF OBJECT_ID('dbo.CategoryItemTemplates', 'U') IS NOT NULL DROP TABLE dbo.CategoryItemTemplates;
@@ -39,7 +41,8 @@ IF OBJECT_ID('dbo.Items', 'U') IS NOT NULL DROP TABLE dbo.Items;
 -- Level 3: Categories (self-referencing hierarchy)
 IF OBJECT_ID('dbo.Categories', 'U') IS NOT NULL DROP TABLE dbo.Categories;
 
--- Level 4: Collections and SupportRequests
+-- Level 4: Collections, SupportRequests, and Collection statistics
+IF OBJECT_ID('dbo.CollectionStatistics', 'U') IS NOT NULL DROP TABLE dbo.CollectionStatistics;
 IF OBJECT_ID('dbo.Collections', 'U') IS NOT NULL DROP TABLE dbo.Collections;
 IF OBJECT_ID('dbo.SupportRequests', 'U') IS NOT NULL DROP TABLE dbo.SupportRequests;
 
@@ -51,6 +54,7 @@ IF OBJECT_ID('dbo.WorkspaceUsers', 'U') IS NOT NULL DROP TABLE dbo.WorkspaceUser
 IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL DROP TABLE dbo.Users;
 
 -- Level 7: Root tables
+IF OBJECT_ID('dbo.WorkspaceStatistics', 'U') IS NOT NULL DROP TABLE dbo.WorkspaceStatistics;
 IF OBJECT_ID('dbo.Workspaces', 'U') IS NOT NULL DROP TABLE dbo.Workspaces;
 IF OBJECT_ID('dbo.CollectionThemes', 'U') IS NOT NULL DROP TABLE dbo.CollectionThemes;
 
