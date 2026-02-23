@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OneBigHead.Server.Data;
 
@@ -11,9 +12,11 @@ using OneBigHead.Server.Data;
 namespace OneBigHead.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260222185851_AddCollectionStatistics")]
+    partial class AddCollectionStatistics
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -877,16 +880,10 @@ namespace OneBigHead.Server.Migrations
 
             modelBuilder.Entity("OneBigHead.Server.Models.CollectionItemHighlight", b =>
                 {
-                    b.HasOne("OneBigHead.Server.Models.Collection", null)
-                        .WithMany()
-                        .HasForeignKey("CollectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("OneBigHead.Server.Models.Item", "Item")
                         .WithMany()
                         .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Item");
@@ -909,15 +906,6 @@ namespace OneBigHead.Server.Migrations
                     b.Navigation("Collection");
 
                     b.Navigation("ItemTemplate");
-                });
-
-            modelBuilder.Entity("OneBigHead.Server.Models.CollectionStatistic", b =>
-                {
-                    b.HasOne("OneBigHead.Server.Models.Collection", null)
-                        .WithMany()
-                        .HasForeignKey("CollectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.CollectionThemeCategory", b =>

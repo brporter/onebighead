@@ -1,5 +1,6 @@
 using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace OneBigHead.Server.Data;
 
@@ -7,11 +8,15 @@ public class ItemRepository : IItemRepository
 {
     private readonly AppDbContext _context;
     private readonly IWorkspaceStatisticsRepository _statsRepository;
+    private readonly ICollectionStatisticsRepository _collectionStatsRepository;
+    private readonly ILogger<ItemRepository> _logger;
 
-    public ItemRepository(AppDbContext context, IWorkspaceStatisticsRepository statsRepository)
+    public ItemRepository(AppDbContext context, IWorkspaceStatisticsRepository statsRepository, ICollectionStatisticsRepository collectionStatsRepository, ILogger<ItemRepository> logger)
     {
         _context = context;
         _statsRepository = statsRepository;
+        _collectionStatsRepository = collectionStatsRepository;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<Item>> GetAllAsync(int workspaceId)
@@ -40,9 +45,17 @@ public class ItemRepository : IItemRepository
 
     public async Task<Item> CreateAsync(Item item)
     {
+        item.CreatedAt = DateTime.UtcNow;
         _context.Items.Add(item);
         await _context.SaveChangesAsync();
         await _statsRepository.IncrementAsync(item.WorkspaceId, Models.StatisticType.ItemCount);
+        await _collectionStatsRepository.IncrementAsync(item.CollectionId, Models.CollectionStatisticType.ItemCount);
+
+        if (item.Images.Count > 0)
+        {
+            await AdjustCollectionImageStatsAsync(item.CollectionId, item.Images, []);
+        }
+
         return item;
     }
 
@@ -56,6 +69,9 @@ public class ItemRepository : IItemRepository
             return null;
         }
 
+        var oldImages = existingItem.Images;
+        var newImages = item.Images;
+
         existingItem.Name = item.Name;
         existingItem.Summary = item.Summary;
         existingItem.Description = item.Description;
@@ -66,6 +82,9 @@ public class ItemRepository : IItemRepository
         existingItem.UserFlag = item.UserFlag;
 
         await _context.SaveChangesAsync();
+
+        await AdjustCollectionImageStatsAsync(existingItem.CollectionId, newImages, oldImages);
+
         return existingItem;
     }
 
@@ -79,9 +98,20 @@ public class ItemRepository : IItemRepository
             return false;
         }
 
+        var collectionId = item.CollectionId;
+        var deletedImages = item.Images;
+
         _context.Items.Remove(item);
         await _context.SaveChangesAsync();
         await _statsRepository.DecrementAsync(workspaceId, Models.StatisticType.ItemCount);
+        await _collectionStatsRepository.DecrementAsync(collectionId, Models.CollectionStatisticType.ItemCount);
+        await _collectionStatsRepository.RemoveItemHighlightAsync(collectionId, id);
+
+        if (deletedImages.Count > 0)
+        {
+            await AdjustCollectionImageStatsAsync(collectionId, [], deletedImages);
+        }
+
         return true;
     }
 
@@ -118,6 +148,72 @@ public class ItemRepository : IItemRepository
         return await _context.Items
             .AsNoTracking()
             .CountAsync(i => i.WorkspaceId == workspaceId && i.CategoryId == categoryId);
+    }
+
+    private async Task AdjustCollectionImageStatsAsync(int collectionId, List<ItemImage> newImages, List<ItemImage> oldImages)
+    {
+        var oldUrls = oldImages.Select(i => i.Url).ToHashSet();
+        var newUrls = newImages.Select(i => i.Url).ToHashSet();
+
+        var addedGuids = ExtractImageGuids(newUrls.Except(oldUrls));
+        var removedGuids = ExtractImageGuids(oldUrls.Except(newUrls));
+
+        if (addedGuids.Count == 0 && removedGuids.Count == 0)
+            return;
+
+        var allGuids = addedGuids.Concat(removedGuids).Distinct().ToList();
+        var sizes = await _context.StoredImages
+            .AsNoTracking()
+            .Where(s => allGuids.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => (long)s.Data.Length);
+
+        if (addedGuids.Count > 0)
+        {
+            await _collectionStatsRepository.IncrementAsync(collectionId, Models.CollectionStatisticType.ImageCount, addedGuids.Count);
+            var addedSize = SumImageSizes(addedGuids, sizes);
+            if (addedSize > 0)
+                await _collectionStatsRepository.IncrementAsync(collectionId, Models.CollectionStatisticType.TotalImageSizeBytes, addedSize);
+        }
+
+        if (removedGuids.Count > 0)
+        {
+            await _collectionStatsRepository.DecrementAsync(collectionId, Models.CollectionStatisticType.ImageCount, removedGuids.Count);
+            var removedSize = SumImageSizes(removedGuids, sizes);
+            if (removedSize > 0)
+                await _collectionStatsRepository.DecrementAsync(collectionId, Models.CollectionStatisticType.TotalImageSizeBytes, removedSize);
+        }
+    }
+
+    private List<Guid> ExtractImageGuids(IEnumerable<string> urls)
+    {
+        var guids = new List<Guid>();
+        foreach (var url in urls)
+        {
+            // URLs are in the form /api/images/{guid}
+            var lastSlash = url.LastIndexOf('/');
+            if (lastSlash >= 0 && Guid.TryParse(url[(lastSlash + 1)..], out var guid))
+            {
+                guids.Add(guid);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to extract image GUID from URL: {Url}", url);
+            }
+        }
+        return guids;
+    }
+
+    private static long SumImageSizes(List<Guid> guids, Dictionary<Guid, long> sizes)
+    {
+        long total = 0;
+        foreach (var guid in guids)
+        {
+            if (sizes.TryGetValue(guid, out var size))
+            {
+                total += size;
+            }
+        }
+        return total;
     }
 }
 

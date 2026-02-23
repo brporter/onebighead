@@ -44,10 +44,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IEmailService>();
             services.AddScoped<IEmailService, TestEmailService>();
 
-            // Replace workspace statistics repository with a no-op stub
-            // (the real implementation uses ExecuteUpdateAsync which is unsupported by the in-memory provider)
+            // Replace statistics repositories with in-memory-compatible test doubles
+            // (the real implementations use ExecuteUpdateAsync which is unsupported by the in-memory provider)
             services.RemoveAll<IWorkspaceStatisticsRepository>();
             services.AddScoped<IWorkspaceStatisticsRepository, TestWorkspaceStatisticsRepository>();
+
+            services.RemoveAll<ICollectionStatisticsRepository>();
+            services.AddScoped<ICollectionStatisticsRepository, TestCollectionStatisticsRepository>();
 
             // Configure test authentication
             services.AddAuthentication(defaultScheme: TestAuthHandler.SchemeName)

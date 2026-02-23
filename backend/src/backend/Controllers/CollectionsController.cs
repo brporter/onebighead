@@ -16,19 +16,22 @@ public class CollectionsController : ApiControllerBase
     private readonly ICategoryRepository _categoryRepository;
     private readonly IItemTemplateRepository _itemTemplateRepository;
     private readonly IThemeRepository _themeRepository;
+    private readonly ICollectionStatisticsRepository _collectionStatisticsRepository;
     private readonly ILogger<CollectionsController> _logger;
 
     public CollectionsController(
-        ICollectionRepository collectionRepository, 
+        ICollectionRepository collectionRepository,
         ICategoryRepository categoryRepository,
         IItemTemplateRepository itemTemplateRepository,
         IThemeRepository themeRepository,
+        ICollectionStatisticsRepository collectionStatisticsRepository,
         ILogger<CollectionsController> logger)
     {
         _collectionRepository = collectionRepository;
         _categoryRepository = categoryRepository;
         _itemTemplateRepository = itemTemplateRepository;
         _themeRepository = themeRepository;
+        _collectionStatisticsRepository = collectionStatisticsRepository;
         _logger = logger;
     }
 
@@ -287,6 +290,48 @@ public class CollectionsController : ApiControllerBase
             return NotFound();
         }
         return NoContent();
+    }
+
+    [HttpGet("{id}/statistics")]
+    public async Task<ActionResult<CollectionStatisticsResponse>> GetStatistics(int id)
+    {
+        var workspaceId = GetWorkspaceId();
+
+        var collection = await _collectionRepository.GetByIdAsync(id, workspaceId);
+        if (collection is null)
+        {
+            return NotFound();
+        }
+
+        var aggregates = await _collectionStatisticsRepository.GetAggregatesAsync(id);
+        var topViewed = await _collectionStatisticsRepository.GetTopViewedItemsAsync(id);
+        var recentItems = await _collectionStatisticsRepository.GetRecentlyAddedItemsAsync(id, workspaceId);
+
+        var response = new CollectionStatisticsResponse
+        {
+            ItemCount = aggregates.GetValueOrDefault(CollectionStatisticType.ItemCount),
+            ImageCount = aggregates.GetValueOrDefault(CollectionStatisticType.ImageCount),
+            TotalImageSizeBytes = aggregates.GetValueOrDefault(CollectionStatisticType.TotalImageSizeBytes),
+            TopViewedItems = topViewed
+                .Where(h => h.Item != null)
+                .Select(h => new CollectionItemHighlightResponse
+                {
+                    ItemId = h.ItemId,
+                    ItemName = h.Item!.Name,
+                    ViewCount = h.ViewCount,
+                })
+                .ToList(),
+            RecentlyAddedItems = recentItems
+                .Select(i => new RecentItemResponse
+                {
+                    ItemId = i.Id!.Value,
+                    ItemName = i.Name,
+                    CreatedAt = i.CreatedAt,
+                })
+                .ToList(),
+        };
+
+        return Ok(response);
     }
 
     /// <summary>

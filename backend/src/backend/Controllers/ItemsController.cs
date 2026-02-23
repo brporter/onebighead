@@ -21,6 +21,7 @@ public class ItemsController : ApiControllerBase
     private readonly IVisibilityService _visibilityService;
     private readonly IBulkUpdateQueue _bulkUpdateQueue;
     private readonly IWorkspaceStatisticsRepository _statisticsRepository;
+    private readonly ICollectionStatisticsRepository _collectionStatisticsRepository;
 
     public ItemsController(
         IItemRepository itemRepository,
@@ -28,7 +29,8 @@ public class ItemsController : ApiControllerBase
         ICollectionRepository collectionRepository,
         IVisibilityService visibilityService,
         IBulkUpdateQueue bulkUpdateQueue,
-        IWorkspaceStatisticsRepository statisticsRepository)
+        IWorkspaceStatisticsRepository statisticsRepository,
+        ICollectionStatisticsRepository collectionStatisticsRepository)
     {
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
@@ -36,6 +38,7 @@ public class ItemsController : ApiControllerBase
         _visibilityService = visibilityService;
         _bulkUpdateQueue = bulkUpdateQueue;
         _statisticsRepository = statisticsRepository;
+        _collectionStatisticsRepository = collectionStatisticsRepository;
     }
 
     [HttpGet]
@@ -288,6 +291,12 @@ public class ItemsController : ApiControllerBase
             await _statisticsRepository.IncrementAsync(
                 workspaceId, Models.StatisticType.DailyItemView, 1,
                 DateOnly.FromDateTime(DateTime.UtcNow));
+
+            var item = await _itemRepository.GetByIdAsync(id, workspaceId);
+            if (item != null)
+            {
+                await _collectionStatisticsRepository.IncrementItemViewAsync(item.CollectionId, id);
+            }
         }
         catch
         {
