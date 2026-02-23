@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { usersApi } from '../../api';
-import { useUser } from '../../contexts/UserContext';
+import { useUser } from '../../contexts/useUser';
 import type { WorkspaceUser } from '../../utils/types';
 import { WorkspaceRole } from '../../utils/types';
 import '../../styles/UserManagement.css';

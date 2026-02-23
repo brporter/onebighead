@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../contexts/UserContext';
+import { useUser } from '../contexts/useUser';
 import { TermsAcceptance } from '../components/common/TermsAcceptance';
 import '../styles/TermsAcceptance.css';
 

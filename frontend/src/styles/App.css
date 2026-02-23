@@ -2841,6 +2841,15 @@
   margin: var(--space-xs) 0 0;
 }
 
+.collection-title-bar__title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.collection-title-bar__title-link:hover {
+  text-decoration: underline;
+}
+
 @media (min-width: 768px) {
   .collection-title-bar__title {
     font-size: 2rem;

@@ -28,6 +28,30 @@ namespace OneBigHead.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ContentScanLogs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: true),
+                    ScannerName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsMatch = table.Column<bool>(type: "bit", nullable: false),
+                    MatchScore = table.Column<double>(type: "float", nullable: false),
+                    Details = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    OriginalFileName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ContentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FileSizeBytes = table.Column<long>(type: "bigint", nullable: false),
+                    ImageHash = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ScannedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ReportSubmitted = table.Column<bool>(type: "bit", nullable: false),
+                    ReportedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ContentScanLogs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Workspaces",
                 columns: table => new
                 {
@@ -38,11 +62,29 @@ namespace OneBigHead.Server.Migrations
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeletedByUserId = table.Column<int>(type: "int", nullable: true)
+                    DeletedByUserId = table.Column<int>(type: "int", nullable: true),
+                    Slug = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    IsPublicAccessEnabled = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Workspaces", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkspaceStatistics",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
+                    StatisticType = table.Column<int>(type: "int", nullable: false),
+                    Date = table.Column<DateOnly>(type: "date", nullable: false),
+                    Value = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkspaceStatistics", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -201,6 +243,27 @@ namespace OneBigHead.Server.Migrations
                         principalTable: "Workspaces",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CollectionStatistics",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CollectionId = table.Column<int>(type: "int", nullable: false),
+                    StatisticType = table.Column<int>(type: "int", nullable: false),
+                    Value = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CollectionStatistics", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CollectionStatistics_Collections_CollectionId",
+                        column: x => x.CollectionId,
+                        principalTable: "Collections",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -396,7 +459,8 @@ namespace OneBigHead.Server.Migrations
                     Properties = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Images = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Visibility = table.Column<int>(type: "int", nullable: false),
-                    UserFlag = table.Column<int>(type: "int", nullable: false)
+                    UserFlag = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -451,6 +515,33 @@ namespace OneBigHead.Server.Migrations
                         onDelete: ReferentialAction.SetNull);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "CollectionItemHighlights",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CollectionId = table.Column<int>(type: "int", nullable: false),
+                    ItemId = table.Column<int>(type: "int", nullable: false),
+                    ViewCount = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CollectionItemHighlights", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CollectionItemHighlights_Collections_CollectionId",
+                        column: x => x.CollectionId,
+                        principalTable: "Collections",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CollectionItemHighlights_Items_ItemId",
+                        column: x => x.ItemId,
+                        principalTable: "Items",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_CollectionId",
                 table: "Categories",
@@ -477,6 +568,22 @@ namespace OneBigHead.Server.Migrations
                 column: "ItemTemplateId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_CollectionItemHighlights_CollectionId_ItemId",
+                table: "CollectionItemHighlights",
+                columns: new[] { "CollectionId", "ItemId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CollectionItemHighlights_CollectionId_ViewCount",
+                table: "CollectionItemHighlights",
+                columns: new[] { "CollectionId", "ViewCount" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CollectionItemHighlights_ItemId",
+                table: "CollectionItemHighlights",
+                column: "ItemId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CollectionItemTemplates_ItemTemplateId",
                 table: "CollectionItemTemplates",
                 column: "ItemTemplateId");
@@ -490,6 +597,17 @@ namespace OneBigHead.Server.Migrations
                 name: "IX_Collections_WorkspaceId_Slug",
                 table: "Collections",
                 columns: new[] { "WorkspaceId", "Slug" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CollectionStatistics_CollectionId",
+                table: "CollectionStatistics",
+                column: "CollectionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CollectionStatistics_CollectionId_StatisticType",
+                table: "CollectionStatistics",
+                columns: new[] { "CollectionId", "StatisticType" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -513,6 +631,21 @@ namespace OneBigHead.Server.Migrations
                 column: "ThemeId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ContentScanLogs_IsMatch",
+                table: "ContentScanLogs",
+                column: "IsMatch");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ContentScanLogs_ScannedAt",
+                table: "ContentScanLogs",
+                column: "ScannedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ContentScanLogs_WorkspaceId",
+                table: "ContentScanLogs",
+                column: "WorkspaceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Items_CategoryId",
                 table: "Items",
                 column: "CategoryId");
@@ -521,6 +654,11 @@ namespace OneBigHead.Server.Migrations
                 name: "IX_Items_CollectionId",
                 table: "Items",
                 column: "CollectionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Items_CollectionId_CreatedAt",
+                table: "Items",
+                columns: new[] { "CollectionId", "CreatedAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Items_UserFlag",
@@ -641,6 +779,24 @@ namespace OneBigHead.Server.Migrations
                 column: "Name");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Workspaces_Slug",
+                table: "Workspaces",
+                column: "Slug",
+                unique: true,
+                filter: "[Slug] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkspaceStatistics_WorkspaceId",
+                table: "WorkspaceStatistics",
+                column: "WorkspaceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkspaceStatistics_WorkspaceId_StatisticType_Date",
+                table: "WorkspaceStatistics",
+                columns: new[] { "WorkspaceId", "StatisticType", "Date" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_WorkspaceUsers_WorkspaceId",
                 table: "WorkspaceUsers",
                 column: "WorkspaceId");
@@ -653,7 +809,13 @@ namespace OneBigHead.Server.Migrations
                 name: "CategoryItemTemplates");
 
             migrationBuilder.DropTable(
+                name: "CollectionItemHighlights");
+
+            migrationBuilder.DropTable(
                 name: "CollectionItemTemplates");
+
+            migrationBuilder.DropTable(
+                name: "CollectionStatistics");
 
             migrationBuilder.DropTable(
                 name: "CollectionThemeCategories");
@@ -662,7 +824,7 @@ namespace OneBigHead.Server.Migrations
                 name: "CollectionThemeTemplates");
 
             migrationBuilder.DropTable(
-                name: "Items");
+                name: "ContentScanLogs");
 
             migrationBuilder.DropTable(
                 name: "ItemTemplateProperties");
@@ -677,13 +839,16 @@ namespace OneBigHead.Server.Migrations
                 name: "SupportReplies");
 
             migrationBuilder.DropTable(
+                name: "WorkspaceStatistics");
+
+            migrationBuilder.DropTable(
                 name: "WorkspaceUsers");
 
             migrationBuilder.DropTable(
-                name: "CollectionThemes");
+                name: "Items");
 
             migrationBuilder.DropTable(
-                name: "Categories");
+                name: "CollectionThemes");
 
             migrationBuilder.DropTable(
                 name: "ItemTemplates");
@@ -692,10 +857,13 @@ namespace OneBigHead.Server.Migrations
                 name: "SupportRequests");
 
             migrationBuilder.DropTable(
-                name: "Collections");
+                name: "Categories");
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "Collections");
 
             migrationBuilder.DropTable(
                 name: "Workspaces");

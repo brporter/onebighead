@@ -4,19 +4,19 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import SettingsView from '../../src/views/SettingsView';
-import * as UserContext from '../../src/contexts/UserContext';
-import * as DataContext from '../../src/contexts/DataContext';
+import * as UserContext from '../../src/contexts/useUser';
+import * as DataContext from '../../src/contexts/useData';
 import * as exportApiModule from '../../src/api/export';
 import { WorkspaceRole, Visibility } from '../../src/utils/types';
 import type { Collection } from '../../src/utils/types';
 import { createMockDataContextValue } from '../testUtils';
 
 // Mock the contexts
-vi.mock('../../src/contexts/UserContext', () => ({
+vi.mock('../../src/contexts/useUser', () => ({
   useUser: vi.fn(),
 }));
 
-vi.mock('../../src/contexts/DataContext', () => ({
+vi.mock('../../src/contexts/useData', () => ({
   useData: vi.fn(),
 }));
 

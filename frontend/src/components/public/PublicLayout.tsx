@@ -1,23 +1,19 @@
 import { Outlet, Link, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { publicApi, type PublicWorkspace } from '../../api';
+import { useAsyncData } from '../../utils/useAsyncData';
 import '../../styles/components/PublicLayout.css';
 
 function PublicLayout() {
   const { slug } = useParams<{ slug: string }>();
-  const [workspace, setWorkspace] = useState<PublicWorkspace | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!slug) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading state must be set before async fetch
-    setLoading(true);
-    publicApi.getWorkspace(slug)
-      .then(setWorkspace)
-      .catch(() => setError('Workspace not found'))
-      .finally(() => setLoading(false));
-  }, [slug]);
+  const fetchWorkspace = useCallback(
+    () => publicApi.getWorkspace(slug!),
+    [slug],
+  );
+  const { data: workspace, loading, error } = useAsyncData<PublicWorkspace>(
+    slug ? fetchWorkspace : null,
+  );
 
   if (loading) {
     return (

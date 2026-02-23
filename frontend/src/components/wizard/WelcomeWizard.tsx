@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useUser } from '../../contexts/UserContext';
-import { useData } from '../../contexts/DataContext';
+import { useUser } from '../../contexts/useUser';
+import { useData } from '../../contexts/useData';
 import { authApi } from '../../api';
 import type { CollectionTheme } from '../../utils/types';
 import ThemeCard from '../collection/ThemeCard';

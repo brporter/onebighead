@@ -1,0 +1,164 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CollectionDashboard > snapshots > should match snapshot for empty state 1`] = `
+<div>
+  <div
+    class="collection-dashboard__empty"
+  >
+    <p>
+      No items yet. Select a category and start adding items.
+    </p>
+  </div>
+</div>
+`;
+
+exports[`CollectionDashboard > snapshots > should match snapshot with stats loaded 1`] = `
+<div>
+  <div
+    class="collection-dashboard"
+  >
+    <div
+      class="collection-dashboard__stats"
+    >
+      <div
+        class="collection-dashboard__stats-card"
+      >
+        <div
+          class="collection-dashboard__stats-value"
+        >
+          42
+        </div>
+        <div
+          class="collection-dashboard__stats-label"
+        >
+          Items
+        </div>
+      </div>
+      <div
+        class="collection-dashboard__stats-card"
+      >
+        <div
+          class="collection-dashboard__stats-value"
+        >
+          15
+        </div>
+        <div
+          class="collection-dashboard__stats-label"
+        >
+          Images
+        </div>
+      </div>
+      <div
+        class="collection-dashboard__stats-card"
+      >
+        <div
+          class="collection-dashboard__stats-value"
+        >
+          8.0 MB
+        </div>
+        <div
+          class="collection-dashboard__stats-label"
+        >
+          Total Image Size
+        </div>
+      </div>
+    </div>
+    <div
+      class="collection-dashboard__panels"
+    >
+      <div
+        class="collection-dashboard__panel"
+      >
+        <h2
+          class="collection-dashboard__panel-title"
+        >
+          Recently Added
+        </h2>
+        <ul
+          class="collection-dashboard__item-list"
+        >
+          <li
+            class="collection-dashboard__item"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="collection-dashboard__item-name"
+            >
+              New Item
+            </span>
+            <span
+              class="collection-dashboard__item-meta"
+            >
+              just now
+            </span>
+          </li>
+          <li
+            class="collection-dashboard__item"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="collection-dashboard__item-name"
+            >
+              Older Item
+            </span>
+            <span
+              class="collection-dashboard__item-meta"
+            >
+              5d ago
+            </span>
+          </li>
+        </ul>
+      </div>
+      <div
+        class="collection-dashboard__panel"
+      >
+        <h2
+          class="collection-dashboard__panel-title"
+        >
+          Most Viewed
+        </h2>
+        <ul
+          class="collection-dashboard__item-list"
+        >
+          <li
+            class="collection-dashboard__item"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="collection-dashboard__item-name"
+            >
+              Popular Item
+            </span>
+            <span
+              class="collection-dashboard__item-meta"
+            >
+              25
+               views
+            </span>
+          </li>
+          <li
+            class="collection-dashboard__item"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="collection-dashboard__item-name"
+            >
+              Second Popular
+            </span>
+            <span
+              class="collection-dashboard__item-meta"
+            >
+              10
+               views
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+`;

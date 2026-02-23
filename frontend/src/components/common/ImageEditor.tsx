@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../contexts/useData';
 import type { ItemImage } from '../../utils/types';
 
 interface ImageEditorProps {

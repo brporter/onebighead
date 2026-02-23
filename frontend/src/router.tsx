@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import App from './App';
 import RequireAuth from './components/common/RequireAuth';
+import LoadingFallback from './components/common/LoadingFallback';
 import { NoWorkspaceHandler } from './components/common';
 
 // Lazy load route components for better initial load performance
@@ -18,16 +19,6 @@ const PublicLayout = lazy(() => import('./components/public/PublicLayout'));
 const PublicCollectionsView = lazy(() => import('./views/PublicCollectionsView'));
 const PublicCollectionDetailView = lazy(() => import('./views/PublicCollectionDetailView'));
 const PublicItemView = lazy(() => import('./views/PublicItemView'));
-
-// Loading fallback component - inline to avoid separate file
-// eslint-disable-next-line react-refresh/only-export-components
-function LoadingFallback() {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: '2rem' }}>
-      Loading...
-    </div>
-  );
-}
 
 export const router = createBrowserRouter([
   {

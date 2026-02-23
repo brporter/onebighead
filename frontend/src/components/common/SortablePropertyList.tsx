@@ -133,35 +133,44 @@ export function SortablePropertyList<T extends BaseProperty>({
   onCategoryTab,
 }: SortablePropertyListProps<T>) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  // Counter to force re-render when grouping categories change
-  const [groupingVersion, setGroupingVersion] = useState(0);
+  // Immutable record of stable grouping categories (only updated on blur, not on each keystroke)
+  const [groupingCategories, setGroupingCategories] = useState<Record<string, string>>({});
   // Track which input to focus after a re-grouping render
   const focusTargetRef = useRef<{ id: string; field: string } | null>(null);
-  // Track stable grouping categories (only updated on blur, not on each keystroke)
-  const [groupingCategories] = useState<Map<string, string>>(() => new Map());
 
   // Initialize grouping categories for new properties
-  useMemo(() => {
+  const syncedCategories = useMemo(() => {
+    const result = { ...groupingCategories };
+    let changed = false;
+    // Add new properties
     properties.forEach((prop) => {
-      if (!groupingCategories.has(prop.id)) {
-        groupingCategories.set(prop.id, prop.category || 'Uncategorized');
+      if (!(prop.id in result)) {
+        result[prop.id] = prop.category || 'Uncategorized';
+        changed = true;
       }
     });
     // Clean up removed properties
     const currentIds = new Set(properties.map((p) => p.id));
-    groupingCategories.forEach((_, id) => {
+    for (const id of Object.keys(result)) {
       if (!currentIds.has(id)) {
-        groupingCategories.delete(id);
+        delete result[id];
+        changed = true;
       }
-    });
+    }
+    return changed ? result : groupingCategories;
   }, [properties, groupingCategories]);
+
+  // Sync state if new properties were added/removed
+  if (syncedCategories !== groupingCategories) {
+    setGroupingCategories(syncedCategories);
+  }
 
   // Handle category blur - update stable grouping category
   const handleCategoryBlur = useCallback((id: string) => {
     const prop = properties.find((p) => p.id === id);
-    groupingCategories.set(id, prop?.category || 'Uncategorized');
-    setGroupingVersion((v) => v + 1);
-  }, [properties, groupingCategories]);
+    const newCategory = prop?.category || 'Uncategorized';
+    setGroupingCategories((prev) => ({ ...prev, [id]: newCategory }));
+  }, [properties]);
 
   // Wrap onFieldBlur to also handle category grouping updates
   const handleFieldBlur = useCallback((id: string, field: keyof T) => {
@@ -187,25 +196,26 @@ export function SortablePropertyList<T extends BaseProperty>({
       );
       input?.focus();
     }
-  }, [groupingVersion]);
+  });
 
   // Create sortable items with stable grouping categories
   const sortableItems = useMemo(() =>
     properties.map((p) => ({
       ...p,
-      category: groupingCategories.get(p.id) || 'Uncategorized',
+      category: groupingCategories[p.id] || 'Uncategorized',
     })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [properties, groupingVersion]
+    [properties, groupingCategories]
   );
 
   const { sensors, groupedItems, handleDragEnd } = useCategorySortable(
     sortableItems,
     (items) => {
       // Update grouping categories to match new order
+      const updated: Record<string, string> = {};
       items.forEach((item) => {
-        groupingCategories.set(item.id, item.category || 'Uncategorized');
+        updated[item.id] = item.category || 'Uncategorized';
       });
+      setGroupingCategories((prev) => ({ ...prev, ...updated }));
       // Map back to original property type, restoring empty category if it was 'Uncategorized'
       const reorderedProperties = items.map((item) => {
         const original = properties.find((p) => p.id === item.id)!;

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import './styles/App.css';
-import { useData } from './contexts/DataContext';
-import { useUser } from './contexts/UserContext';
+import { useData } from './contexts/useData';
+import { useUser } from './contexts/useUser';
 import UserButton from './components/user/UserButton';
 import { SupportModal } from './components/support/SupportModal';
 import { UnreadSupportBanner } from './components/support/UnreadSupportBanner';

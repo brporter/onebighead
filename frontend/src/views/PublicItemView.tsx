@@ -1,27 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { publicApi, type PublicItem } from '../api';
+import { useAsyncData } from '../utils/useAsyncData';
 import '../styles/components/PublicItem.css';
 
 function PublicItemView() {
   const { slug, itemId } = useParams<{ slug: string; itemId: string }>();
   const navigate = useNavigate();
-  const [item, setItem] = useState<PublicItem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const itemIdNum = itemId ? parseInt(itemId, 10) : null;
 
-  useEffect(() => {
-    if (!slug || !itemIdNum) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading state must be set before async fetch
-    setLoading(true);
-    publicApi.getItem(slug, itemIdNum)
-      .then(setItem)
-      .catch(() => setError('Item not found'))
-      .finally(() => setLoading(false));
-  }, [slug, itemIdNum]);
+  const fetchItem = useCallback(
+    () => publicApi.getItem(slug!, itemIdNum!),
+    [slug, itemIdNum],
+  );
+  const { data: item, loading, error } = useAsyncData(
+    slug && itemIdNum ? fetchItem : null,
+  );
 
   if (loading) {
     return <div className="publicItem__loading">Loading item...</div>;

@@ -1,13 +1,13 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import RequireAuth from '../src/components/common/RequireAuth';
-import * as UserContext from '../src/contexts/UserContext';
+import * as UserContext from '../src/contexts/useUser';
 import type { CurrentUser, WorkspaceMembership } from '../src/utils/types';
 import { WorkspaceRole } from '../src/utils/types';
 
-vi.mock('../src/contexts/UserContext', () => ({
+vi.mock('../src/contexts/useUser', () => ({
   useUser: vi.fn(),
 }));
 
@@ -98,7 +98,7 @@ describe('RequireAuth', () => {
     expect(screen.getByText('Protected Content')).toBeInTheDocument();
   });
 
-  it('should redirect to signin when user is not authenticated', () => {
+  it('should redirect to signin when user is not authenticated', async () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
       user: null,
       loading: false,
@@ -114,11 +114,13 @@ describe('RequireAuth', () => {
       '/collections/1'
     );
 
-    expect(mockLocation.href).toBe('/signin?returnUrl=%2Fcollections%2F1');
+    await waitFor(() => {
+      expect(mockLocation.href).toBe('/signin?returnUrl=%2Fcollections%2F1');
+    });
     expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
   });
 
-  it('should include search params in return URL', () => {
+  it('should include search params in return URL', async () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
       user: null,
       loading: false,
@@ -134,7 +136,9 @@ describe('RequireAuth', () => {
       '/collections/1/items/new?categoryId=5'
     );
 
-    expect(mockLocation.href).toBe('/signin?returnUrl=%2Fcollections%2F1%2Fitems%2Fnew%3FcategoryId%3D5');
+    await waitFor(() => {
+      expect(mockLocation.href).toBe('/signin?returnUrl=%2Fcollections%2F1%2Fitems%2Fnew%3FcategoryId%3D5');
+    });
   });
 
   describe('welcome redirect', () => {

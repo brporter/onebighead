@@ -19,6 +19,26 @@ export interface UpdateCollectionRequest {
   visibility?: Visibility;
 }
 
+export interface CollectionItemHighlightResponse {
+  itemId: number;
+  itemName: string;
+  viewCount: number;
+}
+
+export interface RecentItemResponse {
+  itemId: number;
+  itemName: string;
+  createdAt: string;
+}
+
+export interface CollectionStatisticsResponse {
+  itemCount: number;
+  imageCount: number;
+  totalImageSizeBytes: number;
+  topViewedItems: CollectionItemHighlightResponse[];
+  recentlyAddedItems: RecentItemResponse[];
+}
+
 export const collectionsApi = {
   getAll(): Promise<Collection[]> {
     return api.get<Collection[]>('/collections');
@@ -55,5 +75,9 @@ export const collectionsApi = {
 
   delete(id: number): Promise<void> {
     return api.delete(`/collections/${id}`);
+  },
+
+  getStatistics(id: number): Promise<CollectionStatisticsResponse> {
+    return api.get<CollectionStatisticsResponse>(`/collections/${id}/statistics`);
   },
 };

@@ -1,39 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { publicApi, type PublicCollectionDetail, type PublicItemSummary, type PublicCategory } from '../api';
+import { useAsyncData } from '../utils/useAsyncData';
 import '../styles/components/PublicCollectionDetail.css';
 
 function PublicCollectionDetailView() {
   const { slug, collectionId } = useParams<{ slug: string; collectionId: string }>();
   const navigate = useNavigate();
-  const [detail, setDetail] = useState<PublicCollectionDetail | null>(null);
-  const [items, setItems] = useState<PublicItemSummary[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [itemsLoading, setItemsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
 
-  useEffect(() => {
-    if (!slug || !collectionIdNum) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading state must be set before async fetch
-    setLoading(true);
-    publicApi.getCollection(slug, collectionIdNum)
-      .then(setDetail)
-      .catch(() => setError('Collection not found'))
-      .finally(() => setLoading(false));
-  }, [slug, collectionIdNum]);
+  const fetchDetail = useCallback(
+    () => publicApi.getCollection(slug!, collectionIdNum!),
+    [slug, collectionIdNum],
+  );
+  const { data: detail, loading, error } = useAsyncData(
+    slug && collectionIdNum ? fetchDetail : null,
+  );
 
-  useEffect(() => {
-    if (!slug || !collectionIdNum) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading state must be set before async fetch
-    setItemsLoading(true);
-    publicApi.getItems(slug, collectionIdNum, selectedCategoryId ?? undefined)
-      .then(setItems)
-      .catch(() => setItems([]))
-      .finally(() => setItemsLoading(false));
-  }, [slug, collectionIdNum, selectedCategoryId]);
+  const fetchItems = useCallback(
+    () => publicApi.getItems(slug!, collectionIdNum!, selectedCategoryId ?? undefined),
+    [slug, collectionIdNum, selectedCategoryId],
+  );
+  const { data: items, loading: itemsLoading } = useAsyncData<PublicItemSummary[]>(
+    slug && collectionIdNum ? fetchItems : null,
+  );
 
   if (loading) {
     return <div className="publicDetail__loading">Loading collection...</div>;
@@ -62,6 +54,8 @@ function PublicCollectionDetailView() {
       )}
     </li>
   );
+
+  const displayItems = items ?? [];
 
   return (
     <div className="publicDetail">
@@ -92,11 +86,11 @@ function PublicCollectionDetailView() {
         <div className="publicDetail__items">
           {itemsLoading ? (
             <div className="publicDetail__loading">Loading items...</div>
-          ) : items.length === 0 ? (
+          ) : displayItems.length === 0 ? (
             <div className="publicDetail__empty">No items in this view.</div>
           ) : (
             <div className="publicDetail__itemGrid">
-              {items.map(item => (
+              {displayItems.map(item => (
                 <button
                   key={item.id}
                   className="publicDetail__itemCard"

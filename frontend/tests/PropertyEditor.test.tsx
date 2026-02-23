@@ -13,7 +13,7 @@ vi.mock('../src/utils/idUtils', () => ({
 const mockAddLocalCategorySuggestion = vi.fn();
 const mockAddLocalNameSuggestion = vi.fn();
 
-vi.mock('../src/contexts/DataContext', () => ({
+vi.mock('../src/contexts/useData', () => ({
   useData: () => ({
     propertyCategorySuggestions: ['General', 'Technical'],
     propertyNameSuggestions: ['Color', 'Size'],

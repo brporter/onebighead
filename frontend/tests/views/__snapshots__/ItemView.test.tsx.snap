@@ -241,11 +241,17 @@ exports[`ItemView > snapshots > should match snapshot for existing item 1`] = `
       <div
         class="collection-title-bar"
       >
-        <h1
-          class="collection-title-bar__title"
+        <a
+          class="collection-title-bar__title-link"
+          data-discover="true"
+          href="/collections/1"
         >
-          Test Collection
-        </h1>
+          <h1
+            class="collection-title-bar__title"
+          >
+            Test Collection
+          </h1>
+        </a>
       </div>
       <article
         class="app__detail"

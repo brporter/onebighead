@@ -75,7 +75,7 @@ const mockCategories: Category[] = [
 ];
 
 // Mock DataContext
-vi.mock('../src/contexts/DataContext', () => ({
+vi.mock('../src/contexts/useData', () => ({
   useData: () => ({
     categories: mockCategories,
     currentCollection: mockCollection,

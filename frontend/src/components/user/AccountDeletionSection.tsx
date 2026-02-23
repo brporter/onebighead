@@ -6,7 +6,7 @@ import {
   type UserDeletionInfo,
   type WorkspaceActionRequest
 } from '../../api/account';
-import { useUser } from '../../contexts/UserContext';
+import { useUser } from '../../contexts/useUser';
 
 interface AccountDeletionSectionProps {
   onDeleted?: () => void;

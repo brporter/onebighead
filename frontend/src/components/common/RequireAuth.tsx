@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useUser } from '../../contexts/UserContext';
+import { useUser } from '../../contexts/useUser';
 
 interface RequireAuthProps {
   children: React.ReactNode;
@@ -30,15 +30,21 @@ function RequireAuth({ children, skipWelcomeCheck = false, skipTermsCheck = fals
     workspacesCount: user?.workspaces?.length
   });
 
+  const signinReturnUrl = !loading && !user
+    ? encodeURIComponent(location.pathname + location.search)
+    : null;
+
+  useEffect(() => {
+    if (signinReturnUrl !== null) {
+      globalThis.location.href = `/signin?returnUrl=${signinReturnUrl}`;
+    }
+  }, [signinReturnUrl]);
+
   if (loading) {
     return <div className="app__loading">Loading...</div>;
   }
 
   if (!user) {
-    // Redirect to signin, preserving the intended destination
-    const returnUrl = encodeURIComponent(location.pathname + location.search);
-    // eslint-disable-next-line react-hooks/immutability
-    globalThis.location.href = `/signin?returnUrl=${returnUrl}`;
     return null;
   }
 

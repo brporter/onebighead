@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../../contexts/UserContext';
+import { useUser } from '../../contexts/useUser';
 import { getUnreadSupportCount } from '../../api';
 import '../../styles/Support.css';
 
@@ -18,22 +18,22 @@ export function UnreadSupportBanner({ onOpenSettings }: UnreadSupportBannerProps
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Initialize isDismissed from sessionStorage if we have a user
+  const userId = user?.userId;
+
+  // Initialize isDismissed from sessionStorage
   const [isDismissed, setIsDismissed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    // Note: user may not be available during initial render, will be checked in effect
-    return false;
+    if (typeof window === 'undefined' || !userId) return false;
+    return sessionStorage.getItem(getStorageKey(userId)) === 'true';
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
-    // Check if we've already shown the banner this session for this user
-    const storageKey = getStorageKey(user.userId);
-    const dismissed = sessionStorage.getItem(storageKey);
-    if (dismissed === 'true') {
-      // Already dismissed, skip fetch
-      setIsDismissed(true);
+    // Check if already dismissed in sessionStorage (covers case where userId
+    // wasn't available during initial render)
+    if (sessionStorage.getItem(getStorageKey(userId)) === 'true') {
+      // Already dismissed — schedule state update as a microtask
+      void Promise.resolve().then(() => setIsDismissed(true));
       return;
     }
 
@@ -41,8 +41,7 @@ export function UnreadSupportBanner({ onOpenSettings }: UnreadSupportBannerProps
     getUnreadSupportCount()
       .then((data) => setUnreadCount(data.unreadCount))
       .catch(() => setUnreadCount(0));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.userId]);
+  }, [userId]);
 
   if (!user || unreadCount === 0 || isDismissed) {
     return null;

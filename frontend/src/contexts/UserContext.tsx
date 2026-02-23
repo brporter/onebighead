@@ -1,9 +1,9 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { CurrentUser } from '../utils/types';
 import { authApi } from '../api';
 import { getErrorMessage, logError } from '../utils/errorUtils';
 
-interface UserContextValue {
+export interface UserContextValue {
   user: CurrentUser | null;
   loading: boolean;
   error: string | null;
@@ -18,11 +18,6 @@ const UserContext = createContext<UserContextValue>({
   refetch: async () => {},
   logout: async () => {},
 });
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function useUser(): UserContextValue {
-  return useContext(UserContext);
-}
 
 interface UserProviderProps {
   children: ReactNode;
@@ -54,8 +49,9 @@ export function UserProvider({ children }: UserProviderProps) {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- setLoading runs asynchronously via .finally(), not synchronously in the effect body
-    fetchUser().finally(() => setLoading(false));
+    void Promise.resolve().then(() => {
+      fetchUser().finally(() => setLoading(false));
+    });
   }, [fetchUser]);
 
   return (

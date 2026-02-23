@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../contexts/useData';
 import type { ItemTemplate, ItemProperty } from '../../utils/types';
 
 interface TemplateSelection {

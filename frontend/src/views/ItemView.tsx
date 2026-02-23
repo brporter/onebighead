@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useData } from '../contexts/useData';
 import ItemDetail from '../components/item/ItemDetail';
 import ItemEditor from '../components/item/ItemEditor';
 import { BackNav, Loading, BulkUpdateModal, type ScopeOption } from '../components/common';
@@ -125,9 +125,11 @@ function ItemView() {
     return items.find((item) => item.id === itemIdNum) ?? deepLinkedItem;
   }, [items, itemIdNum, deepLinkedItem]);
 
-  // Fire-and-forget view tracking
+  // Fire-and-forget view tracking (ref guards against StrictMode double-invoke)
+  const lastViewedItemId = useRef<number | null>(null);
   useEffect(() => {
-    if (selectedItem?.id) {
+    if (selectedItem?.id && selectedItem.id !== lastViewedItemId.current) {
+      lastViewedItemId.current = selectedItem.id;
       itemsApi.recordView(selectedItem.id).catch(() => {});
     }
   }, [selectedItem?.id]);
@@ -314,7 +316,9 @@ function ItemView() {
               ← All Collections
             </button>
           )}
-          <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
+          <Link to={`/collections/${collectionIdNum}`} className="collection-title-bar__title-link">
+            <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
+          </Link>
         </div>
         <article className="app__detail">
           <BackNav label="Back to items" onClick={handleBackToItems} />

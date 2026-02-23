@@ -1,24 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { publicApi, type PublicCollection } from '../api';
+import { useAsyncData } from '../utils/useAsyncData';
 import '../styles/components/PublicCollections.css';
 
 function PublicCollectionsView() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [collections, setCollections] = useState<PublicCollection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!slug) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading state must be set before async fetch
-    setLoading(true);
-    publicApi.getCollections(slug)
-      .then(setCollections)
-      .catch(() => setError('Failed to load collections'))
-      .finally(() => setLoading(false));
-  }, [slug]);
+  const fetchCollections = useCallback(
+    () => publicApi.getCollections(slug!),
+    [slug],
+  );
+  const { data: collections, loading, error } = useAsyncData(
+    slug ? fetchCollections : null,
+  );
 
   if (loading) {
     return <div className="publicCollections__loading">Loading collections...</div>;
@@ -28,7 +24,7 @@ function PublicCollectionsView() {
     return <div className="publicCollections__error">{error}</div>;
   }
 
-  if (collections.length === 0) {
+  if (!collections || collections.length === 0) {
     return (
       <div className="publicCollections__empty">
         <p>No public collections available.</p>
@@ -40,7 +36,7 @@ function PublicCollectionsView() {
     <div className="publicCollections">
       <h1 className="publicCollections__title">Collections</h1>
       <div className="publicCollections__grid">
-        {collections.map((collection) => (
+        {collections.map((collection: PublicCollection) => (
           <button
             key={collection.id}
             className="publicCollections__card"
