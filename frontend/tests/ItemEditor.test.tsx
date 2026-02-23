@@ -12,7 +12,7 @@ vi.mock('../src/utils/idUtils', () => ({
 }));
 
 // Mock DataContext for PropertyEditor and ImageEditor
-vi.mock('../src/contexts/DataContext', () => ({
+vi.mock('../src/contexts/useData', () => ({
   useData: () => ({
     propertyCategorySuggestions: [],
     propertyNameSuggestions: [],

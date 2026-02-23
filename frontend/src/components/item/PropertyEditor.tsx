@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import type { ItemProperty } from '../../utils/types';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../contexts/useData';
 import { SortablePropertyList, type PropertyWithValue, type FieldConfig } from '../common';
 import { generateUniqueId } from '../../utils/idUtils';
 

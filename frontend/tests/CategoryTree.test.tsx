@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CategoryTree from '../src/components/category/CategoryTree';
-import * as DataContext from '../src/contexts/DataContext';
+import * as DataContext from '../src/contexts/useData';
 import { createMockCategory, createMockCollection, createMockDataContextValue } from './testUtils';
 
 // Mock the useData hook
-vi.mock('../src/contexts/DataContext', async () => {
+vi.mock('../src/contexts/useData', async () => {
   const actual = await vi.importActual<typeof import('../src/contexts/DataContext')>('../src/contexts/DataContext');
   return {
     ...actual,

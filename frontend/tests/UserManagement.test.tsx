@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import UserManagement from '../src/components/user/UserManagement';
-import * as UserContext from '../src/contexts/UserContext';
+import * as UserContext from '../src/contexts/useUser';
 import * as usersApiModule from '../src/api/users';
 import type { WorkspaceUser, CurrentUser } from '../src/utils/types';
 import { WorkspaceRole } from '../src/utils/types';
 
-vi.mock('../src/contexts/UserContext', () => ({
+vi.mock('../src/contexts/useUser', () => ({
   useUser: vi.fn(),
 }));
 

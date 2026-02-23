@@ -6,12 +6,12 @@ import App from '../src/App';
 import CollectionView from '../src/views/CollectionView';
 import CategoryView from '../src/views/CategoryView';
 import ItemView from '../src/views/ItemView';
-import { useData } from '../src/contexts/DataContext';
+import { useData } from '../src/contexts/useData';
 import type { Category, Item, Collection } from '../src/utils/types';
 import { Visibility, UserFlag } from '../src/utils/types';
 
 // Mock the DataContext
-vi.mock('../src/contexts/DataContext', () => ({
+vi.mock('../src/contexts/useData', () => ({
   useData: vi.fn(),
   DataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));

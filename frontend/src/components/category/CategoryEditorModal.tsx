@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Category } from '../../utils/types';
 import { Visibility } from '../../utils/types';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../contexts/useData';
 import VisibilityToggle from '../common/VisibilityToggle';
 import CategoryTemplateSelector from './CategoryTemplateSelector';
 

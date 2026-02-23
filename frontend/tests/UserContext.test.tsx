@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
-import { UserProvider, useUser } from '../src/contexts/UserContext';
+import { UserProvider } from '../src/contexts/UserContext';
+import { useUser } from '../src/contexts/useUser';
 import { createMockCurrentUser } from './testUtils';
 
 vi.mock('../src/api', async (importOriginal) => {

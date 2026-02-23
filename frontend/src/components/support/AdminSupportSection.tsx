@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   getAdminSupportRequests,
   getAdminSupportRequest,
@@ -22,12 +22,7 @@ export function AdminSupportSection() {
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
-  useEffect(() => {
-    loadRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, includeDeleted, page]);
-
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     try {
       setLoading(true);
       setError(null); // Clear previous errors
@@ -44,7 +39,11 @@ export function AdminSupportSection() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, includeDeleted, page, pageSize]);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
 
   const handleSelectRequest = async (request: SupportRequest) => {
     try {

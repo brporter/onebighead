@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act } from '@testing-library/react';
-import { DataProvider, useData } from '../src/contexts/DataContext';
+import { DataProvider } from '../src/contexts/DataContext';
+import { useData } from '../src/contexts/useData';
 import type { Item, Category, Collection } from '../src/utils/types';
 import { UserFlag, Visibility } from '../src/utils/types';
 

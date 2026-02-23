@@ -1,6 +1,6 @@
 import { useMemo, useState, memo } from 'react';
 import type { Category, CategoryNode } from '../../utils/types';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../contexts/useData';
 import CategoryEditorModal from './CategoryEditorModal';
 
 interface CategoryNodeProps {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../contexts/useData';
 import type { CollectionTheme } from '../../utils/types';
 import ThemeCard from './ThemeCard';
 import ThemePreview from './ThemePreview';

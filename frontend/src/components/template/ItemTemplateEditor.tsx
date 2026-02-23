@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../contexts/useData';
 import { SortablePropertyList, type BaseProperty, type FieldConfig, BulkUpdateModal, type ScopeOption } from '../common';
 import { bulkUpdatesApi } from '../../api/bulkUpdates';
 import '../../styles/ItemTemplateEditor.css';

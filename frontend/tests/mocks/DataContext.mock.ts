@@ -121,7 +121,7 @@ export const createMockDataContext = (overrides?: Partial<DataContextValue>): Da
 export const mockDataContextValue = createMockDataContext();
 
 // Mock the DataContext module
-vi.mock('../../src/contexts/DataContext', async () => {
+vi.mock('../../src/contexts/useData', async () => {
   const actual = await vi.importActual<typeof import('../../src/contexts/DataContext')>('../../src/contexts/DataContext');
   return {
     ...actual,

@@ -3,11 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import CollectionView from '../../src/views/CollectionView';
-import { useData } from '../../src/contexts/DataContext';
+import { useData } from '../../src/contexts/useData';
 import type { Collection } from '../../src/utils/types';
 import { Visibility } from '../../src/utils/types';
 
-vi.mock('../../src/contexts/DataContext', () => ({
+vi.mock('../../src/contexts/useData', () => ({
   useData: vi.fn(),
 }));
 

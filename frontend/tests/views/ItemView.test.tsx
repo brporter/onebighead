@@ -3,12 +3,19 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ItemView from '../../src/views/ItemView';
-import { useData } from '../../src/contexts/DataContext';
+import { useData } from '../../src/contexts/useData';
 import type { Collection, Category, Item } from '../../src/utils/types';
 import { Visibility, UserFlag } from '../../src/utils/types';
 
-vi.mock('../../src/contexts/DataContext', () => ({
+vi.mock('../../src/contexts/useData', () => ({
   useData: vi.fn(),
+}));
+
+const mockRecordView = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../src/api/items', () => ({
+  itemsApi: {
+    recordView: (...args: unknown[]) => mockRecordView(...args),
+  },
 }));
 
 const mockNavigate = vi.fn();
@@ -352,6 +359,27 @@ describe('ItemView', () => {
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/collections', { replace: true });
       });
+    });
+  });
+
+  describe('view tracking', () => {
+    it('should record a view exactly once for the item', async () => {
+      renderWithRouter('/collections/1/items/1');
+
+      await waitFor(() => {
+        expect(mockRecordView).toHaveBeenCalledWith(1);
+      });
+      expect(mockRecordView).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('collection title link', () => {
+    it('should render collection name as a link to the dashboard', () => {
+      renderWithRouter('/collections/1/items/1');
+
+      const titleLink = screen.getByRole('link', { name: 'Test Collection' });
+      expect(titleLink).toHaveAttribute('href', '/collections/1');
+      expect(titleLink).toHaveClass('collection-title-bar__title-link');
     });
   });
 

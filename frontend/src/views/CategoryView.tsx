@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useData } from '../contexts/useData';
 import CategoryTree from '../components/category/CategoryTree';
+import { CollectionDashboard } from '../components/collection';
 import ItemList from '../components/item/ItemList';
 import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
 import { BackNav, Loading } from '../components/common';
@@ -28,14 +29,21 @@ function CategoryView() {
     loadPropertySuggestions,
   } = useData();
 
+  const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
+  const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
+
   const [subcategoryFilter, setSubcategoryFilter] = useState<number | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [prevCategoryId, setPrevCategoryId] = useState(categoryIdNum);
   const [activeBulkJob, setActiveBulkJob] = useState<BulkUpdateJobResponse | null>(null);
   const bulkPollRef = useRef<number | null>(null);
 
-  const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
-  const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
+  // Reset filters when category changes (setState during render pattern)
+  if (categoryIdNum !== prevCategoryId) {
+    setPrevCategoryId(categoryIdNum);
+    setSubcategoryFilter(null);
+    setPageIndex(0);
+  }
 
   // Deep linking: Load collection data if needed
   useEffect(() => {
@@ -46,7 +54,6 @@ function CategoryView() {
 
   // Set current collection once collections are loaded
   useEffect(() => {
-    let shouldSetLoading = true;
     if (collectionIdNum && collections.length > 0 && currentCollection?.collectionId !== collectionIdNum) {
       const collection = collections.find(c => c.collectionId === collectionIdNum);
       if (collection) {
@@ -54,14 +61,8 @@ function CategoryView() {
         loadCategoriesForCollection(collectionIdNum);
         loadPropertySuggestions(collectionIdNum);
       } else {
-        // Collection not found, redirect to collections list
         navigate('/collections', { replace: true });
-        shouldSetLoading = false;
       }
-    }
-    if (shouldSetLoading) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- loading state must be set after collection load
-      setIsLoading(false);
     }
   }, [collectionIdNum, collections, currentCollection, setCurrentCollection, loadCategoriesForCollection, loadPropertySuggestions, navigate]);
 
@@ -70,10 +71,6 @@ function CategoryView() {
     if (categoryIdNum) {
       loadItemsForCategory(categoryIdNum);
     }
-    // Reset filters on category change (state resetting side effect)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when category changes
-    setSubcategoryFilter(null);
-    setPageIndex(0);
   }, [categoryIdNum, loadItemsForCategory]);
 
   // Check for active bulk update on collection load
@@ -113,8 +110,7 @@ function CategoryView() {
 
   useEffect(() => {
     if (collectionIdNum && currentCollection) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- checkBulkUpdate sets state asynchronously via API call callbacks, not synchronously
-      checkBulkUpdate(collectionIdNum);
+      void Promise.resolve().then(() => checkBulkUpdate(collectionIdNum));
     }
     return () => {
       if (bulkPollRef.current) {
@@ -174,7 +170,7 @@ function CategoryView() {
     setPageIndex(clamped);
   }
 
-  if (isLoading || collectionsLoading) {
+  if (collectionsLoading || collections.length === 0) {
     return <Loading message="Loading..." />;
   }
 
@@ -222,9 +218,10 @@ function CategoryView() {
             )}
             <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
           </div>
-          <section className="placeholder">
-            <p className="placeholder__text">Select a category to browse items</p>
-          </section>
+          <CollectionDashboard
+            collectionId={collectionIdNum!}
+            onSelectItem={handleSelectItem}
+          />
         </main>
       </div>
     );
@@ -247,7 +244,9 @@ function CategoryView() {
               ← All Collections
             </button>
           )}
-          <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
+          <Link to={`/collections/${collectionIdNum}`} className="collection-title-bar__title-link">
+            <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
+          </Link>
           <p className="collection-title-bar__subtitle">Browse categories, then view items and details.</p>
         </div>
         <section className="app__items">

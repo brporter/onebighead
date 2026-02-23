@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
+import { createContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest, CollectionTheme, SetupCollectionRequest } from '../utils/types';
 import { Visibility } from '../utils/types';
 import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi } from '../api';
@@ -160,11 +160,6 @@ const defaultContextValue: DataContextValue = {
 };
 
 const DataContext = createContext<DataContextValue>(defaultContextValue);
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function useData(): DataContextValue {
-  return useContext(DataContext);
-}
 
 interface DataProviderProps {
   children: ReactNode;

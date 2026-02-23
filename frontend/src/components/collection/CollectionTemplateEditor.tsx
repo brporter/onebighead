@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../contexts/useData';
 import type { ItemTemplate, Collection } from '../../utils/types';
 
 interface CollectionTemplateEditorProps {

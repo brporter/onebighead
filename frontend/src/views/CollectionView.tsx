@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
+import { useData } from '../contexts/useData';
 import CollectionList from '../components/collection/CollectionList';
 import { Loading } from '../components/common';
 

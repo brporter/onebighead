@@ -3,12 +3,24 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import CategoryView from '../../src/views/CategoryView';
-import { useData } from '../../src/contexts/DataContext';
+import { useData } from '../../src/contexts/useData';
 import type { Collection, Category, Item } from '../../src/utils/types';
 import { Visibility, UserFlag } from '../../src/utils/types';
 
-vi.mock('../../src/contexts/DataContext', () => ({
+vi.mock('../../src/contexts/useData', () => ({
   useData: vi.fn(),
+}));
+
+vi.mock('../../src/api/collections', () => ({
+  collectionsApi: {
+    getStatistics: vi.fn().mockResolvedValue({
+      itemCount: 0,
+      imageCount: 0,
+      totalImageSizeBytes: 0,
+      topViewedItems: [],
+      recentlyAddedItems: [],
+    }),
+  },
 }));
 
 const mockNavigate = vi.fn();
@@ -159,10 +171,12 @@ describe('CategoryView', () => {
   });
 
   describe('category view without selection', () => {
-    it('should show placeholder when no category selected', () => {
+    it('should show collection dashboard when no category selected', async () => {
       renderWithRouter('/collections/1');
 
-      expect(screen.getByText('Select a category to browse items')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('No items yet. Select a category and start adding items.')).toBeInTheDocument();
+      });
     });
 
     it('should show category tree', () => {
@@ -229,6 +243,14 @@ describe('CategoryView', () => {
       await user.click(screen.getByText('+ Add Item'));
 
       expect(mockNavigate).toHaveBeenCalledWith('/collections/1/items/new?categoryId=1');
+    });
+
+    it('should render collection name as a link to the dashboard', () => {
+      renderWithRouter('/collections/1/categories/1');
+
+      const titleLink = screen.getByRole('link', { name: 'Test Collection' });
+      expect(titleLink).toHaveAttribute('href', '/collections/1');
+      expect(titleLink).toHaveClass('collection-title-bar__title-link');
     });
   });
 

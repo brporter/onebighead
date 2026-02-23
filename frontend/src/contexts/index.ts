@@ -1,4 +1,6 @@
-export { UserProvider, useUser } from './UserContext';
-export { DataProvider, useData } from './DataContext';
+export { UserProvider } from './UserContext';
+export { useUser } from './useUser';
+export { DataProvider } from './DataContext';
+export { useData } from './useData';
 export type { default as UserContext } from './UserContext';
 export type { default as DataContext } from './DataContext';

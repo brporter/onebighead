@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WorkspaceSwitcher from '../src/components/common/WorkspaceSwitcher';
-import { useUser } from '../src/contexts/UserContext';
+import { useUser } from '../src/contexts/useUser';
 import { workspacesApi } from '../src/api';
 import type { CurrentUser, WorkspaceMembership } from '../src/utils/types';
 import { WorkspaceRole } from '../src/utils/types';
 
-vi.mock('../src/contexts/UserContext', () => ({
+vi.mock('../src/contexts/useUser', () => ({
   useUser: vi.fn(),
 }));
 

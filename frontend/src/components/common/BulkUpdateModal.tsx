@@ -55,11 +55,12 @@ function BulkUpdateModal({
     if (!dialog) return;
 
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state when dialog opens is intentional synchronization with the isOpen prop
-      setPhase('prompt');
-      setJob(null);
-      setError(null);
-      setSelectedScope(0);
+      void Promise.resolve().then(() => {
+        setPhase('prompt');
+        setJob(null);
+        setError(null);
+        setSelectedScope(0);
+      });
       dialog.showModal();
     } else {
       dialog.close();

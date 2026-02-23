@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import TermsView from '../../src/views/TermsView';
-import * as UserContext from '../../src/contexts/UserContext';
+import * as UserContext from '../../src/contexts/useUser';
 
 // Mock the UserContext
-vi.mock('../../src/contexts/UserContext', () => ({
+vi.mock('../../src/contexts/useUser', () => ({
   useUser: vi.fn(),
 }));
 
