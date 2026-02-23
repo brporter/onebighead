@@ -2,6 +2,7 @@ using OneBigHead.Server.Data;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Tests.Integration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace OneBigHead.Server.Tests.Integration.Data;
@@ -26,7 +27,8 @@ public class ItemRepositoryImageStatsTests : IDisposable
         _repository = new ItemRepository(
             _context,
             new Mock<IWorkspaceStatisticsRepository>().Object,
-            _collectionStatsRepo);
+            _collectionStatsRepo,
+            new Mock<ILogger<ItemRepository>>().Object);
 
         // Seed a collection so FK is valid
         _context.Collections.Add(new Collection

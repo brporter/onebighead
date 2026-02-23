@@ -355,6 +355,11 @@ public class AppDbContext : DbContext
             entity.Property(s => s.StatisticType)
                 .HasConversion<int>();
 
+            entity.HasOne<Collection>()
+                .WithMany()
+                .HasForeignKey(s => s.CollectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasIndex(s => new { s.CollectionId, s.StatisticType }).IsUnique();
             entity.HasIndex(s => s.CollectionId);
         });
@@ -363,10 +368,15 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(h => h.Id);
 
+            entity.HasOne<Collection>()
+                .WithMany()
+                .HasForeignKey(h => h.CollectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasOne(h => h.Item)
                 .WithMany()
                 .HasForeignKey(h => h.ItemId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(h => new { h.CollectionId, h.ItemId }).IsUnique();
             entity.HasIndex(h => new { h.CollectionId, h.ViewCount });

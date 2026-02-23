@@ -1,5 +1,6 @@
 using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace OneBigHead.Server.Data;
 
@@ -8,12 +9,14 @@ public class ItemRepository : IItemRepository
     private readonly AppDbContext _context;
     private readonly IWorkspaceStatisticsRepository _statsRepository;
     private readonly ICollectionStatisticsRepository _collectionStatsRepository;
+    private readonly ILogger<ItemRepository> _logger;
 
-    public ItemRepository(AppDbContext context, IWorkspaceStatisticsRepository statsRepository, ICollectionStatisticsRepository collectionStatsRepository)
+    public ItemRepository(AppDbContext context, IWorkspaceStatisticsRepository statsRepository, ICollectionStatisticsRepository collectionStatsRepository, ILogger<ItemRepository> logger)
     {
         _context = context;
         _statsRepository = statsRepository;
         _collectionStatsRepository = collectionStatsRepository;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<Item>> GetAllAsync(int workspaceId)
@@ -152,40 +155,36 @@ public class ItemRepository : IItemRepository
         var oldUrls = oldImages.Select(i => i.Url).ToHashSet();
         var newUrls = newImages.Select(i => i.Url).ToHashSet();
 
-        var addedUrls = newUrls.Except(oldUrls).ToList();
-        var removedUrls = oldUrls.Except(newUrls).ToList();
+        var addedGuids = ExtractImageGuids(newUrls.Except(oldUrls));
+        var removedGuids = ExtractImageGuids(oldUrls.Except(newUrls));
 
-        if (addedUrls.Count == 0 && removedUrls.Count == 0)
+        if (addedGuids.Count == 0 && removedGuids.Count == 0)
             return;
 
-        var allChangedUrls = addedUrls.Concat(removedUrls).ToList();
-        var guids = ExtractImageGuids(allChangedUrls);
+        var allGuids = addedGuids.Concat(removedGuids).Distinct().ToList();
+        var sizes = await _context.StoredImages
+            .AsNoTracking()
+            .Where(s => allGuids.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => (long)s.Data.Length);
 
-        var sizes = guids.Count > 0
-            ? await _context.StoredImages
-                .AsNoTracking()
-                .Where(s => guids.Contains(s.Id))
-                .ToDictionaryAsync(s => s.Id, s => (long)s.Data.Length)
-            : new Dictionary<Guid, long>();
-
-        if (addedUrls.Count > 0)
+        if (addedGuids.Count > 0)
         {
-            await _collectionStatsRepository.IncrementAsync(collectionId, Models.CollectionStatisticType.ImageCount, addedUrls.Count);
-            var addedSize = SumImageSizes(addedUrls, sizes);
+            await _collectionStatsRepository.IncrementAsync(collectionId, Models.CollectionStatisticType.ImageCount, addedGuids.Count);
+            var addedSize = SumImageSizes(addedGuids, sizes);
             if (addedSize > 0)
                 await _collectionStatsRepository.IncrementAsync(collectionId, Models.CollectionStatisticType.TotalImageSizeBytes, addedSize);
         }
 
-        if (removedUrls.Count > 0)
+        if (removedGuids.Count > 0)
         {
-            await _collectionStatsRepository.DecrementAsync(collectionId, Models.CollectionStatisticType.ImageCount, removedUrls.Count);
-            var removedSize = SumImageSizes(removedUrls, sizes);
+            await _collectionStatsRepository.DecrementAsync(collectionId, Models.CollectionStatisticType.ImageCount, removedGuids.Count);
+            var removedSize = SumImageSizes(removedGuids, sizes);
             if (removedSize > 0)
                 await _collectionStatsRepository.DecrementAsync(collectionId, Models.CollectionStatisticType.TotalImageSizeBytes, removedSize);
         }
     }
 
-    private static List<Guid> ExtractImageGuids(List<string> urls)
+    private List<Guid> ExtractImageGuids(IEnumerable<string> urls)
     {
         var guids = new List<Guid>();
         foreach (var url in urls)
@@ -196,17 +195,20 @@ public class ItemRepository : IItemRepository
             {
                 guids.Add(guid);
             }
+            else
+            {
+                _logger.LogWarning("Failed to extract image GUID from URL: {Url}", url);
+            }
         }
         return guids;
     }
 
-    private static long SumImageSizes(List<string> urls, Dictionary<Guid, long> sizes)
+    private static long SumImageSizes(List<Guid> guids, Dictionary<Guid, long> sizes)
     {
         long total = 0;
-        foreach (var url in urls)
+        foreach (var guid in guids)
         {
-            var lastSlash = url.LastIndexOf('/');
-            if (lastSlash >= 0 && Guid.TryParse(url[(lastSlash + 1)..], out var guid) && sizes.TryGetValue(guid, out var size))
+            if (sizes.TryGetValue(guid, out var size))
             {
                 total += size;
             }
