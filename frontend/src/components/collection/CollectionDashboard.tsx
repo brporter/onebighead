@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { collectionsApi, type CollectionStatisticsResponse } from '../../api/collections';
 import { useAsyncData } from '../../utils/useAsyncData';
 import { Loading } from '../common';
+import MatchesSummary from '../matching/MatchesSummary';
 import '../../styles/components/CollectionDashboard.css';
 
 interface CollectionDashboardProps {
@@ -76,6 +77,7 @@ function CollectionDashboard({ collectionId, onSelectItem }: CollectionDashboard
       </div>
 
       <div className="collection-dashboard__panels">
+        <MatchesSummary />
         {stats.recentlyAddedItems.length > 0 && (
           <div className="collection-dashboard__panel">
             <h2 className="collection-dashboard__panel-title">Recently Added</h2>

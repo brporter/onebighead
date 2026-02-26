@@ -17,5 +17,6 @@ public interface IItemRepository
     Task<IEnumerable<Item>> GetByCollectionIdAsync(int collectionId, int workspaceId);
     Task<int> CountByCollectionIdAsync(int collectionId, int workspaceId);
     Task<int> CountByCategoryIdAsync(int categoryId, int workspaceId);
+    Task<Item?> GetByIdCrossWorkspaceAsync(int id);
 }
 

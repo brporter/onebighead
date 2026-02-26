@@ -62,6 +62,7 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
   // Reset form and load public access data when modal opens
   useEffect(() => {
     if (isOpen && workspace) {
+      let cancelled = false;
       setName(workspace.workspaceName);
       setError(null);
 
@@ -69,16 +70,21 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
       setPublicAccessLoading(true);
       workspacesApi.getPublicAccess(workspace.workspaceId)
         .then((data) => {
-          setPublicAccessSlug(data.slug || '');
-          setPublicAccessEnabled(data.isPublicAccessEnabled);
+          if (!cancelled) {
+            setPublicAccessSlug(data.slug || '');
+            setPublicAccessEnabled(data.isPublicAccessEnabled);
+          }
         })
         .catch(() => {
-          // Auto-suggest slug from workspace name if we couldn't load
-          const suggestedSlug = toSlug(workspace.workspaceName);
-          setPublicAccessSlug(suggestedSlug);
-          setPublicAccessEnabled(false);
+          if (!cancelled) {
+            // Auto-suggest slug from workspace name if we couldn't load
+            const suggestedSlug = toSlug(workspace.workspaceName);
+            setPublicAccessSlug(suggestedSlug);
+            setPublicAccessEnabled(false);
+          }
         })
-        .finally(() => setPublicAccessLoading(false));
+        .finally(() => { if (!cancelled) setPublicAccessLoading(false); });
+      return () => { cancelled = true; };
     }
   }, [isOpen, workspace]);
 

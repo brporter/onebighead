@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import CollectionDashboard from '../src/components/collection/CollectionDashboard';
 import { collectionsApi } from '../src/api/collections';
@@ -8,6 +9,13 @@ import type { CollectionStatisticsResponse } from '../src/api/collections';
 vi.mock('../src/api/collections', () => ({
   collectionsApi: {
     getStatistics: vi.fn(),
+  },
+}));
+
+vi.mock('../src/api', () => ({
+  matchesApi: {
+    getCount: vi.fn().mockResolvedValue({ newMatchCount: 0, unreadMessageCount: 0 }),
+    getAll: vi.fn().mockResolvedValue({ matches: [], totalCount: 0 }),
   },
 }));
 
@@ -39,7 +47,7 @@ describe('CollectionDashboard', () => {
   it('should show loading state while fetching', () => {
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}));
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     expect(screen.getByText('Loading dashboard...')).toBeInTheDocument();
   });
@@ -47,7 +55,7 @@ describe('CollectionDashboard', () => {
   it('should show stats cards when data is loaded', async () => {
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(mockStats);
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('42')).toBeInTheDocument();
@@ -63,7 +71,7 @@ describe('CollectionDashboard', () => {
   it('should show recently added items', async () => {
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(mockStats);
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('Recently Added')).toBeInTheDocument();
@@ -76,7 +84,7 @@ describe('CollectionDashboard', () => {
   it('should show most viewed items', async () => {
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(mockStats);
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('Most Viewed')).toBeInTheDocument();
@@ -92,7 +100,7 @@ describe('CollectionDashboard', () => {
     const user = userEvent.setup();
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(mockStats);
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('New Item')).toBeInTheDocument();
@@ -107,7 +115,7 @@ describe('CollectionDashboard', () => {
     const user = userEvent.setup();
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(mockStats);
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('Popular Item')).toBeInTheDocument();
@@ -122,7 +130,7 @@ describe('CollectionDashboard', () => {
     const user = userEvent.setup();
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(mockStats);
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('Popular Item')).toBeInTheDocument();
@@ -145,7 +153,7 @@ describe('CollectionDashboard', () => {
     };
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(emptyStats);
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('No items yet. Select a category and start adding items.')).toBeInTheDocument();
@@ -155,7 +163,7 @@ describe('CollectionDashboard', () => {
   it('should show error state when API fails', async () => {
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('Failed to load collection statistics.')).toBeInTheDocument();
@@ -165,7 +173,7 @@ describe('CollectionDashboard', () => {
   it('should fetch statistics for the given collectionId', async () => {
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(mockStats);
 
-    render(<CollectionDashboard collectionId={42} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={42} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     expect(collectionsApi.getStatistics).toHaveBeenCalledWith(42);
   });
@@ -180,7 +188,7 @@ describe('CollectionDashboard', () => {
     };
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(statsNoLists);
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('5')).toBeInTheDocument();
@@ -200,7 +208,7 @@ describe('CollectionDashboard', () => {
     };
     (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(statsZeroBytes);
 
-    render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText('0 B')).toBeInTheDocument();
@@ -211,7 +219,7 @@ describe('CollectionDashboard', () => {
     it('should match snapshot with stats loaded', async () => {
       (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(mockStats);
 
-      const { container } = render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+      const { container } = render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
       await waitFor(() => {
         expect(screen.getByText('42')).toBeInTheDocument();
@@ -230,7 +238,7 @@ describe('CollectionDashboard', () => {
       };
       (collectionsApi.getStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(emptyStats);
 
-      const { container } = render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+      const { container } = render(<MemoryRouter><CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} /></MemoryRouter>);
 
       await waitFor(() => {
         expect(screen.getByText('No items yet. Select a category and start adding items.')).toBeInTheDocument();

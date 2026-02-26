@@ -16,6 +16,7 @@ const WorkspaceCreationView = lazy(() => import('./views/WorkspaceCreationView')
 const TermsView = lazy(() => import('./views/TermsView'));
 const WelcomeView = lazy(() => import('./views/WelcomeView'));
 const PublicLayout = lazy(() => import('./components/public/PublicLayout'));
+const MatchesView = lazy(() => import('./views/MatchesView'));
 const PublicCollectionsView = lazy(() => import('./views/PublicCollectionsView'));
 const PublicCollectionDetailView = lazy(() => import('./views/PublicCollectionDetailView'));
 const PublicItemView = lazy(() => import('./views/PublicItemView'));
@@ -64,6 +65,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <ItemView />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'matches',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <MatchesView />
           </Suspense>
         ),
       },

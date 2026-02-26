@@ -198,10 +198,7 @@ describe('WorkspaceEditModal', () => {
       await user.clear(slugInput);
       await user.type(slugInput, 'ab');
 
-      // Enable public access
-      const checkbox = screen.getByRole('checkbox');
-      // Checkbox should be disabled since slug is too short to be valid
-      // But we need the checkbox to be enabled - let's use a valid-looking but invalid slug
+      // Use a valid-looking but invalid slug (starts with hyphen)
       await user.clear(slugInput);
       await user.type(slugInput, '-ab');
 
@@ -466,6 +463,54 @@ describe('WorkspaceEditModal', () => {
       await user.click(dialog!);
 
       expect(defaultProps.onClose).toHaveBeenCalled();
+    });
+
+    it('should cancel stale fetch when workspace changes rapidly', async () => {
+      // Simulate a slow response for workspace 1
+      let resolveFirst: (value: unknown) => void;
+      vi.mocked(workspacesApi.getPublicAccess).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveFirst = resolve; })
+      );
+
+      const { rerender } = render(<WorkspaceEditModal {...defaultProps} />);
+
+      // Switch to a different workspace before first fetch completes
+      const otherWorkspace: WorkspaceMembership = {
+        workspaceId: 2,
+        workspaceName: 'Other Workspace',
+        workspaceRole: WorkspaceRole.WorkspaceAdmin,
+        hasCompletedWelcome: true,
+      };
+
+      vi.mocked(workspacesApi.getPublicAccess).mockResolvedValueOnce({
+        workspaceId: 2,
+        slug: 'other-slug',
+        isPublicAccessEnabled: true,
+        publicUrl: '/public/other-slug',
+      });
+
+      rerender(<WorkspaceEditModal {...defaultProps} workspace={otherWorkspace} />);
+
+      // Wait for the second fetch to complete
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('other-slug')).toBeInTheDocument();
+      });
+
+      // Now resolve the first (stale) fetch - it should NOT overwrite the current state
+      resolveFirst!({
+        workspaceId: 1,
+        slug: 'stale-slug',
+        isPublicAccessEnabled: false,
+        publicUrl: null,
+      });
+
+      // Give time for the stale resolution to potentially apply
+      await waitFor(() => {
+        // Should still show the second workspace's data, not the stale first one
+        expect(screen.getByDisplayValue('other-slug')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByDisplayValue('stale-slug')).not.toBeInTheDocument();
     });
 
     it('should reset form when modal reopens with different workspace', async () => {

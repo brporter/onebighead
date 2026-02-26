@@ -32,6 +32,10 @@ public class AppDbContext : DbContext
     public DbSet<CollectionStatistic> CollectionStatistics => Set<CollectionStatistic>();
     public DbSet<CollectionItemHighlight> CollectionItemHighlights => Set<CollectionItemHighlight>();
     public DbSet<ContentScanLog> ContentScanLogs => Set<ContentScanLog>();
+    public DbSet<ItemEmbedding> ItemEmbeddings => Set<ItemEmbedding>();
+    public DbSet<ItemMatch> ItemMatches => Set<ItemMatch>();
+    public DbSet<MatchMessage> MatchMessages => Set<MatchMessage>();
+    public DbSet<MatchQueueEntry> MatchQueueEntries => Set<MatchQueueEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -391,6 +395,54 @@ public class AppDbContext : DbContext
             entity.HasIndex(l => l.WorkspaceId);
             entity.HasIndex(l => l.IsMatch);
             entity.HasIndex(l => l.ScannedAt);
+        });
+
+        // ItemEmbedding: no FK to Item (cross-workspace, follows ContentScanLog pattern)
+        modelBuilder.Entity<ItemEmbedding>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.ItemId).IsUnique();
+            entity.HasIndex(e => new { e.WorkspaceId, e.ItemId });
+
+            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+            entity.Property(e => e.Vector)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, jsonOptions),
+                    v => JsonSerializer.Deserialize<float[]>(v, jsonOptions) ?? Array.Empty<float>()
+                );
+        });
+
+        // ItemMatch: no FK to Item (cross-workspace matching)
+        modelBuilder.Entity<ItemMatch>(entity =>
+        {
+            entity.HasKey(m => m.Id);
+
+            entity.HasIndex(m => new { m.WantItemId, m.TradeItemId }).IsUnique();
+            entity.HasIndex(m => m.WantWorkspaceId);
+            entity.HasIndex(m => m.TradeWorkspaceId);
+        });
+
+        modelBuilder.Entity<MatchMessage>(entity =>
+        {
+            entity.HasKey(m => m.Id);
+
+            entity.HasOne(m => m.ItemMatch)
+                .WithMany()
+                .HasForeignKey(m => m.ItemMatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(m => m.ItemMatchId);
+            entity.HasIndex(m => new { m.ItemMatchId, m.CreatedAt });
+        });
+
+        modelBuilder.Entity<MatchQueueEntry>(entity =>
+        {
+            entity.HasKey(q => q.Id);
+
+            entity.HasIndex(q => new { q.Status, q.EnqueuedAt });
+            entity.HasIndex(q => q.ItemId);
         });
     }
 }

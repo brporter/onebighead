@@ -150,6 +150,13 @@ public class ItemRepository : IItemRepository
             .CountAsync(i => i.WorkspaceId == workspaceId && i.CategoryId == categoryId);
     }
 
+    public async Task<Item?> GetByIdCrossWorkspaceAsync(int id)
+    {
+        return await _context.Items
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == id);
+    }
+
     private async Task AdjustCollectionImageStatsAsync(int collectionId, List<ItemImage> newImages, List<ItemImage> oldImages)
     {
         var oldUrls = oldImages.Select(i => i.Url).ToHashSet();

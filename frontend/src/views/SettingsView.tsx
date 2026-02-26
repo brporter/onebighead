@@ -59,7 +59,6 @@ function SettingsView() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
-
   const hasUnsavedChanges = useCallback(() => {
     if (activeSection === 'templates' && templateEditorDirty) return true;
     if (activeSection === 'team' && teamManagementDirty) return true;
@@ -115,7 +114,6 @@ function SettingsView() {
       loadDeletedWorkspaces();
     }
   }, [activeSection]);
-
 
   const handleSectionChange = (section: SettingsSection) => {
     if (hasUnsavedChanges()) {
@@ -595,7 +593,6 @@ function SettingsView() {
       setIsRestoringWorkspace(null);
     }
   };
-
 
   const renderWorkspacesSection = () => {
     const workspaces = user?.workspaces || [];

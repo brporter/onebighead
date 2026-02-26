@@ -4,6 +4,7 @@ using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Services.BulkUpdate;
+using OneBigHead.Server.Services.Matching;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -21,6 +22,7 @@ public class ItemsControllerTests
     private readonly Mock<IBulkUpdateQueue> _mockBulkUpdateQueue;
     private readonly Mock<IWorkspaceStatisticsRepository> _mockStatisticsRepository;
     private readonly Mock<ICollectionStatisticsRepository> _mockCollectionStatisticsRepository;
+    private readonly Mock<IMatchingService> _mockMatchingService;
     private readonly ItemsController _controller;
     private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 1;
@@ -35,6 +37,7 @@ public class ItemsControllerTests
         _mockBulkUpdateQueue = new Mock<IBulkUpdateQueue>();
         _mockStatisticsRepository = new Mock<IWorkspaceStatisticsRepository>();
         _mockCollectionStatisticsRepository = new Mock<ICollectionStatisticsRepository>();
+        _mockMatchingService = new Mock<IMatchingService>();
         _controller = new ItemsController(
             _mockItemRepository.Object,
             _mockCategoryRepository.Object,
@@ -42,7 +45,8 @@ public class ItemsControllerTests
             _mockVisibilityService.Object,
             _mockBulkUpdateQueue.Object,
             _mockStatisticsRepository.Object,
-            _mockCollectionStatisticsRepository.Object);
+            _mockCollectionStatisticsRepository.Object,
+            _mockMatchingService.Object);
 
         var claims = new List<Claim>
         {
@@ -615,6 +619,145 @@ public class ItemsControllerTests
 
         // Assert
         Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    #endregion
+
+    #region Matching Integration
+
+    [Fact]
+    public async Task CreateItem_WantFlag_EnqueuesForMatching()
+    {
+        var request = new CreateItemRequest
+        {
+            CollectionId = TestCollectionId,
+            CategoryId = TestCategoryId,
+            Name = "Wanted Item",
+            UserFlag = UserFlag.Want,
+            Visibility = Visibility.Default
+        };
+
+        var collection = new Collection
+        {
+            Id = TestCollectionId,
+            WorkspaceId = TestWorkspaceId,
+            Slug = "test",
+            Visibility = Visibility.Public
+        };
+
+        _mockCollectionRepository.Setup(r => r.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+
+        _mockCategoryRepository.Setup(r => r.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category>
+            {
+                new() { Id = TestCategoryId, CollectionId = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Cat", Visibility = Visibility.Default }
+            });
+
+        _mockItemRepository.Setup(r => r.CreateAsync(It.IsAny<Item>()))
+            .ReturnsAsync((Item i) => { i.Id = 1; return i; });
+
+        await _controller.CreateItem(request);
+
+        _mockMatchingService.Verify(s => s.EnqueueForMatchingAsync(
+            1, TestWorkspaceId, MatchQueueReason.ItemCreated), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateItem_HaveFlag_DoesNotEnqueue()
+    {
+        var request = new CreateItemRequest
+        {
+            CollectionId = TestCollectionId,
+            CategoryId = TestCategoryId,
+            Name = "Have Item",
+            UserFlag = UserFlag.Have,
+            Visibility = Visibility.Default
+        };
+
+        var collection = new Collection
+        {
+            Id = TestCollectionId,
+            WorkspaceId = TestWorkspaceId,
+            Slug = "test",
+            Visibility = Visibility.Public
+        };
+
+        _mockCollectionRepository.Setup(r => r.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+
+        _mockCategoryRepository.Setup(r => r.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category>
+            {
+                new() { Id = TestCategoryId, CollectionId = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Cat", Visibility = Visibility.Default }
+            });
+
+        _mockItemRepository.Setup(r => r.CreateAsync(It.IsAny<Item>()))
+            .ReturnsAsync((Item i) => { i.Id = 1; return i; });
+
+        await _controller.CreateItem(request);
+
+        _mockMatchingService.Verify(s => s.EnqueueForMatchingAsync(
+            It.IsAny<int>(), It.IsAny<int>(), It.IsAny<MatchQueueReason>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteItem_RemovesMatchesBeforeDeleting()
+    {
+        _mockItemRepository.Setup(r => r.DeleteAsync(1, TestWorkspaceId)).ReturnsAsync(true);
+
+        await _controller.DeleteItem(1);
+
+        _mockMatchingService.Verify(s => s.RemoveMatchesForItemAsync(1), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateItem_FlagChangedFromWantToHave_EnqueuesWithFlagChanged()
+    {
+        var existingItem = new Item
+        {
+            Id = 1,
+            WorkspaceId = TestWorkspaceId,
+            CollectionId = TestCollectionId,
+            Name = "Item",
+            UserFlag = UserFlag.Want,
+            Properties = new List<ItemProperty>(),
+            Images = new List<ItemImage>()
+        };
+
+        var request = new UpdateItemRequest
+        {
+            CollectionId = TestCollectionId,
+            CategoryId = TestCategoryId,
+            Name = "Item",
+            UserFlag = UserFlag.Have,
+            Visibility = Visibility.Default
+        };
+
+        var collection = new Collection
+        {
+            Id = TestCollectionId,
+            WorkspaceId = TestWorkspaceId,
+            Slug = "test",
+            Visibility = Visibility.Public
+        };
+
+        _mockItemRepository.Setup(r => r.GetByIdAsync(1, TestWorkspaceId)).ReturnsAsync(existingItem);
+        _mockCollectionRepository.Setup(r => r.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(r => r.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category>
+            {
+                new() { Id = TestCategoryId, CollectionId = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Cat", Visibility = Visibility.Default }
+            });
+
+        _mockItemRepository.Setup(r => r.UpdateAsync(1, It.IsAny<Item>(), TestWorkspaceId))
+            .ReturnsAsync((int id, Item i, int w) => { i.Id = id; return i; });
+
+        await _controller.UpdateItem(1, request);
+
+        _mockMatchingService.Verify(s => s.EnqueueForMatchingAsync(
+            1, TestWorkspaceId, MatchQueueReason.UserFlagChanged), Times.Once);
     }
 
     #endregion

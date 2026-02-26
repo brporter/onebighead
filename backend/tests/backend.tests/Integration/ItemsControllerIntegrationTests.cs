@@ -4,6 +4,7 @@ using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Services.BulkUpdate;
+using OneBigHead.Server.Services.Matching;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +51,8 @@ public class ItemsControllerIntegrationTests : IDisposable
             visibilityService,
             new BulkUpdateQueue(),
             new Mock<IWorkspaceStatisticsRepository>().Object,
-            new Mock<ICollectionStatisticsRepository>().Object);
+            new Mock<ICollectionStatisticsRepository>().Object,
+            new Mock<IMatchingService>().Object);
 
         // Configure claims
         var claims = new List<Claim>

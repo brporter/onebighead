@@ -3,6 +3,7 @@ using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Services.BulkUpdate;
+using OneBigHead.Server.Services.Matching;
 using OneBigHead.Server.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,7 @@ public class ItemsController : ApiControllerBase
     private readonly IBulkUpdateQueue _bulkUpdateQueue;
     private readonly IWorkspaceStatisticsRepository _statisticsRepository;
     private readonly ICollectionStatisticsRepository _collectionStatisticsRepository;
+    private readonly IMatchingService _matchingService;
 
     public ItemsController(
         IItemRepository itemRepository,
@@ -30,7 +32,8 @@ public class ItemsController : ApiControllerBase
         IVisibilityService visibilityService,
         IBulkUpdateQueue bulkUpdateQueue,
         IWorkspaceStatisticsRepository statisticsRepository,
-        ICollectionStatisticsRepository collectionStatisticsRepository)
+        ICollectionStatisticsRepository collectionStatisticsRepository,
+        IMatchingService matchingService)
     {
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
@@ -39,6 +42,7 @@ public class ItemsController : ApiControllerBase
         _bulkUpdateQueue = bulkUpdateQueue;
         _statisticsRepository = statisticsRepository;
         _collectionStatisticsRepository = collectionStatisticsRepository;
+        _matchingService = matchingService;
     }
 
     [HttpGet]
@@ -231,6 +235,14 @@ public class ItemsController : ApiControllerBase
 
         var item = request.ToItem(workspaceId);
         var created = await _itemRepository.CreateAsync(item);
+
+        // Enqueue for matching if the item has a matchable flag
+        if (created.UserFlag == UserFlag.Want || created.UserFlag == UserFlag.TradeOrSell)
+        {
+            await _matchingService.EnqueueForMatchingAsync(
+                created.Id!.Value, workspaceId, MatchQueueReason.ItemCreated);
+        }
+
         return CreatedAtAction(nameof(GetItem), new { id = created.Id }, created);
     }
 
@@ -261,12 +273,31 @@ public class ItemsController : ApiControllerBase
             return error;
         }
 
+        // Capture old flag for matching logic
+        var existingItem = await _itemRepository.GetByIdAsync(id, workspaceId);
+        var oldFlag = existingItem?.UserFlag;
+
         var item = request.ToItem(id, workspaceId);
         var updated = await _itemRepository.UpdateAsync(id, item, workspaceId);
         if (updated is null)
         {
             return NotFound();
         }
+
+        // Enqueue for matching on flag or content changes
+        if (updated.UserFlag == UserFlag.Want || updated.UserFlag == UserFlag.TradeOrSell)
+        {
+            var reason = oldFlag != updated.UserFlag
+                ? MatchQueueReason.UserFlagChanged
+                : MatchQueueReason.ItemEdited;
+            await _matchingService.EnqueueForMatchingAsync(id, workspaceId, reason);
+        }
+        else if (oldFlag == UserFlag.Want || oldFlag == UserFlag.TradeOrSell)
+        {
+            // Flag changed FROM Want/TradeOrSell to Have
+            await _matchingService.EnqueueForMatchingAsync(id, workspaceId, MatchQueueReason.UserFlagChanged);
+        }
+
         return Ok(updated);
     }
 
@@ -274,6 +305,10 @@ public class ItemsController : ApiControllerBase
     public async Task<IActionResult> DeleteItem(int id)
     {
         var workspaceId = GetWorkspaceId();
+
+        // Remove matches before deleting the item
+        await _matchingService.RemoveMatchesForItemAsync(id);
+
         var deleted = await _itemRepository.DeleteAsync(id, workspaceId);
         if (!deleted)
         {

@@ -3,6 +3,7 @@ using OneBigHead.Server.Data;
 using OneBigHead.Server.Middleware;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Services.BulkUpdate;
+using OneBigHead.Server.Services.Matching;
 using OneBigHead.Server.Services.Seeding;
 using OneBigHead.Server.Telemetry;
 using Microsoft.AspNetCore.RateLimiting;
@@ -16,6 +17,7 @@ using OpenTelemetry.Trace;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using OneBigHead.Server.Utilities;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,6 +71,12 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddTracingDecorator<IContentScanLogRepository, ContentScanLogRepository>(repoSource);
     builder.Services.AddTracingDecorator<IContentScanner, NoOpContentScanner>(appSource);
     builder.Services.AddTracingDecorator<ICsamReportingService, NoOpCsamReportingService>(appSource);
+    builder.Services.AddTracingDecorator<IItemEmbeddingRepository, ItemEmbeddingRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IMatchRepository, MatchRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IMatchMessageRepository, MatchMessageRepository>(repoSource);
+    builder.Services.AddTracingDecorator<IEmbeddingService, EmbeddingService>(appSource);
+    builder.Services.AddTracingDecorator<ILlmService, LlmService>(appSource);
+    builder.Services.AddTracingDecorator<IMatchingService, MatchingService>(appSource);
 }
 else
 {
@@ -93,6 +101,12 @@ else
     builder.Services.AddScoped<IContentScanLogRepository, ContentScanLogRepository>();
     builder.Services.AddScoped<IContentScanner, NoOpContentScanner>();
     builder.Services.AddScoped<ICsamReportingService, NoOpCsamReportingService>();
+    builder.Services.AddScoped<IItemEmbeddingRepository, ItemEmbeddingRepository>();
+    builder.Services.AddScoped<IMatchRepository, MatchRepository>();
+    builder.Services.AddScoped<IMatchMessageRepository, MatchMessageRepository>();
+    builder.Services.AddScoped<IEmbeddingService, EmbeddingService>();
+    builder.Services.AddScoped<ILlmService, LlmService>();
+    builder.Services.AddScoped<IMatchingService, MatchingService>();
 }
 
 // Register image processor (environment-independent, stateless singleton)
@@ -104,6 +118,23 @@ builder.Services.AddSingleton<IRouteHelper, RouteHelper>();
 builder.Services.AddScoped<IPropertyDiffService, PropertyDiffService>();
 builder.Services.AddSingleton<IBulkUpdateQueue, BulkUpdateQueue>();
 builder.Services.AddHostedService<BulkUpdateWorker>();
+
+// Matching configuration
+builder.Services.Configure<LlmSettings>(builder.Configuration.GetSection("Matching"));
+builder.Services.AddHttpClient("AzureOpenAI", (sp, client) =>
+{
+    var settings = sp.GetRequiredService<IOptions<LlmSettings>>().Value;
+    if (!string.IsNullOrEmpty(settings.ApiKey))
+        client.DefaultRequestHeaders.Add("api-key", settings.ApiKey);
+});
+builder.Services.AddHttpClient("AzureOpenAIEmbedding", (sp, client) =>
+{
+    var settings = sp.GetRequiredService<IOptions<LlmSettings>>().Value;
+    var apiKey = settings.ResolvedEmbeddingApiKey;
+    if (!string.IsNullOrEmpty(apiKey))
+        client.DefaultRequestHeaders.Add("api-key", apiKey);
+});
+builder.Services.AddHostedService<MatchingWorker>();
 
 // Configure authentication
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));
@@ -310,7 +341,9 @@ if (!app.Environment.IsDevelopment())
                 path.Equals("/welcome", StringComparison.OrdinalIgnoreCase) ||
                 path.StartsWith("/welcome/", StringComparison.OrdinalIgnoreCase) ||
                 path.Equals("/terms", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/terms/", StringComparison.OrdinalIgnoreCase))
+                path.StartsWith("/terms/", StringComparison.OrdinalIgnoreCase) ||
+                path.Equals("/matches", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/matches/", StringComparison.OrdinalIgnoreCase))
             {
                 context.Request.Path = "/collections/index.html";
             }
