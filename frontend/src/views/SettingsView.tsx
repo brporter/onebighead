@@ -59,13 +59,6 @@ function SettingsView() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
-  // Public access state
-  const [publicAccessLoading, setPublicAccessLoading] = useState(false);
-  const [publicAccessSlug, setPublicAccessSlug] = useState('');
-  const [publicAccessEnabled, setPublicAccessEnabled] = useState(false);
-  const [publicAccessError, setPublicAccessError] = useState<string | null>(null);
-  const [publicAccessSaving, setPublicAccessSaving] = useState(false);
-  const [publicAccessSuccess, setPublicAccessSuccess] = useState(false);
 
   const hasUnsavedChanges = useCallback(() => {
     if (activeSection === 'templates' && templateEditorDirty) return true;
@@ -123,29 +116,6 @@ function SettingsView() {
     }
   }, [activeSection]);
 
-  // Load public access settings when workspaces section is active and user is admin
-  useEffect(() => {
-    if (activeSection !== 'workspaces' || !user?.isWorkspaceAdmin || !user?.activeWorkspace) return;
-    let cancelled = false;
-    setPublicAccessLoading(true);
-    setPublicAccessError(null);
-    workspacesApi.getPublicAccess(user.activeWorkspace.workspaceId)
-      .then((data) => {
-        if (!cancelled) {
-          setPublicAccessSlug(data.slug || '');
-          setPublicAccessEnabled(data.isPublicAccessEnabled);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          // Auto-suggest slug from workspace name if we couldn't load
-          const suggestedSlug = toSlug(user.activeWorkspace?.workspaceName || '');
-          setPublicAccessSlug(suggestedSlug);
-        }
-      })
-      .finally(() => { if (!cancelled) setPublicAccessLoading(false); });
-    return () => { cancelled = true; };
-  }, [activeSection, user?.isWorkspaceAdmin, user?.activeWorkspace]);
 
   const handleSectionChange = (section: SettingsSection) => {
     if (hasUnsavedChanges()) {
@@ -626,54 +596,6 @@ function SettingsView() {
     }
   };
 
-  // TODO: Extract toSlug to a utility module if needed elsewhere
-  const toSlug = (name: string): string => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 50);
-  };
-
-  const isValidSlug = (slug: string): boolean => {
-    return /^[a-z0-9]([a-z0-9]|-(?!-))*[a-z0-9]$/.test(slug) && slug.length >= 3 && slug.length <= 50;
-  };
-
-  const handlePublicAccessSave = async () => {
-    if (!user?.activeWorkspace) return;
-
-    setPublicAccessError(null);
-    setPublicAccessSuccess(false);
-
-    const slug = publicAccessSlug.trim();
-
-    if (publicAccessEnabled && !slug) {
-      setPublicAccessError('A slug is required to enable public access.');
-      return;
-    }
-
-    if (slug && !isValidSlug(slug)) {
-      setPublicAccessError('Slug must be 3-50 characters, lowercase letters, numbers, and hyphens only. Must start and end with a letter or number.');
-      return;
-    }
-
-    setPublicAccessSaving(true);
-    try {
-      const result = await workspacesApi.updatePublicAccess(user.activeWorkspace.workspaceId, {
-        slug: slug || null,
-        isPublicAccessEnabled: publicAccessEnabled,
-      });
-      setPublicAccessSlug(result.slug || '');
-      setPublicAccessEnabled(result.isPublicAccessEnabled);
-      setPublicAccessSuccess(true);
-      setTimeout(() => setPublicAccessSuccess(false), 3000);
-    } catch (err) {
-      setPublicAccessError(err instanceof Error ? err.message : 'Failed to update public access settings');
-    } finally {
-      setPublicAccessSaving(false);
-    }
-  };
 
   const renderWorkspacesSection = () => {
     const workspaces = user?.workspaces || [];
@@ -772,90 +694,6 @@ function SettingsView() {
             </div>
           ))}
         </div>
-
-        {user?.isWorkspaceAdmin && (
-          <>
-            <div className="settings-section__divider" />
-            <h3 className="settings-section__subtitle">Public Access</h3>
-            <p className="settings-section__description">
-              Configure public access to allow anyone to view your workspace's public collections without signing in.
-            </p>
-
-            {publicAccessLoading ? (
-              <div className="settings-public-access">
-                <p className="settings-public-access__loading">Loading public access settings...</p>
-              </div>
-            ) : (
-              <div className="settings-public-access">
-                {publicAccessError && (
-                  <div className="settings-section__error">{publicAccessError}</div>
-                )}
-                {publicAccessSuccess && (
-                  <div className="settings-public-access__success">Public access settings saved successfully.</div>
-                )}
-
-                <div className="settings-form__field">
-                  <label className="settings-form__label" htmlFor="public-slug">
-                    Public URL Slug
-                  </label>
-                  <input
-                    id="public-slug"
-                    type="text"
-                    className="settings-form__input"
-                    value={publicAccessSlug}
-                    onChange={(e) => {
-                      const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-                      setPublicAccessSlug(val);
-                      setPublicAccessError(null);
-                      setPublicAccessSuccess(false);
-                    }}
-                    placeholder="my-workspace"
-                    maxLength={50}
-                  />
-                  <p className="settings-form__hint">
-                    Lowercase letters, numbers, and hyphens only. 3-50 characters.
-                  </p>
-                </div>
-
-                <div className="settings-form__field">
-                  <label className="settings-public-access__toggle-label">
-                    <input
-                      type="checkbox"
-                      checked={publicAccessEnabled}
-                      onChange={(e) => {
-                        setPublicAccessEnabled(e.target.checked);
-                        setPublicAccessError(null);
-                        setPublicAccessSuccess(false);
-                      }}
-                      disabled={!publicAccessSlug.trim()}
-                    />
-                    <span>Enable Public Access</span>
-                  </label>
-                  {!publicAccessSlug.trim() && (
-                    <p className="settings-form__hint">Set a slug above to enable public access.</p>
-                  )}
-                </div>
-
-                {publicAccessEnabled && publicAccessSlug.trim() && (
-                  <div className="settings-public-access__preview">
-                    <span className="settings-public-access__preview-label">Public URL:</span>
-                    <code className="settings-public-access__preview-url">/public/{publicAccessSlug.trim()}</code>
-                  </div>
-                )}
-
-                <div className="settings-form__actions">
-                  <button
-                    className="settings-form__button settings-form__button--primary"
-                    onClick={handlePublicAccessSave}
-                    disabled={publicAccessSaving}
-                  >
-                    {publicAccessSaving ? 'Saving...' : 'Save Public Access Settings'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
 
         {deletedWorkspaces.length > 0 && (
           <>
