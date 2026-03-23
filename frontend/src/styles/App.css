@@ -2565,40 +2565,41 @@ body {
    ========================================================================== */
 
 .site-header {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-md) var(--space-lg);
   position: sticky;
   top: 0;
   z-index: 100;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  height: 58px;
 }
 
 .site-header__content {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  gap: var(--space-lg);
+  justify-content: space-between;
+  padding: 0 var(--space-lg);
+  height: 100%;
+  max-width: 100%;
 }
 
 .site-header__brand {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  flex-shrink: 0;
 }
 
 .site-header__logo {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text);
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-primary-text);
   text-decoration: none;
-  transition: color var(--transition-fast);
+  letter-spacing: -0.3px;
 }
 
 .site-header__logo:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
+  opacity: 0.9;
 }
 
 .site-header__title-area {
@@ -2607,14 +2608,18 @@ body {
 }
 
 .site-header__title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-  color: var(--color-text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: var(--header-nav-bg);
+  color: var(--color-text-muted);
+  letter-spacing: 0.3px;
+  font-weight: 400;
 }
 
 .site-header__subtitle {
-  color: var(--color-text-muted);
+  color: var(--color-primary-text);
   font-size: 0.9rem;
   margin: var(--space-xs) 0 0;
 }
@@ -2623,16 +2628,17 @@ body {
   padding: 0;
   border: none;
   background: none;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: color var(--transition-fast);
+  transition: opacity var(--transition-fast);
   text-align: left;
 }
 
 .site-header__back:hover {
-  color: var(--color-primary-hover);
+  color: var(--color-primary-text);
+  opacity: 0.8;
 }
 
 .site-header__spacer {
@@ -2642,14 +2648,7 @@ body {
 .site-header__actions {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  flex-shrink: 0;
-}
-
-@media (min-width: 768px) {
-  .site-header__title {
-    font-size: 2rem;
-  }
+  gap: var(--space-md);
 }
 
 @media (max-width: 640px) {
