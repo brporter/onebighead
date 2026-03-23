@@ -1,0 +1,112 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ItemCard > snapshots > should render image card 1`] = `
+<div>
+  <div
+    aria-label="Select Leica M3"
+    class="item-card"
+    role="button"
+    tabindex="0"
+  >
+    <div
+      class="item-card__ribbon"
+      style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
+    />
+    <img
+      alt="Leica M3"
+      class="item-card__img"
+      loading="lazy"
+      src="/images/leica.jpg"
+    />
+    <div
+      class="item-card__body"
+    >
+      <div
+        class="item-card__name"
+      >
+        Leica M3
+      </div>
+      <div
+        class="item-card__meta"
+      >
+        Classic rangefinder
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`ItemCard > snapshots > should render selected card 1`] = `
+<div>
+  <div
+    aria-label="Select Leica M3"
+    class="item-card item-card--selected"
+    role="button"
+    tabindex="0"
+  >
+    <div
+      class="item-card__ribbon"
+      style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
+    />
+    <img
+      alt="Leica M3"
+      class="item-card__img"
+      loading="lazy"
+      src="/images/leica.jpg"
+    />
+    <div
+      class="item-card__body"
+    >
+      <div
+        class="item-card__name"
+      >
+        Leica M3
+      </div>
+      <div
+        class="item-card__meta"
+      >
+        Classic rangefinder
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`ItemCard > snapshots > should render text-only card 1`] = `
+<div>
+  <div
+    aria-label="Select Nikon FM2"
+    class="item-card item-card--textonly"
+    role="button"
+    tabindex="0"
+  >
+    <div
+      class="item-card__ribbon"
+      style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
+    />
+    <div
+      class="item-card__body"
+    >
+      <div
+        class="item-card__name"
+      >
+        Nikon FM2
+      </div>
+      <div
+        class="item-card__meta"
+      >
+        Mechanical workhorse
+      </div>
+      <div
+        class="item-card__props"
+      >
+        <span
+          class="item-card__prop"
+        >
+          1982
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+`;
