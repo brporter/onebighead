@@ -280,6 +280,7 @@ function CategoryView() {
           ) : (
             <ItemList
               items={filteredItems}
+              categories={categories}
               selectedId={null}
               onSelect={handleSelectItem}
               onAddItem={handleAddItem}
