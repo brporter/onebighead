@@ -1,7 +1,7 @@
 function LoadingFallback() {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: '2rem' }}>
-      Loading...
+    <div className="loading">
+      <p className="loading__text">Loading...</p>
     </div>
   );
 }

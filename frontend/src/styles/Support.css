@@ -2,7 +2,7 @@
 .support-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -250,7 +250,7 @@
   height: 18px;
   padding: 0 var(--space-xs);
   background: var(--color-danger);
-  color: white;
+  color: var(--color-primary-text);
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 9px;

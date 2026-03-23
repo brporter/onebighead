@@ -24,6 +24,7 @@
   --color-primary-text: #f0ebe4;
   --color-accent: #c77d4a;
   --color-accent-subtle: rgba(199, 125, 74, 0.08);
+  --color-accent-focus: rgba(199, 125, 74, 0.15);
 
   --color-success: #6b8f71;
   --color-success-hover: #5a7e60;
@@ -640,7 +641,7 @@ body {
 .subcategoryDropdown__select:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px rgba(199, 125, 74, 0.15);
+  box-shadow: 0 0 0 2px var(--color-accent-focus);
 }
 
 /* --------------------------------------------------------------------------
@@ -1697,7 +1698,7 @@ body {
 .modal__select:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px rgba(199, 125, 74, 0.15);
+  box-shadow: 0 0 0 2px var(--color-accent-focus);
 }
 
 .modal__input:disabled,
@@ -1793,7 +1794,7 @@ body {
 .templateSelector {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2301,7 +2302,7 @@ body {
 
 .setupWizard__tab--active .setupWizard__tabNumber {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-primary-text);
 }
 
 .setupWizard__error {
@@ -2427,7 +2428,7 @@ body {
 
 .setupWizard__btn--primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-primary-text);
 }
 
 .setupWizard__btn--primary:hover:not(:disabled) {
@@ -2517,7 +2518,7 @@ body {
   align-items: center;
   justify-content: center;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-primary-text);
   border-radius: 50%;
   font-size: 0.8rem;
   font-weight: bold;

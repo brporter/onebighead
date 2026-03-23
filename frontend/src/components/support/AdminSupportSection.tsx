@@ -182,7 +182,7 @@ export function AdminSupportSection() {
               className="systemAdmin__input"
               value={selectedRequest.status}
               onChange={(e) => handleStatusChange(e.target.value)}
-              style={{ width: 'auto', padding: '0.25rem 0.5rem' }}
+              className="systemAdmin__input systemAdmin__statusSelect"
             >
               <option value="Open">Open</option>
               <option value="InProgress">In Progress</option>
@@ -255,7 +255,7 @@ export function AdminSupportSection() {
   // List view
   return (
     <div>
-      <div className="systemAdmin__filterRow" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center' }}>
+      <div className="systemAdmin__filterRow">
         <select
           className="systemAdmin__input"
           value={statusFilter}
@@ -263,7 +263,6 @@ export function AdminSupportSection() {
             setStatusFilter(e.target.value);
             setPage(0);
           }}
-          style={{ width: 'auto' }}
         >
           <option value="">All Statuses</option>
           <option value="Open">Open</option>
@@ -271,7 +270,7 @@ export function AdminSupportSection() {
           <option value="Resolved">Resolved</option>
           <option value="Closed">Closed</option>
         </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <label className="systemAdmin__filterLabel">
           <input
             type="checkbox"
             checked={includeDeleted}
@@ -282,7 +281,7 @@ export function AdminSupportSection() {
           />
           Include deleted
         </label>
-        <span style={{ marginLeft: 'auto', color: '#666' }}>
+        <span className="systemAdmin__filterSummary">
           Showing {requests.length} of {total} requests
         </span>
       </div>
@@ -312,20 +311,12 @@ export function AdminSupportSection() {
                 >
                   <td>
                     <button
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--color-primary)',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        padding: 0,
-                        font: 'inherit',
-                      }}
+                      className="systemAdmin__linkButton"
                       onClick={() => handleSelectRequest(request)}
                     >
                       {request.subject}
                     </button>
-                    {request.isDeleted && <span style={{ color: '#999', marginLeft: '0.5rem' }}>(deleted)</span>}
+                    {request.isDeleted && <span className="systemAdmin__deletedTag">(deleted)</span>}
                   </td>
                   <td>
                     {request.email}
@@ -358,7 +349,7 @@ export function AdminSupportSection() {
           </table>
 
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+            <div className="systemAdmin__pagination">
               <button
                 className="systemAdmin__button"
                 disabled={page === 0}
@@ -366,7 +357,7 @@ export function AdminSupportSection() {
               >
                 Previous
               </button>
-              <span style={{ padding: '0.5rem' }}>
+              <span className="systemAdmin__paginationInfo">
                 Page {page + 1} of {totalPages}
               </span>
               <button
