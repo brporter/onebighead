@@ -292,6 +292,67 @@ describe('CategoryView', () => {
     });
   });
 
+  describe('sidebar collapse', () => {
+    it('should render sidebar toggle button', () => {
+      renderWithRouter('/collections/1');
+
+      expect(screen.getByLabelText('Collapse sidebar')).toBeInTheDocument();
+    });
+
+    it('should hide CategoryTree when sidebar is collapsed', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Collapse sidebar'));
+      expect(screen.queryByText('Root Category')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
+    });
+
+    it('should show CategoryTree when sidebar is expanded again', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Collapse sidebar'));
+      await user.click(screen.getByLabelText('Expand sidebar'));
+      expect(screen.getAllByText('Root Category').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should render sidebar toggle button when category is selected', () => {
+      renderWithRouter('/collections/1/categories/1');
+
+      expect(screen.getByLabelText('Collapse sidebar')).toBeInTheDocument();
+    });
+
+    it('should add collapsed class when sidebar is collapsed', async () => {
+      const user = userEvent.setup();
+      const { container } = renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Collapse sidebar'));
+      expect(container.querySelector('.app__layout--sidebar-collapsed')).toBeInTheDocument();
+    });
+
+    it('should start collapsed on small viewports', () => {
+      const originalMatchMedia = window.matchMedia;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 1024px)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      renderWithRouter('/collections/1');
+
+      expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
+      expect(screen.queryByText('Root Category')).not.toBeInTheDocument();
+
+      window.matchMedia = originalMatchMedia;
+    });
+  });
+
   describe('snapshots', () => {
     it('should match snapshot with category selected', () => {
       const { container } = renderWithRouter('/collections/1/categories/1');

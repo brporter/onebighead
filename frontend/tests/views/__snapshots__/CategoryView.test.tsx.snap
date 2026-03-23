@@ -9,6 +9,13 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
       aria-label="Category navigation"
       class="app__sidebar"
     >
+      <button
+        aria-label="Collapse sidebar"
+        class="app__sidebar-toggle"
+        type="button"
+      >
+        ◀
+      </button>
       <aside
         class="categoryTree"
       >

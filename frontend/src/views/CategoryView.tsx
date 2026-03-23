@@ -32,6 +32,7 @@ function CategoryView() {
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [subcategoryFilter, setSubcategoryFilter] = useState<number | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [prevCategoryId, setPrevCategoryId] = useState(categoryIdNum);
@@ -44,6 +45,12 @@ function CategoryView() {
     setSubcategoryFilter(null);
     setPageIndex(0);
   }
+
+  // Collapse sidebar by default on smaller viewports
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1024px)');
+    setSidebarCollapsed(mq.matches);
+  }, []);
 
   // Deep linking: Load collection data if needed
   useEffect(() => {
@@ -201,13 +208,23 @@ function CategoryView() {
   // Show category tree with placeholder if no category selected
   if (!categoryIdNum) {
     return (
-      <div className="app__layout">
+      <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
         <nav className="app__sidebar" aria-label="Category navigation">
-          <CategoryTree
-            categories={categories}
-            selectedCategoryId={null}
-            onSelect={handleSelectCategory}
-          />
+          <button
+            type="button"
+            className="app__sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? '▶' : '◀'}
+          </button>
+          {!sidebarCollapsed && (
+            <CategoryTree
+              categories={categories}
+              selectedCategoryId={null}
+              onSelect={handleSelectCategory}
+            />
+          )}
         </nav>
         <main className="app__content">
           <div className="collection-title-bar">
@@ -229,13 +246,23 @@ function CategoryView() {
 
   // Show category tree with item list
   return (
-    <div className="app__layout">
+    <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
       <nav className="app__sidebar" aria-label="Category navigation">
-        <CategoryTree
-          categories={categories}
-          selectedCategoryId={categoryIdNum}
-          onSelect={handleSelectCategory}
-        />
+        <button
+          type="button"
+          className="app__sidebar-toggle"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {sidebarCollapsed ? '▶' : '◀'}
+        </button>
+        {!sidebarCollapsed && (
+          <CategoryTree
+            categories={categories}
+            selectedCategoryId={categoryIdNum}
+            onSelect={handleSelectCategory}
+          />
+        )}
       </nav>
       <main className="app__content">
         <div className="collection-title-bar">
