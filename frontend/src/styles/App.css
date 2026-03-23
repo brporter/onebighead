@@ -399,15 +399,16 @@ body {
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-lg);
+  padding: 7px 16px;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
-  font-size: 0.9rem;
+  font-size: 12px;
   font-weight: 500;
-  font-family: inherit;
+  font-family: 'DM Sans', sans-serif;
   cursor: pointer;
   text-decoration: none;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  height: 36px;
 }
 
 .btn:disabled {
@@ -416,7 +417,7 @@ body {
 }
 
 .btn:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -424,7 +425,7 @@ body {
 .btn--primary {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
 }
 
 .btn--primary:hover:not(:disabled) {
@@ -440,7 +441,7 @@ body {
 
 .btn--secondary:hover:not(:disabled) {
   background: var(--color-surface-alt);
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-strong);
 }
 
 .btn--success {
@@ -455,19 +456,19 @@ body {
 }
 
 .btn--danger {
-  background: var(--color-danger);
+  background: transparent;
   border-color: var(--color-danger);
-  color: var(--color-text-inverse);
+  color: var(--color-danger);
 }
 
 .btn--danger:hover:not(:disabled) {
-  background: var(--color-danger-hover);
-  border-color: var(--color-danger-hover);
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
 }
 
 .btn--ghost {
   background: transparent;
-  border-color: transparent;
+  border: none;
   color: var(--color-text-secondary);
 }
 
@@ -628,7 +629,7 @@ body {
   background: var(--color-surface);
   color: var(--color-text);
   font-size: 0.9rem;
-  font-family: inherit;
+  font-family: 'DM Sans', sans-serif;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
@@ -638,8 +639,8 @@ body {
 .imageEditor__input:focus,
 .subcategoryDropdown__select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-subtle);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(199, 125, 74, 0.15);
 }
 
 /* --------------------------------------------------------------------------
@@ -1571,7 +1572,7 @@ body {
 }
 
 .modal-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
 }
 
 .modal-dialog[open] {
@@ -1584,7 +1585,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1594,14 +1595,13 @@ body {
 
 .modal {
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
   overflow-y: auto;
 }
 
@@ -1618,6 +1618,7 @@ body {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--color-text);
+  font-family: 'Fraunces', serif;
 }
 
 .modal__close {
@@ -1685,6 +1686,7 @@ body {
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   font-size: 0.95rem;
+  font-family: 'DM Sans', sans-serif;
   background: var(--color-surface);
   color: var(--color-text);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -1694,8 +1696,8 @@ body {
 .modal__textarea:focus,
 .modal__select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(199, 125, 74, 0.15);
 }
 
 .modal__input:disabled,
@@ -1755,7 +1757,7 @@ body {
 .modal__button--primary {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: white;
+  color: var(--color-primary-text);
 }
 
 .modal__button--primary:hover:not(:disabled) {
@@ -1774,14 +1776,14 @@ body {
 }
 
 .modal__button--danger {
-  background: var(--color-danger);
+  background: transparent;
   border-color: var(--color-danger);
-  color: white;
+  color: var(--color-danger);
 }
 
 .modal__button--danger:hover:not(:disabled) {
-  background: var(--color-danger-hover, #dc2626);
-  border-color: var(--color-danger-hover, #dc2626);
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
 }
 
 /* ==========================================================================
