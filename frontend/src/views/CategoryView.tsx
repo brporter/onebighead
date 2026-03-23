@@ -32,7 +32,9 @@ function CategoryView() {
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
+  );
   const [subcategoryFilter, setSubcategoryFilter] = useState<number | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [prevCategoryId, setPrevCategoryId] = useState(categoryIdNum);
@@ -45,12 +47,6 @@ function CategoryView() {
     setSubcategoryFilter(null);
     setPageIndex(0);
   }
-
-  // Collapse sidebar by default on smaller viewports
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 1024px)');
-    setSidebarCollapsed(mq.matches);
-  }, []);
 
   // Deep linking: Load collection data if needed
   useEffect(() => {

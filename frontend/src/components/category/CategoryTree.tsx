@@ -1,4 +1,4 @@
-import { useMemo, useState, memo } from 'react';
+import React, { useMemo, useState, memo } from 'react';
 import type { Category, CategoryNode } from '../../utils/types';
 import { useData } from '../../contexts/useData';
 import { getAccentColor } from '../../utils/accentColors';
