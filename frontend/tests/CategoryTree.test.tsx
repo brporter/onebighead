@@ -260,6 +260,52 @@ describe('CategoryTree', () => {
     });
   });
 
+  describe('accent color dots', () => {
+    it('should render accent color dots for each category node', () => {
+      const { container } = render(
+        <CategoryTree
+          categories={mockCategories}
+          selectedCategoryId={null}
+          onSelect={() => {}}
+        />
+      );
+
+      const dots = container.querySelectorAll('.categoryTree__dot');
+      expect(dots.length).toBeGreaterThan(0);
+    });
+
+    it('should set backgroundColor style on accent dots', () => {
+      const { container } = render(
+        <CategoryTree
+          categories={mockCategories}
+          selectedCategoryId={null}
+          onSelect={() => {}}
+        />
+      );
+
+      const dots = container.querySelectorAll('.categoryTree__dot');
+      dots.forEach((dot) => {
+        const style = (dot as HTMLElement).style.backgroundColor;
+        expect(style).toBeTruthy();
+      });
+    });
+
+    it('should render dots with aria-hidden attribute', () => {
+      const { container } = render(
+        <CategoryTree
+          categories={mockCategories}
+          selectedCategoryId={null}
+          onSelect={() => {}}
+        />
+      );
+
+      const dots = container.querySelectorAll('.categoryTree__dot');
+      dots.forEach((dot) => {
+        expect(dot.getAttribute('aria-hidden')).toBe('true');
+      });
+    });
+  });
+
   describe('loading and error states', () => {
     it('should display loading message when categories are loading', () => {
       vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {

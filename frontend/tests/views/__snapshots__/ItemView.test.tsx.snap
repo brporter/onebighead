@@ -36,7 +36,7 @@ exports[`ItemView > snapshots > should match snapshot for existing item 1`] = `
           >
             <div
               class="categoryTree__row"
-              style="padding-left: 0px;"
+              style="--indent-level: 0;"
             >
               <span
                 aria-hidden="true"
@@ -44,6 +44,11 @@ exports[`ItemView > snapshots > should match snapshot for existing item 1`] = `
               >
                 ▸
               </span>
+              <span
+                aria-hidden="true"
+                class="categoryTree__dot"
+                style="background-color: rgb(199, 125, 74);"
+              />
               <button
                 class="categoryTree__item categoryTree__item--active"
                 type="button"

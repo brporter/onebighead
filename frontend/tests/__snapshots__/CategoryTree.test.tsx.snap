@@ -242,7 +242,7 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
       >
         <div
           class="categoryTree__row"
-          style="padding-left: 0px;"
+          style="--indent-level: 0;"
         >
           <button
             aria-label="Collapse Root 1"
@@ -251,6 +251,11 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
           >
             ▾
           </button>
+          <span
+            aria-hidden="true"
+            class="categoryTree__dot"
+            style="background-color: rgb(199, 125, 74);"
+          />
           <button
             class="categoryTree__item"
             type="button"
@@ -273,7 +278,7 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
           >
             <div
               class="categoryTree__row"
-              style="padding-left: 14px;"
+              style="--indent-level: 1;"
             >
               <button
                 aria-label="Expand Child 1-1"
@@ -282,6 +287,11 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
               >
                 ▸
               </button>
+              <span
+                aria-hidden="true"
+                class="categoryTree__dot"
+                style="background-color: rgb(199, 125, 74);"
+              />
               <button
                 class="categoryTree__item"
                 type="button"
@@ -302,7 +312,7 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
           >
             <div
               class="categoryTree__row"
-              style="padding-left: 14px;"
+              style="--indent-level: 1;"
             >
               <span
                 aria-hidden="true"
@@ -310,6 +320,11 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
               >
                 ▸
               </span>
+              <span
+                aria-hidden="true"
+                class="categoryTree__dot"
+                style="background-color: rgb(199, 125, 74);"
+              />
               <button
                 class="categoryTree__item"
                 type="button"
@@ -332,7 +347,7 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
       >
         <div
           class="categoryTree__row"
-          style="padding-left: 0px;"
+          style="--indent-level: 0;"
         >
           <span
             aria-hidden="true"
@@ -340,6 +355,11 @@ exports[`CategoryTree > snapshots > should render tree with categories 1`] = `
           >
             ▸
           </span>
+          <span
+            aria-hidden="true"
+            class="categoryTree__dot"
+            style="background-color: rgb(107, 143, 113);"
+          />
           <button
             class="categoryTree__item"
             type="button"
@@ -574,7 +594,7 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
       >
         <div
           class="categoryTree__row"
-          style="padding-left: 0px;"
+          style="--indent-level: 0;"
         >
           <button
             aria-label="Collapse Root 1"
@@ -583,6 +603,11 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
           >
             ▾
           </button>
+          <span
+            aria-hidden="true"
+            class="categoryTree__dot"
+            style="background-color: rgb(199, 125, 74);"
+          />
           <button
             class="categoryTree__item"
             type="button"
@@ -605,7 +630,7 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
           >
             <div
               class="categoryTree__row"
-              style="padding-left: 14px;"
+              style="--indent-level: 1;"
             >
               <button
                 aria-label="Expand Child 1-1"
@@ -614,6 +639,11 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
               >
                 ▸
               </button>
+              <span
+                aria-hidden="true"
+                class="categoryTree__dot"
+                style="background-color: rgb(199, 125, 74);"
+              />
               <button
                 class="categoryTree__item categoryTree__item--active"
                 type="button"
@@ -634,7 +664,7 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
           >
             <div
               class="categoryTree__row"
-              style="padding-left: 14px;"
+              style="--indent-level: 1;"
             >
               <span
                 aria-hidden="true"
@@ -642,6 +672,11 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
               >
                 ▸
               </span>
+              <span
+                aria-hidden="true"
+                class="categoryTree__dot"
+                style="background-color: rgb(199, 125, 74);"
+              />
               <button
                 class="categoryTree__item"
                 type="button"
@@ -664,7 +699,7 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
       >
         <div
           class="categoryTree__row"
-          style="padding-left: 0px;"
+          style="--indent-level: 0;"
         >
           <span
             aria-hidden="true"
@@ -672,6 +707,11 @@ exports[`CategoryTree > snapshots > should render with selected category 1`] = `
           >
             ▸
           </span>
+          <span
+            aria-hidden="true"
+            class="categoryTree__dot"
+            style="background-color: rgb(107, 143, 113);"
+          />
           <button
             class="categoryTree__item"
             type="button"

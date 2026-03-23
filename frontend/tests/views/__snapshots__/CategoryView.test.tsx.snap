@@ -36,7 +36,7 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
           >
             <div
               class="categoryTree__row"
-              style="padding-left: 0px;"
+              style="--indent-level: 0;"
             >
               <button
                 aria-label="Collapse Root Category"
@@ -45,6 +45,11 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
               >
                 ▾
               </button>
+              <span
+                aria-hidden="true"
+                class="categoryTree__dot"
+                style="background-color: rgb(199, 125, 74);"
+              />
               <button
                 class="categoryTree__item categoryTree__item--active"
                 type="button"
@@ -67,7 +72,7 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
               >
                 <div
                   class="categoryTree__row"
-                  style="padding-left: 14px;"
+                  style="--indent-level: 1;"
                 >
                   <span
                     aria-hidden="true"
@@ -75,6 +80,11 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
                   >
                     ▸
                   </span>
+                  <span
+                    aria-hidden="true"
+                    class="categoryTree__dot"
+                    style="background-color: rgb(199, 125, 74);"
+                  />
                   <button
                     class="categoryTree__item"
                     type="button"
@@ -365,64 +375,58 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
             </div>
           </div>
           <div
-            class="list__tableWrap"
+            class="list__masonry"
           >
-            <table
-              class="list__table"
+            <div
+              aria-label="Select Test Item 1"
+              class="item-card item-card--textonly"
+              role="button"
+              tabindex="0"
             >
-              <thead>
-                <tr>
-                  <th
-                    class="list__th list__th--name"
-                    scope="col"
-                  >
-                    Name
-                  </th>
-                  <th
-                    class="list__th"
-                    scope="col"
-                  >
-                    Summary
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  aria-label="Select Test Item 1"
-                  class="list__tr list__tr--clickable"
-                  role="button"
-                  tabindex="0"
+              <div
+                class="item-card__ribbon"
+                style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
+              />
+              <div
+                class="item-card__body"
+              >
+                <div
+                  class="item-card__name"
                 >
-                  <td
-                    class="list__td list__td--name"
-                  >
-                    Test Item 1
-                  </td>
-                  <td
-                    class="list__td list__td--summary"
-                  >
-                    Summary 1
-                  </td>
-                </tr>
-                <tr
-                  aria-label="Select Test Item 2"
-                  class="list__tr list__tr--clickable"
-                  role="button"
-                  tabindex="0"
+                  Test Item 1
+                </div>
+                <div
+                  class="item-card__meta"
                 >
-                  <td
-                    class="list__td list__td--name"
-                  >
-                    Test Item 2
-                  </td>
-                  <td
-                    class="list__td list__td--summary"
-                  >
-                    Summary 2
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  Summary 1
+                </div>
+              </div>
+            </div>
+            <div
+              aria-label="Select Test Item 2"
+              class="item-card item-card--textonly"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="item-card__ribbon"
+                style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
+              />
+              <div
+                class="item-card__body"
+              >
+                <div
+                  class="item-card__name"
+                >
+                  Test Item 2
+                </div>
+                <div
+                  class="item-card__meta"
+                >
+                  Summary 2
+                </div>
+              </div>
+            </div>
           </div>
           <div
             aria-label="Pagination"

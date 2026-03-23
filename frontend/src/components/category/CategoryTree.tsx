@@ -1,6 +1,7 @@
 import { useMemo, useState, memo } from 'react';
 import type { Category, CategoryNode } from '../../utils/types';
 import { useData } from '../../contexts/useData';
+import { getAccentColor } from '../../utils/accentColors';
 import CategoryEditorModal from './CategoryEditorModal';
 
 interface CategoryNodeProps {
@@ -11,6 +12,7 @@ interface CategoryNodeProps {
   expandedIds: Set<number>;
   onToggle: (categoryId: number) => void;
   onEdit: (category: Category) => void;
+  colorIndex: number;
 }
 
 interface CategoryTreeProps {
@@ -41,14 +43,15 @@ function buildTree(categories: Category[]): CategoryNode[] {
   return roots;
 }
 
-const CategoryNodeComponent = memo(function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expandedIds, onToggle, onEdit }: CategoryNodeProps) {
+const CategoryNodeComponent = memo(function CategoryNodeComponent({ node, level, selectedCategoryId, onSelect, expandedIds, onToggle, onEdit, colorIndex }: CategoryNodeProps) {
   const isSelected = node.categoryId === selectedCategoryId;
   const hasChildren = node.children.length > 0;
   const isExpanded = expandedIds.has(node.categoryId);
+  const accent = getAccentColor(colorIndex);
 
   return (
     <li className="categoryTree__node">
-      <div className="categoryTree__row" style={{ paddingLeft: `${level * 14}px` }}>
+      <div className="categoryTree__row" style={{ '--indent-level': level } as React.CSSProperties}>
         {hasChildren ? (
           <button
             type="button"
@@ -63,6 +66,12 @@ const CategoryNodeComponent = memo(function CategoryNodeComponent({ node, level,
             ▸
           </span>
         )}
+
+        <span
+          className="categoryTree__dot"
+          style={{ backgroundColor: accent.start }}
+          aria-hidden="true"
+        />
 
         <button
           type="button"
@@ -94,6 +103,7 @@ const CategoryNodeComponent = memo(function CategoryNodeComponent({ node, level,
               key={child.categoryId}
               node={child}
               level={level + 1}
+              colorIndex={colorIndex}
               selectedCategoryId={selectedCategoryId}
               onSelect={onSelect}
               expandedIds={expandedIds}
@@ -190,11 +200,12 @@ function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTree
         </button>
       </div>
       <ul className="categoryTree__list">
-        {tree.map((node) => (
+        {tree.map((node, index) => (
           <CategoryNodeComponent
             key={node.categoryId}
             node={node}
             level={0}
+            colorIndex={index}
             selectedCategoryId={selectedCategoryId}
             onSelect={onSelect}
             expandedIds={expandedCategoryIds}
