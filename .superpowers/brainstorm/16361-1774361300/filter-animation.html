@@ -1,0 +1,187 @@
+<h2>Visibility Filter Bar & Animation</h2>
+<p class="subtitle">Interactive demo — click the filter buttons to see the CSS-only animation</p>
+
+<style>
+  .filter-bar {
+    display: flex;
+    gap: 4px;
+    background: #1a1a2e;
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 24px;
+    width: fit-content;
+  }
+  .filter-btn {
+    padding: 6px 16px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #a0aec0;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .filter-btn.active {
+    background: #2d3748;
+    color: #e2e8f0;
+  }
+  .filter-btn:hover:not(.active) {
+    color: #e2e8f0;
+  }
+
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .item-card {
+    background: #1a1a2e;
+    border-radius: 8px;
+    padding: 12px;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    transform-origin: center top;
+  }
+  .item-card.hidden {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+    position: absolute;
+    visibility: hidden;
+  }
+  .item-card .card-img {
+    background: #2a2a4a;
+    border-radius: 6px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4a5568;
+    font-size: 11px;
+  }
+  .item-card .card-title {
+    margin-top: 8px;
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .item-card .card-meta {
+    color: #a0aec0;
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .item-card .pub-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(99, 179, 237, 0.12);
+    border: 1px solid rgba(99, 179, 237, 0.3);
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 10px;
+    color: #63b3ed;
+    margin-top: 6px;
+  }
+  .item-card .pub-badge svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .filter-count {
+    color: #a0aec0;
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+</style>
+
+<div style="background: #0d1117; border-radius: 12px; padding: 24px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
+      <button class="filter-btn" data-filter="public" onclick="setFilter('public', this)">
+        <span style="display: inline-flex; align-items: center; gap: 4px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Public
+        </span>
+      </button>
+      <button class="filter-btn" data-filter="private" onclick="setFilter('private', this)">Private</button>
+    </div>
+    <div class="filter-count" id="filterCount">Showing 6 items</div>
+  </div>
+
+  <div class="items-grid" id="itemsGrid">
+    <div class="item-card" data-visibility="public">
+      <div class="card-img">Image</div>
+      <div class="card-title">1965 Rolex Submariner</div>
+      <div class="card-meta">Vintage Watches</div>
+      <div class="pub-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Public
+      </div>
+    </div>
+    <div class="item-card" data-visibility="private">
+      <div class="card-img">Image</div>
+      <div class="card-title">Omega Speedmaster (Draft)</div>
+      <div class="card-meta">Vintage Watches</div>
+    </div>
+    <div class="item-card" data-visibility="public">
+      <div class="card-img">Image</div>
+      <div class="card-title">Cartier Tank Solo</div>
+      <div class="card-meta">Dress Watches</div>
+      <div class="pub-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Public
+      </div>
+    </div>
+    <div class="item-card" data-visibility="private">
+      <div class="card-img">Image</div>
+      <div class="card-title">Seiko Presage (Incoming)</div>
+      <div class="card-meta">Modern Collection</div>
+    </div>
+    <div class="item-card" data-visibility="public">
+      <div class="card-img">Image</div>
+      <div class="card-title">Tudor Black Bay 58</div>
+      <div class="card-meta">Dive Watches</div>
+      <div class="pub-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Public
+      </div>
+    </div>
+    <div class="item-card" data-visibility="private">
+      <div class="card-img">Image</div>
+      <div class="card-title">Grand Seiko Snowflake</div>
+      <div class="card-meta">Grail List</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setFilter(filter, btn) {
+    // Update active button
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const cards = document.querySelectorAll('.item-card');
+    let count = 0;
+
+    cards.forEach(card => {
+      const vis = card.dataset.visibility;
+      const show = filter === 'all' || vis === filter;
+      if (show) {
+        card.classList.remove('hidden');
+        count++;
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+
+    document.getElementById('filterCount').textContent = `Showing ${count} item${count !== 1 ? 's' : ''}`;
+  }
+</script>
+
+<div style="margin-top: 20px;">
+  <h3>Animation Approach</h3>
+  <p>Click the filter buttons above to see the effect. Non-matching items fade out and scale down (0.25s ease). The grid reflows naturally as items are removed from layout. Short and fluid — no jank.</p>
+  <p style="color: #a0aec0; font-size: 13px; margin-top: 8px;">Note: In production, we'd use CSS <code>view-transitions</code> or animate grid positions for even smoother reflow. This demo shows the core feel.</p>
+</div>

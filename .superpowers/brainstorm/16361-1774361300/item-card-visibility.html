@@ -1,0 +1,65 @@
+<h2>Item Card Visibility Indicators</h2>
+<p class="subtitle">How should public/private status appear on item cards in the collection view?</p>
+
+<div class="cards">
+  <!-- Option A: Badge in corner -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 16px; height: 200px; position: relative;">
+        <!-- Mock item card -->
+        <div style="position: absolute; top: 8px; right: 8px; background: rgba(99, 179, 237, 0.15); border: 1px solid rgba(99, 179, 237, 0.4); border-radius: 12px; padding: 2px 8px; font-size: 11px; color: #63b3ed; display: flex; align-items: center; gap: 4px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#63b3ed" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Public
+        </div>
+        <div style="background: #2a2a4a; border-radius: 6px; height: 120px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px;">Item Image</div>
+        <div style="margin-top: 8px; color: #e2e8f0; font-size: 14px; font-weight: 500;">1965 Rolex Submariner</div>
+        <div style="color: #a0aec0; font-size: 12px;">Vintage Watches</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Corner Badge</h3>
+      <p>Small pill badge in the top-right corner with eye icon and "Public" text. Unobtrusive but always visible.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Bottom bar indicator -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 16px; height: 200px; position: relative;">
+        <div style="background: #2a2a4a; border-radius: 6px; height: 120px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px;">Item Image</div>
+        <div style="margin-top: 8px; color: #e2e8f0; font-size: 14px; font-weight: 500;">1965 Rolex Submariner</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #a0aec0; font-size: 12px;">Vintage Watches</span>
+          <span style="display: flex; align-items: center; gap: 4px; color: #63b3ed; font-size: 11px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#63b3ed" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Public
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Inline Status</h3>
+      <p>Eye icon and "Public" text inline with the card metadata, next to the category name. Integrated into the card's natural layout.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Left border accent -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 16px; height: 200px; position: relative; border-left: 3px solid #63b3ed;">
+        <div style="background: #2a2a4a; border-radius: 6px; height: 120px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px;">Item Image</div>
+        <div style="margin-top: 8px; color: #e2e8f0; font-size: 14px; font-weight: 500;">1965 Rolex Submariner</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #a0aec0; font-size: 12px;">Vintage Watches</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#63b3ed" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C: Left Border + Icon</h3>
+      <p>Blue left border accent on public items plus a small eye icon. The border provides at-a-glance scanning across many cards; the icon confirms the meaning.</p>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top: 16px; color: #a0aec0; font-size: 13px;">Private items would have no badge/border — the absence of the indicator means private. Click to select your preference.</p>
