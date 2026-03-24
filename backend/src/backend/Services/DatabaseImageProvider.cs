@@ -58,7 +58,7 @@ public class DatabaseImageProvider : IImageProvider
         var image = await _context.StoredImages
             .AsNoTracking()
             .Include(i => i.Workspace)
-            .FirstOrDefaultAsync(i => i.Id == key && i.Workspace != null && i.Workspace.IsPublicAccessEnabled);
+            .FirstOrDefaultAsync(i => i.Id == key && i.Workspace != null && i.Workspace.Slug != null);
 
         if (image == null)
             return null;
