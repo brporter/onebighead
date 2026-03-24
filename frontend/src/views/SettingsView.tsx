@@ -9,7 +9,6 @@ import type { DashboardData } from '../api';
 import type { RestorableWorkspace } from '../api/workspaces';
 import ItemTemplateEditor from '../components/template/ItemTemplateEditor';
 import CollectionTemplateEditor from '../components/collection/CollectionTemplateEditor';
-import VisibilityToggle from '../components/common/VisibilityToggle';
 import CollectionSetupWizard from '../components/collection/CollectionSetupWizard';
 import WorkspaceSetupWizard from '../components/wizard/WorkspaceSetupWizard';
 import { SupportSection } from '../components/support/SupportSection';
@@ -18,7 +17,7 @@ import { SupportModal } from '../components/support/SupportModal';
 import { WorkspaceEditModal, WorkspaceDeletionSection } from '../components/workspace';
 import { SiteHeader, SiteFooter } from '../components/common';
 import type { Collection, WorkspaceMembership } from '../utils/types';
-import { Visibility, WorkspaceRole } from '../utils/types';
+import { WorkspaceRole } from '../utils/types';
 
 type SettingsSection = 'dashboard' | 'collections' | 'templates' | 'team' | 'workspaces' | 'export' | 'support' | 'account';
 
@@ -44,8 +43,8 @@ function SettingsView() {
   const [isAdding, setIsAdding] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '', visibility: Visibility.Private });
-  const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '', visibility: Visibility.Private });
+  const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '' });
+  const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '' });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -68,8 +67,7 @@ function SettingsView() {
     return (
       formData.name !== originalFormData.name ||
       formData.description !== originalFormData.description ||
-      formData.heroImageUrl !== originalFormData.heroImageUrl ||
-      formData.visibility !== originalFormData.visibility
+      formData.heroImageUrl !== originalFormData.heroImageUrl
     );
   }, [activeSection, templateEditorDirty, teamManagementDirty, editingCollectionTemplates, collectionTemplateEditorDirty, isAdding, editingId, formData, originalFormData]);
 
@@ -149,7 +147,6 @@ function SettingsView() {
       name: collection.name,
       description: collection.description || '',
       heroImageUrl: collection.heroImageUrl || '',
-      visibility: collection.visibility ?? Visibility.Private,
     };
     setFormData(initial);
     setOriginalFormData(initial);
@@ -185,14 +182,12 @@ function SettingsView() {
           formData.name.trim(),
           formData.description.trim() || undefined,
           formData.heroImageUrl.trim() || undefined,
-          formData.visibility
         );
       } else if (editingId !== null) {
         await updateCollection(editingId, {
           name: formData.name.trim(),
           description: formData.description.trim() || undefined,
           heroImageUrl: formData.heroImageUrl.trim() || undefined,
-          visibility: formData.visibility,
         });
       }
       setIsAdding(false);
@@ -396,16 +391,6 @@ function SettingsView() {
                 value={formData.heroImageUrl}
                 onChange={(e) => setFormData((prev) => ({ ...prev, heroImageUrl: e.target.value }))}
                 placeholder="https://example.com/image.jpg"
-              />
-            </div>
-            <div className="settings-form__field">
-              <VisibilityToggle
-                visibility={formData.visibility}
-                effectiveIsPublic={formData.visibility === Visibility.Public}
-                parentIsPublic={true}
-                onChange={(value) => setFormData((prev) => ({ ...prev, visibility: value }))}
-                label="Collection Visibility"
-                isCollection={true}
               />
             </div>
             {editingId !== null && (

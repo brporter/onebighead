@@ -1795,29 +1795,6 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
               <div
                 class="settings-form__field"
               >
-                <div
-                  data-testid="visibility-toggle"
-                >
-                  <label>
-                    Collection Visibility
-                  </label>
-                  <select>
-                    <option
-                      value="Private"
-                    >
-                      Private
-                    </option>
-                    <option
-                      value="Public"
-                    >
-                      Public
-                    </option>
-                  </select>
-                </div>
-              </div>
-              <div
-                class="settings-form__field"
-              >
                 <label
                   class="settings-form__label"
                 >
@@ -2361,29 +2338,6 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
                   type="url"
                   value="https://example.com/hero1.jpg"
                 />
-              </div>
-              <div
-                class="settings-form__field"
-              >
-                <div
-                  data-testid="visibility-toggle"
-                >
-                  <label>
-                    Collection Visibility
-                  </label>
-                  <select>
-                    <option
-                      value="Private"
-                    >
-                      Private
-                    </option>
-                    <option
-                      value="Public"
-                    >
-                      Public
-                    </option>
-                  </select>
-                </div>
               </div>
               <div
                 class="settings-form__field"

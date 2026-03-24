@@ -100,18 +100,6 @@ vi.mock('../../src/components/workspace', () => ({
     ) : null,
 }));
 
-vi.mock('../../src/components/common/VisibilityToggle', () => ({
-  default: ({ label, visibility, onChange }: { label: string; visibility: string; onChange: (v: string) => void }) => (
-    <div data-testid="visibility-toggle">
-      <label>{label}</label>
-      <select value={visibility} onChange={(e) => onChange(e.target.value)}>
-        <option value="Private">Private</option>
-        <option value="Public">Public</option>
-      </select>
-    </div>
-  ),
-}));
-
 vi.mock('../../src/components/common', async () => {
   const actual = await vi.importActual('../../src/components/common');
   return {

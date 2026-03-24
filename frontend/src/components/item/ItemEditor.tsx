@@ -2,7 +2,6 @@ import { useState } from 'react';
 import PropertyEditor from './PropertyEditor';
 import ImageEditor from '../common/ImageEditor';
 import CategorySelector from '../category/CategorySelector';
-import VisibilityToggle from '../common/VisibilityToggle';
 import type { Item, Category, ItemProperty, Collection } from '../../utils/types';
 import { UserFlag, Visibility } from '../../utils/types';
 
@@ -51,14 +50,6 @@ function ItemEditor({
   });
 
   const isNew = formData.id === null;
-
-  // Determine if parent allows public override
-  const getParentIsPublic = (): boolean => {
-    if (!collection?.effectiveIsPublic) return false;
-    if (formData.categoryId === null) return true;
-    const category = categories.find((c) => c.categoryId === formData.categoryId);
-    return category?.effectiveIsPublic ?? true;
-  };
 
   function handleFieldChange<K extends keyof Item>(field: K, value: Item[K]) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -136,16 +127,6 @@ function ItemEditor({
           images={formData.images || []}
           onChange={(imgs) => handleFieldChange('images', imgs)}
         />
-
-        <div className="detail__field">
-          <VisibilityToggle
-            visibility={formData.visibility}
-            effectiveIsPublic={formData.effectiveIsPublic}
-            parentIsPublic={getParentIsPublic()}
-            onChange={(value) => handleFieldChange('visibility', value)}
-            label="Visibility"
-          />
-        </div>
 
         <fieldset className="detail__fieldset">
           <legend className="detail__legend">My Relationship to This Item</legend>

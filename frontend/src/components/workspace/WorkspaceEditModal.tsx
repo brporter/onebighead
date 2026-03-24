@@ -110,10 +110,6 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
 
     try {
       await workspacesApi.update(workspace.workspaceId, { name: trimmedName });
-      await workspacesApi.updatePublicAccess(workspace.workspaceId, {
-        slug: slug || null,
-        isPublicAccessEnabled: publicAccessEnabled,
-      });
       onSaved?.();
       onClose();
     } catch (err) {

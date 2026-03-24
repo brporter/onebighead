@@ -10,7 +10,6 @@ vi.mock('../src/api', () => ({
   workspacesApi: {
     update: vi.fn(),
     getPublicAccess: vi.fn(),
-    updatePublicAccess: vi.fn(),
   },
 }));
 
@@ -47,12 +46,6 @@ describe('WorkspaceEditModal', () => {
     vi.mocked(workspacesApi.update).mockResolvedValue({
       workspaceId: 1,
       workspaceName: 'Test Workspace',
-    });
-    vi.mocked(workspacesApi.updatePublicAccess).mockResolvedValue({
-      workspaceId: 1,
-      slug: 'test-workspace',
-      isPublicAccessEnabled: false,
-      publicUrl: null,
     });
   });
 
@@ -275,10 +268,6 @@ describe('WorkspaceEditModal', () => {
 
       await waitFor(() => {
         expect(workspacesApi.update).toHaveBeenCalledWith(1, { name: 'Updated Workspace' });
-        expect(workspacesApi.updatePublicAccess).toHaveBeenCalledWith(1, {
-          slug: 'test-workspace',
-          isPublicAccessEnabled: false,
-        });
       });
     });
 
@@ -318,26 +307,6 @@ describe('WorkspaceEditModal', () => {
       expect(defaultProps.onClose).not.toHaveBeenCalled();
     });
 
-    it('should show error when public access update fails', async () => {
-      vi.mocked(workspacesApi.updatePublicAccess).mockRejectedValue(new Error('Public access update failed'));
-
-      const user = userEvent.setup();
-      render(<WorkspaceEditModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('test-workspace')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByText('Save'));
-
-      await waitFor(() => {
-        expect(screen.getByText('Public access update failed')).toBeInTheDocument();
-      });
-
-      expect(defaultProps.onSaved).not.toHaveBeenCalled();
-      expect(defaultProps.onClose).not.toHaveBeenCalled();
-    });
-
     it('should show error when workspace name is empty', async () => {
       const user = userEvent.setup();
       render(<WorkspaceEditModal {...defaultProps} />);
@@ -370,30 +339,6 @@ describe('WorkspaceEditModal', () => {
       expect(screen.getByText('Saving...')).toBeInTheDocument();
     });
 
-    it('should send null slug when slug is empty', async () => {
-      vi.mocked(workspacesApi.getPublicAccess).mockResolvedValue({
-        workspaceId: 1,
-        slug: null,
-        isPublicAccessEnabled: false,
-        publicUrl: null,
-      });
-
-      const user = userEvent.setup();
-      render(<WorkspaceEditModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('checkbox')).toBeDisabled();
-      });
-
-      await user.click(screen.getByText('Save'));
-
-      await waitFor(() => {
-        expect(workspacesApi.updatePublicAccess).toHaveBeenCalledWith(1, {
-          slug: null,
-          isPublicAccessEnabled: false,
-        });
-      });
-    });
   });
 
   describe('checkbox interaction', () => {

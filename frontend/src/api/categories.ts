@@ -3,14 +3,12 @@
  */
 import { api } from './client';
 import type { Category } from '../utils/types';
-import { Visibility } from '../utils/types';
 
 export interface CreateCategoryRequest {
   collectionId: number;
   name: string;
   description?: string;
   parentCategoryId?: number | null;
-  visibility?: Visibility;
   itemTemplateIds?: number[];
 }
 
@@ -18,7 +16,6 @@ export interface UpdateCategoryRequest {
   name: string;
   description?: string;
   parentCategoryId?: number | null;
-  visibility?: Visibility;
   itemTemplateIds?: number[];
 }
 

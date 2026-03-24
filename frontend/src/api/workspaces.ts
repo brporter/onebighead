@@ -104,18 +104,6 @@ export interface RestoreWorkspaceResponse {
   name: string;
 }
 
-export interface UpdatePublicAccessRequest {
-  slug: string | null;
-  isPublicAccessEnabled: boolean;
-}
-
-export interface UpdatePublicAccessResponse {
-  workspaceId: number;
-  slug: string | null;
-  isPublicAccessEnabled: boolean;
-  publicUrl: string | null;
-}
-
 export interface CheckSlugResponse {
   isAvailable: boolean;
 }
@@ -204,20 +192,6 @@ export const workspacesApi = {
    */
   restoreWorkspace(workspaceId: number): Promise<RestoreWorkspaceResponse> {
     return api.post<RestoreWorkspaceResponse>(`/workspaces/${workspaceId}/restore`);
-  },
-
-  /**
-   * Get public access settings for a workspace (requires admin)
-   */
-  getPublicAccess(workspaceId: number): Promise<UpdatePublicAccessResponse> {
-    return api.get<UpdatePublicAccessResponse>(`/workspaces/${workspaceId}/public-access`);
-  },
-
-  /**
-   * Update public access settings for a workspace (requires admin)
-   */
-  updatePublicAccess(workspaceId: number, request: UpdatePublicAccessRequest): Promise<UpdatePublicAccessResponse> {
-    return api.put<UpdatePublicAccessResponse>(`/workspaces/${workspaceId}/public-access`, request);
   },
 
   /**

@@ -97,15 +97,6 @@ exports[`CategoryEditorModal > snapshots > should match snapshot for edit catego
         <div
           class="modal__field"
         >
-          <div
-            data-testid="visibility-toggle"
-          >
-            Visibility
-          </div>
-        </div>
-        <div
-          class="modal__field"
-        >
           <label
             class="modal__label"
           >
@@ -251,15 +242,6 @@ exports[`CategoryEditorModal > snapshots > should match snapshot for new categor
               Child of Category 1
             </option>
           </select>
-        </div>
-        <div
-          class="modal__field"
-        >
-          <div
-            data-testid="visibility-toggle"
-          >
-            Visibility
-          </div>
         </div>
         <div
           class="modal__field"

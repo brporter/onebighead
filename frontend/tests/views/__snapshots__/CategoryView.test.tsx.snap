@@ -218,47 +218,6 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
               <div
                 class="modal__field"
               >
-                <div
-                  class="visibility-toggle"
-                >
-                  <label
-                    class="visibility-label"
-                  >
-                    Visibility
-                  </label>
-                  <div
-                    class="visibility-options"
-                  >
-                    <button
-                      class="visibility-option "
-                      title="Mark as public"
-                      type="button"
-                    >
-                      Public
-                    </button>
-                    <button
-                      class="visibility-option selected"
-                      title="Mark as private"
-                      type="button"
-                    >
-                      Private
-                    </button>
-                  </div>
-                  <div
-                    class="visibility-effective"
-                  >
-                    Effective: 
-                    <span
-                      class="public"
-                    >
-                      Public
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="modal__field"
-              >
                 <label
                   class="modal__label"
                 >

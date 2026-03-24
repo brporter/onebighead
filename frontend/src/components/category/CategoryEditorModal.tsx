@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Category } from '../../utils/types';
-import { Visibility } from '../../utils/types';
 import { useData } from '../../contexts/useData';
-import VisibilityToggle from '../common/VisibilityToggle';
 import CategoryTemplateSelector from './CategoryTemplateSelector';
 
 interface CategoryEditorModalProps {
@@ -19,7 +17,6 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [parentCategoryId, setParentCategoryId] = useState<number | null>(null);
-  const [visibility, setVisibility] = useState<Visibility>(Visibility.Private);
   const [itemTemplateIds, setItemTemplateIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,7 +56,6 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
       setName(category?.name ?? '');
       setDescription(category?.description ?? '');
       setParentCategoryId(category?.parentCategoryId ?? null);
-      setVisibility(category?.visibility ?? Visibility.Private);
       setItemTemplateIds(category?.itemTemplateIds ?? []);
       setError(null);
     }
@@ -86,14 +82,6 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
     findDescendants(category!.categoryId);
 
     return categories.filter((c) => !excludeIds.has(c.categoryId) && !c.isSystem);
-  };
-
-  // Determine if parent allows public override
-  const getParentIsPublic = (): boolean => {
-    if (!currentCollection?.effectiveIsPublic) return false;
-    if (parentCategoryId === null) return true;
-    const parent = categories.find((c) => c.categoryId === parentCategoryId);
-    return parent?.effectiveIsPublic ?? true;
   };
 
   const validateName = (value: string): string | null => {
@@ -130,7 +118,6 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
           name: name.trim(),
           description: description.trim(),
           parentCategoryId,
-          visibility,
           itemTemplateIds,
         });
       } else {
@@ -138,7 +125,6 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
           name: name.trim(),
           description: description.trim(),
           parentCategoryId,
-          visibility,
           itemTemplateIds,
         });
       }
@@ -274,16 +260,6 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div className="modal__field">
-              <VisibilityToggle
-                visibility={visibility}
-                effectiveIsPublic={category?.effectiveIsPublic ?? (currentCollection?.effectiveIsPublic ?? false)}
-                parentIsPublic={getParentIsPublic()}
-                onChange={(value) => setVisibility(value)}
-                label="Visibility"
-              />
             </div>
 
             {currentCollection && (

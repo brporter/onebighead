@@ -44,9 +44,9 @@ export interface DataContextValue {
   collectionsLoading: boolean;
   collectionsError: string | null;
   loadCollections: () => Promise<void>;
-  addCollection: (name: string, description?: string, heroImageUrl?: string, visibility?: Visibility) => Promise<Collection>;
+  addCollection: (name: string, description?: string, heroImageUrl?: string) => Promise<Collection>;
   setupCollection: (request: SetupCollectionRequest) => Promise<Collection>;
-  updateCollection: (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string; visibility?: Visibility }) => Promise<void>;
+  updateCollection: (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string }) => Promise<void>;
   deleteCollection: (collectionId: number) => Promise<void>;
   
   // Collection themes
@@ -60,8 +60,8 @@ export interface DataContextValue {
   categoriesLoading: boolean;
   categoriesError: string | null;
   loadCategoriesForCollection: (collectionId: number) => Promise<void>;
-  addCategory: (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; visibility?: Visibility; itemTemplateIds?: number[] }) => Promise<number>;
-  updateCategory: (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; visibility?: Visibility; itemTemplateIds?: number[] }) => Promise<void>;
+  addCategory: (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; itemTemplateIds?: number[] }) => Promise<number>;
+  updateCategory: (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; itemTemplateIds?: number[] }) => Promise<void>;
   deleteCategory: (categoryId: number) => Promise<void>;
   getCategoryTemplates: (categoryId: number) => Promise<number[]>;
   
@@ -293,8 +293,8 @@ export function DataProvider({ children }: DataProviderProps) {
     return loadPromise;
   }, []);
 
-  const addCollection = useCallback(async (name: string, description?: string, heroImageUrl?: string, visibility?: Visibility): Promise<Collection> => {
-    const created = await collectionsApi.create({ name, description, heroImageUrl, visibility });
+  const addCollection = useCallback(async (name: string, description?: string, heroImageUrl?: string): Promise<Collection> => {
+    const created = await collectionsApi.create({ name, description, heroImageUrl });
     setCollections((prev) => [...prev, created]);
     return created;
   }, []);
@@ -305,7 +305,7 @@ export function DataProvider({ children }: DataProviderProps) {
     return created;
   }, []);
 
-  const updateCollection = useCallback(async (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string; visibility?: Visibility }): Promise<void> => {
+  const updateCollection = useCallback(async (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string }): Promise<void> => {
     const result = await collectionsApi.update(collectionId, updates);
     setCollections((prev) =>
       prev.map((col) => (col.collectionId === collectionId ? result : col))
@@ -348,13 +348,13 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, []);
 
-  const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; visibility?: Visibility; itemTemplateIds?: number[] }): Promise<number> => {
+  const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; itemTemplateIds?: number[] }): Promise<number> => {
     const created = await categoriesApi.create(category);
     setCategories((prev) => [...prev, created]);
     return created.categoryId;
   }, []);
 
-  const updateCategory = useCallback(async (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; visibility?: Visibility; itemTemplateIds?: number[] }): Promise<void> => {
+  const updateCategory = useCallback(async (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; itemTemplateIds?: number[] }): Promise<void> => {
     const result = await categoriesApi.update(categoryId, updates);
     setCategories((prev) =>
       prev.map((cat) => (cat.categoryId === categoryId ? result : cat))

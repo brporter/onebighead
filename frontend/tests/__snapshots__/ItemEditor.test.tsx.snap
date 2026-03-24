@@ -490,53 +490,6 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
           + Add Image
         </button>
       </div>
-      <div
-        class="detail__field"
-      >
-        <div
-          class="visibility-toggle"
-        >
-          <label
-            class="visibility-label"
-          >
-            Visibility
-          </label>
-          <div
-            class="visibility-options"
-          >
-            <button
-              class="visibility-option "
-              disabled=""
-              title="Mark as public"
-              type="button"
-            >
-              Public
-            </button>
-            <button
-              class="visibility-option selected"
-              title="Mark as private"
-              type="button"
-            >
-              Private
-            </button>
-          </div>
-          <div
-            class="visibility-note"
-          >
-            Parent is private; cannot override to public
-          </div>
-          <div
-            class="visibility-effective"
-          >
-            Effective: 
-            <span
-              class="public"
-            >
-              Public
-            </span>
-          </div>
-        </div>
-      </div>
       <fieldset
         class="detail__fieldset"
       >
@@ -764,53 +717,6 @@ exports[`ItemEditor > snapshots > should render new item mode 1`] = `
         >
           + Add Image
         </button>
-      </div>
-      <div
-        class="detail__field"
-      >
-        <div
-          class="visibility-toggle"
-        >
-          <label
-            class="visibility-label"
-          >
-            Visibility
-          </label>
-          <div
-            class="visibility-options"
-          >
-            <button
-              class="visibility-option "
-              disabled=""
-              title="Mark as public"
-              type="button"
-            >
-              Public
-            </button>
-            <button
-              class="visibility-option selected"
-              title="Mark as private"
-              type="button"
-            >
-              Private
-            </button>
-          </div>
-          <div
-            class="visibility-note"
-          >
-            Parent is private; cannot override to public
-          </div>
-          <div
-            class="visibility-effective"
-          >
-            Effective: 
-            <span
-              class="private"
-            >
-              Private
-            </span>
-          </div>
-        </div>
       </div>
       <fieldset
         class="detail__fieldset"
@@ -1040,53 +946,6 @@ exports[`ItemEditor > user flag selector > should render snapshot for new item w
         >
           + Add Image
         </button>
-      </div>
-      <div
-        class="detail__field"
-      >
-        <div
-          class="visibility-toggle"
-        >
-          <label
-            class="visibility-label"
-          >
-            Visibility
-          </label>
-          <div
-            class="visibility-options"
-          >
-            <button
-              class="visibility-option "
-              disabled=""
-              title="Mark as public"
-              type="button"
-            >
-              Public
-            </button>
-            <button
-              class="visibility-option selected"
-              title="Mark as private"
-              type="button"
-            >
-              Private
-            </button>
-          </div>
-          <div
-            class="visibility-note"
-          >
-            Parent is private; cannot override to public
-          </div>
-          <div
-            class="visibility-effective"
-          >
-            Effective: 
-            <span
-              class="private"
-            >
-              Private
-            </span>
-          </div>
-        </div>
       </div>
       <fieldset
         class="detail__fieldset"
@@ -1656,53 +1515,6 @@ exports[`ItemEditor > user flag selector > should render snapshot with Have flag
           + Add Image
         </button>
       </div>
-      <div
-        class="detail__field"
-      >
-        <div
-          class="visibility-toggle"
-        >
-          <label
-            class="visibility-label"
-          >
-            Visibility
-          </label>
-          <div
-            class="visibility-options"
-          >
-            <button
-              class="visibility-option "
-              disabled=""
-              title="Mark as public"
-              type="button"
-            >
-              Public
-            </button>
-            <button
-              class="visibility-option selected"
-              title="Mark as private"
-              type="button"
-            >
-              Private
-            </button>
-          </div>
-          <div
-            class="visibility-note"
-          >
-            Parent is private; cannot override to public
-          </div>
-          <div
-            class="visibility-effective"
-          >
-            Effective: 
-            <span
-              class="public"
-            >
-              Public
-            </span>
-          </div>
-        </div>
-      </div>
       <fieldset
         class="detail__fieldset"
       >
@@ -2270,53 +2082,6 @@ exports[`ItemEditor > user flag selector > should render snapshot with Want flag
           + Add Image
         </button>
       </div>
-      <div
-        class="detail__field"
-      >
-        <div
-          class="visibility-toggle"
-        >
-          <label
-            class="visibility-label"
-          >
-            Visibility
-          </label>
-          <div
-            class="visibility-options"
-          >
-            <button
-              class="visibility-option "
-              disabled=""
-              title="Mark as public"
-              type="button"
-            >
-              Public
-            </button>
-            <button
-              class="visibility-option selected"
-              title="Mark as private"
-              type="button"
-            >
-              Private
-            </button>
-          </div>
-          <div
-            class="visibility-note"
-          >
-            Parent is private; cannot override to public
-          </div>
-          <div
-            class="visibility-effective"
-          >
-            Effective: 
-            <span
-              class="public"
-            >
-              Public
-            </span>
-          </div>
-        </div>
-      </div>
       <fieldset
         class="detail__fieldset"
       >
@@ -2883,53 +2648,6 @@ exports[`ItemEditor > user flag selector > should render snapshot with user flag
         >
           + Add Image
         </button>
-      </div>
-      <div
-        class="detail__field"
-      >
-        <div
-          class="visibility-toggle"
-        >
-          <label
-            class="visibility-label"
-          >
-            Visibility
-          </label>
-          <div
-            class="visibility-options"
-          >
-            <button
-              class="visibility-option "
-              disabled=""
-              title="Mark as public"
-              type="button"
-            >
-              Public
-            </button>
-            <button
-              class="visibility-option selected"
-              title="Mark as private"
-              type="button"
-            >
-              Private
-            </button>
-          </div>
-          <div
-            class="visibility-note"
-          >
-            Parent is private; cannot override to public
-          </div>
-          <div
-            class="visibility-effective"
-          >
-            Effective: 
-            <span
-              class="public"
-            >
-              Public
-            </span>
-          </div>
-        </div>
       </div>
       <fieldset
         class="detail__fieldset"

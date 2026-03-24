@@ -3,20 +3,17 @@
  */
 import { api } from './client';
 import type { Collection, SetupCollectionRequest } from '../utils/types';
-import { Visibility } from '../utils/types';
 
 export interface CreateCollectionRequest {
   name: string;
   description?: string;
   heroImageUrl?: string;
-  visibility?: Visibility;
 }
 
 export interface UpdateCollectionRequest {
   name: string;
   description?: string;
   heroImageUrl?: string;
-  visibility?: Visibility;
 }
 
 export interface CollectionItemHighlightResponse {
@@ -57,7 +54,6 @@ export const collectionsApi = {
       name: request.name,
       description: request.description,
       heroImageUrl: request.heroImageUrl,
-      visibility: request.visibility ?? Visibility.Private,
     });
   },
 

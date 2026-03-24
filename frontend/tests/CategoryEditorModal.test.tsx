@@ -98,13 +98,6 @@ vi.mock('../src/components/category/CategoryTemplateSelector', () => ({
   ),
 }));
 
-// Mock VisibilityToggle to simplify tests
-vi.mock('../src/components/common/VisibilityToggle', () => ({
-  default: ({ label }: { label?: string }) => (
-    <div data-testid="visibility-toggle">{label ?? 'Visibility'}</div>
-  ),
-}));
-
 describe('CategoryEditorModal', () => {
   const defaultProps = {
     category: null as Category | null,
@@ -350,7 +343,6 @@ describe('CategoryEditorModal', () => {
           name: 'New Category',
           description: 'New Description',
           parentCategoryId: null,
-          visibility: Visibility.Private,
           itemTemplateIds: [],
         });
       });
@@ -427,7 +419,6 @@ describe('CategoryEditorModal', () => {
           name: 'Updated Category',
           description: 'Description 1',
           parentCategoryId: null,
-          visibility: Visibility.Private,
           itemTemplateIds: [],
         });
       });
@@ -688,14 +679,6 @@ describe('CategoryEditorModal', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
       });
-    });
-  });
-
-  describe('visibility toggle', () => {
-    it('should render visibility toggle component', () => {
-      render(<CategoryEditorModal {...defaultProps} category={null} />);
-
-      expect(screen.getByTestId('visibility-toggle')).toBeInTheDocument();
     });
   });
 
