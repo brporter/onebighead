@@ -519,6 +519,10 @@ $RECYCLE.BIN/
 *.db-shm
 *.db-wal
 
+# Superpowers runtime artifacts
+.superpowers/**/.server.pid
+.superpowers/**/.server-stopped
+
 # EF Core migration bundle (build artifact)
 efbundle
 efbundle.exe

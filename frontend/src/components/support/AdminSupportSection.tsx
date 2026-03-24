@@ -179,10 +179,9 @@ export function AdminSupportSection() {
           <h3 className="support-detail__subject">{selectedRequest.subject}</h3>
           <div className="support-detail__meta">
             <select
-              className="systemAdmin__input"
+              className="systemAdmin__input systemAdmin__statusSelect"
               value={selectedRequest.status}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="systemAdmin__input systemAdmin__statusSelect"
             >
               <option value="Open">Open</option>
               <option value="InProgress">In Progress</option>

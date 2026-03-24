@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import type { Category } from '../../utils/types';
 import { useData } from '../../contexts/useData';
 import { getAccentColor } from '../../utils/accentColors';
-import { buildDrillPath, getVisibleCategories, getBreadcrumb, getChildCount } from '../../utils/categoryNavUtils';
+import { buildDrillPath, getVisibleCategories, getBreadcrumb } from '../../utils/categoryNavUtils';
 import CategoryEditorModal from './CategoryEditorModal';
 import './CategoryNav.css';
 
@@ -78,18 +78,32 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
     return roots.findIndex(c => c.categoryId === rootId);
   }, [isDrilled, drillPath, visibleCategories]);
 
-  function getRootIndex(category: Category): number {
-    // Find root ancestor
+  // Precompute child counts and root color indices for O(1) lookups
+  const childCountMap = useMemo(() => {
+    const map = new Map<number, number>();
+    visibleCategories.forEach((cat) => {
+      if (cat.parentCategoryId != null) {
+        map.set(cat.parentCategoryId, (map.get(cat.parentCategoryId) ?? 0) + 1);
+      }
+    });
+    return map;
+  }, [visibleCategories]);
+
+  const rootIndexMap = useMemo(() => {
     const byId = new Map(visibleCategories.map(c => [c.categoryId, c]));
-    let current = category;
-    while (current.parentCategoryId !== null) {
-      const parent = byId.get(current.parentCategoryId);
-      if (!parent) break;
-      current = parent;
-    }
     const roots = visibleCategories.filter(c => c.parentCategoryId === null);
-    return roots.findIndex(c => c.categoryId === current.categoryId);
-  }
+    const map = new Map<number, number>();
+    visibleCategories.forEach((cat) => {
+      let current = cat;
+      while (current.parentCategoryId !== null) {
+        const parent = byId.get(current.parentCategoryId);
+        if (!parent) break;
+        current = parent;
+      }
+      map.set(cat.categoryId, roots.findIndex(c => c.categoryId === current.categoryId));
+    });
+    return map;
+  }, [visibleCategories]);
 
   function handleEdit(category: Category) {
     setEditingCategory(category);
@@ -215,7 +229,7 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
             onClick={() => onSelect(currentDrilledCategory.categoryId)}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(currentDrilledCategory.categoryId); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onSelect(currentDrilledCategory.categoryId); } }}
           >
             <span
               className="categoryNav__dot"
@@ -229,8 +243,8 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
         )}
 
         {displayedCategories.map((cat) => {
-          const colorIdx = isDrilled ? (rootColorIndex >= 0 ? rootColorIndex : 0) : getRootIndex(cat);
-          const childCount = getChildCount(visibleCategories, cat.categoryId);
+          const colorIdx = isDrilled ? (rootColorIndex >= 0 ? rootColorIndex : 0) : (rootIndexMap.get(cat.categoryId) ?? 0);
+          const childCount = childCountMap.get(cat.categoryId) ?? 0;
           const hasChildren = childCount > 0;
           const isActive = cat.categoryId === selectedCategoryId;
 
@@ -241,7 +255,7 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
               onClick={() => onSelect(cat.categoryId)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(cat.categoryId); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onSelect(cat.categoryId); } }}
             >
               <span
                 className="categoryNav__dot"

@@ -185,14 +185,13 @@ function CategoryView() {
     return <Loading message="Collection not found" />;
   }
 
-  // Show error state if categories or items failed to load
-  if (categoriesError || itemsError) {
+  // Show error state if categories failed to load (blocks entire layout)
+  if (categoriesError) {
     return (
       <div className="app__layout">
         <main className="app__content">
           <div className="app__error">
-            {categoriesError && <p>Failed to load categories: {categoriesError}</p>}
-            {itemsError && <p>Failed to load items: {itemsError}</p>}
+            <p>Failed to load categories: {categoriesError}</p>
           </div>
         </main>
       </div>
@@ -306,7 +305,11 @@ function CategoryView() {
               onChange={setSubcategoryFilter}
             />
           )}
-          {itemsLoading && filteredItems.length === 0 ? (
+          {itemsError ? (
+            <div className="app__error">
+              <p>Failed to load items: {itemsError}</p>
+            </div>
+          ) : itemsLoading && filteredItems.length === 0 ? (
             <Loading message="Loading items..." />
           ) : (
             <ItemList

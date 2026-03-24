@@ -195,7 +195,9 @@
   transition: opacity var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.categoryNav__row:hover .categoryNav__edit {
+.categoryNav__row:hover .categoryNav__edit,
+.categoryNav__row:focus-within .categoryNav__edit,
+.categoryNav__edit:focus {
   opacity: 1;
 }
 

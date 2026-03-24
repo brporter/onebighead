@@ -57,9 +57,9 @@ function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageInde
 
       <div className="list__masonry">
         {pageItems.length ? (
-          pageItems.map((item) => (
+          pageItems.map((item, index) => (
             <ItemCard
-              key={item.id ?? `new-${item.name}`}
+              key={item.id ?? `new-${index}-${item.name}`}
               item={item}
               accentColor={getItemAccentColor(item)}
               isSelected={item.id === selectedId}

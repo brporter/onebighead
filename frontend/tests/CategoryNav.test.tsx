@@ -297,6 +297,25 @@ describe('CategoryNav', () => {
       expect(screen.getByLabelText('Edit Rangefinders')).toBeInTheDocument();
       expect(screen.getByLabelText('Edit SLR Cameras')).toBeInTheDocument();
     });
+
+    it('clicking edit button opens CategoryEditorModal with that category', async () => {
+      const user = userEvent.setup();
+      render(
+        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
+      );
+      await user.click(screen.getByLabelText('Edit Rangefinders'));
+      // Modal should open - look for the dialog
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('clicking add button opens CategoryEditorModal for new category', async () => {
+      const user = userEvent.setup();
+      render(
+        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
+      );
+      await user.click(screen.getByLabelText('Add category'));
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
   });
 
   describe('system category filtering', () => {
