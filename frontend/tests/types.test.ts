@@ -16,7 +16,7 @@ describe('types', () => {
         description: 'Test description',
         properties: [],
         images: [],
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         userFlag: UserFlag.Have,
       };
@@ -37,7 +37,7 @@ describe('types', () => {
         description: '',
         properties: [],
         images: [],
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         userFlag: UserFlag.Have,
       };
@@ -57,7 +57,7 @@ describe('types', () => {
         description: '',
         properties: [],
         images: [],
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         userFlag: UserFlag.Have,
       };
@@ -102,7 +102,7 @@ describe('types', () => {
         description: 'Test description',
         parentCategoryId: null,
         isSystem: false,
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         itemTemplateIds: [],
       };
@@ -120,7 +120,7 @@ describe('types', () => {
         description: 'Child description',
         parentCategoryId: 1,
         isSystem: false,
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         itemTemplateIds: [],
       };
@@ -139,7 +139,7 @@ describe('types', () => {
         description: 'Parent desc',
         parentCategoryId: null,
         isSystem: false,
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         itemTemplateIds: [],
         children: [
@@ -151,7 +151,7 @@ describe('types', () => {
             description: 'Child desc',
             parentCategoryId: 1,
             isSystem: false,
-            visibility: Visibility.Default,
+            visibility: Visibility.Private,
             effectiveIsPublic: false,
             itemTemplateIds: [],
             children: [],

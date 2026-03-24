@@ -18,10 +18,9 @@ describe('VisibilityToggle', () => {
 
       expect(screen.getByTitle('Mark as public')).toBeInTheDocument();
       expect(screen.getByTitle('Mark as private')).toBeInTheDocument();
-      expect(screen.queryByText(/Inherit/)).not.toBeInTheDocument();
     });
 
-    it('should show Public selected when effectiveIsPublic is true', () => {
+    it('should show Public selected when visibility is Public', () => {
       render(
         <VisibilityToggle
           visibility={Visibility.Public}
@@ -36,7 +35,7 @@ describe('VisibilityToggle', () => {
       expect(publicBtn).toHaveClass('selected');
     });
 
-    it('should show Private selected when effectiveIsPublic is false', () => {
+    it('should show Private selected when visibility is Private', () => {
       render(
         <VisibilityToggle
           visibility={Visibility.Private}
@@ -85,33 +84,18 @@ describe('VisibilityToggle', () => {
   });
 
   describe('Category/Item mode (isCollection=false)', () => {
-    it('should render Inherit, Public, and Private buttons', () => {
+    it('should render Public and Private buttons', () => {
       render(
         <VisibilityToggle
-          visibility={Visibility.Default}
-          effectiveIsPublic={true}
+          visibility={Visibility.Private}
+          effectiveIsPublic={false}
           parentIsPublic={true}
           onChange={() => {}}
         />
       );
 
-      expect(screen.getByText(/Inherit/)).toBeInTheDocument();
       expect(screen.getByTitle('Mark as public')).toBeInTheDocument();
       expect(screen.getByTitle('Mark as private')).toBeInTheDocument();
-    });
-
-    it('should show Inherit selected when visibility is Default', () => {
-      render(
-        <VisibilityToggle
-          visibility={Visibility.Default}
-          effectiveIsPublic={true}
-          parentIsPublic={true}
-          onChange={() => {}}
-        />
-      );
-
-      const inheritBtn = screen.getByText(/Inherit \(Public\)/);
-      expect(inheritBtn).toHaveClass('selected');
     });
 
     it('should show Public selected when visibility is Public', () => {
@@ -142,27 +126,12 @@ describe('VisibilityToggle', () => {
       expect(privateBtn).toHaveClass('selected');
     });
 
-    it('should call onChange with Visibility.Default when Inherit is clicked', () => {
-      const onChange = vi.fn();
-      render(
-        <VisibilityToggle
-          visibility={Visibility.Public}
-          effectiveIsPublic={true}
-          parentIsPublic={true}
-          onChange={onChange}
-        />
-      );
-
-      fireEvent.click(screen.getByText(/Inherit \(Public\)/));
-      expect(onChange).toHaveBeenCalledWith(Visibility.Default);
-    });
-
     it('should call onChange with Visibility.Public when Public is clicked', () => {
       const onChange = vi.fn();
       render(
         <VisibilityToggle
-          visibility={Visibility.Default}
-          effectiveIsPublic={true}
+          visibility={Visibility.Private}
+          effectiveIsPublic={false}
           parentIsPublic={true}
           onChange={onChange}
         />
@@ -176,7 +145,7 @@ describe('VisibilityToggle', () => {
       const onChange = vi.fn();
       render(
         <VisibilityToggle
-          visibility={Visibility.Default}
+          visibility={Visibility.Public}
           effectiveIsPublic={true}
           parentIsPublic={true}
           onChange={onChange}
@@ -192,7 +161,7 @@ describe('VisibilityToggle', () => {
     it('should disable Public button when parent is private', () => {
       render(
         <VisibilityToggle
-          visibility={Visibility.Default}
+          visibility={Visibility.Private}
           effectiveIsPublic={false}
           parentIsPublic={false}
           onChange={() => {}}
@@ -203,39 +172,10 @@ describe('VisibilityToggle', () => {
       expect(publicBtn).toBeDisabled();
     });
 
-    it('should enable Inherit button even when parent is private', () => {
-      render(
-        <VisibilityToggle
-          visibility={Visibility.Private}
-          effectiveIsPublic={false}
-          parentIsPublic={false}
-          onChange={() => {}}
-        />
-      );
-
-      const inheritBtn = screen.getByText(/Inherit \(Private\)/);
-      expect(inheritBtn).toBeEnabled();
-    });
-
-    it('should allow switching from Private to Inherit when parent is private', () => {
-      const onChange = vi.fn();
-      render(
-        <VisibilityToggle
-          visibility={Visibility.Private}
-          effectiveIsPublic={false}
-          parentIsPublic={false}
-          onChange={onChange}
-        />
-      );
-
-      fireEvent.click(screen.getByText(/Inherit \(Private\)/));
-      expect(onChange).toHaveBeenCalledWith(Visibility.Default);
-    });
-
     it('should show note when parent is private', () => {
       render(
         <VisibilityToggle
-          visibility={Visibility.Default}
+          visibility={Visibility.Private}
           effectiveIsPublic={false}
           parentIsPublic={false}
           onChange={() => {}}
@@ -248,8 +188,8 @@ describe('VisibilityToggle', () => {
     it('should not show note when parent is public', () => {
       render(
         <VisibilityToggle
-          visibility={Visibility.Default}
-          effectiveIsPublic={true}
+          visibility={Visibility.Private}
+          effectiveIsPublic={false}
           parentIsPublic={true}
           onChange={() => {}}
         />
@@ -258,30 +198,18 @@ describe('VisibilityToggle', () => {
       expect(screen.queryByText(/cannot override to public/i)).not.toBeInTheDocument();
     });
 
-    it('should show inherited status in Inherit button', () => {
+    it('should not show note for collection mode even when parent is private', () => {
       render(
         <VisibilityToggle
-          visibility={Visibility.Default}
-          effectiveIsPublic={true}
-          parentIsPublic={true}
-          onChange={() => {}}
-        />
-      );
-
-      expect(screen.getByText(/Inherit \(Public\)/)).toBeInTheDocument();
-    });
-
-    it('should show Private in Inherit button when parent is private', () => {
-      render(
-        <VisibilityToggle
-          visibility={Visibility.Default}
+          visibility={Visibility.Private}
           effectiveIsPublic={false}
           parentIsPublic={false}
           onChange={() => {}}
+          isCollection={true}
         />
       );
 
-      expect(screen.getByText(/Inherit \(Private\)/)).toBeInTheDocument();
+      expect(screen.queryByText(/cannot override to public/i)).not.toBeInTheDocument();
     });
   });
 
@@ -319,8 +247,8 @@ describe('VisibilityToggle', () => {
     it('should display custom label', () => {
       render(
         <VisibilityToggle
-          visibility={Visibility.Default}
-          effectiveIsPublic={true}
+          visibility={Visibility.Private}
+          effectiveIsPublic={false}
           parentIsPublic={true}
           onChange={() => {}}
           label="Collection Visibility"
@@ -333,8 +261,8 @@ describe('VisibilityToggle', () => {
     it('should display default "Visibility" label when not provided', () => {
       render(
         <VisibilityToggle
-          visibility={Visibility.Default}
-          effectiveIsPublic={true}
+          visibility={Visibility.Private}
+          effectiveIsPublic={false}
           parentIsPublic={true}
           onChange={() => {}}
         />
@@ -358,11 +286,11 @@ describe('VisibilityToggle', () => {
       expect(container).toMatchSnapshot();
     });
 
-    it('should match snapshot for item mode with inherit', () => {
+    it('should match snapshot for item mode (private)', () => {
       const { container } = render(
         <VisibilityToggle
-          visibility={Visibility.Default}
-          effectiveIsPublic={true}
+          visibility={Visibility.Private}
+          effectiveIsPublic={false}
           parentIsPublic={true}
           onChange={() => {}}
         />

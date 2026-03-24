@@ -23,13 +23,48 @@ export enum UserFlag {
 
 /**
  * Visibility setting for collections, categories, and items.
+ * Two-state model: items are either Private or Public.
+ * Publishing is done via explicit publish/unpublish actions.
  *
  * Note: Uses string values to match backend JsonStringEnumConverter serialization.
  */
 export enum Visibility {
-  Default = "Default",  // Inherit from parent
-  Private = "Private",  // Explicitly private
-  Public = "Public",    // Explicitly public (if parent allows)
+  Private = "Private",
+  Public = "Public",
+}
+
+export interface PublishedEntityInfo {
+  type: string;
+  id: number;
+  name: string;
+}
+
+export interface PublishResponse {
+  published: PublishedEntityInfo;
+  promoted: PublishedEntityInfo[];
+  childrenPublished: number;
+  requiresSlugSetup: boolean;
+}
+
+export interface BulkPublishResponse {
+  publishedCount: number;
+  promoted: PublishedEntityInfo[];
+  requiresSlugSetup: boolean;
+}
+
+export interface UnpublishResponse {
+  unpublished: PublishedEntityInfo;
+  affectedPublicItems: number;
+  affectedPublicCategories: number;
+}
+
+export interface BulkUnpublishResponse {
+  unpublishedCount: number;
+}
+
+export interface UnpublishPreviewResponse {
+  affectedPublicItems: number;
+  affectedPublicCategories: number;
 }
 
 /**

@@ -271,15 +271,6 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
                 class="visibility-options"
               >
                 <button
-                  class="visibility-option selected"
-                  title="Inherit from parent (Private)"
-                  type="button"
-                >
-                  Inherit (
-                  Private
-                  )
-                </button>
-                <button
                   class="visibility-option "
                   disabled=""
                   title="Mark as public"
@@ -288,7 +279,7 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
                   Public
                 </button>
                 <button
-                  class="visibility-option "
+                  class="visibility-option selected"
                   title="Mark as private"
                   type="button"
                 >
@@ -556,15 +547,6 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
                 class="visibility-options"
               >
                 <button
-                  class="visibility-option selected"
-                  title="Inherit from parent (Private)"
-                  type="button"
-                >
-                  Inherit (
-                  Private
-                  )
-                </button>
-                <button
                   class="visibility-option "
                   disabled=""
                   title="Mark as public"
@@ -573,7 +555,7 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
                   Public
                 </button>
                 <button
-                  class="visibility-option "
+                  class="visibility-option selected"
                   title="Mark as private"
                   type="button"
                 >

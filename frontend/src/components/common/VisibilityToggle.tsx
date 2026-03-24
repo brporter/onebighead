@@ -15,11 +15,8 @@ export interface VisibilityToggleProps {
   isCollection?: boolean;
 }
 
-function visibilityToLocal(visibility: Visibility, isCollection: boolean): 'inherit' | 'public' | 'private' {
-  if (isCollection) {
-    return visibility === Visibility.Public ? 'public' : 'private';
-  }
-  return visibility === Visibility.Default ? 'inherit' : visibility === Visibility.Public ? 'public' : 'private';
+function visibilityToLocal(visibility: Visibility): 'public' | 'private' {
+  return visibility === Visibility.Public ? 'public' : 'private';
 }
 
 export default function VisibilityToggle({
@@ -31,37 +28,18 @@ export default function VisibilityToggle({
   isCollection = false,
 }: VisibilityToggleProps) {
   // Derive local value directly from visibility prop - no local state needed
-  const localValue = visibilityToLocal(visibility, isCollection);
+  const localValue = visibilityToLocal(visibility);
 
-  const handleChange = (newValue: 'inherit' | 'public' | 'private') => {
-    if (isCollection) {
-      onChange(newValue === 'public' ? Visibility.Public : Visibility.Private);
-    } else {
-      if (newValue === 'inherit') {
-        onChange(Visibility.Default);
-      } else {
-        onChange(newValue === 'public' ? Visibility.Public : Visibility.Private);
-      }
-    }
+  const handleChange = (newValue: 'public' | 'private') => {
+    onChange(newValue === 'public' ? Visibility.Public : Visibility.Private);
   };
 
   const canSetPublic = parentIsPublic || isCollection;
-  const inheritedText = parentIsPublic ? 'Public' : 'Private';
 
   return (
     <div className="visibility-toggle">
       <label className="visibility-label">{label}</label>
       <div className="visibility-options">
-        {!isCollection && (
-          <button
-            type="button"
-            className={`visibility-option ${localValue === 'inherit' ? 'selected' : ''}`}
-            onClick={() => handleChange('inherit')}
-            title={`Inherit from parent (${inheritedText})`}
-          >
-            Inherit ({inheritedText})
-          </button>
-        )}
         <button
           type="button"
           className={`visibility-option ${localValue === 'public' ? 'selected' : ''}`}

@@ -505,15 +505,6 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
             class="visibility-options"
           >
             <button
-              class="visibility-option selected"
-              title="Inherit from parent (Private)"
-              type="button"
-            >
-              Inherit (
-              Private
-              )
-            </button>
-            <button
               class="visibility-option "
               disabled=""
               title="Mark as public"
@@ -522,7 +513,7 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
               Public
             </button>
             <button
-              class="visibility-option "
+              class="visibility-option selected"
               title="Mark as private"
               type="button"
             >
@@ -789,15 +780,6 @@ exports[`ItemEditor > snapshots > should render new item mode 1`] = `
             class="visibility-options"
           >
             <button
-              class="visibility-option selected"
-              title="Inherit from parent (Private)"
-              type="button"
-            >
-              Inherit (
-              Private
-              )
-            </button>
-            <button
               class="visibility-option "
               disabled=""
               title="Mark as public"
@@ -806,7 +788,7 @@ exports[`ItemEditor > snapshots > should render new item mode 1`] = `
               Public
             </button>
             <button
-              class="visibility-option "
+              class="visibility-option selected"
               title="Mark as private"
               type="button"
             >
@@ -1074,15 +1056,6 @@ exports[`ItemEditor > user flag selector > should render snapshot for new item w
             class="visibility-options"
           >
             <button
-              class="visibility-option selected"
-              title="Inherit from parent (Private)"
-              type="button"
-            >
-              Inherit (
-              Private
-              )
-            </button>
-            <button
               class="visibility-option "
               disabled=""
               title="Mark as public"
@@ -1091,7 +1064,7 @@ exports[`ItemEditor > user flag selector > should render snapshot for new item w
               Public
             </button>
             <button
-              class="visibility-option "
+              class="visibility-option selected"
               title="Mark as private"
               type="button"
             >
@@ -1698,15 +1671,6 @@ exports[`ItemEditor > user flag selector > should render snapshot with Have flag
             class="visibility-options"
           >
             <button
-              class="visibility-option selected"
-              title="Inherit from parent (Private)"
-              type="button"
-            >
-              Inherit (
-              Private
-              )
-            </button>
-            <button
               class="visibility-option "
               disabled=""
               title="Mark as public"
@@ -1715,7 +1679,7 @@ exports[`ItemEditor > user flag selector > should render snapshot with Have flag
               Public
             </button>
             <button
-              class="visibility-option "
+              class="visibility-option selected"
               title="Mark as private"
               type="button"
             >
@@ -2321,15 +2285,6 @@ exports[`ItemEditor > user flag selector > should render snapshot with Want flag
             class="visibility-options"
           >
             <button
-              class="visibility-option selected"
-              title="Inherit from parent (Private)"
-              type="button"
-            >
-              Inherit (
-              Private
-              )
-            </button>
-            <button
               class="visibility-option "
               disabled=""
               title="Mark as public"
@@ -2338,7 +2293,7 @@ exports[`ItemEditor > user flag selector > should render snapshot with Want flag
               Public
             </button>
             <button
-              class="visibility-option "
+              class="visibility-option selected"
               title="Mark as private"
               type="button"
             >
@@ -2944,15 +2899,6 @@ exports[`ItemEditor > user flag selector > should render snapshot with user flag
             class="visibility-options"
           >
             <button
-              class="visibility-option selected"
-              title="Inherit from parent (Private)"
-              type="button"
-            >
-              Inherit (
-              Private
-              )
-            </button>
-            <button
               class="visibility-option "
               disabled=""
               title="Mark as public"
@@ -2961,7 +2907,7 @@ exports[`ItemEditor > user flag selector > should render snapshot with user flag
               Public
             </button>
             <button
-              class="visibility-option "
+              class="visibility-option selected"
               title="Mark as private"
               type="button"
             >

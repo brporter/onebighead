@@ -10,13 +10,13 @@ const mockCollections: Collection[] = [
 ];
 
 const mockCategories: Category[] = [
-  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
-  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [] },
 ];
 
 const mockItems: Item[] = [
-  { id: 1, workspaceId: 1, collectionId: 1, categoryId: 1, templateKey: null, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.Have },
-  { id: 2, workspaceId: 1, collectionId: 1, categoryId: 2, templateKey: null, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], visibility: Visibility.Default, effectiveIsPublic: true, userFlag: UserFlag.Have },
+  { id: 1, workspaceId: 1, collectionId: 1, categoryId: 1, templateKey: null, name: 'Test Item 1', summary: 'Summary 1', description: 'Desc 1', properties: [], images: [], visibility: Visibility.Private, effectiveIsPublic: true, userFlag: UserFlag.Have },
+  { id: 2, workspaceId: 1, collectionId: 1, categoryId: 2, templateKey: null, name: 'Test Item 2', summary: 'Summary 2', description: 'Desc 2', properties: [], images: [], visibility: Visibility.Private, effectiveIsPublic: true, userFlag: UserFlag.Have },
 ];
 
 // Test component to access context
@@ -376,7 +376,7 @@ describe('DataContext', () => {
         description: 'Description',
         properties: [],
         images: [],
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         userFlag: UserFlag.Have,
       };
@@ -477,7 +477,7 @@ describe('DataContext', () => {
         description: 'Description',
         properties: [],
         images: [],
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: true,
         userFlag: UserFlag.Want,
       };

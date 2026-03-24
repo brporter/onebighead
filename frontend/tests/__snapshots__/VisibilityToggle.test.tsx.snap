@@ -42,7 +42,7 @@ exports[`VisibilityToggle > snapshots > should match snapshot for collection mod
 </div>
 `;
 
-exports[`VisibilityToggle > snapshots > should match snapshot for item mode with inherit 1`] = `
+exports[`VisibilityToggle > snapshots > should match snapshot for item mode (private) 1`] = `
 <div>
   <div
     class="visibility-toggle"
@@ -56,15 +56,6 @@ exports[`VisibilityToggle > snapshots > should match snapshot for item mode with
       class="visibility-options"
     >
       <button
-        class="visibility-option selected"
-        title="Inherit from parent (Public)"
-        type="button"
-      >
-        Inherit (
-        Public
-        )
-      </button>
-      <button
         class="visibility-option "
         title="Mark as public"
         type="button"
@@ -72,7 +63,7 @@ exports[`VisibilityToggle > snapshots > should match snapshot for item mode with
         Public
       </button>
       <button
-        class="visibility-option "
+        class="visibility-option selected"
         title="Mark as private"
         type="button"
       >
@@ -84,9 +75,9 @@ exports[`VisibilityToggle > snapshots > should match snapshot for item mode with
     >
       Effective: 
       <span
-        class="public"
+        class="private"
       >
-        Public
+        Private
       </span>
     </div>
   </div>
@@ -106,15 +97,6 @@ exports[`VisibilityToggle > snapshots > should match snapshot when parent is pri
     <div
       class="visibility-options"
     >
-      <button
-        class="visibility-option "
-        title="Inherit from parent (Private)"
-        type="button"
-      >
-        Inherit (
-        Private
-        )
-      </button>
       <button
         class="visibility-option "
         disabled=""

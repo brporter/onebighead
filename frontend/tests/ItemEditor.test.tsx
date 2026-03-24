@@ -41,14 +41,14 @@ describe('ItemEditor', () => {
       { url: 'https://example.com/image1.jpg', alt: 'Image 1' },
       { url: 'https://example.com/image2.jpg', alt: 'Image 2' },
     ],
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: true,
     userFlag: UserFlag.Have,
   };
 
   const mockCategories = [
-    { workspaceId: 1, collectionId: 1, categoryId: 1, name: 'Category 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
-    { workspaceId: 1, collectionId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, collectionId: 1, categoryId: 1, name: 'Category 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, collectionId: 1, categoryId: 2, name: 'Category 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockCollection: Collection = {

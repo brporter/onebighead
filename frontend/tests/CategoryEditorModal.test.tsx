@@ -32,7 +32,7 @@ const mockCategories: Category[] = [
     description: 'Description 1',
     parentCategoryId: null,
     isSystem: false,
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: true,
     itemTemplateIds: [],
   },
@@ -44,7 +44,7 @@ const mockCategories: Category[] = [
     description: 'Description 2',
     parentCategoryId: null, // Make it root level so it can be parent
     isSystem: false,
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: true,
     itemTemplateIds: [],
   },
@@ -56,7 +56,7 @@ const mockCategories: Category[] = [
     description: 'Description 3',
     parentCategoryId: 1, // Child of Category 1
     isSystem: false,
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: true,
     itemTemplateIds: [],
   },
@@ -68,7 +68,7 @@ const mockCategories: Category[] = [
     description: 'System category',
     parentCategoryId: null,
     isSystem: true,
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: true,
     itemTemplateIds: [],
   },
@@ -182,7 +182,7 @@ describe('CategoryEditorModal', () => {
       description: 'Description 1',
       parentCategoryId: null,
       isSystem: false,
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       itemTemplateIds: [],
     };
@@ -235,7 +235,7 @@ describe('CategoryEditorModal', () => {
       description: 'System category',
       parentCategoryId: null,
       isSystem: true,
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       itemTemplateIds: [],
     };
@@ -350,7 +350,7 @@ describe('CategoryEditorModal', () => {
           name: 'New Category',
           description: 'New Description',
           parentCategoryId: null,
-          visibility: Visibility.Default,
+          visibility: Visibility.Private,
           itemTemplateIds: [],
         });
       });
@@ -427,7 +427,7 @@ describe('CategoryEditorModal', () => {
           name: 'Updated Category',
           description: 'Description 1',
           parentCategoryId: null,
-          visibility: Visibility.Default,
+          visibility: Visibility.Private,
           itemTemplateIds: [],
         });
       });

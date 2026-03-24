@@ -17,7 +17,7 @@ describe('createEmptyItem', () => {
       description: '',
       properties: [],
       images: [],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       userFlag: UserFlag.Have,
     });
@@ -37,7 +37,7 @@ describe('createEmptyItem', () => {
       description: '',
       properties: [],
       images: [],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       userFlag: UserFlag.Have,
     });
@@ -57,7 +57,7 @@ describe('createEmptyItem', () => {
       description: '',
       properties: [],
       images: [],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       userFlag: UserFlag.Have,
     });

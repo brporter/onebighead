@@ -191,15 +191,6 @@ exports[`ItemView > snapshots > should match snapshot for existing item 1`] = `
                     class="visibility-options"
                   >
                     <button
-                      class="visibility-option selected"
-                      title="Inherit from parent (Public)"
-                      type="button"
-                    >
-                      Inherit (
-                      Public
-                      )
-                    </button>
-                    <button
                       class="visibility-option "
                       title="Mark as public"
                       type="button"
@@ -207,7 +198,7 @@ exports[`ItemView > snapshots > should match snapshot for existing item 1`] = `
                       Public
                     </button>
                     <button
-                      class="visibility-option "
+                      class="visibility-option selected"
                       title="Mark as private"
                       type="button"
                     >

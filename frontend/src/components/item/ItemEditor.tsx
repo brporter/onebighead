@@ -44,7 +44,7 @@ function ItemEditor({
       description: '',
       properties: initialProperties ?? [],
       images: [],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: false,
       userFlag: UserFlag.Have,
     };

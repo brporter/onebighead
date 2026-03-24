@@ -13,7 +13,7 @@ export function createEmptyItem(categoryId: number | null, collectionId: number,
     description: '',
     properties: [],
     images: [],
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: true,
     userFlag: UserFlag.Have,
   };

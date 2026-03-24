@@ -49,8 +49,8 @@ describe('CategoryView', () => {
   ];
 
   const mockCategories: Category[] = [
-    { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
-    { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockItems: Item[] = [
@@ -65,7 +65,7 @@ describe('CategoryView', () => {
       description: 'Description 1',
       properties: [],
       images: [],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       userFlag: UserFlag.Have,
     },
@@ -80,7 +80,7 @@ describe('CategoryView', () => {
       description: 'Description 2',
       properties: [],
       images: [],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       userFlag: UserFlag.Have,
     },

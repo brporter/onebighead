@@ -18,7 +18,7 @@ describe('ItemList', () => {
       description: `Description ${i + 1}`,
       properties: [],
       images: [],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: false,
       userFlag: UserFlag.Have,
     }));
@@ -32,7 +32,7 @@ describe('ItemList', () => {
     description: '',
     parentCategoryId: null,
     isSystem: false,
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: false,
     itemTemplateIds: [],
   }];
@@ -198,7 +198,7 @@ describe('ItemList', () => {
         description: 'Desc',
         properties: [],
         images: [],
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         userFlag: UserFlag.Have,
       }];
@@ -223,7 +223,7 @@ describe('ItemList', () => {
         description: 'Desc',
         properties: [],
         images: [],
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         userFlag: UserFlag.Have,
       }];
@@ -251,7 +251,7 @@ describe('ItemList', () => {
         description: 'Desc',
         properties: [],
         images: [],
-        visibility: Visibility.Default,
+        visibility: Visibility.Private,
         effectiveIsPublic: false,
         userFlag: UserFlag.Have,
       }];

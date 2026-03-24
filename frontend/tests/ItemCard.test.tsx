@@ -23,7 +23,7 @@ describe('ItemCard', () => {
       { category: 'Details', name: 'Condition', value: 'Excellent' },
     ],
     images: [{ url: '/images/leica.jpg', alt: 'Leica M3' }],
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: false,
     userFlag: UserFlag.Have,
   };
@@ -41,7 +41,7 @@ describe('ItemCard', () => {
       { category: 'Details', name: 'Year', value: '1982' },
     ],
     images: [],
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: false,
     userFlag: UserFlag.Have,
   };

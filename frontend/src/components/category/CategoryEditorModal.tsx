@@ -19,7 +19,7 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [parentCategoryId, setParentCategoryId] = useState<number | null>(null);
-  const [visibility, setVisibility] = useState<Visibility>(Visibility.Default);
+  const [visibility, setVisibility] = useState<Visibility>(Visibility.Private);
   const [itemTemplateIds, setItemTemplateIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,7 +59,7 @@ function CategoryEditorModal({ category, isOpen, onClose, onSaved }: CategoryEdi
       setName(category?.name ?? '');
       setDescription(category?.description ?? '');
       setParentCategoryId(category?.parentCategoryId ?? null);
-      setVisibility(category?.visibility ?? Visibility.Default);
+      setVisibility(category?.visibility ?? Visibility.Private);
       setItemTemplateIds(category?.itemTemplateIds ?? []);
       setError(null);
     }

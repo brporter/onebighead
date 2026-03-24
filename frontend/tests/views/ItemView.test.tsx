@@ -43,7 +43,7 @@ describe('ItemView', () => {
   ];
 
   const mockCategories: Category[] = [
-    { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [] },
   ];
 
   const mockItems: Item[] = [
@@ -58,7 +58,7 @@ describe('ItemView', () => {
       description: 'Test description',
       properties: [{ category: 'General', name: 'Color', value: 'Blue' }],
       images: [{ url: 'https://example.com/img.jpg', alt: 'Test image' }],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       userFlag: UserFlag.Have,
     },

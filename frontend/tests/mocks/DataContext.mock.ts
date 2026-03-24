@@ -5,9 +5,9 @@ import type { DataContextValue } from '../../src/contexts/DataContext';
 import { Visibility, UserFlag } from '../../src/utils/types';
 
 export const mockCategories: Category[] = [
-  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
-  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child description', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
-  { workspaceId: 1, categoryId: 3, collectionId: 1, name: 'Another Root', description: 'Another root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: false, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child description', parentCategoryId: 1, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 3, collectionId: 1, name: 'Another Root', description: 'Another root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [] },
 ];
 
 export const mockItems: Item[] = [
@@ -22,7 +22,7 @@ export const mockItems: Item[] = [
     description: 'Test description 1',
     properties: [{ category: 'General', name: 'Prop1', value: 'Value1' }],
     images: [{ url: 'https://example.com/image1.jpg', alt: 'Image 1' }],
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: false,
     userFlag: UserFlag.Have,
   },
@@ -37,7 +37,7 @@ export const mockItems: Item[] = [
     description: 'Test description 2',
     properties: [],
     images: [],
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: false,
     userFlag: UserFlag.Have,
   },

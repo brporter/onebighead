@@ -230,15 +230,6 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
                     class="visibility-options"
                   >
                     <button
-                      class="visibility-option selected"
-                      title="Inherit from parent (Public)"
-                      type="button"
-                    >
-                      Inherit (
-                      Public
-                      )
-                    </button>
-                    <button
                       class="visibility-option "
                       title="Mark as public"
                       type="button"
@@ -246,7 +237,7 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
                       Public
                     </button>
                     <button
-                      class="visibility-option "
+                      class="visibility-option selected"
                       title="Mark as private"
                       type="button"
                     >
