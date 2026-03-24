@@ -245,19 +245,31 @@ public class VisibilityService : IVisibilityService
 
     public UnpublishPreview GetUnpublishPreview(Category category, IEnumerable<Item> items, IEnumerable<Category> childCategories, Collection collection)
     {
+        // Compute effective visibility to count only truly public entities
+        var allCategories = childCategories.Append(category).ToList();
+        ComputeEffectiveVisibility(allCategories, collection);
+        var itemList = items.ToList();
+        ComputeEffectiveVisibility(itemList, collection, allCategories);
+
         return new UnpublishPreview
         {
-            AffectedPublicItems = items.Count(i => i.Visibility == Visibility.Public),
-            AffectedPublicCategories = childCategories.Count(c => c.Visibility == Visibility.Public),
+            AffectedPublicItems = itemList.Count(i => i.EffectiveIsPublic),
+            AffectedPublicCategories = childCategories.Count(c => c.EffectiveIsPublic),
         };
     }
 
     public UnpublishPreview GetUnpublishPreviewForCollection(Collection collection, IEnumerable<Category> categories, IEnumerable<Item> items)
     {
+        // Compute effective visibility to count only truly public entities
+        var categoryList = categories.ToList();
+        ComputeEffectiveVisibility(categoryList, collection);
+        var itemList = items.ToList();
+        ComputeEffectiveVisibility(itemList, collection, categoryList);
+
         return new UnpublishPreview
         {
-            AffectedPublicItems = items.Count(i => i.Visibility == Visibility.Public),
-            AffectedPublicCategories = categories.Count(c => c.Visibility == Visibility.Public),
+            AffectedPublicItems = itemList.Count(i => i.EffectiveIsPublic),
+            AffectedPublicCategories = categoryList.Count(c => c.EffectiveIsPublic),
         };
     }
 
