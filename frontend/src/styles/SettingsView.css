@@ -150,7 +150,7 @@
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-success);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -378,7 +378,7 @@
 .settings-form__button--primary,
 .settings__button--primary {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border-color: var(--color-primary);
 }
 
@@ -443,7 +443,7 @@
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -736,7 +736,7 @@
 
 .settings-workspace-card__badge--current {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
 }
 
 .settings-workspace-card__badge--admin {
@@ -788,7 +788,7 @@
 
 .settings-workspace-card__button--primary {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border-color: var(--color-primary);
 }
 

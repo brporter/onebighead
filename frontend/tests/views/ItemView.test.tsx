@@ -100,8 +100,6 @@ describe('ItemView', () => {
     associateTemplateWithCollection: vi.fn(async () => {}),
     disassociateTemplateFromCollection: vi.fn(async () => {}),
     getCategoryTemplates: vi.fn(async () => []),
-    expandedCategoryIds: new Set([1]),
-    toggleCategoryExpanded: vi.fn(),
   };
 
   beforeEach(() => {

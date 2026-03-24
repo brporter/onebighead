@@ -1,0 +1,278 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+  .demo { font-family: 'DM Sans', sans-serif; color: #3a3028; }
+  .demo-panel {
+    background: #f3ede6;
+    border: 1px solid #e5ddd2;
+    border-radius: 8px;
+    width: 260px;
+    overflow: hidden;
+  }
+  .demo-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5ddd2;
+  }
+  .demo-header-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #9a8a78;
+  }
+  .demo-header-actions { display: flex; gap: 6px; }
+  .demo-btn-sm {
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; border: 1px solid #d4c4b0;
+    background: #fff; color: #5a4e42; font-size: 14px; cursor: pointer;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .cat-name { font-family: 'DM Sans', sans-serif; font-size: 13px; color: #3a3028; font-weight: 500; }
+  .cat-name--active { color: #3a3028; font-weight: 600; }
+  .cat-count { font-size: 11px; color: #9a8a78; margin-left: auto; }
+  .toggle-icon { font-size: 10px; color: #9a8a78; width: 16px; text-align: center; flex-shrink: 0; }
+</style>
+
+<h2>Category Tree Redesign</h2>
+<p class="subtitle">Three fundamentally different approaches to navigating hierarchical collections</p>
+
+<div class="cards">
+
+  <!-- Option A: Compact Indented List -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(160deg, #f8f6f3, #eee8e0); padding: 28px; display: flex; justify-content: center;">
+      <div class="demo">
+        <div class="demo-panel">
+          <div class="demo-header">
+            <span class="demo-header-title">Categories</span>
+            <div class="demo-header-actions">
+              <div class="demo-btn-sm">+</div>
+              <div class="demo-btn-sm" style="font-size: 10px;">◀</div>
+            </div>
+          </div>
+          <div style="padding: 6px 0;">
+            <!-- Root: Rangefinders (active, expanded) -->
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(199,125,74,0.08); border-left: 3px solid #c77d4a;">
+              <div class="dot" style="background: #6b8f71;"></div>
+              <span class="toggle-icon">▾</span>
+              <span class="cat-name cat-name--active" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Rangefinders</span>
+              <span class="cat-count">12</span>
+            </div>
+            <!-- Child: 35mm -->
+            <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 36px;">
+              <div class="dot" style="background: #8baf91; width: 6px; height: 6px;"></div>
+              <span class="cat-name" style="font-size: 12px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">35mm Film</span>
+              <span class="cat-count">8</span>
+            </div>
+            <!-- Child: Medium Format -->
+            <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 36px;">
+              <div class="dot" style="background: #8baf91; width: 6px; height: 6px;"></div>
+              <span class="cat-name" style="font-size: 12px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Medium Format</span>
+              <span class="cat-count">4</span>
+            </div>
+            <!-- Root: SLR Cameras -->
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px;">
+              <div class="dot" style="background: #7a8ca8;"></div>
+              <span class="toggle-icon">▸</span>
+              <span class="cat-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">SLR Cameras</span>
+              <span class="cat-count">18</span>
+            </div>
+            <!-- Root: Twin-Lens Reflex -->
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px;">
+              <div class="dot" style="background: #b8926a;"></div>
+              <span class="cat-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Twin-Lens Reflex</span>
+              <span class="cat-count">6</span>
+            </div>
+            <!-- Root: Compact -->
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px;">
+              <div class="dot" style="background: #9a7ea8;"></div>
+              <span class="cat-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Compact &amp; Point-and-Shoot</span>
+              <span class="cat-count">8</span>
+            </div>
+            <!-- Root: Accessories -->
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px;">
+              <div class="dot" style="background: #a88c7e;"></div>
+              <span class="cat-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Accessories</span>
+              <span class="cat-count">3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Refined Compact List</h3>
+      <p>Fix the current tree design. Collapse toggle moves into the header. Indentation is tight (24px per level instead of 22px+18px base). Names truncate with ellipsis instead of wrapping. Child dots are smaller. No toggle spacer for leaves — saves horizontal space. The tree stays structurally similar but works within the sidebar width.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Minimal change, fixes the actual problems</li><li>Familiar tree pattern — no learning curve</li><li>Scales to deep nesting with truncation</li></ul></div>
+        <div class="cons"><h4>Tradeoffs</h4><ul><li>Deep nesting still compresses names</li><li>Static — no interactive delight</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Breadcrumb Drill-Down -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(160deg, #f8f6f3, #eee8e0); padding: 28px; display: flex; justify-content: center;">
+      <div class="demo">
+        <div class="demo-panel">
+          <div class="demo-header">
+            <span class="demo-header-title">Categories</span>
+            <div class="demo-header-actions">
+              <div class="demo-btn-sm">+</div>
+              <div class="demo-btn-sm" style="font-size: 10px;">◀</div>
+            </div>
+          </div>
+          <!-- Breadcrumb path -->
+          <div style="padding: 8px 12px; display: flex; align-items: center; gap: 4px; font-size: 11px; color: #9a8a78; border-bottom: 1px solid #e5ddd2;">
+            <span style="cursor: pointer; text-decoration: underline; text-underline-offset: 2px;">All</span>
+            <span>›</span>
+            <span style="color: #3a3028; font-weight: 500;">Rangefinders</span>
+          </div>
+          <div style="padding: 6px 0;">
+            <!-- Back row -->
+            <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; color: #9a8a78; font-size: 12px; cursor: pointer;">
+              <span>←</span>
+              <span>Back to All Categories</span>
+            </div>
+            <!-- Current level items shown as full-width cards -->
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(199,125,74,0.08); border-left: 3px solid #c77d4a;">
+              <div class="dot" style="background: #6b8f71;"></div>
+              <div style="flex: 1; min-width: 0;">
+                <div class="cat-name cat-name--active">All Rangefinders</div>
+                <div style="font-size: 11px; color: #9a8a78;">12 items</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer;">
+              <div class="dot" style="background: #8baf91;"></div>
+              <div style="flex: 1; min-width: 0;">
+                <div class="cat-name">35mm Film</div>
+                <div style="font-size: 11px; color: #9a8a78;">8 items</div>
+              </div>
+              <span style="color: #d4c4b0; font-size: 14px;">›</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer;">
+              <div class="dot" style="background: #8baf91;"></div>
+              <div style="flex: 1; min-width: 0;">
+                <div class="cat-name">Medium Format</div>
+                <div style="font-size: 11px; color: #9a8a78;">4 items</div>
+              </div>
+              <span style="color: #d4c4b0; font-size: 14px;">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Drill-Down Navigation</h3>
+      <p>Replace the tree entirely with a single-level list that drills into children. Clicking a category with subcategories "navigates into" it — showing its children as a flat list with a breadcrumb trail and back button. Each item gets the full sidebar width. Deep nesting is handled by depth, not indentation.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Every category name gets full width — no truncation ever</li><li>Handles unlimited depth elegantly</li><li>Room for item counts and descriptions</li><li>Animated transitions between levels add energy</li></ul></div>
+        <div class="cons"><h4>Tradeoffs</h4><ul><li>Can't see the full tree at once</li><li>More clicks to reach deep categories</li><li>Unfamiliar pattern — some learning curve</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Accordion Sections -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(160deg, #f8f6f3, #eee8e0); padding: 28px; display: flex; justify-content: center;">
+      <div class="demo">
+        <div class="demo-panel">
+          <div class="demo-header">
+            <span class="demo-header-title">Categories</span>
+            <div class="demo-header-actions">
+              <div class="demo-btn-sm">+</div>
+              <div class="demo-btn-sm" style="font-size: 10px;">◀</div>
+            </div>
+          </div>
+          <div style="padding: 4px 0;">
+            <!-- Rangefinders: expanded accordion -->
+            <div style="border-bottom: 1px solid #e5ddd2;">
+              <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; background: rgba(199,125,74,0.06);">
+                <div style="width: 4px; height: 28px; border-radius: 2px; background: linear-gradient(180deg, #6b8f71, #8baf91); flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="cat-name cat-name--active" style="font-size: 12px;">Rangefinders</div>
+                  <div style="font-size: 10px; color: #9a8a78;">12 items · 2 subcategories</div>
+                </div>
+                <span class="toggle-icon">▾</span>
+              </div>
+              <!-- Children -->
+              <div style="padding: 2px 12px 8px 24px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 4px; background: rgba(199,125,74,0.08);">
+                  <div class="dot" style="background: #8baf91; width: 6px; height: 6px;"></div>
+                  <span style="font-size: 12px; font-weight: 500; color: #3a3028;">35mm Film</span>
+                  <span class="cat-count">8</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 4px;">
+                  <div class="dot" style="background: #8baf91; width: 6px; height: 6px;"></div>
+                  <span style="font-size: 12px; color: #5a4e42;">Medium Format</span>
+                  <span class="cat-count">4</span>
+                </div>
+              </div>
+            </div>
+            <!-- SLR: collapsed accordion -->
+            <div style="border-bottom: 1px solid #e5ddd2;">
+              <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer;">
+                <div style="width: 4px; height: 28px; border-radius: 2px; background: linear-gradient(180deg, #7a8ca8, #9aacbf); flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="cat-name" style="font-size: 12px;">SLR Cameras</div>
+                  <div style="font-size: 10px; color: #9a8a78;">18 items · 3 subcategories</div>
+                </div>
+                <span class="toggle-icon">▸</span>
+              </div>
+            </div>
+            <!-- TLR: no children -->
+            <div style="border-bottom: 1px solid #e5ddd2;">
+              <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer;">
+                <div style="width: 4px; height: 28px; border-radius: 2px; background: linear-gradient(180deg, #b8926a, #c8a67e); flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="cat-name" style="font-size: 12px;">Twin-Lens Reflex</div>
+                  <div style="font-size: 10px; color: #9a8a78;">6 items</div>
+                </div>
+              </div>
+            </div>
+            <!-- Compact -->
+            <div style="border-bottom: 1px solid #e5ddd2;">
+              <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer;">
+                <div style="width: 4px; height: 28px; border-radius: 2px; background: linear-gradient(180deg, #9a7ea8, #b098be); flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="cat-name" style="font-size: 12px;">Compact &amp; P&amp;S</div>
+                  <div style="font-size: 10px; color: #9a8a78;">8 items</div>
+                </div>
+              </div>
+            </div>
+            <!-- Accessories -->
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer;">
+                <div style="width: 4px; height: 28px; border-radius: 2px; background: linear-gradient(180deg, #a88c7e, #b8a090); flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <div class="cat-name" style="font-size: 12px;">Accessories</div>
+                  <div style="font-size: 10px; color: #9a8a78;">3 items</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C: Accent Bar Accordion</h3>
+      <p>Root categories are accordion sections separated by dividers, each with a vertical accent color bar (gradient ribbon turned 90°). Expanding a section reveals children as a compact nested list. The accent bar replaces the dot as the color indicator — more visible and more distinctive. Item counts and subcategory counts shown on each section header.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Stronger visual identity than dot-based tree</li><li>Richer information density (counts, sub-counts)</li><li>Full width for names at root level</li><li>Children are compact and tight</li><li>Accordion animation adds subtle energy</li></ul></div>
+        <div class="cons"><h4>Tradeoffs</h4><ul><li>Deep nesting (3+ levels) still needs indentation within sections</li><li>More vertical space per root category</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px; padding: 20px 24px; background: rgba(128,128,128,0.06); border-radius: 8px; border-left: 3px solid rgba(128,128,128,0.2);">
+  <p style="margin: 0; color: #888; font-size: 13px; line-height: 1.6;">
+    <strong style="color: #aaa;">All three fix the current problems:</strong> collapse button integrated into header, no text wrapping. They differ in how they handle hierarchy, information density, and visual identity. You can also mix elements — e.g., the accent bar from C with the compact list structure of A.
+  </p>
+</div>

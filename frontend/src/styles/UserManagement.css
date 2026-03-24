@@ -106,7 +106,7 @@
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-success);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;

@@ -1,10 +1,12 @@
-import type { Item } from '../../utils/types';
-import type { KeyboardEvent } from 'react';
+import type { Item, Category } from '../../utils/types';
+import ItemCard from './ItemCard';
+import { getAccentColor } from '../../utils/accentColors';
 
 const PAGE_SIZE = 25;
 
 interface ItemListProps {
   items: Item[];
+  categories: Category[];
   selectedId: number | null;
   onSelect: (id: number) => void;
   onAddItem?: (() => void) | null;
@@ -12,7 +14,7 @@ interface ItemListProps {
   onPageChange: (pageIndex: number) => void;
 }
 
-function ItemList({ items, selectedId, onSelect, onAddItem, pageIndex, onPageChange }: ItemListProps) {
+function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageIndex, onPageChange }: ItemListProps) {
   const totalCount = items.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const safePageIndex = Math.min(Math.max(0, pageIndex), totalPages - 1);
@@ -22,13 +24,15 @@ function ItemList({ items, selectedId, onSelect, onAddItem, pageIndex, onPageCha
   const canPrev = safePageIndex > 0;
   const canNext = safePageIndex < totalPages - 1;
 
-  function handleRowKeyDown(e: KeyboardEvent<HTMLTableRowElement>, id: number | null) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (id !== null) {
-        onSelect(id);
-      }
-    }
+  // Build category index map for accent colors
+  const categoryColorIndex = new Map<number, number>();
+  categories.forEach((cat, index) => {
+    categoryColorIndex.set(cat.categoryId, index);
+  });
+
+  function getItemAccentColor(item: Item) {
+    const catIndex = item.categoryId !== null ? (categoryColorIndex.get(item.categoryId) ?? 0) : 0;
+    return getAccentColor(catIndex);
   }
 
   return (
@@ -51,48 +55,20 @@ function ItemList({ items, selectedId, onSelect, onAddItem, pageIndex, onPageCha
         </div>
       </div>
 
-      <div className="list__tableWrap">
-        <table className="list__table">
-          <thead>
-            <tr>
-              <th scope="col" className="list__th list__th--name">
-                Name
-              </th>
-              <th scope="col" className="list__th">
-                Summary
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageItems.length ? (
-              pageItems.map((item) => {
-                const isSelected = item.id === selectedId;
-                return (
-                  <tr
-                    key={item.id}
-                    className={`list__tr list__tr--clickable${
-                      isSelected ? ' list__tr--active' : ''
-                    }`}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`Select ${item.name}`}
-                    onClick={() => item.id !== null && onSelect(item.id)}
-                    onKeyDown={(e) => handleRowKeyDown(e, item.id)}
-                  >
-                    <td className="list__td list__td--name">{item.name}</td>
-                    <td className="list__td list__td--summary">{item.summary ?? ''}</td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td className="list__td" colSpan={2}>
-                  <p className="list__empty">No items</p>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="list__masonry">
+        {pageItems.length ? (
+          pageItems.map((item, index) => (
+            <ItemCard
+              key={item.id ?? `new-${index}-${item.name}`}
+              item={item}
+              accentColor={getItemAccentColor(item)}
+              isSelected={item.id === selectedId}
+              onSelect={onSelect}
+            />
+          ))
+        ) : (
+          <p className="list__empty">No items</p>
+        )}
       </div>
 
       <div className="list__pager" aria-label="Pagination">
@@ -121,4 +97,3 @@ function ItemList({ items, selectedId, onSelect, onAddItem, pageIndex, onPageCha
 }
 
 export default ItemList;
-

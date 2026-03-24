@@ -70,11 +70,11 @@
 }
 
 .publicDetail__categoryBtn:hover {
-  background: var(--color-hover);
+  background: var(--hover-bg);
 }
 
 .publicDetail__categoryBtn--active {
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--color-accent-subtle);
   color: var(--color-primary);
   font-weight: 500;
 }

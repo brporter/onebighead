@@ -107,8 +107,6 @@ describe('CategoryView', () => {
     loadItemTemplates: vi.fn(async () => []),
     loadCollectionTemplates: vi.fn(async () => []),
     getCategoryTemplates: vi.fn(async () => []),
-    expandedCategoryIds: new Set([1]),
-    toggleCategoryExpanded: vi.fn(),
   };
 
   beforeEach(() => {
@@ -189,8 +187,8 @@ describe('CategoryView', () => {
       const user = userEvent.setup();
       renderWithRouter('/collections/1');
 
-      // Click on the category tree item
-      const categoryButton = screen.getAllByText('Root Category').find(el => el.classList.contains('categoryTree__item'));
+      // Click on the category nav row
+      const categoryButton = screen.getAllByText('Root Category').find(el => el.classList.contains('categoryNav__name'));
       expect(categoryButton).toBeTruthy();
       await user.click(categoryButton!);
 
@@ -289,6 +287,67 @@ describe('CategoryView', () => {
       renderWithRouter('/collections/1');
 
       expect(screen.getByText('Collection not found')).toBeInTheDocument();
+    });
+  });
+
+  describe('sidebar collapse', () => {
+    it('should render collapse button inside CategoryNav', () => {
+      renderWithRouter('/collections/1');
+
+      expect(screen.getByLabelText('Collapse categories')).toBeInTheDocument();
+    });
+
+    it('should hide CategoryNav when sidebar is collapsed', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Collapse categories'));
+      expect(screen.queryByText('Root Category')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
+    });
+
+    it('should show CategoryNav when sidebar is expanded again', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Collapse categories'));
+      await user.click(screen.getByLabelText('Expand sidebar'));
+      expect(screen.getAllByText('Root Category').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should render collapse button when category is selected', () => {
+      renderWithRouter('/collections/1/categories/1');
+
+      expect(screen.getByLabelText('Collapse categories')).toBeInTheDocument();
+    });
+
+    it('should add collapsed class when sidebar is collapsed', async () => {
+      const user = userEvent.setup();
+      const { container } = renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Collapse categories'));
+      expect(container.querySelector('.app__layout--sidebar-collapsed')).toBeInTheDocument();
+    });
+
+    it('should start collapsed on small viewports', () => {
+      const originalMatchMedia = window.matchMedia;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 1024px)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      renderWithRouter('/collections/1');
+
+      expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
+      expect(screen.queryByText('Root Category')).not.toBeInTheDocument();
+
+      window.matchMedia = originalMatchMedia;
     });
   });
 

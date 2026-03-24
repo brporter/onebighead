@@ -1,0 +1,622 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
+<div>
+  <aside
+    class="categoryNav"
+  >
+    <div
+      class="categoryNav__header"
+    >
+      <h2
+        class="categoryNav__headerTitle"
+      >
+        Categories
+      </h2>
+      <div
+        class="categoryNav__headerActions"
+      >
+        <button
+          aria-label="Add category"
+          class="categoryNav__addBtn"
+          type="button"
+        >
+          +
+        </button>
+      </div>
+    </div>
+    <nav
+      aria-label="Category breadcrumb"
+      class="categoryNav__breadcrumb"
+    >
+      <button
+        aria-label="Navigate to All"
+        class="categoryNav__breadcrumb-link"
+        type="button"
+      >
+        All
+      </button>
+      <span
+        aria-hidden="true"
+        class="categoryNav__breadcrumb-sep"
+      >
+        ›
+      </span>
+      <span
+        class="categoryNav__breadcrumb-current"
+      >
+        Rangefinders
+      </span>
+    </nav>
+    <div
+      class="categoryNav__list"
+    >
+      <button
+        aria-label="Go back"
+        class="categoryNav__back"
+        type="button"
+      >
+        ← Back
+      </button>
+      <div
+        class="categoryNav__row categoryNav__row--active"
+        role="button"
+        tabindex="0"
+      >
+        <span
+          aria-hidden="true"
+          class="categoryNav__dot"
+          style="background-color: rgb(199, 125, 74);"
+        />
+        <div
+          class="categoryNav__rowContent"
+        >
+          <span
+            class="categoryNav__name"
+          >
+            All 
+            Rangefinders
+          </span>
+        </div>
+      </div>
+      <div
+        class="categoryNav__row"
+        role="button"
+        tabindex="0"
+      >
+        <span
+          aria-hidden="true"
+          class="categoryNav__dot"
+          style="background-color: rgb(199, 125, 74);"
+        />
+        <div
+          class="categoryNav__rowContent"
+        >
+          <span
+            class="categoryNav__name"
+          >
+            35mm Film
+          </span>
+          <span
+            class="categoryNav__count"
+          >
+            (
+            1
+            )
+          </span>
+        </div>
+        <button
+          aria-label="Edit 35mm Film"
+          class="categoryNav__edit"
+          type="button"
+        >
+          ✎
+        </button>
+        <span
+          aria-hidden="true"
+          class="categoryNav__chevron"
+        >
+          ›
+        </span>
+      </div>
+      <div
+        class="categoryNav__row"
+        role="button"
+        tabindex="0"
+      >
+        <span
+          aria-hidden="true"
+          class="categoryNav__dot"
+          style="background-color: rgb(199, 125, 74);"
+        />
+        <div
+          class="categoryNav__rowContent"
+        >
+          <span
+            class="categoryNav__name"
+          >
+            Medium Format
+          </span>
+        </div>
+        <button
+          aria-label="Edit Medium Format"
+          class="categoryNav__edit"
+          type="button"
+        >
+          ✎
+        </button>
+      </div>
+    </div>
+    <dialog
+      class="modal-dialog"
+    >
+      <div
+        class="modal"
+      >
+        <div
+          class="modal__header"
+        >
+          <h2
+            class="modal__title"
+          >
+            Add Category
+          </h2>
+          <button
+            aria-label="Close"
+            class="modal__close"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <form
+          class="modal__body"
+        >
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-name"
+            >
+              Name 
+              <span
+                class="modal__required"
+              >
+                *
+              </span>
+            </label>
+            <input
+              class="modal__input"
+              id="category-name"
+              placeholder="Category name"
+              required=""
+              type="text"
+              value=""
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-description"
+            >
+              Description
+            </label>
+            <textarea
+              class="modal__textarea"
+              id="category-description"
+              placeholder="Optional description"
+              rows="3"
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-parent"
+            >
+              Parent Category
+            </label>
+            <select
+              class="modal__select"
+              id="category-parent"
+            >
+              <option
+                value=""
+              >
+                None (root level)
+              </option>
+              <option
+                value="1"
+              >
+                Rangefinders
+              </option>
+              <option
+                value="2"
+              >
+                35mm Film
+              </option>
+              <option
+                value="3"
+              >
+                Medium Format
+              </option>
+              <option
+                value="4"
+              >
+                Leica
+              </option>
+              <option
+                value="5"
+              >
+                SLR Cameras
+              </option>
+            </select>
+          </div>
+          <div
+            class="modal__field"
+          >
+            <div
+              class="visibility-toggle"
+            >
+              <label
+                class="visibility-label"
+              >
+                Visibility
+              </label>
+              <div
+                class="visibility-options"
+              >
+                <button
+                  class="visibility-option selected"
+                  title="Inherit from parent (Private)"
+                  type="button"
+                >
+                  Inherit (
+                  Private
+                  )
+                </button>
+                <button
+                  class="visibility-option "
+                  disabled=""
+                  title="Mark as public"
+                  type="button"
+                >
+                  Public
+                </button>
+                <button
+                  class="visibility-option "
+                  title="Mark as private"
+                  type="button"
+                >
+                  Private
+                </button>
+              </div>
+              <div
+                class="visibility-note"
+              >
+                Parent is private; cannot override to public
+              </div>
+              <div
+                class="visibility-effective"
+              >
+                Effective: 
+                <span
+                  class="private"
+                >
+                  Private
+                </span>
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal__actions"
+          >
+            <button
+              class="detail__btn detail__btn--primary"
+              disabled=""
+              type="submit"
+            >
+              Create
+            </button>
+            <button
+              class="detail__btn detail__btn--secondary"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+  </aside>
+</div>
+`;
+
+exports[`CategoryNav > snapshots > root level snapshot 1`] = `
+<div>
+  <aside
+    class="categoryNav"
+  >
+    <div
+      class="categoryNav__header"
+    >
+      <h2
+        class="categoryNav__headerTitle"
+      >
+        Categories
+      </h2>
+      <div
+        class="categoryNav__headerActions"
+      >
+        <button
+          aria-label="Add category"
+          class="categoryNav__addBtn"
+          type="button"
+        >
+          +
+        </button>
+      </div>
+    </div>
+    <div
+      class="categoryNav__list"
+    >
+      <div
+        class="categoryNav__row"
+        role="button"
+        tabindex="0"
+      >
+        <span
+          aria-hidden="true"
+          class="categoryNav__dot"
+          style="background-color: rgb(199, 125, 74);"
+        />
+        <div
+          class="categoryNav__rowContent"
+        >
+          <span
+            class="categoryNav__name"
+          >
+            Rangefinders
+          </span>
+          <span
+            class="categoryNav__count"
+          >
+            (
+            2
+            )
+          </span>
+        </div>
+        <button
+          aria-label="Edit Rangefinders"
+          class="categoryNav__edit"
+          type="button"
+        >
+          ✎
+        </button>
+        <span
+          aria-hidden="true"
+          class="categoryNav__chevron"
+        >
+          ›
+        </span>
+      </div>
+      <div
+        class="categoryNav__row"
+        role="button"
+        tabindex="0"
+      >
+        <span
+          aria-hidden="true"
+          class="categoryNav__dot"
+          style="background-color: rgb(107, 143, 113);"
+        />
+        <div
+          class="categoryNav__rowContent"
+        >
+          <span
+            class="categoryNav__name"
+          >
+            SLR Cameras
+          </span>
+        </div>
+        <button
+          aria-label="Edit SLR Cameras"
+          class="categoryNav__edit"
+          type="button"
+        >
+          ✎
+        </button>
+      </div>
+    </div>
+    <dialog
+      class="modal-dialog"
+    >
+      <div
+        class="modal"
+      >
+        <div
+          class="modal__header"
+        >
+          <h2
+            class="modal__title"
+          >
+            Add Category
+          </h2>
+          <button
+            aria-label="Close"
+            class="modal__close"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <form
+          class="modal__body"
+        >
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-name"
+            >
+              Name 
+              <span
+                class="modal__required"
+              >
+                *
+              </span>
+            </label>
+            <input
+              class="modal__input"
+              id="category-name"
+              placeholder="Category name"
+              required=""
+              type="text"
+              value=""
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-description"
+            >
+              Description
+            </label>
+            <textarea
+              class="modal__textarea"
+              id="category-description"
+              placeholder="Optional description"
+              rows="3"
+            />
+          </div>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="category-parent"
+            >
+              Parent Category
+            </label>
+            <select
+              class="modal__select"
+              id="category-parent"
+            >
+              <option
+                value=""
+              >
+                None (root level)
+              </option>
+              <option
+                value="1"
+              >
+                Rangefinders
+              </option>
+              <option
+                value="2"
+              >
+                35mm Film
+              </option>
+              <option
+                value="3"
+              >
+                Medium Format
+              </option>
+              <option
+                value="4"
+              >
+                Leica
+              </option>
+              <option
+                value="5"
+              >
+                SLR Cameras
+              </option>
+            </select>
+          </div>
+          <div
+            class="modal__field"
+          >
+            <div
+              class="visibility-toggle"
+            >
+              <label
+                class="visibility-label"
+              >
+                Visibility
+              </label>
+              <div
+                class="visibility-options"
+              >
+                <button
+                  class="visibility-option selected"
+                  title="Inherit from parent (Private)"
+                  type="button"
+                >
+                  Inherit (
+                  Private
+                  )
+                </button>
+                <button
+                  class="visibility-option "
+                  disabled=""
+                  title="Mark as public"
+                  type="button"
+                >
+                  Public
+                </button>
+                <button
+                  class="visibility-option "
+                  title="Mark as private"
+                  type="button"
+                >
+                  Private
+                </button>
+              </div>
+              <div
+                class="visibility-note"
+              >
+                Parent is private; cannot override to public
+              </div>
+              <div
+                class="visibility-effective"
+              >
+                Effective: 
+                <span
+                  class="private"
+                >
+                  Private
+                </span>
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal__actions"
+          >
+            <button
+              class="detail__btn detail__btn--primary"
+              disabled=""
+              type="submit"
+            >
+              Create
+            </button>
+            <button
+              class="detail__btn detail__btn--secondary"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+  </aside>
+</div>
+`;

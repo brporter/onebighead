@@ -8,6 +8,8 @@ OneBigHead is a multi-workspace collection management application with a .NET 10
 
 This project is worked on from different machines running different operating systems. When on Windows, use cmd or PowerShell when navigating the project and executing commands (such as building, etc.)
 
+Never issue compound shell commands. Each command must be issued separately — do not chain commands with `&&`, `;`, or `||`. In particular, `cd` and `git` commands must always be separate invocations.
+
 When making edits, always first execute unit tests and verify that all unit tests are passing BEFORE performing any edits. When your edits are complete, re-run ALL unit tests, and verify that all unit tests are passing. Even if a unit test is failing and it is not related to a change you made, that unit test MUST be fixed completely prior to proceeding.
 
 Ensure ALL new code or edits include corresponding unit tests. Code coverage MUST be 100% for all new code or edits.

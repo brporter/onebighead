@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '../contexts/useData';
-import CategoryTree from '../components/category/CategoryTree';
+import CategoryNav from '../components/category/CategoryNav';
 import { CollectionDashboard } from '../components/collection';
 import ItemList from '../components/item/ItemList';
 import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
@@ -32,6 +32,9 @@ function CategoryView() {
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
+  );
   const [subcategoryFilter, setSubcategoryFilter] = useState<number | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [prevCategoryId, setPrevCategoryId] = useState(categoryIdNum);
@@ -149,8 +152,12 @@ function CategoryView() {
     return Math.min(Math.max(0, pageIndex), totalPages - 1);
   }, [pageIndex, totalPages]);
 
-  function handleSelectCategory(catId: number) {
-    navigate(`/collections/${collectionIdNum}/categories/${catId}`);
+  function handleSelectCategory(catId: number | null) {
+    if (catId === null) {
+      navigate(`/collections/${collectionIdNum}`);
+    } else {
+      navigate(`/collections/${collectionIdNum}/categories/${catId}`);
+    }
   }
 
   function handleSelectItem(itemId: number) {
@@ -178,14 +185,13 @@ function CategoryView() {
     return <Loading message="Collection not found" />;
   }
 
-  // Show error state if categories or items failed to load
-  if (categoriesError || itemsError) {
+  // Show error state if categories failed to load (blocks entire layout)
+  if (categoriesError) {
     return (
       <div className="app__layout">
         <main className="app__content">
           <div className="app__error">
-            {categoriesError && <p>Failed to load categories: {categoriesError}</p>}
-            {itemsError && <p>Failed to load items: {itemsError}</p>}
+            <p>Failed to load categories: {categoriesError}</p>
           </div>
         </main>
       </div>
@@ -201,13 +207,25 @@ function CategoryView() {
   // Show category tree with placeholder if no category selected
   if (!categoryIdNum) {
     return (
-      <div className="app__layout">
+      <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
         <nav className="app__sidebar" aria-label="Category navigation">
-          <CategoryTree
-            categories={categories}
-            selectedCategoryId={null}
-            onSelect={handleSelectCategory}
-          />
+          {sidebarCollapsed ? (
+            <button
+              type="button"
+              className="app__sidebar-toggle"
+              onClick={() => setSidebarCollapsed(false)}
+              aria-label="Expand sidebar"
+            >
+              ▶
+            </button>
+          ) : (
+            <CategoryNav
+              categories={categories}
+              selectedCategoryId={null}
+              onSelect={handleSelectCategory}
+              onCollapse={() => setSidebarCollapsed(true)}
+            />
+          )}
         </nav>
         <main className="app__content">
           <div className="collection-title-bar">
@@ -229,13 +247,25 @@ function CategoryView() {
 
   // Show category tree with item list
   return (
-    <div className="app__layout">
+    <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
       <nav className="app__sidebar" aria-label="Category navigation">
-        <CategoryTree
-          categories={categories}
-          selectedCategoryId={categoryIdNum}
-          onSelect={handleSelectCategory}
-        />
+        {sidebarCollapsed ? (
+          <button
+            type="button"
+            className="app__sidebar-toggle"
+            onClick={() => setSidebarCollapsed(false)}
+            aria-label="Expand sidebar"
+          >
+            ▶
+          </button>
+        ) : (
+          <CategoryNav
+            categories={categories}
+            selectedCategoryId={categoryIdNum}
+            onSelect={handleSelectCategory}
+            onCollapse={() => setSidebarCollapsed(true)}
+          />
+        )}
       </nav>
       <main className="app__content">
         <div className="collection-title-bar">
@@ -275,11 +305,16 @@ function CategoryView() {
               onChange={setSubcategoryFilter}
             />
           )}
-          {itemsLoading && filteredItems.length === 0 ? (
+          {itemsError ? (
+            <div className="app__error">
+              <p>Failed to load items: {itemsError}</p>
+            </div>
+          ) : itemsLoading && filteredItems.length === 0 ? (
             <Loading message="Loading items..." />
           ) : (
             <ItemList
               items={filteredItems}
+              categories={categories}
               selectedId={null}
               onSelect={handleSelectItem}
               onAddItem={handleAddItem}

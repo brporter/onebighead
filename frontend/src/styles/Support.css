@@ -2,7 +2,7 @@
 .support-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,7 +146,7 @@
 
 .support-modal__button--primary {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border-color: var(--color-primary);
 }
 
@@ -250,7 +250,7 @@
   height: 18px;
   padding: 0 var(--space-xs);
   background: var(--color-danger);
-  color: white;
+  color: var(--color-primary-text);
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 9px;
@@ -313,7 +313,7 @@
 
 .support-requests__new-button {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border: none;
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--radius-md);

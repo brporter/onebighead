@@ -1,0 +1,106 @@
+<h2>Gallery Design Direction</h2>
+<p class="subtitle">Three approaches to "Museum/Gallery with dynamic energy" — each interprets the concept differently</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0a0a0a; padding: 32px; min-height: 280px; position: relative; overflow: hidden;">
+      <!-- Modern Gallery mockup -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; height: 100%;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end; grid-row: span 2;">
+          <div style="width: 100%; height: 60px; background: rgba(255,255,255,0.06); border-radius: 6px; margin-bottom: 8px;"></div>
+          <div style="font-family: 'Georgia', serif; color: #e8e8e8; font-size: 14px; letter-spacing: 0.5px;">Featured Piece</div>
+          <div style="color: #888; font-size: 11px; margin-top: 4px;">Highlighted with prominence</div>
+        </div>
+        <div style="background: #161616; border-radius: 8px; padding: 12px; display: flex; align-items: flex-end;">
+          <div style="color: #999; font-size: 10px; letter-spacing: 1px; text-transform: uppercase;">Item</div>
+        </div>
+        <div style="background: #161616; border-radius: 8px; padding: 12px; display: flex; align-items: flex-end;">
+          <div style="color: #999; font-size: 10px; letter-spacing: 1px; text-transform: uppercase;">Item</div>
+        </div>
+      </div>
+      <div style="position: absolute; top: 16px; right: 16px; color: #555; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;">Collection</div>
+    </div>
+    <div class="card-body">
+      <h3>A: Dark Gallery</h3>
+      <p>Dark backgrounds make items pop like spotlit exhibits. High contrast, dramatic. Featured items get large hero treatment. Feels premium and immersive.</p>
+      <div style="margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap;">
+        <span style="background: #0a0a0a; color: #ccc; padding: 3px 10px; border-radius: 12px; font-size: 11px;">Dark canvas</span>
+        <span style="background: #1a1a2e; color: #aab; padding: 3px 10px; border-radius: 12px; font-size: 11px;">Dramatic contrast</span>
+        <span style="background: #222; color: #ccc; padding: 3px 10px; border-radius: 12px; font-size: 11px;">Spotlight effects</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #faf9f7; padding: 32px; min-height: 280px; position: relative; overflow: hidden;">
+      <!-- White Gallery mockup -->
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px; height: 100%;">
+        <div style="background: white; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end; grid-row: span 2; box-shadow: 0 2px 20px rgba(0,0,0,0.08); border: 1px solid #eee;">
+          <div style="width: 100%; height: 50px; background: #f0ede8; border-radius: 4px; margin-bottom: 10px;"></div>
+          <div style="font-family: 'Georgia', serif; color: #2a2a2a; font-size: 14px; letter-spacing: 0.3px;">Featured Piece</div>
+          <div style="color: #999; font-size: 11px; margin-top: 2px; font-style: italic;">Curated spotlight</div>
+        </div>
+        <div style="background: white; border-radius: 4px; padding: 10px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; align-items: flex-end;">
+          <div style="color: #aaa; font-size: 10px; letter-spacing: 0.5px;">Item</div>
+        </div>
+        <div style="background: white; border-radius: 4px; padding: 10px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; align-items: flex-end;">
+          <div style="color: #aaa; font-size: 10px; letter-spacing: 0.5px;">Item</div>
+        </div>
+        <div style="background: white; border-radius: 4px; padding: 10px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; align-items: flex-end;">
+          <div style="color: #aaa; font-size: 10px; letter-spacing: 0.5px;">Item</div>
+        </div>
+        <div style="background: white; border-radius: 4px; padding: 10px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; align-items: flex-end;">
+          <div style="color: #aaa; font-size: 10px; letter-spacing: 0.5px;">Item</div>
+        </div>
+      </div>
+      <div style="position: absolute; top: 16px; right: 20px; color: #bbb; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; font-family: 'Georgia', serif;">Collection</div>
+    </div>
+    <div class="card-body">
+      <h3>B: White Gallery</h3>
+      <p>Bright, airy museum walls. Items float on clean white with generous space. Featured items scale up dramatically. Elegant, refined, and contemporary.</p>
+      <div style="margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap;">
+        <span style="background: #faf9f7; color: #777; padding: 3px 10px; border-radius: 12px; font-size: 11px; border: 1px solid #e5e2dd;">Bright & airy</span>
+        <span style="background: #f0ede8; color: #777; padding: 3px 10px; border-radius: 12px; font-size: 11px;">Warm whites</span>
+        <span style="background: white; color: #777; padding: 3px 10px; border-radius: 12px; font-size: 11px; border: 1px solid #e5e2dd;">Generous space</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(160deg, #f8f6f3 0%, #eee8e0 100%); padding: 32px; min-height: 280px; position: relative; overflow: hidden;">
+      <!-- Living Gallery mockup -->
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; height: 100%;">
+        <div style="background: white; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end; grid-row: span 2; box-shadow: 0 4px 24px rgba(0,0,0,0.08); position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #c77d4a, #d4a574, #8b6b4a);"></div>
+          <div style="width: 100%; height: 50px; background: linear-gradient(135deg, #f5f0ea, #ebe3d8); border-radius: 4px; margin-bottom: 10px;"></div>
+          <div style="font-family: 'Georgia', serif; color: #3a3028; font-size: 14px; letter-spacing: 0.3px;">Featured Piece</div>
+          <div style="color: #9a8a78; font-size: 11px; margin-top: 2px;">Warm spotlight</div>
+        </div>
+        <div style="background: white; border-radius: 6px; padding: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); display: flex; align-items: flex-end; position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #6b8f71, #8baf91);"></div>
+          <div style="color: #9a8a78; font-size: 10px; letter-spacing: 0.5px;">Item</div>
+        </div>
+        <div style="background: white; border-radius: 6px; padding: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); display: flex; align-items: flex-end; position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #7a8ca8, #9aacbf);"></div>
+          <div style="color: #9a8a78; font-size: 10px; letter-spacing: 0.5px;">Item</div>
+        </div>
+      </div>
+      <div style="position: absolute; bottom: 12px; right: 20px; color: #baa998; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;">Collection</div>
+    </div>
+    <div class="card-body">
+      <h3>C: Living Gallery</h3>
+      <p>Warm, textured backgrounds with earthy tones. Each collection/category gets its own accent color ribbon. Feels like a curated natural history museum — organized but alive.</p>
+      <div style="margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap;">
+        <span style="background: #f5f0ea; color: #8a7a68; padding: 3px 10px; border-radius: 12px; font-size: 11px; border: 1px solid #e5ddd2;">Warm tones</span>
+        <span style="background: #ebe3d8; color: #8a7a68; padding: 3px 10px; border-radius: 12px; font-size: 11px;">Textured</span>
+        <span style="background: linear-gradient(90deg, #c77d4a, #8b6b4a); color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px;">Color accents</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 32px; padding: 20px 24px; background: rgba(128,128,128,0.06); border-radius: 8px; border-left: 3px solid rgba(128,128,128,0.2);">
+  <p style="margin: 0; color: #888; font-size: 13px; line-height: 1.6;">
+    <strong style="color: #aaa;">All three support:</strong> Featured/spotlight items, dynamic layouts where key pieces get more visual real estate, smooth transitions, and responsive grids. The choice here is about <em>mood and palette</em> — the energy and layout patterns come next.
+  </p>
+</div>

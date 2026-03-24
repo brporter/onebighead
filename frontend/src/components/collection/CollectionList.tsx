@@ -1,5 +1,5 @@
 import type { Collection } from '../../utils/types';
-import '../../styles/CollectionList.css';
+import '../../styles/components/CollectionList.css';
 
 interface CollectionListProps {
   collections: Collection[];

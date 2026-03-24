@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemList from '../src/components/item/ItemList';
-import type { Item } from '../src/utils/types';
+import type { Item, Category } from '../src/utils/types';
 import { Visibility, UserFlag } from '../src/utils/types';
 
 describe('ItemList', () => {
@@ -24,8 +24,22 @@ describe('ItemList', () => {
     }));
   };
 
+  const defaultCategories: Category[] = [{
+    workspaceId: 1,
+    collectionId: 1,
+    categoryId: 1,
+    name: 'Test Category',
+    description: '',
+    parentCategoryId: null,
+    isSystem: false,
+    visibility: Visibility.Default,
+    effectiveIsPublic: false,
+    itemTemplateIds: [],
+  }];
+
   const defaultProps = {
     items: createMockItems(3),
+    categories: defaultCategories,
     selectedId: null,
     onSelect: vi.fn(),
     pageIndex: 0,
@@ -37,6 +51,7 @@ describe('ItemList', () => {
       const { container } = render(
         <ItemList
           items={[]}
+          categories={defaultCategories}
           selectedId={null}
           onSelect={() => {}}
           pageIndex={0}
@@ -74,6 +89,7 @@ describe('ItemList', () => {
       render(
         <ItemList
           items={[]}
+          categories={defaultCategories}
           selectedId={null}
           onSelect={() => {}}
           pageIndex={0}
@@ -105,7 +121,8 @@ describe('ItemList', () => {
 
       render(<ItemList {...defaultProps} onSelect={handleSelect} />);
 
-      await user.click(screen.getByText('Item 2'));
+      const card = screen.getByRole('button', { name: 'Select Item 2' });
+      await user.click(card);
 
       expect(handleSelect).toHaveBeenCalledWith(2);
     });
@@ -116,8 +133,8 @@ describe('ItemList', () => {
 
       render(<ItemList {...defaultProps} onSelect={handleSelect} />);
 
-      const row = screen.getByRole('button', { name: 'Select Item 1' });
-      row.focus();
+      const card = screen.getByRole('button', { name: 'Select Item 1' });
+      card.focus();
       await user.keyboard('{Enter}');
 
       expect(handleSelect).toHaveBeenCalledWith(1);
@@ -129,8 +146,8 @@ describe('ItemList', () => {
 
       render(<ItemList {...defaultProps} onSelect={handleSelect} />);
 
-      const row = screen.getByRole('button', { name: 'Select Item 1' });
-      row.focus();
+      const card = screen.getByRole('button', { name: 'Select Item 1' });
+      card.focus();
       await user.keyboard(' ');
 
       expect(handleSelect).toHaveBeenCalledWith(1);
@@ -139,10 +156,9 @@ describe('ItemList', () => {
     it('should highlight selected item', () => {
       render(<ItemList {...defaultProps} selectedId={2} />);
 
-      const rows = screen.getAllByRole('button');
-      const selectedRow = rows.find(row => row.getAttribute('aria-label') === 'Select Item 2');
+      const selectedCard = screen.getByRole('button', { name: 'Select Item 2' });
 
-      expect(selectedRow).toHaveClass('list__tr--active');
+      expect(selectedCard).toHaveClass('item-card--selected');
     });
 
     it('should show add button when onAddItem is provided', () => {
@@ -214,8 +230,8 @@ describe('ItemList', () => {
 
       render(<ItemList {...defaultProps} items={itemsWithNullId} onSelect={handleSelect} />);
 
-      const row = screen.getByRole('button', { name: 'Select Item with null id' });
-      await user.click(row);
+      const card = screen.getByRole('button', { name: 'Select Item with null id' });
+      await user.click(card);
 
       expect(handleSelect).not.toHaveBeenCalled();
     });
@@ -242,8 +258,8 @@ describe('ItemList', () => {
 
       render(<ItemList {...defaultProps} items={itemsWithNullId} onSelect={handleSelect} />);
 
-      const row = screen.getByRole('button', { name: 'Select Item with null id' });
-      row.focus();
+      const card = screen.getByRole('button', { name: 'Select Item with null id' });
+      card.focus();
       await user.keyboard('{Enter}');
 
       expect(handleSelect).not.toHaveBeenCalled();
@@ -339,4 +355,3 @@ describe('ItemList', () => {
     });
   });
 });
-

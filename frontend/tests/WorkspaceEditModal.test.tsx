@@ -199,7 +199,6 @@ describe('WorkspaceEditModal', () => {
       await user.type(slugInput, 'ab');
 
       // Enable public access
-      const checkbox = screen.getByRole('checkbox');
       // Checkbox should be disabled since slug is too short to be valid
       // But we need the checkbox to be enabled - let's use a valid-looking but invalid slug
       await user.clear(slugInput);

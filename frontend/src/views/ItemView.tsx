@@ -4,7 +4,7 @@ import { useData } from '../contexts/useData';
 import ItemDetail from '../components/item/ItemDetail';
 import ItemEditor from '../components/item/ItemEditor';
 import { BackNav, Loading, BulkUpdateModal, type ScopeOption } from '../components/common';
-import CategoryTree from '../components/category/CategoryTree';
+import CategoryNav from '../components/category/CategoryNav';
 import TemplateSelector from '../components/template/TemplateSelector';
 import { bulkUpdatesApi } from '../api/bulkUpdates';
 import { itemsApi } from '../api/items';
@@ -260,8 +260,12 @@ function ItemView() {
     handleBackToItems();
   }
 
-  function handleSelectCategory(catId: number) {
-    navigate(`/collections/${collectionIdNum}/categories/${catId}`);
+  function handleSelectCategory(catId: number | null) {
+    if (catId === null) {
+      navigate(`/collections/${collectionIdNum}`);
+    } else {
+      navigate(`/collections/${collectionIdNum}/categories/${catId}`);
+    }
   }
 
   function handleBackToCollections() {
@@ -303,7 +307,7 @@ function ItemView() {
   return (
     <div className="app__layout">
       <nav className="app__sidebar" aria-label="Category navigation">
-        <CategoryTree
+        <CategoryNav
           categories={categories}
           selectedCategoryId={detailItem?.categoryId ?? null}
           onSelect={handleSelectCategory}

@@ -111,10 +111,6 @@ export const createMockDataContext = (overrides?: Partial<DataContextValue>): Da
   associateTemplateWithCollection: vi.fn(async () => {}),
   disassociateTemplateFromCollection: vi.fn(async () => {}),
 
-  // Category tree UI state
-  expandedCategoryIds: new Set([1, 3]), // Root categories expanded by default
-  toggleCategoryExpanded: vi.fn(),
-
   ...overrides,
 });
 

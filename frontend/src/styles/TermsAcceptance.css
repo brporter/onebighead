@@ -133,7 +133,7 @@
 
 .terms-acceptance__button--primary {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
 }
 
 .terms-acceptance__button--primary:hover:not(:disabled) {
