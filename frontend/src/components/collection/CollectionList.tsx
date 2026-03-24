@@ -66,7 +66,7 @@ function CollectionList({ collections, onSelect }: CollectionListProps) {
     setUnpublishPreview(null);
   }
 
-  async function handleSlugConfirm(_slug: string) {
+  async function handleSlugConfirm() {
     setShowSlugSetup(false);
     await loadCollections();
   }

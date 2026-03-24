@@ -66,7 +66,7 @@ function ItemCard({ item, accentColor, isSelected, onSelect, selectionMode, isCh
     showToast(buildUnpublishToastMessage(result));
   }
 
-  async function handleSlugConfirm(_slug: string) {
+  async function handleSlugConfirm() {
     setShowSlugSetup(false);
     if (item.id === null) return;
     // Retry publish after slug setup

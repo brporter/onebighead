@@ -25,7 +25,7 @@ describe('PublishButton', () => {
     const handlePublish = vi.fn();
     const handleParentClick = vi.fn();
 
-    const { container } = render(
+    render(
       <div onClick={handleParentClick}>
         <PublishButton onPublish={handlePublish} />
       </div>

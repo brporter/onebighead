@@ -246,7 +246,7 @@ function CategoryView() {
     setCollectionUnpublishPreview(null);
   }
 
-  async function handleCollectionSlugConfirm(_slug: string) {
+  async function handleCollectionSlugConfirm() {
     setShowCollectionSlugSetup(false);
     await loadCollections();
   }

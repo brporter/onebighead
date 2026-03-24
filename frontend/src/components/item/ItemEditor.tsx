@@ -18,7 +18,6 @@ interface ItemEditorProps {
 function ItemEditor({
   item,
   categories,
-  collection,
   onSave,
   onCancel,
   onDelete,

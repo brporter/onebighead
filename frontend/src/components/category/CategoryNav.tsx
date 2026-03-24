@@ -185,7 +185,7 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
     setUnpublishPreview(null);
   }
 
-  async function handleSlugConfirm(_slug: string) {
+  async function handleSlugConfirm() {
     setShowSlugSetup(false);
     if (currentCollection) {
       await loadCategoriesForCollection(currentCollection.collectionId);

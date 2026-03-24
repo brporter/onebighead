@@ -115,7 +115,7 @@ describe('VisibilityFilter', () => {
   });
 
   it('should render an SVG eye icon inside the Public button', () => {
-    const { container } = render(
+    render(
       <VisibilityFilter value="all" onChange={() => {}} totalCount={10} filteredCount={10} />
     );
 

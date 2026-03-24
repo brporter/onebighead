@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ToastProvider } from '../src/contexts/ToastContext';
 import { useToast } from '../src/contexts/useToast';
@@ -89,23 +89,21 @@ describe('ToastContext and ToastContainer', () => {
     });
 
     it('should auto-dismiss toast after specified duration', async () => {
-      // Directly call showToast via a ref-based approach
-      let showFn: ((msg: string) => void) | undefined;
-      function Capture() {
+      // Capture showToast via a button click to avoid reassignment during render
+      function CaptureAndShow({ message }: { message: string }) {
         const { showToast } = useToast();
-        showFn = showToast;
-        return null;
+        return <button onClick={() => showToast(message)}>Trigger</button>;
       }
 
       render(
         <ToastProvider autoDismissMs={4000}>
-          <Capture />
+          <CaptureAndShow message="Will disappear" />
           <ToastContainer />
         </ToastProvider>
       );
 
       act(() => {
-        showFn!('Will disappear');
+        screen.getByText('Trigger').click();
       });
 
       expect(screen.getByText('Will disappear')).toBeInTheDocument();
