@@ -5,7 +5,8 @@ import CategoryNav from '../components/category/CategoryNav';
 import { CollectionDashboard } from '../components/collection';
 import ItemList from '../components/item/ItemList';
 import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
-import { BackNav, Loading } from '../components/common';
+import { BackNav, Loading, PublishButton, PublicBadge, PublishConfirmModal, UnpublishConfirmModal, SlugSetupModal } from '../components/common';
+import type { UnpublishPreviewResponse } from '../utils/types';
 import { getCategoryAndDescendantIds } from '../utils/categoryUtils';
 import { bulkUpdatesApi, type BulkUpdateJobResponse } from '../api';
 import '../styles/components/BulkUpdateModal.css';
@@ -27,6 +28,9 @@ function CategoryView() {
     itemsError,
     loadItemsForCategory,
     loadPropertySuggestions,
+    publishCollection,
+    unpublishCollection,
+    getUnpublishCollectionPreview,
   } = useData();
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
@@ -40,6 +44,9 @@ function CategoryView() {
   const [prevCategoryId, setPrevCategoryId] = useState(categoryIdNum);
   const [activeBulkJob, setActiveBulkJob] = useState<BulkUpdateJobResponse | null>(null);
   const bulkPollRef = useRef<number | null>(null);
+  const [collectionPublishTarget, setCollectionPublishTarget] = useState(false);
+  const [collectionUnpublishPreview, setCollectionUnpublishPreview] = useState<UnpublishPreviewResponse | null>(null);
+  const [showCollectionSlugSetup, setShowCollectionSlugSetup] = useState(false);
 
   // Reset filters when category changes (setState during render pattern)
   if (categoryIdNum !== prevCategoryId) {
@@ -198,6 +205,47 @@ function CategoryView() {
     );
   }
 
+  function handleCollectionPublishClick() {
+    setCollectionPublishTarget(true);
+  }
+
+  async function handleCollectionPublishConfirm(includeChildren: boolean) {
+    if (!currentCollection) return;
+    const result = await publishCollection(currentCollection.collectionId, includeChildren);
+    setCollectionPublishTarget(false);
+    if (result.requiresSlugSetup) {
+      setShowCollectionSlugSetup(true);
+      return;
+    }
+    await loadCollections();
+  }
+
+  function handleCollectionPublishCancel() {
+    setCollectionPublishTarget(false);
+  }
+
+  async function handleCollectionUnpublishClick() {
+    if (!currentCollection) return;
+    const preview = await getUnpublishCollectionPreview(currentCollection.collectionId);
+    setCollectionUnpublishPreview(preview);
+  }
+
+  async function handleCollectionUnpublishConfirm() {
+    if (!currentCollection) return;
+    await unpublishCollection(currentCollection.collectionId);
+    setCollectionUnpublishPreview(null);
+    await loadCollections();
+  }
+
+  function handleCollectionUnpublishCancel() {
+    setCollectionUnpublishPreview(null);
+  }
+
+  async function handleCollectionSlugConfirm(_slug: string) {
+    setShowCollectionSlugSetup(false);
+    await loadCollections();
+  }
+
   function handleBackToCollections() {
     navigate('/collections');
   }
@@ -235,12 +283,53 @@ function CategoryView() {
               </button>
             )}
             <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
+            {currentCollection.effectiveIsPublic ? (
+              <PublicBadge
+                effectiveIsPublic={currentCollection.effectiveIsPublic}
+                onUnpublish={handleCollectionUnpublishClick}
+                className="collection-title-bar__badge"
+              />
+            ) : (
+              <PublishButton
+                onPublish={handleCollectionPublishClick}
+                className="collection-title-bar__publish-btn"
+              />
+            )}
           </div>
           <CollectionDashboard
             collectionId={collectionIdNum!}
             onSelectItem={handleSelectItem}
           />
         </main>
+
+        {collectionPublishTarget && (
+          <PublishConfirmModal
+            entityType="collection"
+            entityName={currentCollection.name}
+            itemCount={items.length}
+            categoryCount={categories.length}
+            onConfirm={handleCollectionPublishConfirm}
+            onCancel={handleCollectionPublishCancel}
+          />
+        )}
+
+        {collectionUnpublishPreview && (
+          <UnpublishConfirmModal
+            entityType="collection"
+            entityName={currentCollection.name}
+            affectedPublicItems={collectionUnpublishPreview.affectedPublicItems}
+            affectedPublicCategories={collectionUnpublishPreview.affectedPublicCategories}
+            onConfirm={handleCollectionUnpublishConfirm}
+            onCancel={handleCollectionUnpublishCancel}
+          />
+        )}
+
+        {showCollectionSlugSetup && (
+          <SlugSetupModal
+            onConfirm={handleCollectionSlugConfirm}
+            onCancel={() => setShowCollectionSlugSetup(false)}
+          />
+        )}
       </div>
     );
   }
@@ -277,6 +366,18 @@ function CategoryView() {
           <Link to={`/collections/${collectionIdNum}`} className="collection-title-bar__title-link">
             <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
           </Link>
+          {currentCollection.effectiveIsPublic ? (
+            <PublicBadge
+              effectiveIsPublic={currentCollection.effectiveIsPublic}
+              onUnpublish={handleCollectionUnpublishClick}
+              className="collection-title-bar__badge"
+            />
+          ) : (
+            <PublishButton
+              onPublish={handleCollectionPublishClick}
+              className="collection-title-bar__publish-btn"
+            />
+          )}
           <p className="collection-title-bar__subtitle">Browse categories, then view items and details.</p>
         </div>
         <section className="app__items">
@@ -324,6 +425,35 @@ function CategoryView() {
           )}
         </section>
       </main>
+
+      {collectionPublishTarget && (
+        <PublishConfirmModal
+          entityType="collection"
+          entityName={currentCollection.name}
+          itemCount={items.length}
+          categoryCount={categories.length}
+          onConfirm={handleCollectionPublishConfirm}
+          onCancel={handleCollectionPublishCancel}
+        />
+      )}
+
+      {collectionUnpublishPreview && (
+        <UnpublishConfirmModal
+          entityType="collection"
+          entityName={currentCollection.name}
+          affectedPublicItems={collectionUnpublishPreview.affectedPublicItems}
+          affectedPublicCategories={collectionUnpublishPreview.affectedPublicCategories}
+          onConfirm={handleCollectionUnpublishConfirm}
+          onCancel={handleCollectionUnpublishCancel}
+        />
+      )}
+
+      {showCollectionSlugSetup && (
+        <SlugSetupModal
+          onConfirm={handleCollectionSlugConfirm}
+          onCancel={() => setShowCollectionSlugSetup(false)}
+        />
+      )}
     </div>
   );
 }

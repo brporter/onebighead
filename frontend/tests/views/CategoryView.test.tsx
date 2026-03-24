@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import CategoryView from '../../src/views/CategoryView';
@@ -86,6 +86,10 @@ describe('CategoryView', () => {
     },
   ];
 
+  const mockPublishCollection = vi.fn().mockResolvedValue({ published: { type: 'Collection', id: 1, name: 'Test Collection' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false });
+  const mockUnpublishCollection = vi.fn().mockResolvedValue({ unpublished: { type: 'Collection', id: 1, name: 'Test Collection' }, affectedPublicItems: 0, affectedPublicCategories: 0 });
+  const mockGetUnpublishCollectionPreview = vi.fn().mockResolvedValue({ affectedPublicItems: 3, affectedPublicCategories: 1 });
+
   const mockDataContext = {
     collections: mockCollections,
     collectionsLoading: false,
@@ -107,6 +111,9 @@ describe('CategoryView', () => {
     loadItemTemplates: vi.fn(async () => []),
     loadCollectionTemplates: vi.fn(async () => []),
     getCategoryTemplates: vi.fn(async () => []),
+    publishCollection: mockPublishCollection,
+    unpublishCollection: mockUnpublishCollection,
+    getUnpublishCollectionPreview: mockGetUnpublishCollectionPreview,
   };
 
   beforeEach(() => {
@@ -348,6 +355,167 @@ describe('CategoryView', () => {
       expect(screen.queryByText('Root Category')).not.toBeInTheDocument();
 
       window.matchMedia = originalMatchMedia;
+    });
+  });
+
+  describe('collection publish/unpublish in title bar', () => {
+    const privateCollection = { ...mockCollections[0], effectiveIsPublic: false, visibility: Visibility.Private };
+    const privateCategories = mockCategories.map(c => ({ ...c, effectiveIsPublic: false }));
+    const privateItems = mockItems.map(i => ({ ...i, effectiveIsPublic: false }));
+
+    it('should show PublishButton for private collection (no category selected)', () => {
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        currentCollection: privateCollection,
+        collections: [privateCollection],
+        categories: privateCategories,
+        items: privateItems,
+      });
+
+      renderWithRouter('/collections/1');
+      // The collection title bar should have a Publish button
+      expect(screen.getAllByText('Publish').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should show PublicBadge for public collection (no category selected)', () => {
+      renderWithRouter('/collections/1');
+      // Default mock has effectiveIsPublic: true for collection
+      expect(screen.getAllByText('Public').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should show PublishButton for private collection (with category selected)', () => {
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        currentCollection: privateCollection,
+        collections: [privateCollection],
+        categories: privateCategories,
+        items: privateItems,
+      });
+
+      renderWithRouter('/collections/1/categories/1');
+      const publishButtons = screen.getAllByText('Publish');
+      expect(publishButtons.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should show PublicBadge for public collection (with category selected)', () => {
+      renderWithRouter('/collections/1/categories/1');
+      // Default mock has effectiveIsPublic: true
+      expect(screen.getAllByText('Public').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should show PublishConfirmModal when clicking Publish on collection title bar', async () => {
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        currentCollection: privateCollection,
+        collections: [privateCollection],
+        categories: [],
+        items: [],
+      });
+
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByText('Publish'));
+
+      expect(screen.getByText(/Publish collection only/)).toBeInTheDocument();
+    });
+
+    it('should call publishCollection when confirming publish', async () => {
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        currentCollection: privateCollection,
+        collections: [privateCollection],
+        categories: [],
+        items: [],
+      });
+
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByText('Publish'));
+      await user.click(screen.getByText(/Publish collection and all/));
+
+      expect(mockPublishCollection).toHaveBeenCalledWith(1, true);
+    });
+
+    it('should show UnpublishConfirmModal when clicking PublicBadge on collection title bar', async () => {
+      const user = userEvent.setup();
+      const { container } = renderWithRouter('/collections/1');
+
+      // Target the Public badge inside the collection-title-bar specifically
+      const titleBar = container.querySelector('.collection-title-bar');
+      const badge = within(titleBar as HTMLElement).getByText('Public');
+      await user.click(badge);
+
+      await waitFor(() => {
+        expect(mockGetUnpublishCollectionPreview).toHaveBeenCalledWith(1);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Make Private/)).toBeInTheDocument();
+      });
+    });
+
+    it('should call unpublishCollection when confirming unpublish', async () => {
+      const user = userEvent.setup();
+      const { container } = renderWithRouter('/collections/1');
+
+      const titleBar = container.querySelector('.collection-title-bar');
+      const badge = within(titleBar as HTMLElement).getByText('Public');
+      await user.click(badge);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Make Private/)).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('Make Private'));
+
+      expect(mockUnpublishCollection).toHaveBeenCalledWith(1);
+    });
+
+    it('should show SlugSetupModal when publish requires slug setup', async () => {
+      mockPublishCollection.mockResolvedValueOnce({ published: { type: 'Collection', id: 1, name: 'Test Collection' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
+
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        currentCollection: privateCollection,
+        collections: [privateCollection],
+        categories: [],
+        items: [],
+        publishCollection: mockPublishCollection,
+      });
+
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByText('Publish'));
+      await user.click(screen.getByText(/Publish collection and all/));
+
+      await waitFor(() => {
+        expect(screen.getByText('Set Up Your Public Gallery')).toBeInTheDocument();
+      });
+    });
+
+    it('should cancel publish modal', async () => {
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        currentCollection: privateCollection,
+        collections: [privateCollection],
+        categories: [],
+        items: [],
+      });
+
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByText('Publish'));
+      expect(screen.getByText(/Publish collection only/)).toBeInTheDocument();
+
+      // Click the Cancel button inside the publish-confirm-modal
+      const modal = document.querySelector('.publish-confirm-modal');
+      const cancelBtn = within(modal as HTMLElement).getByText('Cancel');
+      await user.click(cancelBtn);
+      expect(screen.queryByText(/Publish collection only/)).not.toBeInTheDocument();
     });
   });
 

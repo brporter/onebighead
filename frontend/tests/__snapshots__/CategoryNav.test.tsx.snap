@@ -106,6 +106,21 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
           </span>
         </div>
         <button
+          class="publish-btn categoryNav__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
+        <button
           aria-label="Edit 35mm Film"
           class="categoryNav__edit"
           type="button"
@@ -138,6 +153,21 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
             Medium Format
           </span>
         </div>
+        <button
+          class="publish-btn categoryNav__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <button
           aria-label="Edit Medium Format"
           class="categoryNav__edit"
@@ -335,6 +365,21 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
           </span>
         </div>
         <button
+          class="publish-btn categoryNav__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
+        <button
           aria-label="Edit Rangefinders"
           class="categoryNav__edit"
           type="button"
@@ -367,6 +412,21 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
             SLR Cameras
           </span>
         </div>
+        <button
+          class="publish-btn categoryNav__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <button
           aria-label="Edit SLR Cameras"
           class="categoryNav__edit"

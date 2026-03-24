@@ -36,10 +36,18 @@ describe('CollectionView', () => {
     { collectionId: 2, workspaceId: 1, name: 'Collection Two', description: 'Second collection', heroImageUrl: null, slug: 'two', visibility: Visibility.Private, effectiveIsPublic: false },
   ];
 
+  const mockPublishCollection = vi.fn().mockResolvedValue({ published: { type: 'Collection', id: 1, name: 'Collection One' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false });
+  const mockUnpublishCollection = vi.fn().mockResolvedValue({ unpublished: { type: 'Collection', id: 1, name: 'Collection One' }, affectedPublicItems: 0, affectedPublicCategories: 0 });
+  const mockGetUnpublishCollectionPreview = vi.fn().mockResolvedValue({ affectedPublicItems: 3, affectedPublicCategories: 1 });
+
   const mockDataContext = {
     collections: mockCollections,
     collectionsLoading: false,
+    collectionsError: null,
     loadCollections: vi.fn(),
+    publishCollection: mockPublishCollection,
+    unpublishCollection: mockUnpublishCollection,
+    getUnpublishCollectionPreview: mockGetUnpublishCollectionPreview,
   };
 
   beforeEach(() => {
@@ -102,6 +110,150 @@ describe('CollectionView', () => {
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/collections/1', { replace: true });
+    });
+  });
+
+  describe('publish/unpublish in collection list', () => {
+    it('should show PublishButton for private collections', () => {
+      renderWithRouter();
+      const publishButtons = screen.getAllByText('Publish');
+      expect(publishButtons.length).toBe(2);
+    });
+
+    it('should show PublicBadge for public collections', () => {
+      const publicCollections: Collection[] = [
+        { ...mockCollections[0], effectiveIsPublic: true },
+        { ...mockCollections[1], effectiveIsPublic: false },
+      ];
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        collections: publicCollections,
+      });
+
+      renderWithRouter();
+      expect(screen.getByText('Public')).toBeInTheDocument();
+      expect(screen.getAllByText('Publish').length).toBe(1);
+    });
+
+    it('should show PublishConfirmModal when clicking Publish button', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const publishButtons = screen.getAllByText('Publish');
+      await user.click(publishButtons[0]);
+
+      expect(screen.getByText(/Publish collection only/)).toBeInTheDocument();
+    });
+
+    it('should show UnpublishConfirmModal when clicking PublicBadge', async () => {
+      const publicCollections: Collection[] = [
+        { ...mockCollections[0], effectiveIsPublic: true },
+      ];
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        collections: publicCollections,
+      });
+
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      await user.click(screen.getByText('Public'));
+
+      await waitFor(() => {
+        expect(mockGetUnpublishCollectionPreview).toHaveBeenCalledWith(1);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Make Private/)).toBeInTheDocument();
+      });
+    });
+
+    it('should call publishCollection when confirming publish', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const publishButtons = screen.getAllByText('Publish');
+      await user.click(publishButtons[0]);
+
+      await user.click(screen.getByText(/Publish collection and all/));
+
+      expect(mockPublishCollection).toHaveBeenCalledWith(1, true);
+    });
+
+    it('should call unpublishCollection when confirming unpublish', async () => {
+      const publicCollections: Collection[] = [
+        { ...mockCollections[0], effectiveIsPublic: true },
+      ];
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        collections: publicCollections,
+      });
+
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      await user.click(screen.getByText('Public'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Make Private/)).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('Make Private'));
+
+      expect(mockUnpublishCollection).toHaveBeenCalledWith(1);
+    });
+
+    it('should show SlugSetupModal when publish requires slug setup', async () => {
+      mockPublishCollection.mockResolvedValueOnce({ published: { type: 'Collection', id: 1, name: 'Collection One' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
+
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const publishButtons = screen.getAllByText('Publish');
+      await user.click(publishButtons[0]);
+
+      await user.click(screen.getByText(/Publish collection and all/));
+
+      await waitFor(() => {
+        expect(screen.getByText('Set Up Your Public Gallery')).toBeInTheDocument();
+      });
+    });
+
+    it('should cancel publish modal', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const publishButtons = screen.getAllByText('Publish');
+      await user.click(publishButtons[0]);
+
+      expect(screen.getByText(/Publish collection only/)).toBeInTheDocument();
+
+      await user.click(screen.getByText('Cancel'));
+
+      expect(screen.queryByText(/Publish collection only/)).not.toBeInTheDocument();
+    });
+
+    it('should cancel unpublish modal', async () => {
+      const publicCollections: Collection[] = [
+        { ...mockCollections[0], effectiveIsPublic: true },
+      ];
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        collections: publicCollections,
+      });
+
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      await user.click(screen.getByText('Public'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Make Private/)).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText('Cancel')[0]);
+
+      expect(screen.queryByText(/Make Private/)).not.toBeInTheDocument();
     });
   });
 

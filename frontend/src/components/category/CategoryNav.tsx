@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import type { Category } from '../../utils/types';
+import type { UnpublishPreviewResponse } from '../../utils/types';
 import { useData } from '../../contexts/useData';
 import { getAccentColor } from '../../utils/accentColors';
 import { buildDrillPath, getVisibleCategories, getBreadcrumb } from '../../utils/categoryNavUtils';
 import CategoryEditorModal from './CategoryEditorModal';
+import { PublishButton, PublicBadge, PublishConfirmModal, UnpublishConfirmModal, SlugSetupModal } from '../common';
 import './CategoryNav.css';
 
 interface CategoryNavProps {
@@ -21,10 +23,17 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
     currentCollection,
     loadCategoriesForCollection,
     loadItemsForCategory,
+    publishCategory,
+    unpublishCategory,
+    getUnpublishCategoryPreview,
   } = useData();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [publishTarget, setPublishTarget] = useState<Category | null>(null);
+  const [unpublishTarget, setUnpublishTarget] = useState<Category | null>(null);
+  const [unpublishPreview, setUnpublishPreview] = useState<UnpublishPreviewResponse | null>(null);
+  const [showSlugSetup, setShowSlugSetup] = useState(false);
 
   // Filter out system categories that have no items
   const visibleCategories = useMemo(() => {
@@ -126,6 +135,55 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
       if (selectedCategoryId) {
         await loadItemsForCategory(selectedCategoryId);
       }
+    }
+  }
+
+  function handlePublishClick(category: Category) {
+    setPublishTarget(category);
+  }
+
+  async function handlePublishConfirm(includeChildren: boolean) {
+    if (!publishTarget) return;
+    const result = await publishCategory(publishTarget.categoryId, includeChildren);
+    setPublishTarget(null);
+    if (result.requiresSlugSetup) {
+      setShowSlugSetup(true);
+      return;
+    }
+    if (currentCollection) {
+      await loadCategoriesForCollection(currentCollection.collectionId);
+    }
+  }
+
+  function handlePublishCancel() {
+    setPublishTarget(null);
+  }
+
+  async function handleUnpublishClick(category: Category) {
+    const preview = await getUnpublishCategoryPreview(category.categoryId);
+    setUnpublishPreview(preview);
+    setUnpublishTarget(category);
+  }
+
+  async function handleUnpublishConfirm() {
+    if (!unpublishTarget) return;
+    await unpublishCategory(unpublishTarget.categoryId);
+    setUnpublishTarget(null);
+    setUnpublishPreview(null);
+    if (currentCollection) {
+      await loadCategoriesForCollection(currentCollection.collectionId);
+    }
+  }
+
+  function handleUnpublishCancel() {
+    setUnpublishTarget(null);
+    setUnpublishPreview(null);
+  }
+
+  async function handleSlugConfirm(_slug: string) {
+    setShowSlugSetup(false);
+    if (currentCollection) {
+      await loadCategoriesForCollection(currentCollection.collectionId);
     }
   }
 
@@ -269,6 +327,19 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
                 )}
               </div>
 
+              {!cat.isSystem && cat.effectiveIsPublic ? (
+                <PublicBadge
+                  effectiveIsPublic={cat.effectiveIsPublic}
+                  onUnpublish={() => handleUnpublishClick(cat)}
+                  className="categoryNav__badge"
+                />
+              ) : !cat.isSystem ? (
+                <PublishButton
+                  onPublish={() => handlePublishClick(cat)}
+                  className="categoryNav__publish-btn"
+                />
+              ) : null}
+
               {!cat.isSystem && (
                 <button
                   type="button"
@@ -301,6 +372,33 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
         onClose={handleModalClose}
         onSaved={handleModalSaved}
       />
+
+      {publishTarget && (
+        <PublishConfirmModal
+          entityType="category"
+          entityName={publishTarget.name}
+          itemCount={items.filter(i => i.categoryId === publishTarget.categoryId).length}
+          onConfirm={handlePublishConfirm}
+          onCancel={handlePublishCancel}
+        />
+      )}
+
+      {unpublishTarget && unpublishPreview && (
+        <UnpublishConfirmModal
+          entityType="category"
+          entityName={unpublishTarget.name}
+          affectedPublicItems={unpublishPreview.affectedPublicItems}
+          onConfirm={handleUnpublishConfirm}
+          onCancel={handleUnpublishCancel}
+        />
+      )}
+
+      {showSlugSetup && (
+        <SlugSetupModal
+          onConfirm={handleSlugConfirm}
+          onCancel={() => setShowSlugSetup(false)}
+        />
+      )}
     </aside>
   );
 }

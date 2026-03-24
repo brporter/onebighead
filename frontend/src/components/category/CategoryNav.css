@@ -179,6 +179,25 @@
   flex-shrink: 0;
 }
 
+/* --------------------------------------------------------------------------
+   Publish / Public badge in rows
+   -------------------------------------------------------------------------- */
+
+.categoryNav__publish-btn {
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.categoryNav__row:hover .categoryNav__publish-btn,
+.categoryNav__row:focus-within .categoryNav__publish-btn,
+.categoryNav__publish-btn:focus {
+  opacity: 1;
+}
+
+.categoryNav__badge {
+  flex-shrink: 0;
+}
+
 .categoryNav__edit {
   width: 28px;
   height: 28px;
