@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--color-bg);
+  background: linear-gradient(160deg, var(--color-bg) 0%, var(--color-bg-end) 100%);
   color: var(--color-text);
 }
 
@@ -15,8 +15,7 @@
    -------------------------------------------------------------------------- */
 
 .landing__header {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--color-primary);
   padding: var(--space-md) var(--space-lg);
   position: sticky;
   top: 0;
@@ -32,14 +31,17 @@
 }
 
 .landing__logo {
+  font-family: 'Fraunces', serif;
   font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text);
+  font-weight: 600;
+  color: var(--color-primary-text);
   text-decoration: none;
+  letter-spacing: -0.3px;
 }
 
 .landing__logo:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
+  opacity: 0.9;
   text-decoration: none;
 }
 
@@ -50,31 +52,33 @@
 }
 
 .landing__nav-link {
-  color: var(--color-text-secondary);
+  color: var(--color-primary-text);
   text-decoration: none;
   font-weight: 500;
-  transition: color var(--transition-fast);
+  opacity: 0.75;
+  transition: opacity var(--transition-fast);
 }
 
 .landing__nav-link:hover {
-  color: var(--color-primary);
+  opacity: 1;
   text-decoration: none;
 }
 
 .landing__nav-link--active {
-  color: var(--color-primary);
+  opacity: 1;
 }
 
 .landing__nav-link--signin {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-primary-text);
   padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--radius-md);
+  border-radius: 20px;
+  opacity: 1;
 }
 
 .landing__nav-link--signin:hover {
-  background: var(--color-primary-hover);
-  color: var(--color-text-inverse);
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-primary-text);
 }
 
 /* --------------------------------------------------------------------------
@@ -111,10 +115,12 @@
 }
 
 .landing__title {
+  font-family: 'Fraunces', serif;
   font-size: 2.5rem;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: var(--space-lg);
   color: var(--color-text);
+  letter-spacing: -0.3px;
 }
 
 @media (min-width: 768px) {
@@ -146,6 +152,7 @@
   display: inline-block;
   padding: var(--space-md) var(--space-xl);
   border-radius: var(--radius-md);
+  font-family: 'DM Sans', sans-serif;
   font-weight: 600;
   text-decoration: none;
   transition: all var(--transition-fast);
@@ -156,7 +163,7 @@
 
 .landing__button--primary {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
 }
 
 .landing__button--primary:hover {
@@ -190,11 +197,13 @@
 }
 
 .landing__section-title {
+  font-family: 'Fraunces', serif;
   font-size: 1.75rem;
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
   margin-bottom: var(--space-xl);
   color: var(--color-text);
+  letter-spacing: -0.3px;
 }
 
 .landing__features-grid {
@@ -208,12 +217,14 @@
   padding: var(--space-xl);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .landing__feature h3 {
+  font-family: 'Fraunces', serif;
   font-size: 1.25rem;
   margin-bottom: var(--space-md);
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 
 .landing__feature p {
@@ -232,6 +243,7 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   text-align: center;
+  box-shadow: var(--shadow-sm);
 }
 
 .landing__about-preview p {
@@ -254,6 +266,7 @@
   padding: var(--space-xl);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .landing__article h1 {
@@ -263,6 +276,7 @@
 }
 
 .landing__article h2 {
+  font-family: 'Fraunces', serif;
   font-size: 1.5rem;
   margin: var(--space-xl) 0 var(--space-md);
   color: var(--color-text);
@@ -279,13 +293,13 @@
 }
 
 .landing__article p {
-  color: var(--color-text-muted);
+  color: var(--color-text-body);
   line-height: 1.8;
   margin-bottom: var(--space-lg);
 }
 
 .landing__article ul {
-  color: var(--color-text-muted);
+  color: var(--color-text-body);
   line-height: 1.8;
   margin-bottom: var(--space-lg);
   padding-left: var(--space-xl);
@@ -296,11 +310,11 @@
 }
 
 .landing__article a {
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 
 .landing__article a:hover {
-  color: var(--color-primary-hover);
+  color: var(--color-primary);
 }
 
 .landing__date {
@@ -311,7 +325,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   Form Styles (Sign Up)
+   Form Styles (Sign In)
    -------------------------------------------------------------------------- */
 
 .landing__form-container {
@@ -319,6 +333,7 @@
   padding: var(--space-xl);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
   width: 100%;
 }
 
@@ -354,19 +369,20 @@
 .landing__form-group input[type="text"],
 .landing__form-group input[type="email"],
 .landing__form-group input[type="password"] {
+  font-family: 'DM Sans', sans-serif;
   padding: var(--space-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   font-size: 1rem;
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
   transition: border-color var(--transition-fast);
 }
 
 .landing__form-group input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(199, 125, 74, 0.15);
 }
 
 .landing__form-group--checkbox {
@@ -377,7 +393,7 @@
 .landing__form-group--checkbox input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: var(--color-primary);
+  accent-color: var(--color-accent);
 }
 
 .landing__form-group--checkbox label {
@@ -391,7 +407,7 @@
 }
 
 .landing__form-footer a {
-  color: var(--color-primary);
+  color: var(--color-accent);
   font-weight: 500;
 }
 
@@ -400,8 +416,7 @@
    -------------------------------------------------------------------------- */
 
 .landing__footer {
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  background: var(--color-primary);
   padding: var(--space-lg);
   margin-top: auto;
 }
@@ -424,8 +439,9 @@
 
 .landing__footer p {
   margin: 0;
-  color: var(--color-text-muted);
+  color: var(--color-primary-text);
   font-size: 0.9rem;
+  opacity: 0.7;
 }
 
 .landing__footer-nav {
@@ -434,13 +450,14 @@
 }
 
 .landing__footer-nav a {
-  color: var(--color-text-muted);
+  color: var(--color-primary-text);
   font-size: 0.9rem;
   text-decoration: none;
+  opacity: 0.7;
 }
 
 .landing__footer-nav a:hover {
-  color: var(--color-primary);
+  opacity: 1;
 }
 
 /* --------------------------------------------------------------------------
@@ -492,6 +509,7 @@
   border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text);
+  font-family: 'DM Sans', sans-serif;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -499,14 +517,14 @@
 }
 
 .landing__sso-button:hover:not(:disabled) {
-  background: var(--color-bg);
+  background: var(--color-surface-alt);
   border-color: var(--color-text-muted);
 }
 
 .landing__sso-button:focus {
   outline: none;
-  box-shadow: 0 0 0 3px var(--color-primary-subtle);
-  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(199, 125, 74, 0.15);
+  border-color: var(--color-accent);
 }
 
 .landing__sso-button:disabled {
@@ -569,20 +587,19 @@
 }
 
 .landing__alert--error {
-  background: var(--color-danger-bg, rgba(239, 68, 68, 0.1));
-  border: 1px solid var(--color-danger-border, rgba(239, 68, 68, 0.3));
-  color: var(--color-danger, #dc2626);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
 }
 
 .landing__alert--success {
-  background: var(--color-success-bg, rgba(16, 185, 129, 0.1));
-  border: 1px solid var(--color-success-border, rgba(16, 185, 129, 0.3));
-  color: var(--color-success, #059669);
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success);
 }
 
 .landing__alert--info {
-  background: var(--color-info-bg, rgba(59, 130, 246, 0.1));
-  border: 1px solid var(--color-info-border, rgba(59, 130, 246, 0.3));
-  color: var(--color-info, #3b82f6);
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border);
+  color: var(--color-info);
 }
-
