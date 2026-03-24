@@ -1,0 +1,72 @@
+.publish-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.25em 0.75em;
+  border: none;
+  border-radius: 999px;
+  background: #48bb78;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.publish-btn:hover {
+  background: #56d48a;
+}
+
+.publish-btn svg {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+
+.public-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.25em 0.75em;
+  border: none;
+  border-radius: 999px;
+  background: #63b3ed;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.public-badge:hover {
+  background: #f56565;
+}
+
+.public-badge svg {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+
+.public-badge__default {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.public-badge__hover {
+  display: none;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.public-badge:hover .public-badge__default {
+  display: none;
+}
+
+.public-badge:hover .public-badge__hover {
+  display: inline-flex;
+}
