@@ -343,8 +343,7 @@ public class DtoMappingTests
             Description = "Item description",
             CollectionId = 10,
             CategoryId = 5,
-            UserFlag = UserFlag.Want,
-            Visibility = Visibility.Public
+            UserFlag = UserFlag.Want
         };
 
         // Act
@@ -357,7 +356,6 @@ public class DtoMappingTests
         Assert.Equal(10, item.CollectionId);
         Assert.Equal(5, item.CategoryId);
         Assert.Equal(UserFlag.Want, item.UserFlag);
-        Assert.Equal(Visibility.Public, item.Visibility);
         Assert.Equal(1, item.WorkspaceId);
     }
 
@@ -379,7 +377,6 @@ public class DtoMappingTests
         Assert.Equal(string.Empty, item.Description);
         Assert.Null(item.CategoryId);
         Assert.Equal(UserFlag.Have, item.UserFlag);
-        Assert.Equal(Visibility.Private, item.Visibility);
         Assert.Equal(2, item.WorkspaceId);
     }
 
@@ -398,8 +395,7 @@ public class DtoMappingTests
             Description = "Updated description",
             CollectionId = 15,
             CategoryId = 8,
-            UserFlag = UserFlag.TradeOrSell,
-            Visibility = Visibility.Private
+            UserFlag = UserFlag.TradeOrSell
         };
 
         // Act
@@ -413,7 +409,6 @@ public class DtoMappingTests
         Assert.Equal(15, item.CollectionId);
         Assert.Equal(8, item.CategoryId);
         Assert.Equal(UserFlag.TradeOrSell, item.UserFlag);
-        Assert.Equal(Visibility.Private, item.Visibility);
         Assert.Equal(3, item.WorkspaceId);
     }
 

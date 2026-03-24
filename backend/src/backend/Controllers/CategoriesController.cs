@@ -151,15 +151,10 @@ public class CategoriesController : ApiControllerBase
             }
         }
 
-        // Validate visibility: cannot set Public when parent is private
-        if (request.Visibility == Visibility.Public)
-        {
-            bool parentEffectivelyPublic = parentCategory?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
-            if (!parentEffectivelyPublic)
-            {
-                return BadRequest("Cannot set visibility to Public when parent is private.");
-            }
-        }
+        // Default visibility from parent category or collection
+        var defaultVisibility = parentCategory?.EffectiveIsPublic ?? collection.EffectiveIsPublic
+            ? Visibility.Public
+            : Visibility.Private;
 
         var category = new Category
         {
@@ -169,7 +164,7 @@ public class CategoriesController : ApiControllerBase
             Description = request.Description ?? string.Empty,
             ParentCategoryId = request.ParentCategoryId,
             IsSystem = false,
-            Visibility = request.Visibility
+            Visibility = defaultVisibility
         };
 
         var created = await _categoryRepository.CreateAsync(category);
@@ -219,22 +214,11 @@ public class CategoriesController : ApiControllerBase
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
         // Validate ParentCategoryId belongs to workspace and same collection
-        Category? parentCategory = null;
         if (request.ParentCategoryId.HasValue)
         {
-            if (!categoryLookup.TryGetValue(request.ParentCategoryId.Value, out parentCategory))
+            if (!categoryLookup.TryGetValue(request.ParentCategoryId.Value, out _))
             {
                 return BadRequest("Invalid parent category");
-            }
-        }
-
-        // Validate visibility: cannot set Public when parent is private
-        if (request.Visibility == Visibility.Public)
-        {
-            bool parentEffectivelyPublic = parentCategory?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
-            if (!parentEffectivelyPublic)
-            {
-                return BadRequest("Cannot set visibility to Public when parent is private.");
             }
         }
 
@@ -245,7 +229,7 @@ public class CategoriesController : ApiControllerBase
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             ParentCategoryId = request.ParentCategoryId,
-            Visibility = request.Visibility
+            Visibility = existingCategory.Visibility
         };
 
         var updated = await _categoryRepository.UpdateAsync(id, category, workspaceId);

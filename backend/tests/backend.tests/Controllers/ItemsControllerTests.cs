@@ -526,6 +526,159 @@ public class ItemsControllerTests
 
     #endregion
 
+    #region Visibility Default Tests
+
+    [Fact]
+    public async Task CreateItem_DefaultsToPrivate_WhenCategoryIsPrivate()
+    {
+        // Arrange
+        var request = new CreateItemRequest
+        {
+            Name = "New Item",
+            CollectionId = TestCollectionId,
+            CategoryId = TestCategoryId
+        };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Public };
+        var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Private Category", Visibility = Visibility.Private, EffectiveIsPublic = false };
+
+        Item? capturedItem = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category> { category });
+        _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
+            .Callback<Item>(item => capturedItem = item)
+            .ReturnsAsync((Item item) => new Item { Id = 1, WorkspaceId = item.WorkspaceId, Name = item.Name, Visibility = item.Visibility });
+
+        // Act
+        await _controller.CreateItem(request);
+
+        // Assert
+        Assert.NotNull(capturedItem);
+        Assert.Equal(Visibility.Private, capturedItem!.Visibility);
+    }
+
+    [Fact]
+    public async Task CreateItem_DefaultsToPublic_WhenCategoryIsPublic()
+    {
+        // Arrange
+        var request = new CreateItemRequest
+        {
+            Name = "New Item",
+            CollectionId = TestCollectionId,
+            CategoryId = TestCategoryId
+        };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Public };
+        var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Public Category", Visibility = Visibility.Public, EffectiveIsPublic = true };
+
+        Item? capturedItem = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category> { category });
+        _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
+            .Callback<Item>(item => capturedItem = item)
+            .ReturnsAsync((Item item) => new Item { Id = 1, WorkspaceId = item.WorkspaceId, Name = item.Name, Visibility = item.Visibility });
+
+        // Act
+        await _controller.CreateItem(request);
+
+        // Assert
+        Assert.NotNull(capturedItem);
+        Assert.Equal(Visibility.Public, capturedItem!.Visibility);
+    }
+
+    [Fact]
+    public async Task CreateItem_DefaultsToCollectionVisibility_WhenNoCategory()
+    {
+        // Arrange
+        var request = new CreateItemRequest
+        {
+            Name = "New Item",
+            CollectionId = TestCollectionId
+            // No CategoryId
+        };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Public Collection", Visibility = Visibility.Public };
+
+        Item? capturedItem = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category>());
+        _mockItemRepository.Setup(repo => repo.CreateAsync(It.IsAny<Item>()))
+            .Callback<Item>(item => capturedItem = item)
+            .ReturnsAsync((Item item) => new Item { Id = 1, WorkspaceId = item.WorkspaceId, Name = item.Name, Visibility = item.Visibility });
+
+        // Act
+        await _controller.CreateItem(request);
+
+        // Assert
+        Assert.NotNull(capturedItem);
+        Assert.Equal(Visibility.Public, capturedItem!.Visibility);
+    }
+
+    [Fact]
+    public async Task UpdateItem_PreservesExistingVisibility()
+    {
+        // Arrange
+        var request = new UpdateItemRequest
+        {
+            Name = "Updated Item",
+            CollectionId = TestCollectionId,
+            CategoryId = TestCategoryId
+        };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
+        var category = new Category { Id = TestCategoryId, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Category" };
+        var existingItem = new Item { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Original", Visibility = Visibility.Public };
+
+        Item? capturedItem = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category> { category });
+        _mockItemRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
+            .ReturnsAsync(existingItem);
+        _mockItemRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Item>(), TestWorkspaceId))
+            .Callback<int, Item, int>((id, item, ws) => capturedItem = item)
+            .ReturnsAsync((int id, Item item, int ws) => new Item { Id = id, WorkspaceId = ws, Name = item.Name, Visibility = item.Visibility });
+
+        // Act
+        await _controller.UpdateItem(1, request);
+
+        // Assert - Visibility should be preserved from existing item (Public), not defaulted
+        Assert.NotNull(capturedItem);
+        Assert.Equal(Visibility.Public, capturedItem!.Visibility);
+    }
+
+    [Fact]
+    public async Task UpdateItem_DefaultsVisibility_WhenExistingItemNotFound()
+    {
+        // Arrange - race condition where item is deleted between get and update
+        var request = new UpdateItemRequest
+        {
+            Name = "Updated Item",
+            CollectionId = TestCollectionId
+        };
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test Collection", Visibility = Visibility.Private };
+
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category>());
+        _mockItemRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
+            .ReturnsAsync((Item?)null);
+        _mockItemRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Item>(), TestWorkspaceId))
+            .ReturnsAsync((Item?)null);
+
+        // Act
+        var result = await _controller.UpdateItem(1, request);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+    #endregion
+
     #region Security Tests
 
     [Fact]

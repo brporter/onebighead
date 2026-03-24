@@ -148,11 +148,11 @@ public class ItemsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Validates category ID and visibility for item create/update.
+    /// Validates category ID for item create/update.
     /// Returns the category if valid, or a BadRequest result if invalid.
     /// </summary>
-    private (Category? Category, BadRequestObjectResult? Error) ValidateCategoryAndVisibility(
-        int? categoryId, Visibility visibility, Dictionary<int, Category> categoryLookup, Collection collection)
+    private (Category? Category, BadRequestObjectResult? Error) ValidateCategory(
+        int? categoryId, Dictionary<int, Category> categoryLookup)
     {
         Category? category = null;
 
@@ -164,16 +164,16 @@ public class ItemsController : ApiControllerBase
             }
         }
 
-        if (visibility == Visibility.Public)
-        {
-            bool parentEffectivelyPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
-            if (!parentEffectivelyPublic)
-            {
-                return (null, BadRequest("Cannot set visibility to Public when parent is private."));
-            }
-        }
-
         return (category, null);
+    }
+
+    /// <summary>
+    /// Determines the default visibility for an item based on its parent category or collection.
+    /// </summary>
+    private static Visibility GetDefaultVisibility(Category? category, Collection collection)
+    {
+        bool parentEffectivelyPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
+        return parentEffectivelyPublic ? Visibility.Public : Visibility.Private;
     }
 
     [HttpGet("{id}")]
@@ -222,14 +222,15 @@ public class ItemsController : ApiControllerBase
         }
 
         // Load categories and validate
-        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
-        var (_, error) = ValidateCategoryAndVisibility(request.CategoryId, request.Visibility, categoryLookup, collection);
+        var (categories, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
+        var (category, error) = ValidateCategory(request.CategoryId, categoryLookup);
         if (error != null)
         {
             return error;
         }
 
         var item = request.ToItem(workspaceId);
+        item.Visibility = GetDefaultVisibility(category, collection);
         var created = await _itemRepository.CreateAsync(item);
         return CreatedAtAction(nameof(GetItem), new { id = created.Id }, created);
     }
@@ -254,14 +255,17 @@ public class ItemsController : ApiControllerBase
         }
 
         // Load categories and validate
-        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
-        var (_, error) = ValidateCategoryAndVisibility(request.CategoryId, request.Visibility, categoryLookup, collection);
+        var (categories, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
+        var (category, error) = ValidateCategory(request.CategoryId, categoryLookup);
         if (error != null)
         {
             return error;
         }
 
+        // Preserve existing visibility - use publish/unpublish endpoints to change it
+        var existingItem = await _itemRepository.GetByIdAsync(id, workspaceId);
         var item = request.ToItem(id, workspaceId);
+        item.Visibility = existingItem?.Visibility ?? GetDefaultVisibility(category, collection);
         var updated = await _itemRepository.UpdateAsync(id, item, workspaceId);
         if (updated is null)
         {

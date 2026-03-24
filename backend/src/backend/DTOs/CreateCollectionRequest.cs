@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using OneBigHead.Server.Models;
 
 namespace OneBigHead.Server.DTOs;
 
@@ -14,5 +13,4 @@ public class CreateCollectionRequest
 
     [MaxLength(500)]
     public string? HeroImageUrl { get; set; }
-    public Visibility Visibility { get; set; } = Visibility.Private;
 }
