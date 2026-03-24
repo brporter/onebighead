@@ -32,7 +32,7 @@ public abstract class ItemRequestBase
 
     public List<ItemImage> Images { get; set; } = new();
 
-    public Visibility Visibility { get; set; } = Visibility.Default;
+    public Visibility Visibility { get; set; } = Visibility.Private;
 
     public UserFlag UserFlag { get; set; } = UserFlag.Have;
 

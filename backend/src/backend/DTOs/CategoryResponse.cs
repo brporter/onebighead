@@ -11,7 +11,7 @@ public class CategoryResponse
     public string Description { get; set; } = string.Empty;
     public bool IsSystem { get; set; }
     public int? ParentCategoryId { get; set; }
-    public Visibility Visibility { get; set; } = Visibility.Default;
+    public Visibility Visibility { get; set; } = Visibility.Private;
     public bool EffectiveIsPublic { get; set; }
     public List<int> ItemTemplateIds { get; set; } = new();
 

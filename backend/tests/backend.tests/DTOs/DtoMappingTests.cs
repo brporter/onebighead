@@ -379,7 +379,7 @@ public class DtoMappingTests
         Assert.Equal(string.Empty, item.Description);
         Assert.Null(item.CategoryId);
         Assert.Equal(UserFlag.Have, item.UserFlag);
-        Assert.Equal(Visibility.Default, item.Visibility);
+        Assert.Equal(Visibility.Private, item.Visibility);
         Assert.Equal(2, item.WorkspaceId);
     }
 

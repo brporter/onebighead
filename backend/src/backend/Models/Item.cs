@@ -46,7 +46,7 @@ public class Item
     public List<ItemImage> Images { get; set; } = new();
 
     [JsonPropertyName("visibility")]
-    public Visibility Visibility { get; set; } = Visibility.Default;
+    public Visibility Visibility { get; set; } = Visibility.Private;
 
     [NotMapped]
     [JsonPropertyName("effectiveIsPublic")]

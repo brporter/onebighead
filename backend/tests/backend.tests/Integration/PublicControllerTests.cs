@@ -92,7 +92,7 @@ public class PublicControllerTests : IntegrationTestBase
             Name = "Unassigned Items",
             Description = "Items not assigned to a category",
             IsSystem = true,
-            Visibility = Visibility.Default
+            Visibility = Visibility.Private
         });
 
         // Public category in the public collection

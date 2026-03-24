@@ -27,34 +27,15 @@ public class VisibilityService : IVisibilityService
         {
             if (categoryLookup.TryGetValue(category.ParentCategoryId.Value, out var parentCategory) && !parentCategory.EffectiveIsPublic)
             {
-                // Parent is private, so child must be private (cannot override to public)
+                // Parent is private, so child must be private
                 category.EffectiveIsPublic = false;
                 return;
             }
         }
 
-        // Handle explicit visibility settings
-        if (category.Visibility == Visibility.Private)
-        {
-            category.EffectiveIsPublic = false;
-            return;
-        }
-
-        if (category.Visibility == Visibility.Public)
-        {
-            category.EffectiveIsPublic = true;
-            return;
-        }
-
-        // Default: Inherit from parent category or collection
-        if (category.ParentCategoryId.HasValue && categoryLookup.TryGetValue(category.ParentCategoryId.Value, out var parent))
-        {
-            category.EffectiveIsPublic = parent.EffectiveIsPublic;
-        }
-        else
-        {
-            category.EffectiveIsPublic = collection.EffectiveIsPublic;
-        }
+        // Entity is effectively public only when its own Visibility is Public
+        // (and all ancestors are public, which was checked above)
+        category.EffectiveIsPublic = category.Visibility == Visibility.Public;
     }
 
     public void ComputeEffectiveVisibility(Item item, Collection collection, Category? category)
@@ -67,30 +48,15 @@ public class VisibilityService : IVisibilityService
         }
 
         // If has category, check category's effective visibility
-        if (category != null)
-        {
-            if (!category.EffectiveIsPublic)
-            {
-                item.EffectiveIsPublic = false;
-                return;
-            }
-        }
-
-        // Handle explicit visibility settings
-        if (item.Visibility == Visibility.Private)
+        if (category != null && !category.EffectiveIsPublic)
         {
             item.EffectiveIsPublic = false;
             return;
         }
 
-        if (item.Visibility == Visibility.Public)
-        {
-            item.EffectiveIsPublic = true;
-            return;
-        }
-
-        // Default: Inherit from category or collection
-        item.EffectiveIsPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
+        // Entity is effectively public only when its own Visibility is Public
+        // (and all ancestors are public, which was checked above)
+        item.EffectiveIsPublic = item.Visibility == Visibility.Public;
     }
 
     public void ComputeEffectiveVisibility(IEnumerable<Category> categories, Collection collection)

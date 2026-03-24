@@ -14,6 +14,6 @@ public class CreateCategoryRequest
     [MaxLength(1000)]
     public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
-    public Visibility Visibility { get; set; } = Visibility.Default;
+    public Visibility Visibility { get; set; } = Visibility.Private;
     public List<int>? ItemTemplateIds { get; set; }
 }
