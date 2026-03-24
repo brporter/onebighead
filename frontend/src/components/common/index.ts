@@ -16,3 +16,5 @@ export { TermsAcceptance } from './TermsAcceptance';
 export { BulkUpdateModal, type ScopeOption } from './BulkUpdateModal';
 export { PublishButton } from './PublishButton';
 export { PublicBadge } from './PublicBadge';
+export { VisibilityFilter } from './VisibilityFilter';
+export type { VisibilityFilterValue } from './VisibilityFilter';

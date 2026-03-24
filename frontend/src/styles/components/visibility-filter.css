@@ -1,0 +1,54 @@
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: #2d3748;
+  border-radius: 8px;
+}
+
+.filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.35em 0.85em;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #a0aec0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  background: #4a5568;
+  color: #e2e8f0;
+}
+
+.filter-btn.active {
+  background: #4a5568;
+  color: #f7fafc;
+  font-weight: 600;
+}
+
+.filter-btn svg {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+
+.filter-count {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
+.item-card.hidden {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}

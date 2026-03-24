@@ -1,0 +1,142 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`VisibilityFilter > snapshots > should match snapshot with value "all" 1`] = `
+<div>
+  <div
+    aria-label="Visibility filter"
+    class="filter-bar"
+    role="group"
+  >
+    <button
+      aria-pressed="true"
+      class="filter-btn active"
+      type="button"
+    >
+      All
+    </button>
+    <button
+      aria-pressed="false"
+      class="filter-btn"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+        />
+      </svg>
+      Public
+    </button>
+    <button
+      aria-pressed="false"
+      class="filter-btn"
+      type="button"
+    >
+      Private
+    </button>
+    <span
+      class="filter-count"
+    >
+      Showing 
+      10
+       items
+    </span>
+  </div>
+</div>
+`;
+
+exports[`VisibilityFilter > snapshots > should match snapshot with value "private" 1`] = `
+<div>
+  <div
+    aria-label="Visibility filter"
+    class="filter-bar"
+    role="group"
+  >
+    <button
+      aria-pressed="false"
+      class="filter-btn"
+      type="button"
+    >
+      All
+    </button>
+    <button
+      aria-pressed="false"
+      class="filter-btn"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+        />
+      </svg>
+      Public
+    </button>
+    <button
+      aria-pressed="true"
+      class="filter-btn active"
+      type="button"
+    >
+      Private
+    </button>
+    <span
+      class="filter-count"
+    >
+      Showing 
+      3
+       items
+    </span>
+  </div>
+</div>
+`;
+
+exports[`VisibilityFilter > snapshots > should match snapshot with value "public" 1`] = `
+<div>
+  <div
+    aria-label="Visibility filter"
+    class="filter-bar"
+    role="group"
+  >
+    <button
+      aria-pressed="false"
+      class="filter-btn"
+      type="button"
+    >
+      All
+    </button>
+    <button
+      aria-pressed="true"
+      class="filter-btn active"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+        />
+      </svg>
+      Public
+    </button>
+    <button
+      aria-pressed="false"
+      class="filter-btn"
+      type="button"
+    >
+      Private
+    </button>
+    <span
+      class="filter-count"
+    >
+      Showing 
+      5
+       items
+    </span>
+  </div>
+</div>
+`;
