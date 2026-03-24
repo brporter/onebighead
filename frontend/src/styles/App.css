@@ -345,7 +345,6 @@ body {
    Card Base (shared by multiple components)
    -------------------------------------------------------------------------- */
 
-.categoryTree,
 .list,
 .detail,
 .placeholder,
@@ -362,8 +361,7 @@ body {
 .mobileNav__back,
 .list__pagerButton,
 .gallery__button,
-.detail__close,
-.categoryTree__toggle {
+.detail__close {
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
@@ -378,8 +376,7 @@ body {
 .mobileNav__back:hover,
 .list__pagerButton:hover:not(:disabled),
 .gallery__button:hover,
-.detail__close:hover,
-.categoryTree__toggle:hover {
+.detail__close:hover {
   background: var(--color-surface-alt);
   border-color: var(--color-text-muted);
 }
@@ -761,154 +758,6 @@ body {
   flex: 1;
   min-width: 150px;
   cursor: pointer;
-}
-
-/* ==========================================================================
-   Category Tree
-   ========================================================================== */
-
-.categoryTree {
-  padding: var(--space-lg);
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
-.categoryTree__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-md);
-}
-
-.categoryTree__title {
-  margin: 0;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-.categoryTree__add {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: 1.2rem;
-  font-weight: 400;
-  cursor: pointer;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-}
-
-.categoryTree__add:hover {
-  background: var(--color-success);
-  border-color: var(--color-success);
-  color: var(--color-primary-text);
-}
-
-.categoryTree__list,
-.categoryTree__children {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.categoryTree__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 18px;
-  padding-left: calc(18px + var(--indent-level, 0) * 22px);
-}
-
-.categoryTree__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.categoryTree__toggle,
-.categoryTree__toggle-spacer {
-  width: 24px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  font-size: 0.8rem;
-  padding: 0;
-}
-
-.categoryTree__toggle-spacer {
-  color: transparent;
-  user-select: none;
-  border: none;
-  background: none;
-}
-
-.categoryTree__item {
-  width: 100%;
-  text-align: left;
-  padding: var(--space-sm) 0.65rem;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast);
-}
-
-.categoryTree__item:hover {
-  background: var(--hover-bg);
-}
-
-.categoryTree__item--active {
-  background: var(--color-accent-subtle);
-  color: var(--color-text);
-  font-weight: 500;
-  border-right: 3px solid var(--color-accent);
-}
-
-.categoryTree__item--system {
-  font-style: italic;
-}
-
-.categoryTree__edit {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.categoryTree__row:hover .categoryTree__edit {
-  opacity: 1;
-}
-
-.categoryTree__edit:hover {
-  background: var(--color-surface-alt);
-  color: var(--color-text);
 }
 
 /* ==========================================================================

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '../contexts/useData';
-import CategoryTree from '../components/category/CategoryTree';
+import CategoryNav from '../components/category/CategoryNav';
 import { CollectionDashboard } from '../components/collection';
 import ItemList from '../components/item/ItemList';
 import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
@@ -152,8 +152,12 @@ function CategoryView() {
     return Math.min(Math.max(0, pageIndex), totalPages - 1);
   }, [pageIndex, totalPages]);
 
-  function handleSelectCategory(catId: number) {
-    navigate(`/collections/${collectionIdNum}/categories/${catId}`);
+  function handleSelectCategory(catId: number | null) {
+    if (catId === null) {
+      navigate(`/collections/${collectionIdNum}`);
+    } else {
+      navigate(`/collections/${collectionIdNum}/categories/${catId}`);
+    }
   }
 
   function handleSelectItem(itemId: number) {
@@ -206,19 +210,21 @@ function CategoryView() {
     return (
       <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
         <nav className="app__sidebar" aria-label="Category navigation">
-          <button
-            type="button"
-            className="app__sidebar-toggle"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {sidebarCollapsed ? '▶' : '◀'}
-          </button>
-          {!sidebarCollapsed && (
-            <CategoryTree
+          {sidebarCollapsed ? (
+            <button
+              type="button"
+              className="app__sidebar-toggle"
+              onClick={() => setSidebarCollapsed(false)}
+              aria-label="Expand sidebar"
+            >
+              ▶
+            </button>
+          ) : (
+            <CategoryNav
               categories={categories}
               selectedCategoryId={null}
               onSelect={handleSelectCategory}
+              onCollapse={() => setSidebarCollapsed(true)}
             />
           )}
         </nav>
@@ -244,19 +250,21 @@ function CategoryView() {
   return (
     <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
       <nav className="app__sidebar" aria-label="Category navigation">
-        <button
-          type="button"
-          className="app__sidebar-toggle"
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {sidebarCollapsed ? '▶' : '◀'}
-        </button>
-        {!sidebarCollapsed && (
-          <CategoryTree
+        {sidebarCollapsed ? (
+          <button
+            type="button"
+            className="app__sidebar-toggle"
+            onClick={() => setSidebarCollapsed(false)}
+            aria-label="Expand sidebar"
+          >
+            ▶
+          </button>
+        ) : (
+          <CategoryNav
             categories={categories}
             selectedCategoryId={categoryIdNum}
             onSelect={handleSelectCategory}
+            onCollapse={() => setSidebarCollapsed(true)}
           />
         )}
       </nav>

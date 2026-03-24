@@ -189,8 +189,8 @@ describe('CategoryView', () => {
       const user = userEvent.setup();
       renderWithRouter('/collections/1');
 
-      // Click on the category tree item
-      const categoryButton = screen.getAllByText('Root Category').find(el => el.classList.contains('categoryTree__item'));
+      // Click on the category nav row
+      const categoryButton = screen.getAllByText('Root Category').find(el => el.classList.contains('categoryNav__name'));
       expect(categoryButton).toBeTruthy();
       await user.click(categoryButton!);
 
@@ -293,41 +293,41 @@ describe('CategoryView', () => {
   });
 
   describe('sidebar collapse', () => {
-    it('should render sidebar toggle button', () => {
+    it('should render collapse button inside CategoryNav', () => {
       renderWithRouter('/collections/1');
 
-      expect(screen.getByLabelText('Collapse sidebar')).toBeInTheDocument();
+      expect(screen.getByLabelText('Collapse categories')).toBeInTheDocument();
     });
 
-    it('should hide CategoryTree when sidebar is collapsed', async () => {
+    it('should hide CategoryNav when sidebar is collapsed', async () => {
       const user = userEvent.setup();
       renderWithRouter('/collections/1');
 
-      await user.click(screen.getByLabelText('Collapse sidebar'));
+      await user.click(screen.getByLabelText('Collapse categories'));
       expect(screen.queryByText('Root Category')).not.toBeInTheDocument();
       expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
     });
 
-    it('should show CategoryTree when sidebar is expanded again', async () => {
+    it('should show CategoryNav when sidebar is expanded again', async () => {
       const user = userEvent.setup();
       renderWithRouter('/collections/1');
 
-      await user.click(screen.getByLabelText('Collapse sidebar'));
+      await user.click(screen.getByLabelText('Collapse categories'));
       await user.click(screen.getByLabelText('Expand sidebar'));
       expect(screen.getAllByText('Root Category').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should render sidebar toggle button when category is selected', () => {
+    it('should render collapse button when category is selected', () => {
       renderWithRouter('/collections/1/categories/1');
 
-      expect(screen.getByLabelText('Collapse sidebar')).toBeInTheDocument();
+      expect(screen.getByLabelText('Collapse categories')).toBeInTheDocument();
     });
 
     it('should add collapsed class when sidebar is collapsed', async () => {
       const user = userEvent.setup();
       const { container } = renderWithRouter('/collections/1');
 
-      await user.click(screen.getByLabelText('Collapse sidebar'));
+      await user.click(screen.getByLabelText('Collapse categories'));
       expect(container.querySelector('.app__layout--sidebar-collapsed')).toBeInTheDocument();
     });
 

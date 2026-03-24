@@ -10,61 +10,83 @@ exports[`ItemView > snapshots > should match snapshot for existing item 1`] = `
       class="app__sidebar"
     >
       <aside
-        class="categoryTree"
+        class="categoryNav"
       >
         <div
-          class="categoryTree__header"
+          class="categoryNav__header"
         >
           <h2
-            class="categoryTree__title"
+            class="categoryNav__headerTitle"
           >
             Categories
           </h2>
+          <div
+            class="categoryNav__headerActions"
+          >
+            <button
+              aria-label="Add category"
+              class="categoryNav__addBtn"
+              type="button"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <nav
+          aria-label="Category breadcrumb"
+          class="categoryNav__breadcrumb"
+        >
           <button
-            aria-label="Add category"
-            class="categoryTree__add"
+            aria-label="Navigate to All"
+            class="categoryNav__breadcrumb-link"
             type="button"
           >
-            +
+            All
           </button>
-        </div>
-        <ul
-          class="categoryTree__list"
-        >
-          <li
-            class="categoryTree__node"
+          <span
+            aria-hidden="true"
+            class="categoryNav__breadcrumb-sep"
           >
+            ›
+          </span>
+          <span
+            class="categoryNav__breadcrumb-current"
+          >
+            Root Category
+          </span>
+        </nav>
+        <div
+          class="categoryNav__list"
+        >
+          <button
+            aria-label="Go back"
+            class="categoryNav__back"
+            type="button"
+          >
+            ← Back
+          </button>
+          <div
+            class="categoryNav__row categoryNav__row--active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              aria-hidden="true"
+              class="categoryNav__dot"
+              style="background-color: rgb(199, 125, 74);"
+            />
             <div
-              class="categoryTree__row"
-              style="--indent-level: 0;"
+              class="categoryNav__rowContent"
             >
               <span
-                aria-hidden="true"
-                class="categoryTree__toggle-spacer"
+                class="categoryNav__name"
               >
-                ▸
-              </span>
-              <span
-                aria-hidden="true"
-                class="categoryTree__dot"
-                style="background-color: rgb(199, 125, 74);"
-              />
-              <button
-                class="categoryTree__item categoryTree__item--active"
-                type="button"
-              >
+                All 
                 Root Category
-              </button>
-              <button
-                aria-label="Edit Root Category"
-                class="categoryTree__edit"
-                type="button"
-              >
-                ✎
-              </button>
+              </span>
             </div>
-          </li>
-        </ul>
+          </div>
+        </div>
         <dialog
           class="modal-dialog"
         >
