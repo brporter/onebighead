@@ -109,4 +109,190 @@ public class VisibilityService : IVisibilityService
             ComputeEffectiveVisibility(item, collection, category);
         }
     }
+
+    public PublishResult PublishItem(Item item, Collection collection, Category? category)
+    {
+        var promoted = new List<PublishedEntityInfo>();
+
+        // Promote collection if private
+        if (collection.Visibility == Visibility.Private)
+        {
+            collection.Visibility = Visibility.Public;
+            promoted.Add(new PublishedEntityInfo { Type = "collection", Id = collection.Id, Name = collection.Name });
+        }
+
+        // Promote category if private
+        if (category != null && category.Visibility == Visibility.Private)
+        {
+            category.Visibility = Visibility.Public;
+            promoted.Add(new PublishedEntityInfo { Type = "category", Id = category.Id, Name = category.Name });
+        }
+
+        // Set item to public
+        item.Visibility = Visibility.Public;
+
+        return new PublishResult
+        {
+            Published = new PublishedEntityInfo { Type = "item", Id = item.Id ?? 0, Name = item.Name },
+            Promoted = promoted,
+        };
+    }
+
+    public PublishResult PublishCategory(Category category, Collection collection, IEnumerable<Item> categoryItems, IEnumerable<Category> allCategories, bool includeChildren)
+    {
+        var promoted = new List<PublishedEntityInfo>();
+        var categoryList = allCategories as IList<Category> ?? allCategories.ToList();
+        var categoryLookup = categoryList.ToDictionary(c => c.Id);
+
+        // Promote collection if private
+        if (collection.Visibility == Visibility.Private)
+        {
+            collection.Visibility = Visibility.Public;
+            promoted.Add(new PublishedEntityInfo { Type = "collection", Id = collection.Id, Name = collection.Name });
+        }
+
+        // Promote parent categories up the chain
+        PromoteParentCategories(category, categoryLookup, promoted);
+
+        // Set this category to public
+        category.Visibility = Visibility.Public;
+
+        int childrenPublished = 0;
+
+        if (includeChildren)
+        {
+            // Find all descendant category IDs (including this category)
+            var descendantCategoryIds = new HashSet<int> { category.Id };
+            CollectDescendantCategoryIds(category.Id, categoryList, descendantCategoryIds);
+
+            // Publish all descendant subcategories
+            foreach (var cat in categoryList)
+            {
+                if (cat.Id != category.Id && descendantCategoryIds.Contains(cat.Id) && cat.Visibility == Visibility.Private)
+                {
+                    cat.Visibility = Visibility.Public;
+                    childrenPublished++;
+                }
+            }
+
+            // Publish all items in descendant categories
+            foreach (var item in categoryItems)
+            {
+                if (item.CategoryId.HasValue && descendantCategoryIds.Contains(item.CategoryId.Value) && item.Visibility == Visibility.Private)
+                {
+                    item.Visibility = Visibility.Public;
+                    childrenPublished++;
+                }
+            }
+        }
+
+        return new PublishResult
+        {
+            Published = new PublishedEntityInfo { Type = "category", Id = category.Id, Name = category.Name },
+            Promoted = promoted,
+            ChildrenPublished = childrenPublished,
+        };
+    }
+
+    public PublishResult PublishCollection(Collection collection, IEnumerable<Category> categories, IEnumerable<Item> items, bool includeChildren)
+    {
+        collection.Visibility = Visibility.Public;
+
+        int childrenPublished = 0;
+
+        if (includeChildren)
+        {
+            foreach (var cat in categories)
+            {
+                if (cat.Visibility == Visibility.Private)
+                {
+                    cat.Visibility = Visibility.Public;
+                    childrenPublished++;
+                }
+            }
+
+            foreach (var item in items)
+            {
+                if (item.Visibility == Visibility.Private)
+                {
+                    item.Visibility = Visibility.Public;
+                    childrenPublished++;
+                }
+            }
+        }
+
+        return new PublishResult
+        {
+            Published = new PublishedEntityInfo { Type = "collection", Id = collection.Id, Name = collection.Name },
+            ChildrenPublished = childrenPublished,
+        };
+    }
+
+    public void UnpublishEntity(Category category)
+    {
+        category.Visibility = Visibility.Private;
+    }
+
+    public void UnpublishEntity(Collection collection)
+    {
+        collection.Visibility = Visibility.Private;
+    }
+
+    public void UnpublishEntity(Item item)
+    {
+        item.Visibility = Visibility.Private;
+    }
+
+    public UnpublishPreview GetUnpublishPreview(Category category, IEnumerable<Item> items, IEnumerable<Category> childCategories, Collection collection)
+    {
+        return new UnpublishPreview
+        {
+            AffectedPublicItems = items.Count(i => i.Visibility == Visibility.Public),
+            AffectedPublicCategories = childCategories.Count(c => c.Visibility == Visibility.Public),
+        };
+    }
+
+    public UnpublishPreview GetUnpublishPreviewForCollection(Collection collection, IEnumerable<Category> categories, IEnumerable<Item> items)
+    {
+        return new UnpublishPreview
+        {
+            AffectedPublicItems = items.Count(i => i.Visibility == Visibility.Public),
+            AffectedPublicCategories = categories.Count(c => c.Visibility == Visibility.Public),
+        };
+    }
+
+    public bool RequiresSlugSetup(Workspace workspace)
+    {
+        return workspace.Slug == null;
+    }
+
+    private static void PromoteParentCategories(Category category, IDictionary<int, Category> categoryLookup, List<PublishedEntityInfo> promoted)
+    {
+        if (!category.ParentCategoryId.HasValue)
+            return;
+
+        if (!categoryLookup.TryGetValue(category.ParentCategoryId.Value, out var parent))
+            return;
+
+        // Recurse first to promote ancestors before this parent
+        PromoteParentCategories(parent, categoryLookup, promoted);
+
+        if (parent.Visibility == Visibility.Private)
+        {
+            parent.Visibility = Visibility.Public;
+            promoted.Add(new PublishedEntityInfo { Type = "category", Id = parent.Id, Name = parent.Name });
+        }
+    }
+
+    private static void CollectDescendantCategoryIds(int parentId, IList<Category> allCategories, HashSet<int> result)
+    {
+        foreach (var cat in allCategories)
+        {
+            if (cat.ParentCategoryId == parentId && !result.Contains(cat.Id))
+            {
+                result.Add(cat.Id);
+                CollectDescendantCategoryIds(cat.Id, allCategories, result);
+            }
+        }
+    }
 }
