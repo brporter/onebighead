@@ -18,3 +18,5 @@ export { PublishButton } from './PublishButton';
 export { PublicBadge } from './PublicBadge';
 export { VisibilityFilter } from './VisibilityFilter';
 export type { VisibilityFilterValue } from './VisibilityFilter';
+export { BulkActionBar } from './BulkActionBar';
+export type { BulkActionBarProps } from './BulkActionBar';
