@@ -16,7 +16,8 @@
 
 .landing__header {
   background: var(--color-primary);
-  padding: var(--space-md) var(--space-lg);
+  height: 58px;
+  padding: 0 var(--space-lg);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -28,11 +29,12 @@
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
+  height: 100%;
 }
 
 .landing__logo {
   font-family: 'Fraunces', serif;
-  font-size: 1.5rem;
+  font-size: 18px;
   font-weight: 600;
   color: var(--color-primary-text);
   text-decoration: none;
