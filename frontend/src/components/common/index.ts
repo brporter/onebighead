@@ -20,3 +20,7 @@ export { VisibilityFilter } from './VisibilityFilter';
 export type { VisibilityFilterValue } from './VisibilityFilter';
 export { BulkActionBar } from './BulkActionBar';
 export type { BulkActionBarProps } from './BulkActionBar';
+export { PublishConfirmModal } from './PublishConfirmModal';
+export type { PublishConfirmModalProps } from './PublishConfirmModal';
+export { UnpublishConfirmModal } from './UnpublishConfirmModal';
+export type { UnpublishConfirmModalProps } from './UnpublishConfirmModal';
