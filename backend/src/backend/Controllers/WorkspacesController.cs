@@ -323,7 +323,7 @@ public class WorkspacesController : ApiControllerBase
         }
 
         workspace.Name = request.Name.Trim();
-        workspace.Slug = request.Slug;
+        workspace.Slug = string.IsNullOrEmpty(request.Slug) ? null : request.Slug;
         await _workspaceRepository.UpdateAsync(workspace);
 
         _logger.LogInformation("User {UserId} updated workspace {WorkspaceId} name to {WorkspaceName}", userId, workspaceId, workspace.Name);
