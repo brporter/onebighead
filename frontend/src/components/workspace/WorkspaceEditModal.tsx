@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { WorkspaceMembership } from '../../utils/types';
 import { workspacesApi } from '../../api';
+import { toSlug, isValidSlug } from '../../utils/slugUtils';
 import '../../styles/components/WorkspaceEditModal.css';
 
 interface WorkspaceEditModalProps {
@@ -8,19 +9,6 @@ interface WorkspaceEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved?: () => void;
-}
-
-function toSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 50);
-}
-
-function isValidSlug(slug: string): boolean {
-  return /^[a-z0-9]([a-z0-9]|-(?!-))*[a-z0-9]$/.test(slug) && slug.length >= 3 && slug.length <= 50;
 }
 
 function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEditModalProps) {

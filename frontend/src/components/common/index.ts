@@ -24,3 +24,5 @@ export { PublishConfirmModal } from './PublishConfirmModal';
 export type { PublishConfirmModalProps } from './PublishConfirmModal';
 export { UnpublishConfirmModal } from './UnpublishConfirmModal';
 export type { UnpublishConfirmModalProps } from './UnpublishConfirmModal';
+export { SlugSetupModal } from './SlugSetupModal';
+export type { SlugSetupModalProps } from './SlugSetupModal';
