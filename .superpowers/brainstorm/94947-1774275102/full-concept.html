@@ -1,0 +1,462 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+
+  .full-mockup {
+    background: linear-gradient(160deg, #f8f6f3 0%, #eee8e0 100%);
+    border-radius: 10px;
+    overflow: hidden;
+    font-family: 'DM Sans', sans-serif;
+    color: #3a3028;
+  }
+
+  /* --- Header --- */
+  .mock-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: #3a3028;
+    color: #f0ebe4;
+  }
+  .mock-header-brand {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: #f0ebe4;
+  }
+  .mock-header-nav {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .mock-header-pill {
+    font-size: 11px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+    color: #c4b9aa;
+    letter-spacing: 0.3px;
+  }
+  .mock-header-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c77d4a, #d4a574);
+  }
+
+  /* --- Body layout --- */
+  .mock-body {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 520px;
+  }
+
+  /* --- Sidebar --- */
+  .mock-sidebar {
+    background: #f3ede6;
+    border-right: 1px solid #e5ddd2;
+    padding: 20px 0;
+  }
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px 16px;
+    border-bottom: 1px solid #e5ddd2;
+    margin-bottom: 12px;
+  }
+  .sidebar-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #9a8a78;
+    font-weight: 600;
+  }
+  .sidebar-collapse {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9a8a78;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .cat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-size: 13px;
+    color: #5a4e42;
+  }
+  .cat-item:hover {
+    background: rgba(0,0,0,0.03);
+  }
+  .cat-item--active {
+    background: rgba(199, 125, 74, 0.08);
+    color: #3a3028;
+    font-weight: 500;
+    border-right: 3px solid #c77d4a;
+  }
+  .cat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .cat-item--child {
+    padding-left: 40px;
+    font-size: 12px;
+  }
+  .cat-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: #b0a090;
+  }
+
+  /* --- Main content --- */
+  .mock-main {
+    padding: 24px 28px;
+  }
+  .main-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .main-title {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: #3a3028;
+    letter-spacing: -0.3px;
+    line-height: 1.1;
+  }
+  .main-subtitle {
+    font-size: 13px;
+    color: #9a8a78;
+    margin-top: 4px;
+  }
+  .main-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .action-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: 1px solid #d4c4b0;
+    background: white;
+    color: #5a4e42;
+    cursor: pointer;
+  }
+  .action-btn--primary {
+    background: #3a3028;
+    color: #f0ebe4;
+    border-color: #3a3028;
+  }
+
+  /* --- Masonry grid --- */
+  .masonry {
+    columns: 3;
+    column-gap: 14px;
+  }
+  .m-card {
+    break-inside: avoid;
+    margin-bottom: 14px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+  }
+  .m-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+  }
+  .m-card__ribbon {
+    height: 4px;
+  }
+  .m-card__img {
+    width: 100%;
+  }
+  .m-card__body {
+    padding: 14px 16px;
+  }
+  .m-card__featured {
+    font-size: 9px;
+    color: #c77d4a;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+  .m-card__name {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    color: #3a3028;
+    line-height: 1.3;
+  }
+  .m-card__name--lg {
+    font-size: 17px;
+  }
+  .m-card__meta {
+    font-size: 11px;
+    color: #9a8a78;
+    margin-top: 4px;
+  }
+  .m-card__summary {
+    font-size: 12px;
+    color: #7a6e62;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .m-card__props {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .m-card__prop {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: #f5f0ea;
+    color: #8a7a68;
+  }
+
+  /* --- Text-only adaptive card --- */
+  .m-card--textonly {
+    background: linear-gradient(135deg, #faf7f3, #f3ede6);
+    border: 1px solid #e8e0d6;
+  }
+  .m-card--textonly .m-card__body {
+    padding: 18px 18px;
+  }
+  .m-card--textonly .m-card__name {
+    font-size: 15px;
+  }
+  .m-card--textonly .m-card__summary {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+</style>
+
+<h2 style="margin-bottom: 4px;">Full Concept: Living Gallery</h2>
+<p class="subtitle" style="margin-bottom: 24px;">Complete mockup with all design decisions applied</p>
+
+<div class="full-mockup">
+  <!-- Header -->
+  <div class="mock-header">
+    <div class="mock-header-brand">OneBigHead</div>
+    <div class="mock-header-nav">
+      <div class="mock-header-pill">Vintage Cameras</div>
+      <div class="mock-header-pill" style="background: rgba(255,255,255,0.04); color: #8a7e72;">Settings</div>
+      <div class="mock-header-avatar"></div>
+    </div>
+  </div>
+
+  <div class="mock-body">
+    <!-- Sidebar -->
+    <div class="mock-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Categories</div>
+        <div class="sidebar-collapse">◀</div>
+      </div>
+      <div class="cat-item cat-item--active">
+        <div class="cat-dot" style="background: #c77d4a;"></div>
+        All Items
+        <span class="cat-count">47</span>
+      </div>
+      <div class="cat-item">
+        <div class="cat-dot" style="background: #6b8f71;"></div>
+        Rangefinders
+        <span class="cat-count">12</span>
+      </div>
+      <div class="cat-item cat-item--child">
+        <div class="cat-dot" style="background: #8baf91;"></div>
+        35mm
+        <span class="cat-count">8</span>
+      </div>
+      <div class="cat-item cat-item--child">
+        <div class="cat-dot" style="background: #8baf91;"></div>
+        Medium Format
+        <span class="cat-count">4</span>
+      </div>
+      <div class="cat-item">
+        <div class="cat-dot" style="background: #7a8ca8;"></div>
+        SLR Cameras
+        <span class="cat-count">18</span>
+      </div>
+      <div class="cat-item">
+        <div class="cat-dot" style="background: #b8926a;"></div>
+        Twin-Lens Reflex
+        <span class="cat-count">6</span>
+      </div>
+      <div class="cat-item">
+        <div class="cat-dot" style="background: #9a7ea8;"></div>
+        Compact & Point-and-Shoot
+        <span class="cat-count">8</span>
+      </div>
+      <div class="cat-item">
+        <div class="cat-dot" style="background: #a88c7e;"></div>
+        Accessories
+        <span class="cat-count">3</span>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="mock-main">
+      <div class="main-header">
+        <div>
+          <div class="main-title">Vintage Cameras</div>
+          <div class="main-subtitle">47 items · 6 categories</div>
+        </div>
+        <div class="main-actions">
+          <div class="action-btn">Filter</div>
+          <div class="action-btn action-btn--primary">+ Add Item</div>
+        </div>
+      </div>
+
+      <!-- Masonry grid -->
+      <div class="masonry">
+        <!-- Featured item with image (tall) -->
+        <div class="m-card">
+          <div class="m-card__ribbon" style="background: linear-gradient(90deg, #6b8f71, #8baf91);"></div>
+          <div class="m-card__img" style="height: 130px; background: linear-gradient(135deg, #e8ddd0, #d4c4b0);"></div>
+          <div class="m-card__body">
+            <div class="m-card__featured">★ Featured</div>
+            <div class="m-card__name m-card__name--lg">Leica M3 Double Stroke</div>
+            <div class="m-card__meta">1956 · Rangefinder</div>
+            <div class="m-card__summary">A pristine example of the iconic rangefinder that defined an era.</div>
+            <div class="m-card__props">
+              <span class="m-card__prop">Excellent</span>
+              <span class="m-card__prop">Original box</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regular item with image (short) -->
+        <div class="m-card">
+          <div class="m-card__ribbon" style="background: linear-gradient(90deg, #7a8ca8, #9aacbf);"></div>
+          <div class="m-card__img" style="height: 65px; background: linear-gradient(135deg, #ddd5ca, #cec3b4);"></div>
+          <div class="m-card__body">
+            <div class="m-card__name">Canon AE-1</div>
+            <div class="m-card__meta">1976 · SLR</div>
+          </div>
+        </div>
+
+        <!-- Text-only adaptive card (no image) -->
+        <div class="m-card m-card--textonly">
+          <div class="m-card__ribbon" style="background: linear-gradient(90deg, #9a7ea8, #b098be);"></div>
+          <div class="m-card__body">
+            <div class="m-card__name">Olympus Stylus Epic</div>
+            <div class="m-card__meta">1994 · Compact</div>
+            <div class="m-card__summary">Legendary point-and-shoot with the sharp f/2.8 lens. Known as the Mju-II in Europe.</div>
+            <div class="m-card__props">
+              <span class="m-card__prop">Good</span>
+              <span class="m-card__prop">Working</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regular item with image (medium) -->
+        <div class="m-card">
+          <div class="m-card__ribbon" style="background: linear-gradient(90deg, #b8926a, #c8a67e);"></div>
+          <div class="m-card__img" style="height: 95px; background: linear-gradient(135deg, #e0dbd4, #d0c8bc);"></div>
+          <div class="m-card__body">
+            <div class="m-card__name">Rolleiflex 2.8F</div>
+            <div class="m-card__meta">1960 · Twin-Lens Reflex</div>
+          </div>
+        </div>
+
+        <!-- Text-only adaptive card -->
+        <div class="m-card m-card--textonly">
+          <div class="m-card__ribbon" style="background: linear-gradient(90deg, #7a8ca8, #9aacbf);"></div>
+          <div class="m-card__body">
+            <div class="m-card__name">Nikon FM2</div>
+            <div class="m-card__meta">1982 · SLR</div>
+            <div class="m-card__summary">Mechanical shutter, titanium curtain. The workhorse of photojournalism schools.</div>
+          </div>
+        </div>
+
+        <!-- Regular with image -->
+        <div class="m-card">
+          <div class="m-card__ribbon" style="background: linear-gradient(90deg, #6b8f71, #8baf91);"></div>
+          <div class="m-card__img" style="height: 75px; background: linear-gradient(135deg, #e3dcd3, #d6cdc0);"></div>
+          <div class="m-card__body">
+            <div class="m-card__name">Hasselblad 500C</div>
+            <div class="m-card__meta">1957 · Medium Format</div>
+          </div>
+        </div>
+
+        <!-- Regular with image (tall) -->
+        <div class="m-card">
+          <div class="m-card__ribbon" style="background: linear-gradient(90deg, #7a8ca8, #9aacbf);"></div>
+          <div class="m-card__img" style="height: 110px; background: linear-gradient(135deg, #dfd8ce, #d1c7b8);"></div>
+          <div class="m-card__body">
+            <div class="m-card__name">Pentax 67</div>
+            <div class="m-card__meta">1969 · Medium Format SLR</div>
+            <div class="m-card__props">
+              <span class="m-card__prop">Very Good</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text-only with more detail -->
+        <div class="m-card m-card--textonly">
+          <div class="m-card__ribbon" style="background: linear-gradient(90deg, #a88c7e, #b8a090);"></div>
+          <div class="m-card__body">
+            <div class="m-card__name">Lens Collection — Nikon F-Mount</div>
+            <div class="m-card__meta">Accessories · 12 lenses</div>
+            <div class="m-card__summary">Complete set of AI-S primes from 24mm to 200mm. All in excellent optical condition.</div>
+            <div class="m-card__props">
+              <span class="m-card__prop">24mm f/2.8</span>
+              <span class="m-card__prop">50mm f/1.4</span>
+              <span class="m-card__prop">105mm f/2.5</span>
+              <span class="m-card__prop">+9 more</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Short image card -->
+        <div class="m-card">
+          <div class="m-card__ribbon" style="background: linear-gradient(90deg, #9a7ea8, #b098be);"></div>
+          <div class="m-card__img" style="height: 60px; background: linear-gradient(135deg, #e1dad0, #d3cab9);"></div>
+          <div class="m-card__body">
+            <div class="m-card__name">Contax T2</div>
+            <div class="m-card__meta">1990 · Compact</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 28px; padding: 20px 24px; background: rgba(128,128,128,0.06); border-radius: 8px; border-left: 3px solid rgba(128,128,128,0.2);">
+  <p style="margin: 0 0 10px; color: #888; font-size: 13px; line-height: 1.6;">
+    <strong style="color: #aaa;">What's shown:</strong>
+  </p>
+  <ul style="margin: 0; padding-left: 18px; color: #888; font-size: 13px; line-height: 1.8;">
+    <li><strong>Living Gallery palette</strong> — warm textured background, earthy tones</li>
+    <li><strong>Fraunces + DM Sans</strong> — display font for item names, clean sans for UI</li>
+    <li><strong>Masonry grid</strong> — organic card heights, flowing layout</li>
+    <li><strong>Collapsible sidebar</strong> — category tree with color-coded dots, collapse button (◀)</li>
+    <li><strong>Adaptive cards</strong> — image cards (tall featured, medium, short) and text-only cards with richer content</li>
+    <li><strong>Category accent colors</strong> — auto-assigned, visible as top ribbons and sidebar dots</li>
+    <li><strong>Subtle hover states</strong> — cards lift gently on hover</li>
+  </ul>
+</div>
