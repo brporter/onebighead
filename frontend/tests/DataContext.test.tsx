@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act } from '@testing-library/react';
 import { DataProvider } from '../src/contexts/DataContext';
 import { useData } from '../src/contexts/useData';
-import type { Item, Category, Collection } from '../src/utils/types';
+import type { Item, Category, Collection, PublishResponse, UnpublishResponse, BulkPublishResponse, BulkUnpublishResponse, UnpublishPreviewResponse } from '../src/utils/types';
 import { UserFlag, Visibility } from '../src/utils/types';
 
 const mockCollections: Collection[] = [
@@ -791,6 +791,376 @@ describe('DataContext', () => {
       await expect(act(async () => {
         await capturedData!.uploadImage(file);
       })).rejects.toThrow('Unauthorized');
+    });
+  });
+
+  describe('Publish/unpublish operations', () => {
+    const mockPublishResponse: PublishResponse = {
+      published: { type: 'Item', id: 1, name: 'Test Item' },
+      promoted: [],
+      childrenPublished: 0,
+      requiresSlugSetup: false,
+    };
+
+    const mockUnpublishResponse: UnpublishResponse = {
+      unpublished: { type: 'Item', id: 1, name: 'Test Item' },
+      affectedPublicItems: 0,
+      affectedPublicCategories: 0,
+    };
+
+    const mockBulkPublishResponse: BulkPublishResponse = {
+      publishedCount: 2,
+      promoted: [],
+      requiresSlugSetup: false,
+    };
+
+    const mockBulkUnpublishResponse: BulkUnpublishResponse = {
+      unpublishedCount: 2,
+    };
+
+    const mockUnpublishPreview: UnpublishPreviewResponse = {
+      affectedPublicItems: 3,
+      affectedPublicCategories: 1,
+    };
+
+    function setupPublishMock() {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((url, options) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        const method = options?.method || 'GET';
+
+        // Publish item
+        if (urlStr.match(/\/api\/workspaces\/\d+\/items\/\d+\/publish/) && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockPublishResponse,
+          } as Response);
+        }
+
+        // Unpublish item
+        if (urlStr.match(/\/api\/workspaces\/\d+\/items\/\d+\/unpublish/) && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockUnpublishResponse,
+          } as Response);
+        }
+
+        // Bulk publish
+        if (urlStr.match(/\/api\/workspaces\/\d+\/items\/bulk-publish/) && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockBulkPublishResponse,
+          } as Response);
+        }
+
+        // Bulk unpublish
+        if (urlStr.match(/\/api\/workspaces\/\d+\/items\/bulk-unpublish/) && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockBulkUnpublishResponse,
+          } as Response);
+        }
+
+        // Publish category
+        if (urlStr.match(/\/api\/workspaces\/\d+\/categories\/\d+\/publish/) && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockPublishResponse,
+          } as Response);
+        }
+
+        // Unpublish category
+        if (urlStr.match(/\/api\/workspaces\/\d+\/categories\/\d+\/unpublish$/) && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockUnpublishResponse,
+          } as Response);
+        }
+
+        // Unpublish category preview
+        if (urlStr.match(/\/api\/workspaces\/\d+\/categories\/\d+\/unpublish-preview/) && method === 'GET') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockUnpublishPreview,
+          } as Response);
+        }
+
+        // Publish collection
+        if (urlStr.match(/\/api\/workspaces\/\d+\/collections\/\d+\/publish/) && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockPublishResponse,
+          } as Response);
+        }
+
+        // Unpublish collection
+        if (urlStr.match(/\/api\/workspaces\/\d+\/collections\/\d+\/unpublish$/) && method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockUnpublishResponse,
+          } as Response);
+        }
+
+        // Unpublish collection preview
+        if (urlStr.match(/\/api\/workspaces\/\d+\/collections\/\d+\/unpublish-preview/) && method === 'GET') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockUnpublishPreview,
+          } as Response);
+        }
+
+        // Items (for refresh after publish)
+        if (urlStr.includes('/api/items') && method === 'GET') {
+          return Promise.resolve({
+            ok: true,
+            headers: new Headers({ 'ETag': '"test-etag"' }),
+            json: async () => mockItems,
+          } as Response);
+        }
+
+        // Categories (for refresh after publish)
+        if (urlStr.includes('/api/categories') && method === 'GET') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockCategories,
+          } as Response);
+        }
+
+        // Collections (for refresh after publish)
+        if (urlStr === '/api/collections' && method === 'GET') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockCollections,
+          } as Response);
+        }
+
+        return Promise.resolve({ ok: false, statusText: 'Not Found' } as Response);
+      });
+    }
+
+    it('should publish an item', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      // Set current collection so we have a workspaceId
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.publishItem(1);
+      });
+
+      expect(result).toEqual(mockPublishResponse);
+    });
+
+    it('should unpublish an item', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.unpublishItem(1);
+      });
+
+      expect(result).toEqual(mockUnpublishResponse);
+    });
+
+    it('should bulk publish items', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.bulkPublishItems([1, 2]);
+      });
+
+      expect(result).toEqual(mockBulkPublishResponse);
+    });
+
+    it('should bulk unpublish items', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.bulkUnpublishItems([1, 2]);
+      });
+
+      expect(result).toEqual(mockBulkUnpublishResponse);
+    });
+
+    it('should publish a category', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.publishCategory(1, true);
+      });
+
+      expect(result).toEqual(mockPublishResponse);
+    });
+
+    it('should unpublish a category', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.unpublishCategory(1);
+      });
+
+      expect(result).toEqual(mockUnpublishResponse);
+    });
+
+    it('should publish a collection', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.publishCollection(1, false);
+      });
+
+      expect(result).toEqual(mockPublishResponse);
+    });
+
+    it('should unpublish a collection', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.unpublishCollection(1);
+      });
+
+      expect(result).toEqual(mockUnpublishResponse);
+    });
+
+    it('should get unpublish category preview', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.getUnpublishCategoryPreview(1);
+      });
+
+      expect(result).toEqual(mockUnpublishPreview);
+    });
+
+    it('should get unpublish collection preview', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      act(() => {
+        capturedData!.setCurrentCollection(mockCollections[0]);
+      });
+
+      const result = await act(async () => {
+        return capturedData!.getUnpublishCollectionPreview(1);
+      });
+
+      expect(result).toEqual(mockUnpublishPreview);
+    });
+
+    it('should throw when no collection is set', async () => {
+      setupPublishMock();
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      await expect(act(async () => {
+        await capturedData!.publishItem(1);
+      })).rejects.toThrow('No active collection to determine workspace');
     });
   });
 });

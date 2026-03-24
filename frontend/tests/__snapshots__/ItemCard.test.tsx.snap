@@ -12,6 +12,21 @@ exports[`ItemCard > snapshots > should render image card 1`] = `
       class="item-card__ribbon"
       style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
     />
+    <button
+      class="publish-btn item-card__publish-btn"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+          transform="rotate(-90 12 12)"
+        />
+      </svg>
+      Publish
+    </button>
     <img
       alt="Leica M3"
       class="item-card__img"
@@ -48,6 +63,21 @@ exports[`ItemCard > snapshots > should render selected card 1`] = `
       class="item-card__ribbon"
       style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
     />
+    <button
+      class="publish-btn item-card__publish-btn"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+          transform="rotate(-90 12 12)"
+        />
+      </svg>
+      Publish
+    </button>
     <img
       alt="Leica M3"
       class="item-card__img"
@@ -84,6 +114,21 @@ exports[`ItemCard > snapshots > should render text-only card 1`] = `
       class="item-card__ribbon"
       style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
     />
+    <button
+      class="publish-btn item-card__publish-btn"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+          transform="rotate(-90 12 12)"
+        />
+      </svg>
+      Publish
+    </button>
     <div
       class="item-card__body"
     >

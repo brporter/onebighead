@@ -1,10 +1,20 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemCard from '../src/components/item/ItemCard';
 import type { Item } from '../src/utils/types';
 import { Visibility, UserFlag } from '../src/utils/types';
 import type { AccentColor } from '../src/utils/accentColors';
+
+const mockPublishItem = vi.fn();
+const mockUnpublishItem = vi.fn();
+
+vi.mock('../src/contexts/useData', () => ({
+  useData: () => ({
+    publishItem: mockPublishItem,
+    unpublishItem: mockUnpublishItem,
+  }),
+}));
 
 describe('ItemCard', () => {
   const defaultAccent: AccentColor = { start: '#c77d4a', end: '#d4a574', name: 'Warm copper' };
@@ -163,6 +173,174 @@ describe('ItemCard', () => {
     it('should have selected class when isSelected is true', () => {
       const { container } = render(<ItemCard {...defaultProps} isSelected={true} />);
       expect(container.querySelector('.item-card--selected')).toBeInTheDocument();
+    });
+  });
+
+  describe('publish/unpublish integration', () => {
+    const publicItem: Item = {
+      ...itemWithImages,
+      effectiveIsPublic: true,
+    };
+
+    const privateItem: Item = {
+      ...itemWithImages,
+      effectiveIsPublic: false,
+    };
+
+    beforeEach(() => {
+      mockPublishItem.mockReset();
+      mockUnpublishItem.mockReset();
+      mockPublishItem.mockResolvedValue({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false });
+      mockUnpublishItem.mockResolvedValue({ unpublished: { type: 'Item', id: 1, name: 'Leica M3' }, affectedPublicItems: 0, affectedPublicCategories: 0 });
+    });
+
+    it('should show PublicBadge when effectiveIsPublic is true', () => {
+      render(<ItemCard {...defaultProps} item={publicItem} />);
+      expect(screen.getByText('Public')).toBeInTheDocument();
+    });
+
+    it('should show PublishButton when item is private', () => {
+      render(<ItemCard {...defaultProps} item={privateItem} />);
+      expect(screen.getByText('Publish')).toBeInTheDocument();
+    });
+
+    it('should not show PublishButton when item is public', () => {
+      render(<ItemCard {...defaultProps} item={publicItem} />);
+      expect(screen.queryByText('Publish')).not.toBeInTheDocument();
+    });
+
+    it('should not show PublicBadge when item is private', () => {
+      render(<ItemCard {...defaultProps} item={privateItem} />);
+      expect(screen.queryByText('Public')).not.toBeInTheDocument();
+    });
+
+    it('should call publishItem when clicking Publish button', async () => {
+      const user = userEvent.setup();
+      render(<ItemCard {...defaultProps} item={privateItem} />);
+
+      await user.click(screen.getByText('Publish'));
+      expect(mockPublishItem).toHaveBeenCalledWith(1);
+    });
+
+    it('should call unpublishItem when clicking Unpublish on PublicBadge', async () => {
+      const user = userEvent.setup();
+      render(<ItemCard {...defaultProps} item={publicItem} />);
+
+      // PublicBadge is a button, click it
+      await user.click(screen.getByText('Public'));
+      expect(mockUnpublishItem).toHaveBeenCalledWith(1);
+    });
+
+    it('should show SlugSetupModal when publish requires slug setup', async () => {
+      mockPublishItem.mockResolvedValue({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
+      const user = userEvent.setup();
+      render(<ItemCard {...defaultProps} item={privateItem} />);
+
+      await user.click(screen.getByText('Publish'));
+      expect(screen.getByText('Set Up Your Public Gallery')).toBeInTheDocument();
+    });
+
+    it('should retry publish after slug setup', async () => {
+      mockPublishItem.mockResolvedValueOnce({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
+      mockPublishItem.mockResolvedValueOnce({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false });
+      const user = userEvent.setup();
+      render(<ItemCard {...defaultProps} item={privateItem} />);
+
+      await user.click(screen.getByText('Publish'));
+      expect(screen.getByText('Set Up Your Public Gallery')).toBeInTheDocument();
+
+      // Fill in slug and confirm
+      await user.type(screen.getByLabelText('Gallery URL'), 'my-gallery');
+      await user.click(screen.getByText('Create Gallery & Publish'));
+
+      expect(mockPublishItem).toHaveBeenCalledTimes(2);
+    });
+
+    it('should close SlugSetupModal on cancel', async () => {
+      mockPublishItem.mockResolvedValue({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
+      const user = userEvent.setup();
+      render(<ItemCard {...defaultProps} item={privateItem} />);
+
+      await user.click(screen.getByText('Publish'));
+      expect(screen.getByText('Set Up Your Public Gallery')).toBeInTheDocument();
+
+      await user.click(screen.getByText('Cancel'));
+      expect(screen.queryByText('Set Up Your Public Gallery')).not.toBeInTheDocument();
+    });
+
+    it('should not call publishItem when item has null id', async () => {
+      const user = userEvent.setup();
+      const nullIdItem = { ...privateItem, id: null, name: 'No ID item' };
+      render(<ItemCard {...defaultProps} item={nullIdItem} />);
+
+      await user.click(screen.getByText('Publish'));
+      expect(mockPublishItem).not.toHaveBeenCalled();
+    });
+
+    it('should not call unpublishItem when item has null id', async () => {
+      const user = userEvent.setup();
+      const nullIdItem = { ...publicItem, id: null, name: 'No ID item' };
+      render(<ItemCard {...defaultProps} item={nullIdItem} />);
+
+      await user.click(screen.getByText('Public'));
+      expect(mockUnpublishItem).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('selection mode', () => {
+    it('should show checkbox in selection mode', () => {
+      const { container } = render(
+        <ItemCard {...defaultProps} selectionMode={true} isChecked={false} onToggleCheck={vi.fn()} />
+      );
+      expect(container.querySelector('input[type="checkbox"]')).toBeInTheDocument();
+    });
+
+    it('should not show checkbox when not in selection mode', () => {
+      const { container } = render(<ItemCard {...defaultProps} />);
+      expect(container.querySelector('input[type="checkbox"]')).not.toBeInTheDocument();
+    });
+
+    it('should call onToggleCheck instead of onSelect in selection mode', async () => {
+      const user = userEvent.setup();
+      const handleSelect = vi.fn();
+      const handleToggleCheck = vi.fn();
+      render(
+        <ItemCard {...defaultProps} onSelect={handleSelect} selectionMode={true} isChecked={false} onToggleCheck={handleToggleCheck} />
+      );
+
+      await user.click(screen.getByRole('button', { name: /Leica M3/ }));
+      expect(handleToggleCheck).toHaveBeenCalledWith(1);
+      expect(handleSelect).not.toHaveBeenCalled();
+    });
+
+    it('should reflect checked state', () => {
+      const { container } = render(
+        <ItemCard {...defaultProps} selectionMode={true} isChecked={true} onToggleCheck={vi.fn()} />
+      );
+      const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      expect(checkbox.checked).toBe(true);
+    });
+
+    it('should add selectable class in selection mode', () => {
+      const { container } = render(
+        <ItemCard {...defaultProps} selectionMode={true} isChecked={false} onToggleCheck={vi.fn()} />
+      );
+      expect(container.querySelector('.item-card--selectable')).toBeInTheDocument();
+    });
+
+    it('should call onToggleCheck on Enter key in selection mode', async () => {
+      const user = userEvent.setup();
+      const handleSelect = vi.fn();
+      const handleToggleCheck = vi.fn();
+      render(
+        <ItemCard {...defaultProps} onSelect={handleSelect} selectionMode={true} isChecked={false} onToggleCheck={handleToggleCheck} />
+      );
+
+      const card = screen.getByRole('button', { name: /Leica M3/ });
+      card.focus();
+      await user.keyboard('{Enter}');
+      expect(handleToggleCheck).toHaveBeenCalledWith(1);
+      expect(handleSelect).not.toHaveBeenCalled();
     });
   });
 

@@ -1,6 +1,10 @@
+import { useState, useCallback } from 'react';
 import type { Item, Category } from '../../utils/types';
 import ItemCard from './ItemCard';
 import { getAccentColor } from '../../utils/accentColors';
+import { VisibilityFilter, BulkActionBar } from '../common';
+import type { VisibilityFilterValue } from '../common';
+import { useData } from '../../contexts/useData';
 
 const PAGE_SIZE = 25;
 
@@ -15,11 +19,24 @@ interface ItemListProps {
 }
 
 function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageIndex, onPageChange }: ItemListProps) {
+  const { bulkPublishItems, bulkUnpublishItems } = useData();
+  const [filterValue, setFilterValue] = useState<VisibilityFilterValue>('all');
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+
+  // Filter items based on visibility
+  const filteredItems = items.filter((item) => {
+    if (filterValue === 'all') return true;
+    if (filterValue === 'public') return item.effectiveIsPublic;
+    return !item.effectiveIsPublic;
+  });
+
   const totalCount = items.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const filteredCount = filteredItems.length;
+  const totalPages = Math.max(1, Math.ceil(filteredCount / PAGE_SIZE));
   const safePageIndex = Math.min(Math.max(0, pageIndex), totalPages - 1);
   const start = safePageIndex * PAGE_SIZE;
-  const pageItems = items.slice(start, start + PAGE_SIZE);
+  const pageItems = filteredItems.slice(start, start + PAGE_SIZE);
 
   const canPrev = safePageIndex > 0;
   const canNext = safePageIndex < totalPages - 1;
@@ -35,6 +52,40 @@ function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageInde
     return getAccentColor(catIndex);
   }
 
+  const handleToggleCheck = useCallback((id: number) => {
+    setSelectedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleCancelSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedItems(new Set());
+  }, []);
+
+  async function handleBulkPublish() {
+    const ids = Array.from(selectedItems);
+    await bulkPublishItems(ids);
+    handleCancelSelection();
+  }
+
+  async function handleBulkUnpublish() {
+    const ids = Array.from(selectedItems);
+    await bulkUnpublishItems(ids);
+    handleCancelSelection();
+  }
+
+  function handleFilterChange(value: VisibilityFilterValue) {
+    setFilterValue(value);
+    onPageChange(0);
+  }
+
   return (
     <aside className="list">
       <div className="list__header">
@@ -43,6 +94,15 @@ function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageInde
           <div className="list__count" aria-label="Item count">
             {totalCount} total
           </div>
+          {!selectionMode && (
+            <button
+              type="button"
+              className="list__selectButton"
+              onClick={() => setSelectionMode(true)}
+            >
+              Select
+            </button>
+          )}
           {onAddItem && (
             <button
               type="button"
@@ -55,6 +115,22 @@ function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageInde
         </div>
       </div>
 
+      <VisibilityFilter
+        value={filterValue}
+        onChange={handleFilterChange}
+        totalCount={totalCount}
+        filteredCount={filteredCount}
+      />
+
+      {selectionMode && (
+        <BulkActionBar
+          selectedCount={selectedItems.size}
+          onPublish={handleBulkPublish}
+          onUnpublish={handleBulkUnpublish}
+          onCancel={handleCancelSelection}
+        />
+      )}
+
       <div className="list__masonry">
         {pageItems.length ? (
           pageItems.map((item, index) => (
@@ -64,6 +140,9 @@ function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageInde
               accentColor={getItemAccentColor(item)}
               isSelected={item.id === selectedId}
               onSelect={onSelect}
+              selectionMode={selectionMode}
+              isChecked={item.id !== null ? selectedItems.has(item.id) : false}
+              onToggleCheck={handleToggleCheck}
             />
           ))
         ) : (

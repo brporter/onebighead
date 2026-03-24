@@ -1,9 +1,23 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemList from '../src/components/item/ItemList';
 import type { Item, Category } from '../src/utils/types';
 import { Visibility, UserFlag } from '../src/utils/types';
+
+const mockBulkPublishItems = vi.fn();
+const mockBulkUnpublishItems = vi.fn();
+const mockPublishItem = vi.fn();
+const mockUnpublishItem = vi.fn();
+
+vi.mock('../src/contexts/useData', () => ({
+  useData: () => ({
+    bulkPublishItems: mockBulkPublishItems,
+    bulkUnpublishItems: mockBulkUnpublishItems,
+    publishItem: mockPublishItem,
+    unpublishItem: mockUnpublishItem,
+  }),
+}));
 
 describe('ItemList', () => {
   const createMockItems = (count: number): Item[] => {
@@ -352,6 +366,205 @@ describe('ItemList', () => {
       // Should clamp to first page
       expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
       expect(screen.getByText('Item 1')).toBeInTheDocument();
+    });
+  });
+
+  describe('visibility filter', () => {
+    const createMixedItems = (): Item[] => [
+      { id: 1, workspaceId: 1, collectionId: 1, categoryId: 1, templateKey: null, name: 'Public Item 1', summary: '', description: '', properties: [], images: [], visibility: Visibility.Public, effectiveIsPublic: true, userFlag: UserFlag.Have },
+      { id: 2, workspaceId: 1, collectionId: 1, categoryId: 1, templateKey: null, name: 'Public Item 2', summary: '', description: '', properties: [], images: [], visibility: Visibility.Public, effectiveIsPublic: true, userFlag: UserFlag.Have },
+      { id: 3, workspaceId: 1, collectionId: 1, categoryId: 1, templateKey: null, name: 'Private Item 1', summary: '', description: '', properties: [], images: [], visibility: Visibility.Private, effectiveIsPublic: false, userFlag: UserFlag.Have },
+    ];
+
+    it('should render VisibilityFilter', () => {
+      render(<ItemList {...defaultProps} />);
+      expect(screen.getByRole('group', { name: 'Visibility filter' })).toBeInTheDocument();
+    });
+
+    it('should show all items by default', () => {
+      render(<ItemList {...defaultProps} items={createMixedItems()} />);
+      expect(screen.getByText('Public Item 1')).toBeInTheDocument();
+      expect(screen.getByText('Public Item 2')).toBeInTheDocument();
+      expect(screen.getByText('Private Item 1')).toBeInTheDocument();
+    });
+
+    it('should filter to public items only when Public is selected', async () => {
+      const user = userEvent.setup();
+      render(<ItemList {...defaultProps} items={createMixedItems()} />);
+
+      // Target the filter button specifically within the filter bar
+      const filterBar = screen.getByRole('group', { name: 'Visibility filter' });
+      const publicFilterBtn = filterBar.querySelector('.filter-btn:nth-child(2)') as HTMLElement;
+      await user.click(publicFilterBtn);
+      expect(screen.getByText('Public Item 1')).toBeInTheDocument();
+      expect(screen.getByText('Public Item 2')).toBeInTheDocument();
+      expect(screen.queryByText('Private Item 1')).not.toBeInTheDocument();
+    });
+
+    it('should filter to private items only when Private is selected', async () => {
+      const user = userEvent.setup();
+      render(<ItemList {...defaultProps} items={createMixedItems()} />);
+
+      await user.click(screen.getByText('Private'));
+      expect(screen.queryByText('Public Item 1')).not.toBeInTheDocument();
+      expect(screen.queryByText('Public Item 2')).not.toBeInTheDocument();
+      expect(screen.getByText('Private Item 1')).toBeInTheDocument();
+    });
+
+    it('should show correct filtered count', async () => {
+      const user = userEvent.setup();
+      render(<ItemList {...defaultProps} items={createMixedItems()} />);
+
+      expect(screen.getByText('Showing 3 items')).toBeInTheDocument();
+
+      const filterBar = screen.getByRole('group', { name: 'Visibility filter' });
+      const publicFilterBtn = filterBar.querySelector('.filter-btn:nth-child(2)') as HTMLElement;
+      await user.click(publicFilterBtn);
+      expect(screen.getByText('Showing 2 items')).toBeInTheDocument();
+    });
+
+    it('should reset page to 0 when filter changes', async () => {
+      const user = userEvent.setup();
+      const handlePageChange = vi.fn();
+      render(<ItemList {...defaultProps} items={createMixedItems()} onPageChange={handlePageChange} />);
+
+      await user.click(screen.getByText('Private'));
+      expect(handlePageChange).toHaveBeenCalledWith(0);
+    });
+
+    it('should show No items when filter matches nothing', async () => {
+      const user = userEvent.setup();
+      const allPrivateItems = createMockItems(3);
+      render(<ItemList {...defaultProps} items={allPrivateItems} />);
+
+      const filterBar = screen.getByRole('group', { name: 'Visibility filter' });
+      const publicFilterBtn = filterBar.querySelector('.filter-btn:nth-child(2)') as HTMLElement;
+      await user.click(publicFilterBtn);
+      expect(screen.getByText('No items')).toBeInTheDocument();
+    });
+  });
+
+  describe('selection mode and bulk actions', () => {
+    beforeEach(() => {
+      mockBulkPublishItems.mockReset();
+      mockBulkUnpublishItems.mockReset();
+      mockBulkPublishItems.mockResolvedValue({ publishedCount: 0, promoted: [], requiresSlugSetup: false });
+      mockBulkUnpublishItems.mockResolvedValue({ unpublishedCount: 0 });
+    });
+
+    it('should show Select button', () => {
+      render(<ItemList {...defaultProps} />);
+      expect(screen.getByText('Select')).toBeInTheDocument();
+    });
+
+    it('should enter selection mode when clicking Select', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+      // Checkboxes should appear on cards
+      expect(container.querySelectorAll('input[type="checkbox"]').length).toBe(3);
+    });
+
+    it('should show BulkActionBar when items are selected', async () => {
+      const user = userEvent.setup();
+      render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+      // Click on first item card to select it
+      await user.click(screen.getByRole('button', { name: 'Select Item 1' }));
+
+      expect(screen.getByText('Publish Selected')).toBeInTheDocument();
+      expect(screen.getByText('Make Private')).toBeInTheDocument();
+    });
+
+    it('should not show BulkActionBar when no items are selected', async () => {
+      const user = userEvent.setup();
+      render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+      expect(screen.queryByText('Publish Selected')).not.toBeInTheDocument();
+    });
+
+    it('should call bulkPublishItems when clicking Publish Selected', async () => {
+      const user = userEvent.setup();
+      render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+      await user.click(screen.getByRole('button', { name: 'Select Item 1' }));
+      await user.click(screen.getByText('Publish Selected'));
+
+      expect(mockBulkPublishItems).toHaveBeenCalledWith([1]);
+    });
+
+    it('should call bulkUnpublishItems when clicking Make Private', async () => {
+      const user = userEvent.setup();
+      render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+      await user.click(screen.getByRole('button', { name: 'Select Item 2' }));
+      await user.click(screen.getByText('Make Private'));
+
+      expect(mockBulkUnpublishItems).toHaveBeenCalledWith([2]);
+    });
+
+    it('should exit selection mode when clicking Cancel in BulkActionBar', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+      await user.click(screen.getByRole('button', { name: 'Select Item 1' }));
+      await user.click(screen.getAllByText('Cancel')[0]);
+
+      expect(container.querySelectorAll('input[type="checkbox"]').length).toBe(0);
+    });
+
+    it('should toggle item selection on repeated clicks', async () => {
+      const user = userEvent.setup();
+      render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+
+      // Select item 1
+      await user.click(screen.getByRole('button', { name: 'Select Item 1' }));
+      expect(screen.getByText('1')).toBeInTheDocument(); // count in bulk bar
+
+      // Deselect item 1
+      await user.click(screen.getByRole('button', { name: 'Select Item 1' }));
+      // BulkActionBar should not render when 0 items selected
+      expect(screen.queryByText('Publish Selected')).not.toBeInTheDocument();
+    });
+
+    it('should hide Select button when in selection mode', async () => {
+      const user = userEvent.setup();
+      render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+      expect(screen.queryByText('Select')).not.toBeInTheDocument();
+    });
+
+    it('should clear selections after bulk publish', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+      await user.click(screen.getByRole('button', { name: 'Select Item 1' }));
+      await user.click(screen.getByText('Publish Selected'));
+
+      // After bulk publish, selection mode should exit
+      expect(container.querySelectorAll('input[type="checkbox"]').length).toBe(0);
+    });
+
+    it('should clear selections after bulk unpublish', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<ItemList {...defaultProps} />);
+
+      await user.click(screen.getByText('Select'));
+      await user.click(screen.getByRole('button', { name: 'Select Item 1' }));
+      await user.click(screen.getByText('Make Private'));
+
+      // After bulk unpublish, selection mode should exit
+      expect(container.querySelectorAll('input[type="checkbox"]').length).toBe(0);
     });
   });
 });
