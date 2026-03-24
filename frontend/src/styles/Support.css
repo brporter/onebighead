@@ -146,7 +146,7 @@
 
 .support-modal__button--primary {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border-color: var(--color-primary);
 }
 
@@ -313,7 +313,7 @@
 
 .support-requests__new-button {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border: none;
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--radius-md);

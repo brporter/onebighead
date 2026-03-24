@@ -448,7 +448,7 @@ body {
 .btn--success {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
 }
 
 .btn--success:hover:not(:disabled) {
@@ -539,7 +539,7 @@ body {
 
 .spinner--light {
   border-color: rgba(255, 255, 255, 0.3);
-  border-top-color: var(--color-text-inverse);
+  border-top-color: var(--color-primary-text);
 }
 
 @keyframes spin {
@@ -810,7 +810,7 @@ body {
 .categoryTree__add:hover {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
 }
 
 .categoryTree__list,
@@ -951,7 +951,7 @@ body {
   border: 1px solid var(--color-success);
   border-radius: var(--radius-md);
   background: var(--color-success);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -1233,7 +1233,7 @@ body {
 
 .detail__btn--primary {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border-color: var(--color-primary);
 }
 
@@ -1255,7 +1255,7 @@ body {
 
 .detail__btn--danger {
   background: var(--color-danger);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border-color: var(--color-danger);
   margin-left: auto;
 }
@@ -1298,14 +1298,14 @@ body {
 
 .itemFlagRibbon--want .itemFlagRibbon__text {
   background: linear-gradient(135deg, var(--color-want) 0%, var(--color-want-dark) 100%);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border-top: 1px dashed rgba(255, 255, 255, 0.4);
   border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
 }
 
 .itemFlagRibbon--trade .itemFlagRibbon__text {
   background: linear-gradient(135deg, var(--color-trade) 0%, var(--color-trade-dark) 100%);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
   border-top: 1px dashed rgba(255, 255, 255, 0.4);
   border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
 }
@@ -2142,7 +2142,7 @@ body {
 .visibility-option.selected {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-primary-text);
 }
 
 .visibility-option:disabled {
