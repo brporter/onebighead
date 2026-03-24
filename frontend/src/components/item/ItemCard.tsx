@@ -4,6 +4,8 @@ import type { AccentColor } from '../../utils/accentColors';
 import type { KeyboardEvent } from 'react';
 import { PublishButton, PublicBadge, SlugSetupModal } from '../common';
 import { useData } from '../../contexts/useData';
+import { useToast } from '../../contexts/useToast';
+import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../../utils/publishToastUtils';
 import './ItemCard.css';
 
 const MAX_PILLS = 3;
@@ -20,6 +22,7 @@ interface ItemCardProps {
 
 function ItemCard({ item, accentColor, isSelected, onSelect, selectionMode, isChecked, onToggleCheck }: ItemCardProps) {
   const { publishItem, unpublishItem } = useData();
+  const { showToast } = useToast();
   const [showSlugSetup, setShowSlugSetup] = useState(false);
   const hasImages = item.images.length > 0;
   const isTextOnly = !hasImages;
@@ -52,19 +55,23 @@ function ItemCard({ item, accentColor, isSelected, onSelect, selectionMode, isCh
     const result = await publishItem(item.id);
     if (result.requiresSlugSetup) {
       setShowSlugSetup(true);
+    } else {
+      showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
     }
   }
 
   async function handleUnpublish() {
     if (item.id === null) return;
-    await unpublishItem(item.id);
+    const result = await unpublishItem(item.id);
+    showToast(buildUnpublishToastMessage(result));
   }
 
   async function handleSlugConfirm(_slug: string) {
     setShowSlugSetup(false);
     if (item.id === null) return;
     // Retry publish after slug setup
-    await publishItem(item.id);
+    const result = await publishItem(item.id);
+    showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
   }
 
   const visibleProps = item.properties.slice(0, MAX_PILLS);

@@ -26,3 +26,4 @@ export { UnpublishConfirmModal } from './UnpublishConfirmModal';
 export type { UnpublishConfirmModalProps } from './UnpublishConfirmModal';
 export { SlugSetupModal } from './SlugSetupModal';
 export type { SlugSetupModalProps } from './SlugSetupModal';
+export { ToastContainer } from './ToastContainer';

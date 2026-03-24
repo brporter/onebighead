@@ -27,11 +27,14 @@ export interface LeaveWorkspaceResponse {
 
 export interface UpdateWorkspaceRequest {
   name: string;
+  slug?: string | null;
 }
 
 export interface UpdateWorkspaceResponse {
   workspaceId: number;
   workspaceName: string;
+  slug?: string | null;
+  publicUrl?: string | null;
 }
 
 export interface SetupWorkspaceRequest {

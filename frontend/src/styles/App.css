@@ -2556,6 +2556,36 @@ body {
   gap: var(--space-md);
 }
 
+/* Gallery link in header */
+.gallery-link {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.gallery-link:hover {
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.gallery-link__icon {
+  flex-shrink: 0;
+}
+
+.gallery-link--setup {
+  font-style: italic;
+}
+
 @media (max-width: 640px) {
   .site-header__content {
     flex-wrap: wrap;

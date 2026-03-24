@@ -132,6 +132,7 @@ export interface WorkspaceMembership {
   workspaceName: string;
   workspaceRole: WorkspaceRole;
   hasCompletedWelcome: boolean;
+  slug?: string | null;
 }
 
 export interface CurrentUser {

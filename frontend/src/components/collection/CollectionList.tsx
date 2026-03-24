@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { Collection } from '../../utils/types';
 import type { UnpublishPreviewResponse } from '../../utils/types';
 import { useData } from '../../contexts/useData';
+import { useToast } from '../../contexts/useToast';
+import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../../utils/publishToastUtils';
 import { PublishButton, PublicBadge, PublishConfirmModal, UnpublishConfirmModal, SlugSetupModal } from '../common';
 import '../../styles/components/CollectionList.css';
 
@@ -17,6 +19,7 @@ function CollectionList({ collections, onSelect }: CollectionListProps) {
     getUnpublishCollectionPreview,
     loadCollections,
   } = useData();
+  const { showToast } = useToast();
 
   const [publishTarget, setPublishTarget] = useState<Collection | null>(null);
   const [unpublishTarget, setUnpublishTarget] = useState<Collection | null>(null);
@@ -35,6 +38,7 @@ function CollectionList({ collections, onSelect }: CollectionListProps) {
       setShowSlugSetup(true);
       return;
     }
+    showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
     await loadCollections();
   }
 
@@ -50,7 +54,8 @@ function CollectionList({ collections, onSelect }: CollectionListProps) {
 
   async function handleUnpublishConfirm() {
     if (!unpublishTarget) return;
-    await unpublishCollection(unpublishTarget.collectionId);
+    const result = await unpublishCollection(unpublishTarget.collectionId);
+    showToast(buildUnpublishToastMessage(result));
     setUnpublishTarget(null);
     setUnpublishPreview(null);
     await loadCollections();

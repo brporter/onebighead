@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import type { Category } from '../../utils/types';
 import type { UnpublishPreviewResponse } from '../../utils/types';
 import { useData } from '../../contexts/useData';
+import { useToast } from '../../contexts/useToast';
+import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../../utils/publishToastUtils';
 import { getAccentColor } from '../../utils/accentColors';
 import { buildDrillPath, getVisibleCategories, getBreadcrumb } from '../../utils/categoryNavUtils';
 import CategoryEditorModal from './CategoryEditorModal';
@@ -27,6 +29,7 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
     unpublishCategory,
     getUnpublishCategoryPreview,
   } = useData();
+  const { showToast } = useToast();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -150,6 +153,7 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
       setShowSlugSetup(true);
       return;
     }
+    showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
     if (currentCollection) {
       await loadCategoriesForCollection(currentCollection.collectionId);
     }
@@ -167,7 +171,8 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
 
   async function handleUnpublishConfirm() {
     if (!unpublishTarget) return;
-    await unpublishCategory(unpublishTarget.categoryId);
+    const result = await unpublishCategory(unpublishTarget.categoryId);
+    showToast(buildUnpublishToastMessage(result));
     setUnpublishTarget(null);
     setUnpublishPreview(null);
     if (currentCollection) {

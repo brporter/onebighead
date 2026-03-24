@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '../contexts/useData';
+import { useToast } from '../contexts/useToast';
+import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../utils/publishToastUtils';
 import CategoryNav from '../components/category/CategoryNav';
 import { CollectionDashboard } from '../components/collection';
 import ItemList from '../components/item/ItemList';
@@ -32,6 +34,7 @@ function CategoryView() {
     unpublishCollection,
     getUnpublishCollectionPreview,
   } = useData();
+  const { showToast } = useToast();
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
@@ -217,6 +220,7 @@ function CategoryView() {
       setShowCollectionSlugSetup(true);
       return;
     }
+    showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
     await loadCollections();
   }
 
@@ -232,7 +236,8 @@ function CategoryView() {
 
   async function handleCollectionUnpublishConfirm() {
     if (!currentCollection) return;
-    await unpublishCollection(currentCollection.collectionId);
+    const result = await unpublishCollection(currentCollection.collectionId);
+    showToast(buildUnpublishToastMessage(result));
     setCollectionUnpublishPreview(null);
     await loadCollections();
   }

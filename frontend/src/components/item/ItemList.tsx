@@ -5,6 +5,8 @@ import { getAccentColor } from '../../utils/accentColors';
 import { VisibilityFilter, BulkActionBar } from '../common';
 import type { VisibilityFilterValue } from '../common';
 import { useData } from '../../contexts/useData';
+import { useToast } from '../../contexts/useToast';
+import { buildBulkPublishToastMessage, buildBulkPublishToastDetails, buildBulkUnpublishToastMessage } from '../../utils/publishToastUtils';
 
 const PAGE_SIZE = 25;
 
@@ -20,6 +22,7 @@ interface ItemListProps {
 
 function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageIndex, onPageChange }: ItemListProps) {
   const { bulkPublishItems, bulkUnpublishItems } = useData();
+  const { showToast } = useToast();
   const [filterValue, setFilterValue] = useState<VisibilityFilterValue>('all');
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
@@ -71,13 +74,15 @@ function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageInde
 
   async function handleBulkPublish() {
     const ids = Array.from(selectedItems);
-    await bulkPublishItems(ids);
+    const result = await bulkPublishItems(ids);
+    showToast(buildBulkPublishToastMessage(result), buildBulkPublishToastDetails(result));
     handleCancelSelection();
   }
 
   async function handleBulkUnpublish() {
     const ids = Array.from(selectedItems);
-    await bulkUnpublishItems(ids);
+    const result = await bulkUnpublishItems(ids);
+    showToast(buildBulkUnpublishToastMessage(result));
     handleCancelSelection();
   }
 

@@ -7,13 +7,29 @@ import CollectionView from '../src/views/CollectionView';
 import CategoryView from '../src/views/CategoryView';
 import ItemView from '../src/views/ItemView';
 import { useData } from '../src/contexts/useData';
+import { useUser } from '../src/contexts/useUser';
+import { useToast } from '../src/contexts/useToast';
 import type { Category, Item, Collection } from '../src/utils/types';
-import { Visibility, UserFlag } from '../src/utils/types';
+import { Visibility, UserFlag, WorkspaceRole } from '../src/utils/types';
 
 // Mock the DataContext
 vi.mock('../src/contexts/useData', () => ({
   useData: vi.fn(),
   DataProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock the UserContext
+vi.mock('../src/contexts/useUser', () => ({
+  useUser: vi.fn(),
+}));
+
+// Mock the ToastContext
+vi.mock('../src/contexts/useToast', () => ({
+  useToast: vi.fn(() => ({
+    toasts: [],
+    showToast: vi.fn(),
+    dismissToast: vi.fn(),
+  })),
 }));
 
 // Helper to render with router
@@ -114,16 +130,64 @@ describe('App with Router', () => {
     getCategoryTemplates: vi.fn(async () => []),
   };
 
+  const mockUserWithSlug = {
+    user: {
+      userId: 1,
+      email: 'test@example.com',
+      activeWorkspace: {
+        workspaceId: 1,
+        workspaceName: 'Test Workspace',
+        workspaceRole: WorkspaceRole.WorkspaceAdmin,
+        hasCompletedWelcome: true,
+        slug: 'my-gallery',
+      },
+      workspaces: [{
+        workspaceId: 1,
+        workspaceName: 'Test Workspace',
+        workspaceRole: WorkspaceRole.WorkspaceAdmin,
+        hasCompletedWelcome: true,
+        slug: 'my-gallery',
+      }],
+      workspaceId: 1,
+      workspaceName: 'Test Workspace',
+      hasCompletedWelcome: true,
+      hasAcceptedTerms: true,
+      isSystemAdministrator: false,
+      workspaceRole: WorkspaceRole.WorkspaceAdmin,
+      isWorkspaceAdmin: true,
+    },
+    loading: false,
+    error: null,
+    refetch: vi.fn(),
+    logout: vi.fn(),
+  };
+
+  const mockUserWithoutSlug = {
+    ...mockUserWithSlug,
+    user: {
+      ...mockUserWithSlug.user,
+      activeWorkspace: {
+        ...mockUserWithSlug.user.activeWorkspace,
+        slug: null,
+      },
+    },
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     (useData as ReturnType<typeof vi.fn>).mockReturnValue(mockDataContext);
+    (useUser as ReturnType<typeof vi.fn>).mockReturnValue(mockUserWithSlug);
+    (useToast as ReturnType<typeof vi.fn>).mockReturnValue({
+      toasts: [],
+      showToast: vi.fn(),
+      dismissToast: vi.fn(),
+    });
   });
 
   describe('routing', () => {
     it('should render collections page at /collections', () => {
       renderWithRouter('/collections');
 
-      // Should show Collections in header
       expect(screen.getByRole('heading', { level: 1, name: 'Collections' })).toBeInTheDocument();
     });
 
@@ -210,9 +274,25 @@ describe('App with Router', () => {
 
       renderWithRouter('/collections/1');
 
-      expect(screen.getByText('← All Collections')).toBeInTheDocument();
+      expect(screen.getByText('\u2190 All Collections')).toBeInTheDocument();
+    });
+
+    it('should show Public Gallery link when workspace has slug', () => {
+      renderWithRouter('/collections');
+
+      const link = screen.getByText('Public Gallery');
+      expect(link).toBeInTheDocument();
+      expect(link).toHaveAttribute('href', '/public/my-gallery');
+      expect(link).toHaveAttribute('target', '_blank');
+    });
+
+    it('should show Set Up Public Gallery button when workspace has no slug', () => {
+      (useUser as ReturnType<typeof vi.fn>).mockReturnValue(mockUserWithoutSlug);
+
+      renderWithRouter('/collections');
+
+      expect(screen.getByText('Set Up Public Gallery')).toBeInTheDocument();
+      expect(screen.queryByText('Public Gallery')).not.toBeInTheDocument();
     });
   });
 });
-
-

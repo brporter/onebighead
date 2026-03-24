@@ -8,4 +8,5 @@ public class WorkspaceMembershipResponse
     public string WorkspaceName { get; set; } = string.Empty;
     public WorkspaceRole WorkspaceRole { get; set; }
     public bool HasCompletedWelcome { get; set; }
+    public string? Slug { get; set; }
 }
