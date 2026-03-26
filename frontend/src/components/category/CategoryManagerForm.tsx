@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Category } from '../../utils/types';
 import CategoryTemplateSelector from './CategoryTemplateSelector';
 
@@ -38,6 +38,7 @@ function CategoryManagerForm({
 
   // Reset form when category changes or switching to create mode
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- Synchronizing form state with selected category prop */
     if (isNew) {
       setName('');
       setDescription('');
@@ -51,6 +52,7 @@ function CategoryManagerForm({
       setItemTemplateIds(category.itemTemplateIds);
       setError(null);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [category, isNew]);
 
   // Get available parent categories (exclude self and descendants to prevent circular references)

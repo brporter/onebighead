@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Category } from '../../utils/types';
 import type { UnpublishPreviewResponse } from '../../utils/types';
 import { useData } from '../../contexts/useData';
@@ -70,8 +70,10 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   useEffect(() => {
     if (isOpen) {
       loadCategoriesForCollection(collectionId);
+      /* eslint-disable react-hooks/set-state-in-effect -- Resetting selection state when modal opens */
       setSelectedCategoryId(null);
       setIsNew(false);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen, collectionId, loadCategoriesForCollection]);
 
