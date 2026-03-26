@@ -1,4 +1,5 @@
 export { default as CategoryEditorModal } from './CategoryEditorModal';
+export { default as CategoryManagerModal } from './CategoryManagerModal';
 export { default as CategorySelector } from './CategorySelector';
 export { default as CategoryTemplateSelector } from './CategoryTemplateSelector';
 export { default as CategoryManagerForm } from './CategoryManagerForm';
