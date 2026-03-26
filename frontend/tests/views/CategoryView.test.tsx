@@ -23,6 +23,12 @@ vi.mock('../../src/api/collections', () => ({
   },
 }));
 
+vi.mock('../../src/components/category', () => ({
+  CategoryManagerModal: ({ collectionId, isOpen, onClose }: { collectionId: number; isOpen: boolean; onClose: () => void }) => (
+    isOpen ? <div data-testid="category-manager-modal" data-collection-id={collectionId}><button onClick={onClose}>Close Manager</button></div> : null
+  ),
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -355,6 +361,55 @@ describe('CategoryView', () => {
       expect(screen.queryByText('Root Category')).not.toBeInTheDocument();
 
       window.matchMedia = originalMatchMedia;
+    });
+  });
+
+  describe('CategoryManagerModal integration', () => {
+    it('should open CategoryManagerModal when Edit button in CategoryNav is clicked', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      // CategoryManagerModal should not be visible initially
+      expect(screen.queryByTestId('category-manager-modal')).not.toBeInTheDocument();
+
+      // Click the Edit button in CategoryNav
+      await user.click(screen.getByLabelText('Edit categories'));
+
+      // CategoryManagerModal should now be visible
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+    });
+
+    it('should pass correct collectionId to CategoryManagerModal', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Edit categories'));
+
+      const modal = screen.getByTestId('category-manager-modal');
+      expect(modal).toHaveAttribute('data-collection-id', '1');
+    });
+
+    it('should close CategoryManagerModal when onClose is called', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Edit categories'));
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+
+      await user.click(screen.getByText('Close Manager'));
+      expect(screen.queryByTestId('category-manager-modal')).not.toBeInTheDocument();
+    });
+
+    it('should open CategoryManagerModal from category selected view', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1/categories/1');
+
+      expect(screen.queryByTestId('category-manager-modal')).not.toBeInTheDocument();
+
+      await user.click(screen.getByLabelText('Edit categories'));
+
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('category-manager-modal')).toHaveAttribute('data-collection-id', '1');
     });
   });
 

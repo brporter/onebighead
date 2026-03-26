@@ -251,6 +251,11 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
                   <button
                     class="settings-collection-card__button"
                   >
+                    Categories
+                  </button>
+                  <button
+                    class="settings-collection-card__button"
+                  >
                     Templates
                   </button>
                   <button
@@ -294,6 +299,11 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
                 <div
                   class="settings-collection-card__actions"
                 >
+                  <button
+                    class="settings-collection-card__button"
+                  >
+                    Categories
+                  </button>
                   <button
                     class="settings-collection-card__button"
                   >
@@ -775,6 +785,11 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
                   <button
                     class="settings-collection-card__button"
                   >
+                    Categories
+                  </button>
+                  <button
+                    class="settings-collection-card__button"
+                  >
                     Templates
                   </button>
                   <button
@@ -813,6 +828,11 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
                 <div
                   class="settings-collection-card__actions"
                 >
+                  <button
+                    class="settings-collection-card__button"
+                  >
+                    Categories
+                  </button>
                   <button
                     class="settings-collection-card__button"
                   >

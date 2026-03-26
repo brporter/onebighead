@@ -24,6 +24,13 @@ exports[`CategoryView > snapshots > should match snapshot with category selected
             class="categoryNav__headerActions"
           >
             <button
+              aria-label="Edit categories"
+              class="categoryNav__editBtn"
+              type="button"
+            >
+              ✎
+            </button>
+            <button
               aria-label="Collapse categories"
               class="categoryNav__collapseBtn"
               type="button"

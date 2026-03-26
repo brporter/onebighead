@@ -16,6 +16,7 @@ import { AccountDeletionSection, UserButton, UserManagement } from '../component
 import { SupportModal } from '../components/support/SupportModal';
 import { WorkspaceEditModal, WorkspaceDeletionSection } from '../components/workspace';
 import { SiteHeader, SiteFooter } from '../components/common';
+import { CategoryManagerModal } from '../components/category';
 import type { Collection, WorkspaceMembership } from '../utils/types';
 import { WorkspaceRole } from '../utils/types';
 
@@ -53,6 +54,7 @@ function SettingsView() {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [supportRefreshKey, setSupportRefreshKey] = useState(0);
   const [editingCollectionTemplates, setEditingCollectionTemplates] = useState<Collection | null>(null);
+  const [editingCollectionCategories, setEditingCollectionCategories] = useState<Collection | null>(null);
   const [collectionTemplateEditorDirty, setCollectionTemplateEditorDirty] = useState(false);
   const [teamManagementDirty, setTeamManagementDirty] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -449,6 +451,12 @@ function SettingsView() {
                   </div>
                 </div>
                 <div className="settings-collection-card__actions">
+                  <button
+                    className="settings-collection-card__button"
+                    onClick={() => setEditingCollectionCategories(collection)}
+                  >
+                    Categories
+                  </button>
                   <button
                     className="settings-collection-card__button"
                     onClick={() => setEditingCollectionTemplates(collection)}
@@ -870,6 +878,14 @@ function SettingsView() {
         onClose={() => setEditingWorkspace(null)}
         onSaved={() => window.location.reload()}
       />
+
+      {editingCollectionCategories && (
+        <CategoryManagerModal
+          collectionId={editingCollectionCategories.collectionId}
+          isOpen={!!editingCollectionCategories}
+          onClose={() => setEditingCollectionCategories(null)}
+        />
+      )}
     </div>
   );
 }

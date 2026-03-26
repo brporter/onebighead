@@ -4,6 +4,7 @@ import { useData } from '../contexts/useData';
 import { useToast } from '../contexts/useToast';
 import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../utils/publishToastUtils';
 import CategoryNav from '../components/category/CategoryNav';
+import { CategoryManagerModal } from '../components/category';
 import { CollectionDashboard } from '../components/collection';
 import ItemList from '../components/item/ItemList';
 import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
@@ -47,6 +48,7 @@ function CategoryView() {
   const [prevCategoryId, setPrevCategoryId] = useState(categoryIdNum);
   const [activeBulkJob, setActiveBulkJob] = useState<BulkUpdateJobResponse | null>(null);
   const bulkPollRef = useRef<number | null>(null);
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [collectionPublishTarget, setCollectionPublishTarget] = useState(false);
   const [collectionUnpublishPreview, setCollectionUnpublishPreview] = useState<UnpublishPreviewResponse | null>(null);
   const [showCollectionSlugSetup, setShowCollectionSlugSetup] = useState(false);
@@ -263,20 +265,24 @@ function CategoryView() {
       <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
         <nav className="app__sidebar" aria-label="Category navigation">
           {sidebarCollapsed ? (
-            <button
-              type="button"
-              className="app__sidebar-toggle"
-              onClick={() => setSidebarCollapsed(false)}
-              aria-label="Expand sidebar"
-            >
-              ▶
-            </button>
+            <div className="app__sidebar-collapsed-content">
+              <button
+                type="button"
+                className="app__sidebar-toggle"
+                onClick={() => setSidebarCollapsed(false)}
+                aria-label="Expand sidebar"
+              >
+                &raquo;
+              </button>
+              <span className="app__sidebar-collapsed-label">Categories</span>
+            </div>
           ) : (
             <CategoryNav
               categories={categories}
               selectedCategoryId={null}
               onSelect={handleSelectCategory}
               onCollapse={() => setSidebarCollapsed(true)}
+              onEdit={() => setCategoryManagerOpen(true)}
             />
           )}
         </nav>
@@ -335,6 +341,14 @@ function CategoryView() {
             onCancel={() => setShowCollectionSlugSetup(false)}
           />
         )}
+
+        {currentCollection && (
+          <CategoryManagerModal
+            collectionId={currentCollection.collectionId}
+            isOpen={categoryManagerOpen}
+            onClose={() => setCategoryManagerOpen(false)}
+          />
+        )}
       </div>
     );
   }
@@ -358,6 +372,7 @@ function CategoryView() {
             selectedCategoryId={categoryIdNum}
             onSelect={handleSelectCategory}
             onCollapse={() => setSidebarCollapsed(true)}
+            onEdit={() => setCategoryManagerOpen(true)}
           />
         )}
       </nav>
@@ -457,6 +472,14 @@ function CategoryView() {
         <SlugSetupModal
           onConfirm={handleCollectionSlugConfirm}
           onCancel={() => setShowCollectionSlugSetup(false)}
+        />
+      )}
+
+      {currentCollection && (
+        <CategoryManagerModal
+          collectionId={currentCollection.collectionId}
+          isOpen={categoryManagerOpen}
+          onClose={() => setCategoryManagerOpen(false)}
         />
       )}
     </div>

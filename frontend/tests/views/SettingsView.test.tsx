@@ -100,6 +100,15 @@ vi.mock('../../src/components/workspace', () => ({
     ) : null,
 }));
 
+vi.mock('../../src/components/category', () => ({
+  CategoryManagerModal: ({ collectionId, isOpen, onClose }: { collectionId: number; isOpen: boolean; onClose: () => void }) =>
+    isOpen ? (
+      <div data-testid="category-manager-modal" data-collection-id={collectionId}>
+        <button onClick={onClose}>Close Category Manager</button>
+      </div>
+    ) : null,
+}));
+
 vi.mock('../../src/components/common', async () => {
   const actual = await vi.importActual('../../src/components/common');
   return {
@@ -724,6 +733,40 @@ describe('SettingsView', () => {
       await user.click(screen.getByText('Close Collection Templates'));
 
       expect(screen.queryByTestId('collection-template-editor')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('collections section - category manager', () => {
+    it('should open CategoryManagerModal from collection card Categories button', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const categoriesButtons = screen.getAllByText('Categories');
+      await user.click(categoriesButtons[0]);
+
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+    });
+
+    it('should pass correct collectionId to CategoryManagerModal', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const categoriesButtons = screen.getAllByText('Categories');
+      await user.click(categoriesButtons[0]);
+
+      expect(screen.getByTestId('category-manager-modal')).toHaveAttribute('data-collection-id', '1');
+    });
+
+    it('should close CategoryManagerModal', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const categoriesButtons = screen.getAllByText('Categories');
+      await user.click(categoriesButtons[0]);
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+
+      await user.click(screen.getByText('Close Category Manager'));
+      expect(screen.queryByTestId('category-manager-modal')).not.toBeInTheDocument();
     });
   });
 
