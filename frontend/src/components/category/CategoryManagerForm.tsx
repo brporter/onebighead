@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import type { Category } from '../../utils/types';
-import { Visibility } from '../../utils/types';
 import CategoryTemplateSelector from './CategoryTemplateSelector';
 
 interface CategoryManagerFormProps {
@@ -35,7 +34,7 @@ function CategoryManagerForm({
   const [error, setError] = useState<string | null>(null);
 
   const isSystem = category?.isSystem ?? false;
-  const isPublic = category?.visibility === Visibility.Public;
+  const isPublic = category?.effectiveIsPublic ?? false;
 
   // Reset form when category changes or switching to create mode
   useEffect(() => {
