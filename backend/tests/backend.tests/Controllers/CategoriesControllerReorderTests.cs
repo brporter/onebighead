@@ -244,4 +244,35 @@ public class CategoriesControllerReorderTests
         Assert.Single(returnedCategories);
         Assert.Equal(new List<int> { 10, 20 }, returnedCategories[0].ItemTemplateIds);
     }
+
+    [Fact]
+    public async Task ReorderCategories_WhenCollectionIsNull_DoesNotComputeVisibility()
+    {
+        // Arrange
+        var cat1 = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "A" };
+
+        var request = new ReorderCategoriesRequest
+        {
+            Categories = new List<CategorySortOrderEntry>
+            {
+                new() { CategoryId = 1, SortOrder = 0 }
+            }
+        };
+
+        _mockRepository.Setup(r => r.GetByIdAsync(1, TestWorkspaceId)).ReturnsAsync(cat1);
+        _mockRepository.Setup(r => r.ReorderAsync(It.IsAny<Dictionary<int, int>>(), TestWorkspaceId)).Returns(Task.CompletedTask);
+        _mockCollectionRepository.Setup(r => r.GetByIdAsync(TestCollectionId, TestWorkspaceId)).ReturnsAsync((Collection?)null);
+        _mockRepository.Setup(r => r.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category> { cat1 });
+        _mockRepository.Setup(r => r.GetTemplateIdsByCategoryAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new Dictionary<int, List<int>>());
+
+        // Act
+        var result = await _controller.ReorderCategories(request);
+
+        // Assert
+        Assert.IsType<OkObjectResult>(result.Result);
+        _mockVisibilityService.Verify(v => v.ComputeEffectiveVisibility(
+            It.IsAny<List<Category>>(), It.IsAny<Collection>()), Times.Never);
+    }
 }

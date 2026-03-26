@@ -207,10 +207,7 @@ public class CategoryRepository : ICategoryRepository
 
         foreach (var category in categories)
         {
-            if (categoryIdToSortOrder.TryGetValue(category.Id, out var newSortOrder))
-            {
-                category.SortOrder = newSortOrder;
-            }
+            category.SortOrder = categoryIdToSortOrder[category.Id];
         }
 
         await _context.SaveChangesAsync();
