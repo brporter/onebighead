@@ -62,6 +62,28 @@ public class CategoryRepositoryTests : IDisposable
         Assert.Empty(result);
     }
 
+    [Fact]
+    public async Task GetAllAsync_ReturnsCategoriesOrderedBySortOrderThenName()
+    {
+        // Arrange
+        var categories = new List<Category>
+        {
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Bravo", SortOrder = 1 },
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Alpha", SortOrder = 0 },
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Charlie", SortOrder = 1 },
+        };
+        await _context.Categories.AddRangeAsync(categories);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = (await _repository.GetAllAsync(TestWorkspaceId)).ToList();
+
+        // Assert
+        Assert.Equal("Alpha", result[0].Name);
+        Assert.Equal("Bravo", result[1].Name);
+        Assert.Equal("Charlie", result[2].Name);
+    }
+
     #endregion
 
     #region GetByCollectionAsync Tests
@@ -115,6 +137,28 @@ public class CategoryRepositoryTests : IDisposable
 
         // Assert
         Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetByCollectionAsync_ReturnsCategoriesOrderedBySortOrderThenName()
+    {
+        // Arrange
+        var categories = new List<Category>
+        {
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Bravo", SortOrder = 1 },
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Alpha", SortOrder = 0 },
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Charlie", SortOrder = 1 },
+        };
+        await _context.Categories.AddRangeAsync(categories);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = (await _repository.GetByCollectionAsync(TestCollectionId, TestWorkspaceId)).ToList();
+
+        // Assert
+        Assert.Equal("Alpha", result[0].Name);
+        Assert.Equal("Bravo", result[1].Name);
+        Assert.Equal("Charlie", result[2].Name);
     }
 
     #endregion

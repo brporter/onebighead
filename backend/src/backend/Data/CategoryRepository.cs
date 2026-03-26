@@ -17,6 +17,8 @@ public class CategoryRepository : ICategoryRepository
         return await _context.Categories
             .AsNoTracking()
             .Where(c => c.WorkspaceId == workspaceId)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
             .ToListAsync();
     }
 
@@ -25,6 +27,8 @@ public class CategoryRepository : ICategoryRepository
         return await _context.Categories
             .AsNoTracking()
             .Where(c => c.WorkspaceId == workspaceId && c.CollectionId == collectionId)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
             .ToListAsync();
     }
 
