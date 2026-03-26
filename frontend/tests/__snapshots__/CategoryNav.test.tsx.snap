@@ -15,15 +15,7 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
       </h2>
       <div
         class="categoryNav__headerActions"
-      >
-        <button
-          aria-label="Add category"
-          class="categoryNav__addBtn"
-          type="button"
-        >
-          +
-        </button>
-      </div>
+      />
     </div>
     <nav
       aria-label="Category breadcrumb"
@@ -105,28 +97,6 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
             )
           </span>
         </div>
-        <button
-          class="publish-btn categoryNav__publish-btn"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
-              transform="rotate(-90 12 12)"
-            />
-          </svg>
-          Publish
-        </button>
-        <button
-          aria-label="Edit 35mm Film"
-          class="categoryNav__edit"
-          type="button"
-        >
-          ✎
-        </button>
         <span
           aria-hidden="true"
           class="categoryNav__chevron"
@@ -153,159 +123,8 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
             Medium Format
           </span>
         </div>
-        <button
-          class="publish-btn categoryNav__publish-btn"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
-              transform="rotate(-90 12 12)"
-            />
-          </svg>
-          Publish
-        </button>
-        <button
-          aria-label="Edit Medium Format"
-          class="categoryNav__edit"
-          type="button"
-        >
-          ✎
-        </button>
       </div>
     </div>
-    <dialog
-      class="modal-dialog"
-    >
-      <div
-        class="modal"
-      >
-        <div
-          class="modal__header"
-        >
-          <h2
-            class="modal__title"
-          >
-            Add Category
-          </h2>
-          <button
-            aria-label="Close"
-            class="modal__close"
-            type="button"
-          >
-            ×
-          </button>
-        </div>
-        <form
-          class="modal__body"
-        >
-          <div
-            class="modal__field"
-          >
-            <label
-              class="modal__label"
-              for="category-name"
-            >
-              Name 
-              <span
-                class="modal__required"
-              >
-                *
-              </span>
-            </label>
-            <input
-              class="modal__input"
-              id="category-name"
-              placeholder="Category name"
-              required=""
-              type="text"
-              value=""
-            />
-          </div>
-          <div
-            class="modal__field"
-          >
-            <label
-              class="modal__label"
-              for="category-description"
-            >
-              Description
-            </label>
-            <textarea
-              class="modal__textarea"
-              id="category-description"
-              placeholder="Optional description"
-              rows="3"
-            />
-          </div>
-          <div
-            class="modal__field"
-          >
-            <label
-              class="modal__label"
-              for="category-parent"
-            >
-              Parent Category
-            </label>
-            <select
-              class="modal__select"
-              id="category-parent"
-            >
-              <option
-                value=""
-              >
-                None (root level)
-              </option>
-              <option
-                value="1"
-              >
-                Rangefinders
-              </option>
-              <option
-                value="2"
-              >
-                35mm Film
-              </option>
-              <option
-                value="3"
-              >
-                Medium Format
-              </option>
-              <option
-                value="4"
-              >
-                Leica
-              </option>
-              <option
-                value="5"
-              >
-                SLR Cameras
-              </option>
-            </select>
-          </div>
-          <div
-            class="modal__actions"
-          >
-            <button
-              class="detail__btn detail__btn--primary"
-              disabled=""
-              type="submit"
-            >
-              Create
-            </button>
-            <button
-              class="detail__btn detail__btn--secondary"
-              type="button"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </dialog>
   </aside>
 </div>
 `;
@@ -325,15 +144,7 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
       </h2>
       <div
         class="categoryNav__headerActions"
-      >
-        <button
-          aria-label="Add category"
-          class="categoryNav__addBtn"
-          type="button"
-        >
-          +
-        </button>
-      </div>
+      />
     </div>
     <div
       class="categoryNav__list"
@@ -364,28 +175,6 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
             )
           </span>
         </div>
-        <button
-          class="publish-btn categoryNav__publish-btn"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
-              transform="rotate(-90 12 12)"
-            />
-          </svg>
-          Publish
-        </button>
-        <button
-          aria-label="Edit Rangefinders"
-          class="categoryNav__edit"
-          type="button"
-        >
-          ✎
-        </button>
         <span
           aria-hidden="true"
           class="categoryNav__chevron"
@@ -412,159 +201,8 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
             SLR Cameras
           </span>
         </div>
-        <button
-          class="publish-btn categoryNav__publish-btn"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
-              transform="rotate(-90 12 12)"
-            />
-          </svg>
-          Publish
-        </button>
-        <button
-          aria-label="Edit SLR Cameras"
-          class="categoryNav__edit"
-          type="button"
-        >
-          ✎
-        </button>
       </div>
     </div>
-    <dialog
-      class="modal-dialog"
-    >
-      <div
-        class="modal"
-      >
-        <div
-          class="modal__header"
-        >
-          <h2
-            class="modal__title"
-          >
-            Add Category
-          </h2>
-          <button
-            aria-label="Close"
-            class="modal__close"
-            type="button"
-          >
-            ×
-          </button>
-        </div>
-        <form
-          class="modal__body"
-        >
-          <div
-            class="modal__field"
-          >
-            <label
-              class="modal__label"
-              for="category-name"
-            >
-              Name 
-              <span
-                class="modal__required"
-              >
-                *
-              </span>
-            </label>
-            <input
-              class="modal__input"
-              id="category-name"
-              placeholder="Category name"
-              required=""
-              type="text"
-              value=""
-            />
-          </div>
-          <div
-            class="modal__field"
-          >
-            <label
-              class="modal__label"
-              for="category-description"
-            >
-              Description
-            </label>
-            <textarea
-              class="modal__textarea"
-              id="category-description"
-              placeholder="Optional description"
-              rows="3"
-            />
-          </div>
-          <div
-            class="modal__field"
-          >
-            <label
-              class="modal__label"
-              for="category-parent"
-            >
-              Parent Category
-            </label>
-            <select
-              class="modal__select"
-              id="category-parent"
-            >
-              <option
-                value=""
-              >
-                None (root level)
-              </option>
-              <option
-                value="1"
-              >
-                Rangefinders
-              </option>
-              <option
-                value="2"
-              >
-                35mm Film
-              </option>
-              <option
-                value="3"
-              >
-                Medium Format
-              </option>
-              <option
-                value="4"
-              >
-                Leica
-              </option>
-              <option
-                value="5"
-              >
-                SLR Cameras
-              </option>
-            </select>
-          </div>
-          <div
-            class="modal__actions"
-          >
-            <button
-              class="detail__btn detail__btn--primary"
-              disabled=""
-              type="submit"
-            >
-              Create
-            </button>
-            <button
-              class="detail__btn detail__btn--secondary"
-              type="button"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </dialog>
   </aside>
 </div>
 `;

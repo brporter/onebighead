@@ -92,12 +92,13 @@ describe('CategoryNav', () => {
       expect(screen.queryByLabelText('Go back')).not.toBeInTheDocument();
     });
 
-    it('shows header with title and add button', () => {
+    it('shows header with title and edit button', () => {
+      const onEdit = vi.fn();
       render(
-        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
+        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} onEdit={onEdit} />
       );
       expect(screen.getByText('Categories')).toBeInTheDocument();
-      expect(screen.getByLabelText('Add category')).toBeInTheDocument();
+      expect(screen.getByLabelText('Edit categories')).toBeInTheDocument();
     });
   });
 
@@ -289,32 +290,47 @@ describe('CategoryNav', () => {
     });
   });
 
-  describe('edit', () => {
-    it('edit button visible on hover (has aria-label="Edit [Name]")', () => {
+  describe('edit button', () => {
+    it('renders Edit button in header that calls onEdit', async () => {
+      const user = userEvent.setup();
+      const onEdit = vi.fn();
       render(
-        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
+        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} onEdit={onEdit} />
       );
-      expect(screen.getByLabelText('Edit Rangefinders')).toBeInTheDocument();
-      expect(screen.getByLabelText('Edit SLR Cameras')).toBeInTheDocument();
+      const editBtn = screen.getByLabelText('Edit categories');
+      expect(editBtn).toBeInTheDocument();
+      await user.click(editBtn);
+      expect(onEdit).toHaveBeenCalledTimes(1);
     });
 
-    it('clicking edit button opens CategoryEditorModal with that category', async () => {
-      const user = userEvent.setup();
+    it('does not render edit button when onEdit is not provided', () => {
       render(
         <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
       );
-      await user.click(screen.getByLabelText('Edit Rangefinders'));
-      // Modal should open - look for the dialog
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Edit categories')).not.toBeInTheDocument();
     });
 
-    it('clicking add button opens CategoryEditorModal for new category', async () => {
-      const user = userEvent.setup();
+    it('does not render publish buttons on rows', () => {
+      const publicCategories = [
+        createMockCategory({ categoryId: 1, name: 'Rangefinders', parentCategoryId: null, effectiveIsPublic: false }),
+        createMockCategory({ categoryId: 5, name: 'SLR Cameras', parentCategoryId: null, effectiveIsPublic: false }),
+      ];
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+        categories: publicCategories,
+      }));
+
+      render(
+        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
+      );
+      expect(screen.queryByText('Publish')).not.toBeInTheDocument();
+    });
+
+    it('does not render edit pencil buttons on rows', () => {
       render(
         <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
       );
-      await user.click(screen.getByLabelText('Add category'));
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Edit Rangefinders')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Edit SLR Cameras')).not.toBeInTheDocument();
     });
   });
 
@@ -377,190 +393,6 @@ describe('CategoryNav', () => {
       expect(screen.getByRole('alert')).toBeInTheDocument();
       expect(screen.getByText(/Error loading categories:/)).toBeInTheDocument();
       expect(screen.getByText(/Failed to fetch categories: Internal Server Error/)).toBeInTheDocument();
-    });
-  });
-
-  describe('publish/unpublish integration', () => {
-    const publicCategories = [
-      createMockCategory({ categoryId: 1, name: 'Rangefinders', parentCategoryId: null, effectiveIsPublic: true }),
-      createMockCategory({ categoryId: 2, name: '35mm Film', parentCategoryId: 1, effectiveIsPublic: false }),
-      createMockCategory({ categoryId: 5, name: 'SLR Cameras', parentCategoryId: null, effectiveIsPublic: false }),
-    ];
-
-    it('shows PublicBadge for public non-system category', () => {
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: publicCategories,
-      }));
-
-      render(
-        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
-      );
-      expect(screen.getByText('Public')).toBeInTheDocument();
-    });
-
-    it('shows PublishButton for private non-system category', () => {
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: publicCategories,
-      }));
-
-      render(
-        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
-      );
-      // SLR Cameras is private, so should have a Publish button
-      expect(screen.getAllByText('Publish').length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('does not show PublishButton or PublicBadge for system categories', () => {
-      const systemCat = [
-        createMockCategory({ categoryId: 10, name: 'System Cat', parentCategoryId: null, isSystem: true, effectiveIsPublic: false }),
-      ];
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: systemCat,
-        items: [createMockItem({ id: 100, categoryId: 10 })],
-      }));
-
-      render(
-        <CategoryNav categories={systemCat} selectedCategoryId={null} onSelect={() => {}} />
-      );
-      expect(screen.queryByText('Publish')).not.toBeInTheDocument();
-      expect(screen.queryByText('Public')).not.toBeInTheDocument();
-    });
-
-    it('shows PublishConfirmModal when clicking Publish on a category', async () => {
-      const user = userEvent.setup();
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: publicCategories,
-      }));
-
-      render(
-        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
-      );
-
-      const publishButtons = screen.getAllByText('Publish');
-      await user.click(publishButtons[0]);
-
-      expect(screen.getByText(/Publish category only/)).toBeInTheDocument();
-    });
-
-    it('shows UnpublishConfirmModal when clicking PublicBadge on a category', async () => {
-      const mockGetPreview = vi.fn().mockResolvedValue({ affectedPublicItems: 5, affectedPublicCategories: 0 });
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: publicCategories,
-        getUnpublishCategoryPreview: mockGetPreview,
-      }));
-
-      const user = userEvent.setup();
-      render(
-        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
-      );
-
-      await user.click(screen.getByText('Public'));
-
-      await screen.findByText(/Make Private/);
-      expect(mockGetPreview).toHaveBeenCalledWith(1);
-    });
-
-    it('calls publishCategory when confirming publish', async () => {
-      const mockPublish = vi.fn().mockResolvedValue({ published: { type: 'Category', id: 5, name: 'SLR Cameras' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false });
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: publicCategories,
-        publishCategory: mockPublish,
-      }));
-
-      const user = userEvent.setup();
-      render(
-        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
-      );
-
-      const publishButtons = screen.getAllByText('Publish');
-      await user.click(publishButtons[0]);
-
-      await user.click(screen.getByText(/Publish category and all/));
-
-      expect(mockPublish).toHaveBeenCalledWith(5, true);
-    });
-
-    it('calls unpublishCategory when confirming unpublish', async () => {
-      const mockUnpublish = vi.fn().mockResolvedValue({ unpublished: { type: 'Category', id: 1, name: 'Rangefinders' }, affectedPublicItems: 0, affectedPublicCategories: 0 });
-      const mockGetPreview = vi.fn().mockResolvedValue({ affectedPublicItems: 5, affectedPublicCategories: 0 });
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: publicCategories,
-        unpublishCategory: mockUnpublish,
-        getUnpublishCategoryPreview: mockGetPreview,
-      }));
-
-      const user = userEvent.setup();
-      render(
-        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
-      );
-
-      await user.click(screen.getByText('Public'));
-      await screen.findByText(/Make Private/);
-      await user.click(screen.getByText('Make Private'));
-
-      expect(mockUnpublish).toHaveBeenCalledWith(1);
-    });
-
-    it('cancel publish modal hides it', async () => {
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: publicCategories,
-      }));
-
-      const user = userEvent.setup();
-      render(
-        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
-      );
-
-      const publishButtons = screen.getAllByText('Publish');
-      await user.click(publishButtons[0]);
-      expect(screen.getByText(/Publish category only/)).toBeInTheDocument();
-
-      // Click the Cancel button inside the publish-confirm-modal
-      const modal = document.querySelector('.publish-confirm-modal');
-      const cancelBtn = within(modal as HTMLElement).getByText('Cancel');
-      await user.click(cancelBtn);
-      expect(screen.queryByText(/Publish category only/)).not.toBeInTheDocument();
-    });
-
-    it('cancel unpublish modal hides it', async () => {
-      const mockGetPreview = vi.fn().mockResolvedValue({ affectedPublicItems: 5, affectedPublicCategories: 0 });
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: publicCategories,
-        getUnpublishCategoryPreview: mockGetPreview,
-      }));
-
-      const user = userEvent.setup();
-      render(
-        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
-      );
-
-      await user.click(screen.getByText('Public'));
-      await screen.findByText(/Make Private/);
-
-      // Click the Cancel button inside the unpublish-confirm-modal
-      const modal = document.querySelector('.unpublish-confirm-modal');
-      const cancelBtn = within(modal as HTMLElement).getByText('Cancel');
-      await user.click(cancelBtn);
-      expect(screen.queryByText(/Make Private/)).not.toBeInTheDocument();
-    });
-
-    it('shows SlugSetupModal when publish requires slug setup', async () => {
-      const mockPublish = vi.fn().mockResolvedValue({ published: { type: 'Category', id: 5, name: 'SLR Cameras' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
-        categories: publicCategories,
-        publishCategory: mockPublish,
-      }));
-
-      const user = userEvent.setup();
-      render(
-        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
-      );
-
-      const publishButtons = screen.getAllByText('Publish');
-      await user.click(publishButtons[0]);
-      await user.click(screen.getByText(/Publish category and all/));
-
-      await screen.findByText('Set Up Your Public Gallery');
     });
   });
 
