@@ -25,6 +25,7 @@ public class CategoryTests
         Assert.Empty(category.ChildCategories);
         Assert.Null(category.Workspace);
         Assert.Null(category.Collection);
+        Assert.Equal(0, category.SortOrder);
     }
 
     [Fact]
@@ -47,7 +48,8 @@ public class CategoryTests
             ParentCategoryId = 3,
             ParentCategory = parent,
             Workspace = workspace,
-            Collection = collection
+            Collection = collection,
+            SortOrder = 5
         };
 
         // Assert
@@ -61,6 +63,7 @@ public class CategoryTests
         Assert.Same(parent, category.ParentCategory);
         Assert.Same(workspace, category.Workspace);
         Assert.Same(collection, category.Collection);
+        Assert.Equal(5, category.SortOrder);
     }
 
     [Fact]

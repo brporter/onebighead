@@ -13,6 +13,7 @@ public class CategoryResponse
     public int? ParentCategoryId { get; set; }
     public Visibility Visibility { get; set; } = Visibility.Private;
     public bool EffectiveIsPublic { get; set; }
+    public int SortOrder { get; set; }
     public List<int> ItemTemplateIds { get; set; } = new();
 
     public static CategoryResponse FromCategory(Category category, List<int>? templateIds = null)
@@ -28,6 +29,7 @@ public class CategoryResponse
             ParentCategoryId = category.ParentCategoryId,
             Visibility = category.Visibility,
             EffectiveIsPublic = category.EffectiveIsPublic,
+            SortOrder = category.SortOrder,
             ItemTemplateIds = templateIds ?? new()
         };
     }
