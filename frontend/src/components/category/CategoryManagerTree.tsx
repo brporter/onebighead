@@ -10,6 +10,7 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -18,9 +19,17 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Category, CategoryNode } from '../../utils/types';
+import type { Category } from '../../utils/types';
 import { getAccentColor } from '../../utils/accentColors';
 import { DragHandle } from '../common/DragHandle';
+import {
+  buildCategoryTree,
+  flattenWithIndent,
+  getDescendantIds,
+  computeReorderUpdates,
+  determineReparentTarget,
+} from './categoryManagerTreeUtils';
+import type { FlatRow } from './categoryManagerTreeUtils';
 
 export interface CategoryManagerTreeProps {
   categories: Category[];
@@ -32,71 +41,16 @@ export interface CategoryManagerTreeProps {
   onReparent: (categoryId: number, newParentId: number | null) => void;
 }
 
-interface FlatRow {
-  category: Category;
-  depth: number;
-  hasChildren: boolean;
-  rootIndex: number;
-}
-
-function buildCategoryTree(categories: Category[]): CategoryNode[] {
-  const map = new Map<number, CategoryNode>();
-  const roots: CategoryNode[] = [];
-
-  for (const cat of categories) {
-    map.set(cat.categoryId, { ...cat, children: [] });
-  }
-
-  for (const cat of categories) {
-    const node = map.get(cat.categoryId)!;
-    if (cat.parentCategoryId === null) {
-      roots.push(node);
-    } else {
-      const parent = map.get(cat.parentCategoryId);
-      if (parent) {
-        parent.children.push(node);
-      } else {
-        roots.push(node);
-      }
-    }
-  }
-
-  return roots;
-}
-
-function flattenWithIndent(
-  nodes: CategoryNode[],
-  rootIndex: number,
-  depth = 0
-): FlatRow[] {
-  const result: FlatRow[] = [];
-  for (const node of nodes) {
-    result.push({
-      category: node,
-      depth,
-      hasChildren: node.children.length > 0,
-      rootIndex,
-    });
-    if (node.children.length > 0) {
-      result.push(...flattenWithIndent(node.children, rootIndex, depth + 1));
-    }
-  }
-  return result;
-}
-
-function getDescendantIds(categories: Category[], categoryId: number): Set<number> {
-  const descendants = new Set<number>();
-  const queue = [categoryId];
-  while (queue.length > 0) {
-    const current = queue.pop()!;
-    for (const cat of categories) {
-      if (cat.parentCategoryId === current && !descendants.has(cat.categoryId)) {
-        descendants.add(cat.categoryId);
-        queue.push(cat.categoryId);
-      }
-    }
-  }
-  return descendants;
+function RootDropZone() {
+  const { setNodeRef, isOver } = useDroppable({ id: 'root-drop-zone' });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`catTree__rootDropZone${isOver ? ' catTree__rootDropZone--over' : ''}`}
+    >
+      Move here to make root level
+    </div>
+  );
 }
 
 interface SortableRowProps {
@@ -272,36 +226,18 @@ function CategoryManagerTree({
 
     // Reparent: items have different parents
     if (activeItem.parentCategoryId !== overItem.parentCategoryId) {
-      // If over item has children, reparent to be child of over item
-      const overHasChildren = categories.some(c => c.parentCategoryId === overId);
-      if (overHasChildren) {
-        onReparent(activeItem.categoryId, overId);
-      } else {
-        // Reparent to the over item's parent
-        onReparent(activeItem.categoryId, overItem.parentCategoryId);
+      const target = determineReparentTarget(categories, activeItem.categoryId, overId);
+      if (target !== undefined) {
+        onReparent(activeItem.categoryId, target);
       }
       return;
     }
 
     // Reorder: same parent, compute new sort orders
-    const parentId = activeItem.parentCategoryId;
-    const siblings = categories
-      .filter(c => c.parentCategoryId === parentId && !c.isSystem)
-      .sort((a, b) => a.sortOrder - b.sortOrder);
-
-    const oldIndex = siblings.findIndex(c => c.categoryId === activeItem.categoryId);
-    const newIndex = siblings.findIndex(c => c.categoryId === overId);
-    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
-
-    const reordered = [...siblings];
-    const [moved] = reordered.splice(oldIndex, 1);
-    reordered.splice(newIndex, 0, moved);
-
-    const updates = reordered.map((cat, idx) => ({
-      categoryId: cat.categoryId,
-      sortOrder: idx,
-    }));
-    onReorder(updates);
+    const updates = computeReorderUpdates(categories, activeItem.categoryId, overId);
+    if (updates) {
+      onReorder(updates);
+    }
   }, [categories, disabledTargetIds, onReorder, onReparent]);
 
   const handleDragCancel = useCallback(() => {
@@ -360,9 +296,7 @@ function CategoryManagerTree({
                 isDisabledTarget={disabledTargetIds.has(row.category.categoryId)}
               />
             ))}
-            <div className="catTree__rootDropZone" data-id="root-drop-zone">
-              Move here to make root level
-            </div>
+            <RootDropZone />
           </div>
         </SortableContext>
 

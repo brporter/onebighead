@@ -6,6 +6,15 @@ import type { Category } from '../src/utils/types';
 import { Visibility } from '../src/utils/types';
 
 // Mock @dnd-kit/core
+const mockUseDroppable = vi.fn(() => ({
+  setNodeRef: vi.fn(),
+  isOver: false,
+  node: { current: null },
+  over: null,
+  active: null,
+  rect: { current: null },
+}));
+
 vi.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: { children: React.ReactNode }) => <div data-testid="dnd-context">{children}</div>,
   DragOverlay: ({ children }: { children: React.ReactNode }) => <div data-testid="drag-overlay">{children}</div>,
@@ -14,6 +23,7 @@ vi.mock('@dnd-kit/core', () => ({
   useSensors: vi.fn(() => []),
   PointerSensor: vi.fn(),
   KeyboardSensor: vi.fn(),
+  useDroppable: (...args: unknown[]) => mockUseDroppable(...args),
 }));
 
 // Mock @dnd-kit/sortable
@@ -199,6 +209,27 @@ describe('CategoryManagerTree', () => {
       const { container } = render(<CategoryManagerTree {...defaultProps} />);
 
       expect(container.querySelector('.catTree__rootDropZone')).toBeTruthy();
+    });
+
+    it('uses useDroppable hook with root-drop-zone id', () => {
+      render(<CategoryManagerTree {...defaultProps} />);
+
+      expect(mockUseDroppable).toHaveBeenCalledWith({ id: 'root-drop-zone' });
+    });
+
+    it('applies --over modifier class when isOver is true', () => {
+      mockUseDroppable.mockReturnValueOnce({
+        setNodeRef: vi.fn(),
+        isOver: true,
+        node: { current: null },
+        over: null,
+        active: null,
+        rect: { current: null },
+      });
+
+      const { container } = render(<CategoryManagerTree {...defaultProps} />);
+
+      expect(container.querySelector('.catTree__rootDropZone--over')).toBeTruthy();
     });
   });
 
