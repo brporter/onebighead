@@ -198,6 +198,24 @@ public class CategoryRepository : ICategoryRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task ReorderAsync(Dictionary<int, int> categoryIdToSortOrder, int workspaceId)
+    {
+        var categoryIds = categoryIdToSortOrder.Keys.ToList();
+        var categories = await _context.Categories
+            .Where(c => c.WorkspaceId == workspaceId && categoryIds.Contains(c.Id))
+            .ToListAsync();
+
+        foreach (var category in categories)
+        {
+            if (categoryIdToSortOrder.TryGetValue(category.Id, out var newSortOrder))
+            {
+                category.SortOrder = newSortOrder;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
     public async Task<List<int>> GetInheritedTemplateIdsAsync(int categoryId, int workspaceId)
     {
         // First get the target category to determine its collection

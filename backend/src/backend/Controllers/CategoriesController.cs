@@ -248,6 +248,55 @@ public class CategoriesController : ApiControllerBase
         return Ok(CategoryResponse.FromCategory(updated, templateIds));
     }
 
+    [HttpPut("reorder")]
+    public async Task<ActionResult<IEnumerable<CategoryResponse>>> ReorderCategories(ReorderCategoriesRequest request)
+    {
+        var workspaceId = GetWorkspaceId();
+
+        if (request.Categories.Count == 0)
+        {
+            return BadRequest("No categories to reorder");
+        }
+
+        // Validate all categories belong to this workspace
+        var categoryIds = request.Categories.Select(c => c.CategoryId).ToList();
+        var existingCategories = new List<Category>();
+        foreach (var id in categoryIds)
+        {
+            var cat = await _categoryRepository.GetByIdAsync(id, workspaceId);
+            if (cat is null)
+            {
+                return BadRequest($"Category {id} not found in workspace");
+            }
+            existingCategories.Add(cat);
+        }
+
+        // Validate all categories belong to the same collection
+        var collectionIds = existingCategories.Select(c => c.CollectionId).Distinct().ToList();
+        if (collectionIds.Count > 1)
+        {
+            return BadRequest("All categories must belong to the same collection");
+        }
+
+        var updates = request.Categories.ToDictionary(c => c.CategoryId, c => c.SortOrder);
+        await _categoryRepository.ReorderAsync(updates, workspaceId);
+
+        // Return updated category list
+        var collectionId = collectionIds[0];
+        var collection = await _collectionRepository.GetByIdAsync(collectionId, workspaceId);
+        var allCategories = (await _categoryRepository.GetByCollectionAsync(collectionId, workspaceId)).ToList();
+        if (collection != null)
+        {
+            _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+        }
+        var templateIdsByCategory = await _categoryRepository.GetTemplateIdsByCategoryAsync(collectionId, workspaceId);
+        var response = allCategories.Select(c => CategoryResponse.FromCategory(
+            c,
+            templateIdsByCategory.TryGetValue(c.Id, out var ids) ? ids : null
+        ));
+        return Ok(response);
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCategory(int id)
     {

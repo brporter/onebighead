@@ -20,5 +20,6 @@ public interface ICategoryRepository
     Task<Dictionary<int, List<int>>> GetTemplateIdsByCategoryAsync(int collectionId, int workspaceId);
     Task SetTemplateIdsAsync(int categoryId, List<int> templateIds, int workspaceId);
     Task<List<int>> GetInheritedTemplateIdsAsync(int categoryId, int workspaceId);
+    Task ReorderAsync(Dictionary<int, int> categoryIdToSortOrder, int workspaceId);
 }
 
