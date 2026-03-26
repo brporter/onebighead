@@ -89,7 +89,7 @@ The edit form's Parent Category dropdown remains as a fallback for users who pre
 ## Sort Alphabetically
 
 The Sort Alphabetically button in the tree toolbar opens a `SortConfirmModal` with:
-- **"This level only"**: Sorts siblings at the currently viewed level (the selected category's parent group, or root categories if nothing is selected).
+- **"This level only"**: Sorts the siblings of the selected category (i.e., categories sharing the same parent). If nothing is selected, sorts root-level categories.
 - **"All levels"**: Recursively sorts every level of the hierarchy.
 - Warning text that this will overwrite any custom ordering.
 - Cancel button to abort.
@@ -109,6 +109,7 @@ Add `SortOrder` (int) property to the `Category` entity.
 New endpoint: `PUT /api/categories/reorder`
 - Request body: array of `{ categoryId: int, sortOrder: int }`
 - Validates all category IDs belong to the same collection and workspace
+- Accepts categories across different parents (needed for "All levels" alphabetical sort)
 - Bulk updates sort order values
 - Returns updated categories
 
