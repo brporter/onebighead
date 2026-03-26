@@ -56,6 +56,7 @@ export function createMockCategory(overrides: Partial<Category> = {}): Category 
     visibility: Visibility.Private,
     effectiveIsPublic: false,
     itemTemplateIds: [],
+    sortOrder: 0,
     ...overrides,
   };
 }
@@ -248,6 +249,7 @@ export function createMockDataContextValue(vi: { fn: () => ReturnType<typeof imp
     updateCategory: vi.fn(),
     deleteCategory: vi.fn(),
     getCategoryTemplates: vi.fn(),
+    reorderCategories: vi.fn(),
     items: [],
     itemsLoading: false,
     itemsError: null,

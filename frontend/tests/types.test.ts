@@ -105,6 +105,7 @@ describe('types', () => {
         visibility: Visibility.Private,
         effectiveIsPublic: false,
         itemTemplateIds: [],
+        sortOrder: 0,
       };
 
       expect(category.categoryId).toBe(1);
@@ -123,6 +124,7 @@ describe('types', () => {
         visibility: Visibility.Private,
         effectiveIsPublic: false,
         itemTemplateIds: [],
+        sortOrder: 0,
       };
 
       expect(category.parentCategoryId).toBe(1);
@@ -142,6 +144,7 @@ describe('types', () => {
         visibility: Visibility.Private,
         effectiveIsPublic: false,
         itemTemplateIds: [],
+        sortOrder: 0,
         children: [
           {
             workspaceId: 1,
@@ -154,6 +157,7 @@ describe('types', () => {
             visibility: Visibility.Private,
             effectiveIsPublic: false,
             itemTemplateIds: [],
+            sortOrder: 0,
             children: [],
           },
         ],

@@ -65,6 +65,7 @@ export interface DataContextValue {
   updateCategory: (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; itemTemplateIds?: number[] }) => Promise<void>;
   deleteCategory: (categoryId: number) => Promise<void>;
   getCategoryTemplates: (categoryId: number) => Promise<number[]>;
+  reorderCategories: (categories: { categoryId: number; sortOrder: number }[]) => Promise<void>;
   
   // Items (scoped to current collection/category)
   items: Item[];
@@ -138,6 +139,7 @@ const defaultContextValue: DataContextValue = {
   updateCategory: async () => {},
   deleteCategory: async () => {},
   getCategoryTemplates: async () => [],
+  reorderCategories: async () => {},
   items: [],
   itemsLoading: false,
   itemsError: null,
@@ -392,6 +394,11 @@ export function DataProvider({ children }: DataProviderProps) {
 
   const getCategoryTemplates = useCallback(async (categoryId: number): Promise<number[]> => {
     return await categoriesApi.getTemplates(categoryId);
+  }, []);
+
+  const reorderCategories = useCallback(async (updates: { categoryId: number; sortOrder: number }[]) => {
+    const result = await categoriesApi.reorder({ categories: updates });
+    setCategories(result);
   }, []);
 
   // Item operations
@@ -675,6 +682,7 @@ export function DataProvider({ children }: DataProviderProps) {
     updateCategory,
     deleteCategory,
     getCategoryTemplates,
+    reorderCategories,
     items,
     itemsLoading,
     itemsError,

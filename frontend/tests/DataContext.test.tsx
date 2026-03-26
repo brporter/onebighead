@@ -10,8 +10,8 @@ const mockCollections: Collection[] = [
 ];
 
 const mockCategories: Category[] = [
-  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [] },
-  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Test Category 1', description: 'Description 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [], sortOrder: 0 },
+  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Test Category 2', description: 'Description 2', parentCategoryId: 1, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [], sortOrder: 0 },
 ];
 
 const mockItems: Item[] = [
@@ -86,6 +86,18 @@ describe('DataContext', () => {
         return Promise.resolve({
           ok: true,
           json: async () => newCategory,
+        } as Response);
+      }
+
+      if (urlStr === '/api/categories/reorder' && method === 'PUT') {
+        const body = JSON.parse(options?.body as string);
+        const reordered = body.categories.map((c: { categoryId: number; sortOrder: number }) => {
+          const existing = mockCategories.find(mc => mc.categoryId === c.categoryId);
+          return { ...existing, sortOrder: c.sortOrder };
+        });
+        return Promise.resolve({
+          ok: true,
+          json: async () => reordered,
         } as Response);
       }
 
@@ -352,6 +364,33 @@ describe('DataContext', () => {
       });
 
       expect(capturedData!.categories).toHaveLength(1);
+    });
+
+    it('should reorder categories', async () => {
+      let capturedData: ReturnType<typeof useData> | null = null;
+
+      render(
+        <DataProvider>
+          <TestConsumer onData={(data) => { capturedData = data; }} />
+        </DataProvider>
+      );
+
+      await act(async () => {
+        await capturedData!.loadCategoriesForCollection(1);
+      });
+
+      expect(capturedData!.categories).toHaveLength(2);
+
+      await act(async () => {
+        await capturedData!.reorderCategories([
+          { categoryId: 1, sortOrder: 1 },
+          { categoryId: 2, sortOrder: 0 },
+        ]);
+      });
+
+      expect(capturedData!.categories).toHaveLength(2);
+      expect(capturedData!.categories[0].sortOrder).toBe(1);
+      expect(capturedData!.categories[1].sortOrder).toBe(0);
     });
   });
 

@@ -104,6 +104,7 @@ export interface Category {
   visibility: Visibility;
   effectiveIsPublic: boolean;
   itemTemplateIds: number[];
+  sortOrder: number;
 }
 
 export interface CategoryNode extends Category {

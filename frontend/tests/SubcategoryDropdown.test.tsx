@@ -7,9 +7,9 @@ import { Visibility } from '../src/utils/types';
 
 describe('SubcategoryDropdown', () => {
   const mockSubcategories: Category[] = [
-    { workspaceId: 1, collectionId: 1, categoryId: 1, name: 'Subcategory 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [] },
-    { workspaceId: 1, collectionId: 1, categoryId: 2, name: 'Subcategory 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [] },
-    { workspaceId: 1, collectionId: 1, categoryId: 3, name: 'Subcategory 3', description: 'Desc 3', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [] },
+    { workspaceId: 1, collectionId: 1, categoryId: 1, name: 'Subcategory 1', description: 'Desc 1', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [], sortOrder: 0 },
+    { workspaceId: 1, collectionId: 1, categoryId: 2, name: 'Subcategory 2', description: 'Desc 2', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [], sortOrder: 0 },
+    { workspaceId: 1, collectionId: 1, categoryId: 3, name: 'Subcategory 3', description: 'Desc 3', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [], sortOrder: 0 },
   ];
 
   describe('snapshots', () => {

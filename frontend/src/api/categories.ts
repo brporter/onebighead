@@ -12,6 +12,10 @@ export interface CreateCategoryRequest {
   itemTemplateIds?: number[];
 }
 
+export interface ReorderCategoriesRequest {
+  categories: { categoryId: number; sortOrder: number }[];
+}
+
 export interface UpdateCategoryRequest {
   name: string;
   description?: string;
@@ -41,6 +45,10 @@ export const categoriesApi = {
 
   delete(id: number): Promise<void> {
     return api.delete(`/categories/${id}`);
+  },
+
+  reorder(request: ReorderCategoriesRequest): Promise<Category[]> {
+    return api.put<Category[]>('/categories/reorder', request);
   },
 
   /**

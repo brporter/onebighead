@@ -5,9 +5,9 @@ import type { DataContextValue } from '../../src/contexts/DataContext';
 import { Visibility, UserFlag } from '../../src/utils/types';
 
 export const mockCategories: Category[] = [
-  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [] },
-  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child description', parentCategoryId: 1, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [] },
-  { workspaceId: 1, categoryId: 3, collectionId: 1, name: 'Another Root', description: 'Another root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [] },
+  { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [], sortOrder: 0 },
+  { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child description', parentCategoryId: 1, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [], sortOrder: 0 },
+  { workspaceId: 1, categoryId: 3, collectionId: 1, name: 'Another Root', description: 'Another root description', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: false, itemTemplateIds: [], sortOrder: 0 },
 ];
 
 export const mockItems: Item[] = [
@@ -77,6 +77,7 @@ export const createMockDataContext = (overrides?: Partial<DataContextValue>): Da
   updateCategory: vi.fn(async () => {}),
   deleteCategory: vi.fn(async () => {}),
   getCategoryTemplates: vi.fn(async () => []),
+  reorderCategories: vi.fn(async () => {}),
 
   // Items
   items: mockItems,

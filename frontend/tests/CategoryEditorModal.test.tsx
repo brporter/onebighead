@@ -35,6 +35,7 @@ const mockCategories: Category[] = [
     visibility: Visibility.Private,
     effectiveIsPublic: true,
     itemTemplateIds: [],
+    sortOrder: 0,
   },
   {
     workspaceId: 1,
@@ -47,6 +48,7 @@ const mockCategories: Category[] = [
     visibility: Visibility.Private,
     effectiveIsPublic: true,
     itemTemplateIds: [],
+    sortOrder: 0,
   },
   {
     workspaceId: 1,
@@ -59,6 +61,7 @@ const mockCategories: Category[] = [
     visibility: Visibility.Private,
     effectiveIsPublic: true,
     itemTemplateIds: [],
+    sortOrder: 0,
   },
   {
     workspaceId: 1,
@@ -71,6 +74,7 @@ const mockCategories: Category[] = [
     visibility: Visibility.Private,
     effectiveIsPublic: true,
     itemTemplateIds: [],
+    sortOrder: 0,
   },
 ];
 
@@ -178,6 +182,7 @@ describe('CategoryEditorModal', () => {
       visibility: Visibility.Private,
       effectiveIsPublic: true,
       itemTemplateIds: [],
+      sortOrder: 0,
     };
 
     it('should render "Edit: Category Name" title when editing', () => {
@@ -231,6 +236,7 @@ describe('CategoryEditorModal', () => {
       visibility: Visibility.Private,
       effectiveIsPublic: true,
       itemTemplateIds: [],
+      sortOrder: 0,
     };
 
     it('should show category name as title for system category', () => {

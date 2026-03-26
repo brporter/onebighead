@@ -49,6 +49,7 @@ describe('ItemList', () => {
     visibility: Visibility.Private,
     effectiveIsPublic: false,
     itemTemplateIds: [],
+    sortOrder: 0,
   }];
 
   const defaultProps = {

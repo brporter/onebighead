@@ -7,7 +7,7 @@ function cat(id: number, name: string, parentId: number | null = null): Category
   return {
     workspaceId: 1, collectionId: 1, categoryId: id, name, description: '',
     parentCategoryId: parentId, isSystem: false, visibility: Visibility.Private,
-    effectiveIsPublic: false, itemTemplateIds: [],
+    effectiveIsPublic: false, itemTemplateIds: [], sortOrder: 0,
   };
 }
 
