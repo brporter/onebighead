@@ -15,11 +15,9 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  verticalListSortingStrategy,
   useSortable,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type { Category } from '../../utils/types';
 import { getAccentColor } from '../../utils/accentColors';
 import { DragHandle } from '../common/DragHandle';
@@ -66,17 +64,15 @@ function SortableRow({ row, onEditCategory, dropIntent, isDisabledTarget }: Sort
     attributes,
     listeners,
     setNodeRef,
-    transform,
-    transition,
     isDragging,
   } = useSortable({
     id: String(row.category.categoryId),
     disabled: row.category.isSystem,
+    // Disable animated layout shifts — rows stay in place during drag
+    animateLayoutChanges: () => false,
   });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
     paddingLeft: `${row.depth * 20 + 8}px`,
   };
 
@@ -318,7 +314,7 @@ function CategoryManagerTree({
         onDragCancel={handleDragCancel}
         measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       >
-        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+        <SortableContext items={sortableIds}>
           <div className="catTree__list">
             {flatRows.length === 0 && (
               <p className="catTree__empty">No categories yet</p>
