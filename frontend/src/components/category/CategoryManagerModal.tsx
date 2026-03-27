@@ -6,6 +6,7 @@ import { useToast } from '../../contexts/useToast';
 import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../../utils/publishToastUtils';
 import CategoryManagerTree from './CategoryManagerTree';
 import CategoryManagerForm from './CategoryManagerForm';
+import QuickCreatePopover from './QuickCreatePopover';
 import { PublishConfirmModal } from '../common/PublishConfirmModal';
 import { UnpublishConfirmModal } from '../common/UnpublishConfirmModal';
 import { SlugSetupModal } from '../common/SlugSetupModal';
@@ -42,6 +43,9 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   const [unpublishPreview, setUnpublishPreview] = useState<UnpublishPreviewResponse | null>(null);
   const [unpublishTarget, setUnpublishTarget] = useState<Category | null>(null);
   const [showSlugSetup, setShowSlugSetup] = useState(false);
+  const [view, setView] = useState<'tree' | 'form'>('tree');
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+  const [initialName, setInitialName] = useState('');
 
   // Control dialog open/close
   useEffect(() => {
@@ -68,7 +72,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     return () => dialog.removeEventListener('close', handleNativeClose);
   }, [onClose]);
 
-  // Load categories when modal opens
+  // Load categories when modal opens and reset state
   useEffect(() => {
     if (isOpen) {
       loadCategoriesForCollection(collectionId);
@@ -76,37 +80,31 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
       setSelectedCategoryId(null);
       setIsNew(false);
       setFormHasChanges(false);
+      setView('tree');
+      setShowQuickCreate(false);
+      setInitialName('');
       /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen, collectionId, loadCategoriesForCollection]);
-
-  // Auto-select first category when categories load and nothing is selected
-  useEffect(() => {
-    if (isOpen && categories.length > 0 && selectedCategoryId === null && !isNew) {
-      const firstNonSystem = categories.find(c => !c.isSystem);
-      if (firstNonSystem) {
-        /* eslint-disable react-hooks/set-state-in-effect -- Auto-selecting first category on load */
-        setSelectedCategoryId(firstNonSystem.categoryId);
-        /* eslint-enable react-hooks/set-state-in-effect */
-      }
-    }
-  }, [isOpen, categories, selectedCategoryId, isNew]);
 
   const selectedCategory = selectedCategoryId
     ? categories.find(c => c.categoryId === selectedCategoryId) ?? null
     : null;
 
   // Pending navigation target for discard confirmation
-  const [pendingNavigation, setPendingNavigation] = useState<{ type: 'select'; categoryId: number } | { type: 'add' } | { type: 'close' } | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<{ type: 'close' } | null>(null);
 
   const handleCloseAttempt = useCallback(() => {
-    if (formHasChanges) {
+    if (view === 'tree') {
+      onClose();
+    } else if (formHasChanges) {
       setPendingNavigation({ type: 'close' });
       setShowCancelConfirm(true);
     } else {
-      onClose();
+      setView('tree');
+      setSelectedCategoryId(null);
     }
-  }, [formHasChanges, onClose]);
+  }, [view, formHasChanges, onClose]);
 
   const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDialogElement>) => {
     if (e.target === dialogRef.current) {
@@ -114,31 +112,61 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     }
   }, [handleCloseAttempt]);
 
-  const handleSelect = useCallback((categoryId: number) => {
-    if (categoryId === selectedCategoryId) return;
-    if (formHasChanges) {
-      setPendingNavigation({ type: 'select', categoryId });
-      setShowCancelConfirm(true);
-    } else {
-      setSelectedCategoryId(categoryId);
-      setIsNew(false);
-    }
-  }, [formHasChanges, selectedCategoryId]);
+  const handleEditCategory = useCallback((categoryId: number) => {
+    setSelectedCategoryId(categoryId);
+    setIsNew(false);
+    setInitialName('');
+    setView('form');
+  }, []);
 
   const handleAdd = useCallback(() => {
+    setShowQuickCreate(true);
+  }, []);
+
+  const handleQuickCreateSave = useCallback(async (name: string) => {
+    setShowQuickCreate(false);
+    try {
+      const newId = await addCategory({
+        collectionId, name, description: '', parentCategoryId: null, itemTemplateIds: [],
+      });
+      const rootSiblings = categories.filter(c => c.parentCategoryId === null && !c.isSystem);
+      const sortUpdates = [
+        { categoryId: newId, sortOrder: 0 },
+        ...rootSiblings.map((s, i) => ({ categoryId: s.categoryId, sortOrder: i + 1 })),
+      ];
+      await reorderCategories(sortUpdates);
+      await loadCategoriesForCollection(collectionId);
+    } catch (err) {
+      console.error('Failed to create category:', err);
+    }
+  }, [collectionId, categories, addCategory, reorderCategories, loadCategoriesForCollection]);
+
+  const handleQuickCreateMoreDetails = useCallback((name: string) => {
+    setShowQuickCreate(false);
+    setInitialName(name);
+    setSelectedCategoryId(null);
+    setIsNew(true);
+    setView('form');
+  }, []);
+
+  const handleQuickCreateCancel = useCallback(() => {
+    setShowQuickCreate(false);
+  }, []);
+
+  const handleBack = useCallback(() => {
     if (formHasChanges) {
-      setPendingNavigation({ type: 'add' });
+      setPendingNavigation({ type: 'close' });
       setShowCancelConfirm(true);
     } else {
+      setView('tree');
       setSelectedCategoryId(null);
-      setIsNew(true);
     }
   }, [formHasChanges]);
 
   const handleCancelClick = useCallback(() => {
     if (formHasChanges) {
-      setShowCancelConfirm(true);
       setPendingNavigation(null);
+      setShowCancelConfirm(true);
     }
   }, [formHasChanges]);
 
@@ -147,27 +175,16 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     setFormHasChanges(false);
     const nav = pendingNavigation;
     setPendingNavigation(null);
-
-    if (nav?.type === 'select') {
-      setSelectedCategoryId(nav.categoryId);
-      setIsNew(false);
-    } else if (nav?.type === 'add') {
+    if (nav?.type === 'close') {
+      setView('tree');
       setSelectedCategoryId(null);
-      setIsNew(true);
-    } else if (nav?.type === 'close') {
-      onClose();
     }
-    // null pendingNavigation = cancel button clicked, just revert to current category
-  }, [pendingNavigation, onClose]);
-
-  const handleSaveClick = useCallback(() => {
-    formRef.current?.submit();
-  }, []);
+  }, [pendingNavigation]);
 
   const handleSave = useCallback(async (updates: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => {
     try {
       if (isNew) {
-        const newId = await addCategory({
+        await addCategory({
           collectionId,
           name: updates.name,
           description: updates.description,
@@ -175,11 +192,15 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
           itemTemplateIds: updates.itemTemplateIds,
         });
         await loadCategoriesForCollection(collectionId);
-        setSelectedCategoryId(newId);
+        setView('tree');
+        setSelectedCategoryId(null);
         setIsNew(false);
       } else if (selectedCategoryId) {
         await updateCategory(selectedCategoryId, updates);
         await loadCategoriesForCollection(collectionId);
+        setView('tree');
+        setSelectedCategoryId(null);
+        setIsNew(false);
       }
     } catch (err) {
       console.error('Failed to save category:', err);
@@ -199,7 +220,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     try {
       await deleteCategory(deletedId);
       await loadCategoriesForCollection(collectionId);
-      // Clear selection so auto-select useEffect can re-fire
+      setView('tree');
       setSelectedCategoryId(null);
       setIsNew(false);
       setFormHasChanges(false);
@@ -325,58 +346,41 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
           </button>
         </div>
         <div className="categoryManager">
-          <div className="categoryManager__tree">
-            <CategoryManagerTree
-              categories={categories}
-              selectedCategoryId={selectedCategoryId}
-              onSelect={handleSelect}
-              onAdd={handleAdd}
-              onReorder={handleReorder}
-              onReparent={handleReparent}
-            />
-          </div>
-          <div className="categoryManager__form">
-            <CategoryManagerForm
-              category={selectedCategory}
-              categories={categories}
-              collectionId={collectionId}
-              isNew={isNew}
-              onSave={handleSave}
-              onPublish={handlePublish}
-              onUnpublish={handleUnpublish}
-              onHasChanges={setFormHasChanges}
-              formRef={formRef}
-            />
-          </div>
-        </div>
-        <div className="categoryManager__footer">
-          {selectedCategory && !isNew && !selectedCategory.isSystem ? (
-            <button
-              type="button"
-              className="modal__button modal__button--danger"
-              onClick={handleDeleteClick}
-            >
-              Delete
-            </button>
-          ) : (
-            <div />
-          )}
-          <div className="categoryManager__footer-right">
-            <button
-              type="button"
-              className="modal__button modal__button--secondary"
-              onClick={handleCancelClick}
-              disabled={!formHasChanges}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="modal__button modal__button--primary"
-              onClick={handleSaveClick}
-            >
-              {isNew ? 'Create' : 'Save Changes'}
-            </button>
+          <div className={`categoryManager__track${view === 'form' ? ' categoryManager__track--form' : ''}`}>
+            <div className="categoryManager__tree">
+              <CategoryManagerTree
+                categories={categories}
+                onEditCategory={handleEditCategory}
+                onAdd={handleAdd}
+                onReorder={handleReorder}
+                onReparent={handleReparent}
+              />
+              {showQuickCreate && (
+                <QuickCreatePopover
+                  isVisible={showQuickCreate}
+                  onSave={handleQuickCreateSave}
+                  onMoreDetails={handleQuickCreateMoreDetails}
+                  onCancel={handleQuickCreateCancel}
+                />
+              )}
+            </div>
+            <div className="categoryManager__form">
+              <CategoryManagerForm
+                category={selectedCategory}
+                categories={categories}
+                collectionId={collectionId}
+                isNew={isNew}
+                initialName={initialName}
+                onSave={handleSave}
+                onBack={handleBack}
+                onDelete={handleDeleteClick}
+                onCancel={handleCancelClick}
+                onPublish={handlePublish}
+                onUnpublish={handleUnpublish}
+                onHasChanges={setFormHasChanges}
+                formRef={formRef}
+              />
+            </div>
           </div>
         </div>
       </div>

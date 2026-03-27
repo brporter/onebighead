@@ -112,6 +112,7 @@ vi.mock('../src/contexts/useToast', () => ({
 // Track props passed to child components
 let lastTreeProps: Record<string, unknown> = {};
 let lastFormProps: Record<string, unknown> = {};
+let lastPopoverProps: Record<string, unknown> = {};
 
 // Mock CategoryManagerTree
 vi.mock('../src/components/category/CategoryManagerTree', () => ({
@@ -119,8 +120,8 @@ vi.mock('../src/components/category/CategoryManagerTree', () => ({
     lastTreeProps = props;
     return (
       <div data-testid="category-manager-tree">
-        <button data-testid="tree-select-1" onClick={() => (props.onSelect as (id: number) => void)(1)}>Select 1</button>
-        <button data-testid="tree-select-2" onClick={() => (props.onSelect as (id: number) => void)(2)}>Select 2</button>
+        <button data-testid="tree-edit-1" onClick={() => (props.onEditCategory as (id: number) => void)(1)}>Edit 1</button>
+        <button data-testid="tree-edit-2" onClick={() => (props.onEditCategory as (id: number) => void)(2)}>Edit 2</button>
         <button data-testid="tree-add" onClick={props.onAdd as () => void}>Add</button>
         <button data-testid="tree-reorder" onClick={() => (props.onReorder as (u: { categoryId: number; sortOrder: number }[]) => void)([{ categoryId: 1, sortOrder: 0 }, { categoryId: 2, sortOrder: 1 }])}>Reorder</button>
         <button data-testid="tree-reparent" onClick={() => (props.onReparent as (id: number, parentId: number | null) => void)(3, 2)}>Reparent</button>
@@ -133,7 +134,6 @@ vi.mock('../src/components/category/CategoryManagerTree', () => ({
 vi.mock('../src/components/category/CategoryManagerForm', () => ({
   default: (props: Record<string, unknown>) => {
     lastFormProps = props;
-    // Wire up the formRef so the modal can call submit()
     const formRef = props.formRef as React.RefObject<{ submit: () => void } | null> | undefined;
     if (formRef && 'current' in formRef) {
       (formRef as React.MutableRefObject<{ submit: () => void } | null>).current = {
@@ -143,8 +143,26 @@ vi.mock('../src/components/category/CategoryManagerForm', () => ({
     return (
       <div data-testid="category-manager-form">
         <button data-testid="form-save" onClick={() => (props.onSave as (u: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] })}>Save</button>
+        <button data-testid="form-back" onClick={props.onBack as () => void}>Back</button>
+        <button data-testid="form-delete" onClick={props.onDelete as () => void}>Delete Form</button>
+        <button data-testid="form-cancel" onClick={props.onCancel as () => void}>Cancel Form</button>
         <button data-testid="form-publish" onClick={() => (props.onPublish as (c: Category) => void)(mockCategories[0])}>Publish</button>
         <button data-testid="form-unpublish" onClick={() => (props.onUnpublish as (c: Category) => void)(mockCategories[2])}>Unpublish</button>
+      </div>
+    );
+  },
+}));
+
+// Mock QuickCreatePopover
+vi.mock('../src/components/category/QuickCreatePopover', () => ({
+  default: (props: Record<string, unknown>) => {
+    lastPopoverProps = props;
+    if (!props.isVisible) return null;
+    return (
+      <div data-testid="quick-create-popover">
+        <button data-testid="popover-save" onClick={() => (props.onSave as (name: string) => void)('Quick Cat')}>Popover Save</button>
+        <button data-testid="popover-more" onClick={() => (props.onMoreDetails as (name: string) => void)('Quick Cat')}>Popover More</button>
+        <button data-testid="popover-cancel" onClick={props.onCancel as () => void}>Popover Cancel</button>
       </div>
     );
   },
@@ -199,6 +217,7 @@ describe('CategoryManagerModal', () => {
     vi.clearAllMocks();
     lastTreeProps = {};
     lastFormProps = {};
+    lastPopoverProps = {};
     // Mock dialog methods
     HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
       this.setAttribute('open', '');
@@ -259,26 +278,116 @@ describe('CategoryManagerModal', () => {
     });
   });
 
-  describe('selecting a category', () => {
-    it('should pass selectedCategoryId to tree and category to form on select', async () => {
+  describe('view state', () => {
+    it('should open to tree view by default', () => {
+      render(<CategoryManagerModal {...defaultProps} />);
+
+      const track = document.querySelector('.categoryManager__track');
+      expect(track).not.toBeNull();
+      expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
+    });
+
+    it('should slide to form when category row clicked', async () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
 
-      expect(lastTreeProps.selectedCategoryId).toBe(1);
+      const track = document.querySelector('.categoryManager__track');
+      expect(track!.classList.contains('categoryManager__track--form')).toBe(true);
       expect((lastFormProps.category as Category)?.categoryId).toBe(1);
       expect(lastFormProps.isNew).toBe(false);
+    });
+
+    it('should not auto-select on open', () => {
+      render(<CategoryManagerModal {...defaultProps} />);
+
+      // No category should be selected by default
+      expect(lastFormProps.category).toBeNull();
+    });
+
+    it('should reset to tree view when modal re-opens', async () => {
+      const user = userEvent.setup();
+      const { rerender } = render(<CategoryManagerModal {...defaultProps} />);
+
+      // Slide to form
+      await user.click(screen.getByTestId('tree-edit-1'));
+      const track = document.querySelector('.categoryManager__track');
+      expect(track!.classList.contains('categoryManager__track--form')).toBe(true);
+
+      // Close and re-open
+      rerender(<CategoryManagerModal {...defaultProps} isOpen={false} />);
+      rerender(<CategoryManagerModal {...defaultProps} isOpen={true} />);
+
+      const trackAfter = document.querySelector('.categoryManager__track');
+      expect(trackAfter!.classList.contains('categoryManager__track--form')).toBe(false);
+    });
+  });
+
+  describe('quick create', () => {
+    it('should show popover when add clicked', async () => {
+      const user = userEvent.setup();
+      render(<CategoryManagerModal {...defaultProps} />);
+
+      await user.click(screen.getByTestId('tree-add'));
+
+      expect(screen.getByTestId('quick-create-popover')).toBeInTheDocument();
+    });
+
+    it('should create category and stay on tree when popover Save clicked', async () => {
+      const user = userEvent.setup();
+      render(<CategoryManagerModal {...defaultProps} />);
+
+      await user.click(screen.getByTestId('tree-add'));
+      await user.click(screen.getByTestId('popover-save'));
+
+      await waitFor(() => {
+        expect(mockAddCategory).toHaveBeenCalledWith({
+          collectionId: 1,
+          name: 'Quick Cat',
+          description: '',
+          parentCategoryId: null,
+          itemTemplateIds: [],
+        });
+      });
+
+      // Should stay on tree view
+      const track = document.querySelector('.categoryManager__track');
+      expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
+    });
+
+    it('should slide to form with name when More Details clicked', async () => {
+      const user = userEvent.setup();
+      render(<CategoryManagerModal {...defaultProps} />);
+
+      await user.click(screen.getByTestId('tree-add'));
+      await user.click(screen.getByTestId('popover-more'));
+
+      const track = document.querySelector('.categoryManager__track');
+      expect(track!.classList.contains('categoryManager__track--form')).toBe(true);
+      expect(lastFormProps.isNew).toBe(true);
+      expect(lastFormProps.initialName).toBe('Quick Cat');
+    });
+
+    it('should close popover on cancel', async () => {
+      const user = userEvent.setup();
+      render(<CategoryManagerModal {...defaultProps} />);
+
+      await user.click(screen.getByTestId('tree-add'));
+      expect(screen.getByTestId('quick-create-popover')).toBeInTheDocument();
+
+      await user.click(screen.getByTestId('popover-cancel'));
+      expect(screen.queryByTestId('quick-create-popover')).not.toBeInTheDocument();
     });
   });
 
   describe('saving a category (update)', () => {
-    it('should call updateCategory and refresh tree when saving existing category', async () => {
+    it('should call updateCategory and slide back to tree when saving existing category', async () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      // Select a category first
-      await user.click(screen.getByTestId('tree-select-1'));
+      // Edit a category first
+      await user.click(screen.getByTestId('tree-edit-1'));
       // Save it
       await user.click(screen.getByTestId('form-save'));
 
@@ -288,14 +397,19 @@ describe('CategoryManagerModal', () => {
       await waitFor(() => {
         expect(mockLoadCategoriesForCollection).toHaveBeenCalledWith(1);
       });
+
+      // Should slide back to tree
+      const track = document.querySelector('.categoryManager__track');
+      expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
     });
 
     it('should call addCategory when saving in create mode', async () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      // Switch to create mode
+      // Use quick-create More Details to enter create mode
       await user.click(screen.getByTestId('tree-add'));
+      await user.click(screen.getByTestId('popover-more'));
       // Save
       await user.click(screen.getByTestId('form-save'));
 
@@ -311,33 +425,15 @@ describe('CategoryManagerModal', () => {
     });
   });
 
-  describe('adding a new category', () => {
-    it('should switch form to create mode when add clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      // First select a category
-      await user.click(screen.getByTestId('tree-select-1'));
-      expect(lastFormProps.isNew).toBe(false);
-
-      // Click add
-      await user.click(screen.getByTestId('tree-add'));
-
-      expect(lastFormProps.isNew).toBe(true);
-      expect(lastTreeProps.selectedCategoryId).toBeNull();
-    });
-  });
-
   describe('deleting a category', () => {
-    it('should call deleteCategory and clear selection', async () => {
+    it('should call deleteCategory and slide back to tree', async () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      // Select a category first
-      await user.click(screen.getByTestId('tree-select-1'));
-      // Click the Delete button in the modal footer
-      const deleteButton = screen.getByRole('button', { name: 'Delete' });
-      await user.click(deleteButton);
+      // Edit a category first
+      await user.click(screen.getByTestId('tree-edit-1'));
+      // Click the Delete button from form
+      await user.click(screen.getByTestId('form-delete'));
 
       // Confirm in the delete confirmation modal
       const confirmButtons = screen.getAllByRole('button', { name: 'Delete' });
@@ -347,9 +443,11 @@ describe('CategoryManagerModal', () => {
       await waitFor(() => {
         expect(mockDeleteCategory).toHaveBeenCalledWith(1);
       });
-      // After delete + reload, auto-select fires to pick the next available category
+
+      // Should slide back to tree
       await waitFor(() => {
-        expect(mockDeleteCategory).toHaveBeenCalledWith(1);
+        const track = document.querySelector('.categoryManager__track');
+        expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
       });
     });
 
@@ -357,10 +455,9 @@ describe('CategoryManagerModal', () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
-      // Click the Delete button in the modal footer
-      const deleteButton = screen.getByRole('button', { name: 'Delete' });
-      await user.click(deleteButton);
+      await user.click(screen.getByTestId('tree-edit-1'));
+      // Click the Delete button from form
+      await user.click(screen.getByTestId('form-delete'));
 
       // Click Cancel in the confirmation modal
       const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
@@ -443,7 +540,7 @@ describe('CategoryManagerModal', () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-publish'));
 
       // Publish confirm modal should appear
@@ -466,7 +563,7 @@ describe('CategoryManagerModal', () => {
       });
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-publish'));
       await user.click(screen.getByTestId('publish-only'));
 
@@ -479,7 +576,7 @@ describe('CategoryManagerModal', () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-publish'));
       await user.click(screen.getByTestId('publish-cancel'));
 
@@ -493,7 +590,7 @@ describe('CategoryManagerModal', () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-unpublish'));
 
       await waitFor(() => {
@@ -508,7 +605,7 @@ describe('CategoryManagerModal', () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-unpublish'));
 
       await waitFor(() => {
@@ -526,7 +623,7 @@ describe('CategoryManagerModal', () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-unpublish'));
 
       await waitFor(() => {
@@ -541,7 +638,7 @@ describe('CategoryManagerModal', () => {
   });
 
   describe('closing the modal', () => {
-    it('should call onClose when close button clicked', async () => {
+    it('should call onClose when close button clicked from tree view', async () => {
       const user = userEvent.setup();
       const onClose = vi.fn();
       render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
@@ -549,6 +646,24 @@ describe('CategoryManagerModal', () => {
       await user.click(screen.getByLabelText('Close'));
 
       expect(onClose).toHaveBeenCalled();
+    });
+
+    it('should slide back to tree when close clicked from form without changes', async () => {
+      const user = userEvent.setup();
+      const onClose = vi.fn();
+      render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
+
+      // Slide to form
+      await user.click(screen.getByTestId('tree-edit-1'));
+      const track = document.querySelector('.categoryManager__track');
+      expect(track!.classList.contains('categoryManager__track--form')).toBe(true);
+
+      // Close from form view
+      await user.click(screen.getByLabelText('Close'));
+
+      // Should slide back to tree, NOT close modal
+      expect(onClose).not.toHaveBeenCalled();
+      expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
     });
 
     it('should call onClose when native dialog close event fires', () => {
@@ -561,7 +676,7 @@ describe('CategoryManagerModal', () => {
       expect(onClose).toHaveBeenCalled();
     });
 
-    it('should call onClose when backdrop is clicked', async () => {
+    it('should call onClose when backdrop is clicked from tree view', async () => {
       const user = userEvent.setup();
       const onClose = vi.fn();
       render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
@@ -571,40 +686,28 @@ describe('CategoryManagerModal', () => {
 
       expect(onClose).toHaveBeenCalled();
     });
-
-    it('should have Cancel button disabled when there are no unsaved changes', async () => {
-      const user = userEvent.setup();
-      const onClose = vi.fn();
-      render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
-
-      // Select a category
-      await user.click(screen.getByTestId('tree-select-1'));
-
-      // Cancel button should be disabled when there are no unsaved changes
-      const cancelButton = screen.getByRole('button', { name: 'Cancel' });
-      expect(cancelButton).toBeDisabled();
-    });
   });
 
   describe('form props', () => {
-    it('should pass categories, collectionId, and isNew to form with auto-selected category', () => {
+    it('should pass categories, collectionId, and isNew to form', async () => {
+      const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
+
+      // Click to edit first
+      await user.click(screen.getByTestId('tree-edit-1'));
 
       expect(lastFormProps.categories).toEqual(mockCategories);
       expect(lastFormProps.collectionId).toBe(1);
       expect(lastFormProps.isNew).toBe(false);
-      // Auto-select picks the first non-system category (Bravo, id=1)
       expect((lastFormProps.category as Category)?.categoryId).toBe(1);
     });
   });
 
   describe('tree props', () => {
-    it('should pass categories and auto-selected categoryId to tree', () => {
+    it('should pass categories to tree', () => {
       render(<CategoryManagerModal {...defaultProps} />);
 
       expect(lastTreeProps.categories).toEqual(mockCategories);
-      // Auto-select picks the first non-system category (Bravo, id=1)
-      expect(lastTreeProps.selectedCategoryId).toBe(1);
     });
   });
 
@@ -619,7 +722,7 @@ describe('CategoryManagerModal', () => {
       });
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-publish'));
       await user.click(screen.getByTestId('publish-only'));
 
@@ -642,7 +745,7 @@ describe('CategoryManagerModal', () => {
       });
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-publish'));
       await user.click(screen.getByTestId('publish-only'));
 
@@ -663,7 +766,7 @@ describe('CategoryManagerModal', () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-publish'));
       await user.click(screen.getByTestId('publish-with-children'));
 
@@ -676,7 +779,7 @@ describe('CategoryManagerModal', () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-unpublish'));
 
       await waitFor(() => {
@@ -698,7 +801,7 @@ describe('CategoryManagerModal', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-publish'));
       await user.click(screen.getByTestId('publish-with-children'));
 
@@ -717,7 +820,7 @@ describe('CategoryManagerModal', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-unpublish'));
 
       await waitFor(() => {
@@ -733,7 +836,7 @@ describe('CategoryManagerModal', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-unpublish'));
 
       await waitFor(() => {
@@ -755,7 +858,7 @@ describe('CategoryManagerModal', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
+      await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-save'));
 
       await waitFor(() => {
@@ -771,10 +874,9 @@ describe('CategoryManagerModal', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(<CategoryManagerModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tree-select-1'));
-      // Click Delete in footer
-      const deleteButton = screen.getByRole('button', { name: 'Delete' });
-      await user.click(deleteButton);
+      await user.click(screen.getByTestId('tree-edit-1'));
+      // Click Delete from form
+      await user.click(screen.getByTestId('form-delete'));
       // Confirm in the delete confirmation modal
       const confirmButtons = screen.getAllByRole('button', { name: 'Delete' });
       await user.click(confirmButtons[confirmButtons.length - 1]);
@@ -811,6 +913,22 @@ describe('CategoryManagerModal', () => {
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalled();
+      });
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle quick create failure gracefully', async () => {
+      const user = userEvent.setup();
+      mockAddCategory.mockRejectedValue(new Error('Create failed'));
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(<CategoryManagerModal {...defaultProps} />);
+
+      await user.click(screen.getByTestId('tree-add'));
+      await user.click(screen.getByTestId('popover-save'));
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to create category:', expect.any(Error));
       });
 
       consoleSpy.mockRestore();
