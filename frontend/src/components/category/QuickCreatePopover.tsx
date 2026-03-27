@@ -17,8 +17,10 @@ function QuickCreatePopover({ isVisible, onSave, onMoreDetails, onCancel }: Quic
   // Reset and focus when popover opens
   useEffect(() => {
     if (isVisible) {
+      /* eslint-disable react-hooks/set-state-in-effect -- Resetting form state when popover opens */
       setName('');
       setError(null);
+      /* eslint-enable react-hooks/set-state-in-effect */
       // Focus after render
       requestAnimationFrame(() => {
         inputRef.current?.focus();

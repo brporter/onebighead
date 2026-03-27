@@ -112,6 +112,7 @@ vi.mock('../src/contexts/useToast', () => ({
 // Track props passed to child components
 let lastTreeProps: Record<string, unknown> = {};
 let lastFormProps: Record<string, unknown> = {};
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let lastPopoverProps: Record<string, unknown> = {};
 
 // Mock CategoryManagerTree
