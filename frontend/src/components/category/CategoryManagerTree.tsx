@@ -235,7 +235,6 @@ function CategoryManagerTree({
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
-    const currentIntent = dropIntentRef.current;
 
     setActiveId(null);
     setOverTargetId(null);
@@ -262,7 +261,18 @@ function CategoryManagerTree({
     // Prevent circular reference
     if (disabledTargetIds.has(overId)) return;
 
-    if (currentIntent === 'reparent') {
+    // Compute intent at drop time from current pointer position and over element rect
+    // This avoids stale state from handleDragOver and timing issues with sortable transforms
+    let finalIntent: DropIntent = 'reparent';
+    const overRect = over.rect;
+    if (overRect && overRect.height > 0) {
+      finalIntent = getDropIntent(
+        { top: overRect.top, height: overRect.height } as DOMRect,
+        pointerYRef.current
+      );
+    }
+
+    if (finalIntent === 'reparent') {
       // Drop onto center = make child of the over item
       onReparent(activeItem.categoryId, overId);
     } else {
