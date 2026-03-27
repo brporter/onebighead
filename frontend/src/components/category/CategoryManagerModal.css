@@ -49,10 +49,6 @@
   border-top: 1px solid var(--color-border);
 }
 
-.categoryManager__footer--hidden {
-  visibility: hidden;
-}
-
 .categoryManager__footer-right {
   display: flex;
   gap: var(--space-sm);

@@ -409,22 +409,35 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
             </div>
           </div>
         </div>
-        <div className={`categoryManager__footer${view === 'form' ? '' : ' categoryManager__footer--hidden'}`}>
-          {selectedCategory && !isNew && !selectedCategory.isSystem ? (
-            <button type="button" className="modal__button modal__button--danger" onClick={handleDeleteClick}>
-              Delete
-            </button>
+        <div className="categoryManager__footer">
+          {view === 'form' ? (
+            <>
+              {selectedCategory && !isNew && !selectedCategory.isSystem ? (
+                <button type="button" className="modal__button modal__button--danger" onClick={handleDeleteClick}>
+                  Delete
+                </button>
+              ) : (
+                <div />
+              )}
+              <div className="categoryManager__footer-right">
+                <button type="button" className="modal__button modal__button--secondary" onClick={handleCancelClick} disabled={!isNew && !formHasChanges}>
+                  Cancel
+                </button>
+                <button type="button" className="modal__button modal__button--primary" onClick={handleSaveClick}>
+                  {isNew ? 'Create' : 'Save Changes'}
+                </button>
+              </div>
+            </>
           ) : (
-            <div />
+            <>
+              <div />
+              <div className="categoryManager__footer-right">
+                <button type="button" className="modal__button modal__button--secondary" onClick={onClose}>
+                  Close
+                </button>
+              </div>
+            </>
           )}
-          <div className="categoryManager__footer-right">
-            <button type="button" className="modal__button modal__button--secondary" onClick={handleCancelClick} disabled={!isNew && !formHasChanges}>
-              Cancel
-            </button>
-            <button type="button" className="modal__button modal__button--primary" onClick={handleSaveClick}>
-              {isNew ? 'Create' : 'Save Changes'}
-            </button>
-          </div>
         </div>
       </div>
 
