@@ -47,6 +47,7 @@
   align-items: center;
   padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--color-border);
+  margin-top: auto;
 }
 
 .categoryManager__footer-right {
@@ -258,6 +259,13 @@
 /* ==========================================================================
    Category Manager Form
    ========================================================================== */
+
+.category-manager-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
 
 .category-manager-form__header {
   display: flex;
