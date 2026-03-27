@@ -4,7 +4,6 @@ import {
   DragOverlay,
   DragStartEvent,
   DragEndEvent,
-  DragOverEvent,
   PointerSensor,
   KeyboardSensor,
   useSensor,
@@ -244,47 +243,50 @@ function CategoryManagerTree({
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
 
+    // Capture visual intent state before clearing
+    const targetId = overTargetIdRef.current;
+    const finalIntent = dropIntentRef.current;
+
     setActiveId(null);
     activeIdRef.current = null;
     setIntent(null, null);
 
-    if (!over) return;
-
     const activeItem = categories.find(c => c.categoryId === Number(active.id));
     if (!activeItem) return;
 
-    // Drop onto root zone
-    if (over.id === 'root-drop-zone') {
+    // Drop onto root zone (from dnd-kit's droppable)
+    if (over && over.id === 'root-drop-zone') {
       if (activeItem.parentCategoryId !== null) {
         onReparent(activeItem.categoryId, null);
       }
       return;
     }
 
-    const overId = Number(over.id);
-    const overItem = categories.find(c => c.categoryId === overId);
-    if (!overItem || active.id === over.id) return;
+    // Use the visual system's target, not dnd-kit's `over`
+    if (!targetId || !finalIntent) return;
 
-    // Prevent circular reference
-    if (disabledTargetIds.has(overId)) return;
-
-    // Use the intent from our continuous pointer tracking
-    const finalIntent = dropIntentRef.current;
+    const overItem = categories.find(c => c.categoryId === targetId);
+    if (!overItem) return;
+    if (targetId === activeItem.categoryId) return;
+    if (disabledTargetIds.has(targetId)) return;
 
     if (finalIntent === 'reparent') {
-      // Drop onto center = make child of the over item
-      onReparent(activeItem.categoryId, overId);
+      // Make active item a child of the target
+      onReparent(activeItem.categoryId, targetId);
     } else {
-      // Drop on edge = positional move
-      if (activeItem.parentCategoryId === overItem.parentCategoryId) {
-        const updates = computeReorderUpdates(categories, activeItem.categoryId, overId);
+      // Reorder: insert before/after the target
+      // The active item needs to become a sibling of the target
+      const targetParentId = overItem.parentCategoryId;
+
+      if (activeItem.parentCategoryId !== targetParentId) {
+        // Different parent — reparent to the target's parent first, then reorder
+        onReparent(activeItem.categoryId, targetParentId);
+      } else {
+        // Same parent — simple reorder
+        const updates = computeReorderUpdates(categories, activeItem.categoryId, targetId, finalIntent === 'reorder-after');
         if (updates) {
           onReorder(updates);
         }
-      } else {
-        // Different parent: reparent to the over item's parent
-        const newParentId = overItem.parentCategoryId;
-        onReparent(activeItem.categoryId, newParentId);
       }
     }
   }, [categories, disabledTargetIds, onReorder, onReparent, setIntent]);

@@ -152,17 +152,31 @@ describe('categoryManagerTreeUtils', () => {
   });
 
   describe('computeReorderUpdates', () => {
-    it('computes correct sort orders when moving item forward', () => {
-      // Three siblings under root (parent: null)
+    it('inserts before target when moving forward (insertAfter=false)', () => {
       const siblings = [
         createMockCategory({ categoryId: 10, parentCategoryId: null, sortOrder: 0, name: 'A' }),
         createMockCategory({ categoryId: 11, parentCategoryId: null, sortOrder: 1, name: 'B' }),
         createMockCategory({ categoryId: 12, parentCategoryId: null, sortOrder: 2, name: 'C' }),
       ];
-      // Move A (index 0) to where C is (index 2)
-      const updates = computeReorderUpdates(siblings, 10, 12);
+      // Move A before C → B, A, C
+      const updates = computeReorderUpdates(siblings, 10, 12, false);
       expect(updates).not.toBeNull();
-      // Expected order: B(0), C(1), A(2)
+      expect(updates).toEqual([
+        { categoryId: 11, sortOrder: 0 },
+        { categoryId: 10, sortOrder: 1 },
+        { categoryId: 12, sortOrder: 2 },
+      ]);
+    });
+
+    it('inserts after target when moving forward (insertAfter=true)', () => {
+      const siblings = [
+        createMockCategory({ categoryId: 10, parentCategoryId: null, sortOrder: 0, name: 'A' }),
+        createMockCategory({ categoryId: 11, parentCategoryId: null, sortOrder: 1, name: 'B' }),
+        createMockCategory({ categoryId: 12, parentCategoryId: null, sortOrder: 2, name: 'C' }),
+      ];
+      // Move A after C → B, C, A
+      const updates = computeReorderUpdates(siblings, 10, 12, true);
+      expect(updates).not.toBeNull();
       expect(updates).toEqual([
         { categoryId: 11, sortOrder: 0 },
         { categoryId: 12, sortOrder: 1 },
@@ -170,19 +184,34 @@ describe('categoryManagerTreeUtils', () => {
       ]);
     });
 
-    it('computes correct sort orders when moving item backward', () => {
+    it('inserts before target when moving backward (insertAfter=false)', () => {
       const siblings = [
         createMockCategory({ categoryId: 10, parentCategoryId: null, sortOrder: 0, name: 'A' }),
         createMockCategory({ categoryId: 11, parentCategoryId: null, sortOrder: 1, name: 'B' }),
         createMockCategory({ categoryId: 12, parentCategoryId: null, sortOrder: 2, name: 'C' }),
       ];
-      // Move C (index 2) to where A is (index 0)
-      const updates = computeReorderUpdates(siblings, 12, 10);
+      // Move C before A → C, A, B
+      const updates = computeReorderUpdates(siblings, 12, 10, false);
       expect(updates).not.toBeNull();
-      // Expected order: C(0), A(1), B(2)
       expect(updates).toEqual([
         { categoryId: 12, sortOrder: 0 },
         { categoryId: 10, sortOrder: 1 },
+        { categoryId: 11, sortOrder: 2 },
+      ]);
+    });
+
+    it('inserts after target when moving backward (insertAfter=true)', () => {
+      const siblings = [
+        createMockCategory({ categoryId: 10, parentCategoryId: null, sortOrder: 0, name: 'A' }),
+        createMockCategory({ categoryId: 11, parentCategoryId: null, sortOrder: 1, name: 'B' }),
+        createMockCategory({ categoryId: 12, parentCategoryId: null, sortOrder: 2, name: 'C' }),
+      ];
+      // Move C after A → A, C, B
+      const updates = computeReorderUpdates(siblings, 12, 10, true);
+      expect(updates).not.toBeNull();
+      expect(updates).toEqual([
+        { categoryId: 10, sortOrder: 0 },
+        { categoryId: 12, sortOrder: 1 },
         { categoryId: 11, sortOrder: 2 },
       ]);
     });

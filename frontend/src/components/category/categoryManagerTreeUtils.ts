@@ -69,12 +69,14 @@ export function getDescendantIds(categories: Category[], categoryId: number): Se
 
 /**
  * Compute reorder updates when dragging within the same parent group.
+ * `insertAfter` controls whether the item is placed before or after the target.
  * Returns null if the reorder is invalid (indices not found or same position).
  */
 export function computeReorderUpdates(
   categories: Category[],
   activeId: number,
-  overId: number
+  overId: number,
+  insertAfter = false
 ): { categoryId: number; sortOrder: number }[] | null {
   const activeItem = categories.find(c => c.categoryId === activeId);
   if (!activeItem) return null;
@@ -85,12 +87,19 @@ export function computeReorderUpdates(
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const oldIndex = siblings.findIndex(c => c.categoryId === activeId);
-  const newIndex = siblings.findIndex(c => c.categoryId === overId);
-  if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return null;
+  const overIndex = siblings.findIndex(c => c.categoryId === overId);
+  if (oldIndex === -1 || overIndex === -1 || oldIndex === overIndex) return null;
 
   const reordered = [...siblings];
   const [moved] = reordered.splice(oldIndex, 1);
-  reordered.splice(newIndex, 0, moved);
+
+  // After removing the active item, compute the insertion index
+  // The overIndex may have shifted if the active item was before it
+  let insertIndex = overIndex > oldIndex ? overIndex - 1 : overIndex;
+  if (insertAfter) {
+    insertIndex += 1;
+  }
+  reordered.splice(insertIndex, 0, moved);
 
   return reordered.map((cat, idx) => ({
     categoryId: cat.categoryId,
