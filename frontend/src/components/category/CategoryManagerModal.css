@@ -10,7 +10,7 @@
 
 .categoryManager {
   position: relative;
-  min-height: 500px;
+  height: 70vh;
   max-height: 70vh;
   overflow: hidden;
 }
@@ -256,15 +256,28 @@
 }
 
 /* ==========================================================================
-   Back link for form navigation
+   Category Manager Form
    ========================================================================== */
+
+.category-manager-form__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.category-manager-form__header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
 
 .category-manager-form__back {
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
   padding: 0;
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-sm);
   background: none;
   border: none;
   color: var(--color-accent);
