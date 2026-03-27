@@ -30,6 +30,20 @@
   padding: var(--space-md);
 }
 
+.categoryManager__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.categoryManager__footer-right {
+  display: flex;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
 /* ==========================================================================
    Category Tree (inside manager) — matches CategoryNav styling
    ========================================================================== */

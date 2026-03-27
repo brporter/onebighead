@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle } from 'react';
 import type { Category } from '../../utils/types';
 import CategoryTemplateSelector from './CategoryTemplateSelector';
 
@@ -8,10 +8,10 @@ interface CategoryManagerFormProps {
   collectionId: number;
   isNew: boolean;
   onSave: (updates: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void;
-  onDelete: (categoryId: number) => void;
   onPublish: (category: Category) => void;
   onUnpublish: (category: Category) => void;
-  onCancel: () => void;
+  onHasChanges?: (hasChanges: boolean) => void;
+  formRef?: React.RefObject<{ submit: () => void } | null>;
 }
 
 const RESERVED_NAMES = ['unassigned items'];
@@ -22,10 +22,10 @@ function CategoryManagerForm({
   collectionId,
   isNew,
   onSave,
-  onDelete,
   onPublish,
   onUnpublish,
-  onCancel,
+  onHasChanges,
+  formRef,
 }: CategoryManagerFormProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -35,6 +35,45 @@ function CategoryManagerForm({
 
   const isSystem = category?.isSystem ?? false;
   const isPublic = category?.effectiveIsPublic ?? false;
+
+  // Track whether form has unsaved changes
+  const hasChanges = isNew
+    ? name.trim() !== '' || description.trim() !== '' || parentCategoryId !== null || itemTemplateIds.length > 0
+    : category
+      ? name !== category.name || description !== category.description || parentCategoryId !== category.parentCategoryId || JSON.stringify(itemTemplateIds) !== JSON.stringify(category.itemTemplateIds)
+      : false;
+
+  useEffect(() => {
+    onHasChanges?.(hasChanges);
+  }, [hasChanges, onHasChanges]);
+
+  const validateName = (value: string): string | null => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 'Name is required';
+    }
+    if (RESERVED_NAMES.includes(trimmed.toLowerCase())) {
+      return `"${trimmed}" is a reserved name and cannot be used`;
+    }
+    return null;
+  };
+
+  // Expose submit method to parent via ref
+  useImperativeHandle(formRef, () => ({
+    submit: () => {
+      const nameError = validateName(name);
+      if (nameError) {
+        setError(nameError);
+        return;
+      }
+      onSave({
+        name: name.trim(),
+        description: description.trim(),
+        parentCategoryId,
+        itemTemplateIds,
+      });
+    },
+  }), [name, description, parentCategoryId, itemTemplateIds, onSave]);
 
   // Reset form when category changes or switching to create mode
   useEffect(() => {
@@ -78,17 +117,6 @@ function CategoryManagerForm({
     return categories.filter((c) => !excludeIds.has(c.categoryId) && !c.isSystem);
   };
 
-  const validateName = (value: string): string | null => {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return 'Name is required';
-    }
-    if (RESERVED_NAMES.includes(trimmed.toLowerCase())) {
-      return `"${trimmed}" is a reserved name and cannot be used`;
-    }
-    return null;
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -104,11 +132,6 @@ function CategoryManagerForm({
       parentCategoryId,
       itemTemplateIds,
     });
-  };
-
-  const handleDelete = () => {
-    if (!category || isSystem) return;
-    onDelete(category.categoryId);
   };
 
   // Empty state: no category selected and not creating new
@@ -257,33 +280,6 @@ function CategoryManagerForm({
           </div>
         )}
 
-        <div className="category-manager-form__footer">
-          {category && !isNew && (
-            <button
-              type="button"
-              className="modal__button modal__button--danger"
-              onClick={handleDelete}
-            >
-              Delete
-            </button>
-          )}
-          <div className="category-manager-form__footer-right">
-            <button
-              type="button"
-              className="modal__button modal__button--secondary"
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="modal__button modal__button--primary"
-              disabled={!name.trim()}
-            >
-              {isNew ? 'Create' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
       </form>
     </div>
   );

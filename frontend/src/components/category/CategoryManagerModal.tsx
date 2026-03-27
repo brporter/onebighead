@@ -32,8 +32,12 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   const { showToast } = useToast();
 
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const formRef = useRef<{ submit: () => void } | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [formHasChanges, setFormHasChanges] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [publishTarget, setPublishTarget] = useState<Category | null>(null);
   const [unpublishPreview, setUnpublishPreview] = useState<UnpublishPreviewResponse | null>(null);
   const [unpublishTarget, setUnpublishTarget] = useState<Category | null>(null);
@@ -95,9 +99,23 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     setIsNew(true);
   }, []);
 
-  const handleCancel = useCallback(() => {
+  const handleCancelClick = useCallback(() => {
+    if (formHasChanges) {
+      setShowCancelConfirm(true);
+    } else {
+      setSelectedCategoryId(null);
+      setIsNew(false);
+    }
+  }, [formHasChanges]);
+
+  const handleCancelConfirm = useCallback(() => {
+    setShowCancelConfirm(false);
     setSelectedCategoryId(null);
     setIsNew(false);
+  }, []);
+
+  const handleSaveClick = useCallback(() => {
+    formRef.current?.submit();
   }, []);
 
   const handleSave = useCallback(async (updates: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => {
@@ -122,23 +140,24 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     }
   }, [isNew, selectedCategoryId, collectionId, addCategory, updateCategory, loadCategoriesForCollection]);
 
-  const handleDelete = useCallback(async (categoryId: number) => {
-    const cat = categories.find(c => c.categoryId === categoryId);
-    if (!cat) return;
-
-    if (!window.confirm(`Are you sure you want to delete "${cat.name}"? Items in this category will be moved to "Unassigned Items".`)) {
-      return;
+  const handleDeleteClick = useCallback(() => {
+    if (selectedCategoryId && selectedCategory && !selectedCategory.isSystem) {
+      setShowDeleteConfirm(true);
     }
+  }, [selectedCategoryId, selectedCategory]);
 
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!selectedCategoryId) return;
+    setShowDeleteConfirm(false);
     try {
-      await deleteCategory(categoryId);
+      await deleteCategory(selectedCategoryId);
       setSelectedCategoryId(null);
       setIsNew(false);
       await loadCategoriesForCollection(collectionId);
     } catch (err) {
       console.error('Failed to delete category:', err);
     }
-  }, [categories, deleteCategory, collectionId, loadCategoriesForCollection]);
+  }, [selectedCategoryId, deleteCategory, collectionId, loadCategoriesForCollection]);
 
   const handleReorder = useCallback(async (updates: { categoryId: number; sortOrder: number }[]) => {
     try {
@@ -274,13 +293,42 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
               collectionId={collectionId}
               isNew={isNew}
               onSave={handleSave}
-              onDelete={handleDelete}
               onPublish={handlePublish}
               onUnpublish={handleUnpublish}
-              onCancel={handleCancel}
+              onHasChanges={setFormHasChanges}
+              formRef={formRef}
             />
           </div>
         </div>
+        {(selectedCategory || isNew) && (
+          <div className="categoryManager__footer">
+            {selectedCategory && !isNew && !selectedCategory.isSystem && (
+              <button
+                type="button"
+                className="modal__button modal__button--danger"
+                onClick={handleDeleteClick}
+              >
+                Delete
+              </button>
+            )}
+            <div className="categoryManager__footer-right">
+              <button
+                type="button"
+                className="modal__button modal__button--secondary"
+                onClick={handleCancelClick}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="modal__button modal__button--primary"
+                onClick={handleSaveClick}
+              >
+                {isNew ? 'Create' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {publishTarget && (
@@ -309,6 +357,68 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
           onConfirm={handleSlugConfirm}
           onCancel={handleSlugCancel}
         />
+      )}
+
+      {showDeleteConfirm && selectedCategory && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: '420px' }}>
+            <div className="modal__header">
+              <h2 className="modal__title categoryManager__title">Delete Category</h2>
+            </div>
+            <div className="modal__body">
+              <p className="modal__info">
+                Are you sure you want to delete &ldquo;{selectedCategory.name}&rdquo;? Items in this category will be moved to &ldquo;Unassigned Items&rdquo;.
+              </p>
+            </div>
+            <div className="modal__footer">
+              <button
+                type="button"
+                className="modal__button modal__button--secondary"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="modal__button modal__button--danger"
+                onClick={handleDeleteConfirm}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelConfirm && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: '420px' }}>
+            <div className="modal__header">
+              <h2 className="modal__title categoryManager__title">Discard Changes</h2>
+            </div>
+            <div className="modal__body">
+              <p className="modal__info">
+                You have unsaved changes. Are you sure you want to discard them?
+              </p>
+            </div>
+            <div className="modal__footer">
+              <button
+                type="button"
+                className="modal__button modal__button--secondary"
+                onClick={() => setShowCancelConfirm(false)}
+              >
+                Keep Editing
+              </button>
+              <button
+                type="button"
+                className="modal__button modal__button--danger"
+                onClick={handleCancelConfirm}
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </dialog>
   );
