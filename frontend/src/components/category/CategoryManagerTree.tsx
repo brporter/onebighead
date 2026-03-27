@@ -89,6 +89,7 @@ function SortableRow({ row, onEditCategory, dropIntent, isDisabledTarget }: Sort
       ref={setNodeRef}
       style={style}
       className={className}
+      data-category-id={String(row.category.categoryId)}
       data-depth={String(row.depth)}
       onClick={() => onEditCategory(row.category.categoryId)}
       role="button"
@@ -175,63 +176,77 @@ function CategoryManagerTree({
     return descendants;
   }, [activeId, categories]);
 
-  // Track pointer position at document level for reliable intent detection during drag
+  const activeIdRef = useRef<string | null>(null);
+  const overTargetIdRef = useRef<number | null>(null);
+  const disabledTargetIdsRef = useRef(disabledTargetIds);
   useEffect(() => {
-    const handlePointerMove = (e: PointerEvent) => {
-      pointerYRef.current = e.clientY;
-    };
-    document.addEventListener('pointermove', handlePointerMove);
-    return () => document.removeEventListener('pointermove', handlePointerMove);
-  }, []);
+    disabledTargetIdsRef.current = disabledTargetIds;
+  }, [disabledTargetIds]);
 
-  const setIntent = useCallback((intent: DropIntent) => {
+  const setIntent = useCallback((targetId: number | null, intent: DropIntent) => {
+    setOverTargetId(targetId);
+    overTargetIdRef.current = targetId;
     setDropIntent(intent);
     dropIntentRef.current = intent;
   }, []);
 
+  // Continuously update drop intent on every pointer move during drag
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      pointerYRef.current = e.clientY;
+
+      // Only compute intent during an active drag
+      if (!activeIdRef.current) return;
+
+      // Find the category row under the pointer
+      const elements = document.elementsFromPoint(e.clientX, e.clientY);
+      const rowEl = elements.find(el => el.classList.contains('catTree__row') && el.getAttribute('data-category-id'));
+
+      if (!rowEl) {
+        // Pointer is not over any row
+        if (overTargetIdRef.current !== null) {
+          setIntent(null, null);
+        }
+        return;
+      }
+
+      const catId = Number(rowEl.getAttribute('data-category-id'));
+
+      // Don't target self or descendants
+      if (disabledTargetIdsRef.current.has(catId)) {
+        if (overTargetIdRef.current !== null) {
+          setIntent(null, null);
+        }
+        return;
+      }
+
+      const rect = rowEl.getBoundingClientRect();
+      const intent = getDropIntent(rect, e.clientY);
+      setIntent(catId, intent);
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    return () => document.removeEventListener('pointermove', handlePointerMove);
+  }, [setIntent]);
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
+    const id = String(event.active.id);
+    setActiveId(id);
+    activeIdRef.current = id;
   }, []);
 
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) {
-      setOverTargetId(null);
-      setIntent(null);
-      return;
-    }
-
-    if (over.id === 'root-drop-zone') {
-      setOverTargetId(null);
-      setIntent(null);
-      return;
-    }
-
-    const overId = Number(over.id);
-
-    // Prevent circular: can't drop onto self or descendant
-    if (disabledTargetIds.has(overId)) {
-      setOverTargetId(null);
-      setIntent(null);
-      return;
-    }
-
-    const overRect = over.rect;
-    let intent: DropIntent = 'reparent';
-    if (overRect && overRect.height > 0) {
-      intent = getDropIntent(overRect, pointerYRef.current);
-    }
-
-    setOverTargetId(overId);
-    setIntent(intent);
-  }, [disabledTargetIds, setIntent]);
+  // handleDragOver still needed for dnd-kit's collision detection (determines `over` in handleDragEnd)
+  // but visual intent is driven by the pointermove handler above
+  const handleDragOver = useCallback(() => {
+    // Visual feedback is handled by the pointermove listener
+  }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
 
     setActiveId(null);
-    setOverTargetId(null);
-    setIntent(null);
+    activeIdRef.current = null;
+    setIntent(null, null);
 
     if (!over) return;
 
@@ -253,12 +268,8 @@ function CategoryManagerTree({
     // Prevent circular reference
     if (disabledTargetIds.has(overId)) return;
 
-    // Compute intent at drop time for reliability
-    let finalIntent: DropIntent = dropIntentRef.current;
-    const overRect = over.rect;
-    if (overRect && overRect.height > 0) {
-      finalIntent = getDropIntent(overRect, pointerYRef.current);
-    }
+    // Use the intent from our continuous pointer tracking
+    const finalIntent = dropIntentRef.current;
 
     if (finalIntent === 'reparent') {
       // Drop onto center = make child of the over item
@@ -280,8 +291,8 @@ function CategoryManagerTree({
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
-    setOverTargetId(null);
-    setIntent(null);
+    activeIdRef.current = null;
+    setIntent(null, null);
   }, [setIntent]);
 
   const activeRow = activeId
