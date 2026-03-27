@@ -70,3 +70,29 @@
 .public-badge:hover .public-badge__hover {
   display: inline-flex;
 }
+
+/* ==========================================================================
+   Publish Confirm Modal
+   ========================================================================== */
+
+.publish-confirm-modal {
+  max-width: 480px;
+}
+
+.publish-confirm-modal__info {
+  margin: 0 0 var(--space-md);
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.publish-confirm-modal__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.publish-confirm-modal__options .modal__button {
+  width: 100%;
+  justify-content: center;
+}
