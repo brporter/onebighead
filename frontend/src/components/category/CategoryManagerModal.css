@@ -9,25 +9,36 @@
 }
 
 .categoryManager {
-  display: flex;
+  position: relative;
   min-height: 500px;
   max-height: 70vh;
   overflow: hidden;
 }
 
+.categoryManager__track {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  transition: transform 300ms ease-in-out;
+}
+
+.categoryManager__track--form {
+  transform: translateX(-50%);
+}
+
 .categoryManager__tree {
-  width: 280px;
-  min-width: 280px;
-  border-right: 1px solid var(--color-border);
+  width: 50%;
   background: var(--color-surface-alt);
   overflow-y: auto;
   padding: var(--space-lg);
 }
 
 .categoryManager__form {
-  flex: 1;
+  width: 50%;
   overflow-y: auto;
   padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
 }
 
 .categoryManager__footer {
@@ -118,11 +129,6 @@
   background: var(--hover-bg);
 }
 
-.catTree__row--active {
-  background: var(--color-accent-subtle);
-  border-left: 3px solid var(--color-accent);
-}
-
 .catTree__row--dragging {
   opacity: 0.4;
 }
@@ -198,4 +204,60 @@
 .catTree__rootDropZone--over {
   border-color: var(--color-accent);
   background: var(--color-accent-subtle);
+}
+
+/* ==========================================================================
+   Back link for form navigation
+   ========================================================================== */
+
+.category-manager-form__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0;
+  margin-bottom: var(--space-md);
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.category-manager-form__back:hover {
+  color: var(--color-accent-hover, var(--color-accent));
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   QuickCreatePopover — dropdown from + button
+   ========================================================================== */
+
+.quickCreatePopover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 10;
+  min-width: 300px;
+  margin-top: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.quickCreatePopover__input {
+  margin-bottom: var(--space-sm);
+}
+
+.quickCreatePopover__error {
+  margin-bottom: var(--space-sm);
+  font-size: 0.85rem;
+}
+
+.quickCreatePopover__actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
 }
