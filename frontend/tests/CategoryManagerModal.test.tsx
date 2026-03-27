@@ -126,6 +126,7 @@ vi.mock('../src/components/category/CategoryManagerTree', () => ({
         <button data-testid="tree-add" onClick={props.onAdd as () => void}>Add</button>
         <button data-testid="tree-reorder" onClick={() => (props.onReorder as (u: { categoryId: number; sortOrder: number }[]) => void)([{ categoryId: 1, sortOrder: 0 }, { categoryId: 2, sortOrder: 1 }])}>Reorder</button>
         <button data-testid="tree-reparent" onClick={() => (props.onReparent as (id: number, parentId: number | null) => void)(3, 2)}>Reparent</button>
+        {props.toolbarSlot as React.ReactNode}
       </div>
     );
   },

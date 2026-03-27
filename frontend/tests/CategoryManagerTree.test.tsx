@@ -99,14 +99,14 @@ describe('CategoryManagerTree', () => {
   });
 
   describe('rendering hierarchy', () => {
-    it('renders all categories in tree order', () => {
+    it('renders all non-system categories in tree order', () => {
       render(<CategoryManagerTree {...defaultProps} />);
 
       expect(screen.getByText('Cameras')).toBeInTheDocument();
       expect(screen.getByText('Film')).toBeInTheDocument();
       expect(screen.getByText('Digital')).toBeInTheDocument();
       expect(screen.getByText('Lenses')).toBeInTheDocument();
-      expect(screen.getByText('Unassigned')).toBeInTheDocument();
+      expect(screen.queryByText('Unassigned')).not.toBeInTheDocument();
     });
 
     it('renders correct indentation for children', () => {
@@ -180,22 +180,13 @@ describe('CategoryManagerTree', () => {
   });
 
   describe('drag handles', () => {
-    it('renders drag handle on non-system category rows', () => {
+    it('renders drag handle on all category rows', () => {
       const { container } = render(<CategoryManagerTree {...defaultProps} />);
 
       const rows = container.querySelectorAll('.catTree__row');
-      const nonSystemRows = Array.from(rows).filter(r => !r.textContent?.includes('Unassigned'));
-      nonSystemRows.forEach(row => {
+      rows.forEach(row => {
         expect(row.querySelector('[data-testid="drag-handle"]')).toBeTruthy();
       });
-    });
-
-    it('does not render drag handle for system categories', () => {
-      const { container } = render(<CategoryManagerTree {...defaultProps} />);
-
-      const rows = container.querySelectorAll('.catTree__row');
-      const systemRow = Array.from(rows).find(r => r.textContent?.includes('Unassigned'));
-      expect(systemRow?.querySelector('[data-testid="drag-handle"]')).toBeFalsy();
     });
   });
 

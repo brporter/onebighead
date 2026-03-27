@@ -354,15 +354,15 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
                 onAdd={handleAdd}
                 onReorder={handleReorder}
                 onReparent={handleReparent}
+                toolbarSlot={showQuickCreate ? (
+                  <QuickCreatePopover
+                    isVisible={showQuickCreate}
+                    onSave={handleQuickCreateSave}
+                    onMoreDetails={handleQuickCreateMoreDetails}
+                    onCancel={handleQuickCreateCancel}
+                  />
+                ) : undefined}
               />
-              {showQuickCreate && (
-                <QuickCreatePopover
-                  isVisible={showQuickCreate}
-                  onSave={handleQuickCreateSave}
-                  onMoreDetails={handleQuickCreateMoreDetails}
-                  onCancel={handleQuickCreateCancel}
-                />
-              )}
             </div>
             <div className="categoryManager__form">
               <CategoryManagerForm

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -39,6 +39,7 @@ export interface CategoryManagerTreeProps {
   onAdd: () => void;
   onReorder: (updates: { categoryId: number; sortOrder: number }[]) => void;
   onReparent: (categoryId: number, newParentId: number | null) => void;
+  toolbarSlot?: React.ReactNode;
 }
 
 function RootDropZone() {
@@ -137,6 +138,7 @@ function CategoryManagerTree({
   onAdd,
   onReorder,
   onReparent,
+  toolbarSlot,
 }: CategoryManagerTreeProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overTargetId, setOverTargetId] = useState<number | null>(null);
@@ -148,14 +150,19 @@ function CategoryManagerTree({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const nonSystemCategories = useMemo(
+    () => categories.filter(c => !c.isSystem),
+    [categories]
+  );
+
   const flatRows = useMemo(() => {
-    const tree = buildCategoryTree(categories);
+    const tree = buildCategoryTree(nonSystemCategories);
     const result: FlatRow[] = [];
     tree.forEach((rootNode, rootIdx) => {
       result.push(...flattenWithIndent([rootNode], rootIdx));
     });
     return result;
-  }, [categories]);
+  }, [nonSystemCategories]);
 
   const sortableIds = useMemo(
     () => flatRows.map(r => String(r.category.categoryId)),
@@ -171,9 +178,13 @@ function CategoryManagerTree({
     return descendants;
   }, [activeId, categories]);
 
-  // Track pointer position for drop intent detection
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    pointerYRef.current = e.clientY;
+  // Track pointer position at document level for reliable drop intent detection during drag
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      pointerYRef.current = e.clientY;
+    };
+    document.addEventListener('pointermove', handlePointerMove);
+    return () => document.removeEventListener('pointermove', handlePointerMove);
   }, []);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -275,7 +286,7 @@ function CategoryManagerTree({
     : null;
 
   return (
-    <div className="catTree" onPointerMove={handlePointerMove}>
+    <div className="catTree">
       <div className="catTree__toolbar">
         <span className="catTree__title">Categories</span>
         <div className="catTree__toolbarActions">
@@ -287,6 +298,7 @@ function CategoryManagerTree({
           >
             +
           </button>
+          {toolbarSlot}
         </div>
       </div>
 
