@@ -121,7 +121,6 @@ vi.mock('../src/components/category/CategoryManagerTree', () => ({
         <button data-testid="tree-select-1" onClick={() => (props.onSelect as (id: number) => void)(1)}>Select 1</button>
         <button data-testid="tree-select-2" onClick={() => (props.onSelect as (id: number) => void)(2)}>Select 2</button>
         <button data-testid="tree-add" onClick={props.onAdd as () => void}>Add</button>
-        <button data-testid="tree-sort" onClick={props.onSortClick as () => void}>Sort</button>
         <button data-testid="tree-reorder" onClick={() => (props.onReorder as (u: { categoryId: number; sortOrder: number }[]) => void)([{ categoryId: 1, sortOrder: 0 }, { categoryId: 2, sortOrder: 1 }])}>Reorder</button>
         <button data-testid="tree-reparent" onClick={() => (props.onReparent as (id: number, parentId: number | null) => void)(3, 2)}>Reparent</button>
       </div>
@@ -143,17 +142,6 @@ vi.mock('../src/components/category/CategoryManagerForm', () => ({
       </div>
     );
   },
-}));
-
-// Mock SortConfirmModal
-vi.mock('../src/components/category/SortConfirmModal', () => ({
-  default: (props: { onConfirm: (scope: 'level' | 'all') => void; onCancel: () => void }) => (
-    <div data-testid="sort-confirm-modal">
-      <button data-testid="sort-level" onClick={() => props.onConfirm('level')}>This Level Only</button>
-      <button data-testid="sort-all" onClick={() => props.onConfirm('all')}>All Levels</button>
-      <button data-testid="sort-cancel" onClick={props.onCancel}>Cancel Sort</button>
-    </div>
-  ),
 }));
 
 // Mock PublishConfirmModal
@@ -535,73 +523,6 @@ describe('CategoryManagerModal', () => {
     });
   });
 
-  describe('sort alphabetically', () => {
-    it('should open SortConfirmModal when sort clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-sort'));
-
-      expect(screen.getByTestId('sort-confirm-modal')).toBeInTheDocument();
-    });
-
-    it('should sort this level only and call reorderCategories', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-sort'));
-      await user.click(screen.getByTestId('sort-level'));
-
-      await waitFor(() => {
-        expect(mockReorderCategories).toHaveBeenCalled();
-      });
-
-      // Verify sort order: root categories Alpha (id=2) should be 0, Bravo (id=1) should be 1
-      const call = mockReorderCategories.mock.calls[0][0] as { categoryId: number; sortOrder: number }[];
-      const alphaOrder = call.find((c: { categoryId: number }) => c.categoryId === 2);
-      const bravoOrder = call.find((c: { categoryId: number }) => c.categoryId === 1);
-      expect(alphaOrder?.sortOrder).toBeLessThan(bravoOrder?.sortOrder ?? 0);
-    });
-
-    it('should sort selected level siblings when a category is selected', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      // Select category 3 (child of 1)
-      await user.click(screen.getByTestId('tree-select-1'));
-      await user.click(screen.getByTestId('tree-sort'));
-      await user.click(screen.getByTestId('sort-level'));
-
-      await waitFor(() => {
-        expect(mockReorderCategories).toHaveBeenCalled();
-      });
-    });
-
-    it('should sort all levels and call reorderCategories', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-sort'));
-      await user.click(screen.getByTestId('sort-all'));
-
-      await waitFor(() => {
-        expect(mockReorderCategories).toHaveBeenCalled();
-      });
-    });
-
-    it('should close sort modal when cancel clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-sort'));
-      expect(screen.getByTestId('sort-confirm-modal')).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('sort-cancel'));
-
-      expect(screen.queryByTestId('sort-confirm-modal')).not.toBeInTheDocument();
-    });
-  });
-
   describe('closing the modal', () => {
     it('should call onClose when close button clicked', async () => {
       const user = userEvent.setup();
@@ -811,38 +732,6 @@ describe('CategoryManagerModal', () => {
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to unpublish category:', expect.any(Error));
-      });
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle sort level reorder failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockReorderCategories.mockRejectedValue(new Error('Sort failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-sort'));
-      await user.click(screen.getByTestId('sort-level'));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to sort categories:', expect.any(Error));
-      });
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle sort all reorder failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockReorderCategories.mockRejectedValue(new Error('Sort all failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-sort'));
-      await user.click(screen.getByTestId('sort-all'));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to sort categories:', expect.any(Error));
       });
 
       consoleSpy.mockRestore();

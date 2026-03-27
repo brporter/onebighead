@@ -36,7 +36,6 @@ export interface CategoryManagerTreeProps {
   selectedCategoryId: number | null;
   onSelect: (categoryId: number) => void;
   onAdd: () => void;
-  onSortClick: () => void;
   onReorder: (updates: { categoryId: number; sortOrder: number }[]) => void;
   onReparent: (categoryId: number, newParentId: number | null) => void;
 }
@@ -124,7 +123,6 @@ function CategoryManagerTree({
   selectedCategoryId,
   onSelect,
   onAdd,
-  onSortClick,
   onReorder,
   onReparent,
 }: CategoryManagerTreeProps) {
@@ -261,14 +259,6 @@ function CategoryManagerTree({
             aria-label="Add category"
           >
             +
-          </button>
-          <button
-            type="button"
-            className="catTree__sortBtn"
-            onClick={onSortClick}
-            aria-label="Sort categories"
-          >
-            Sort
           </button>
         </div>
       </div>

@@ -89,7 +89,7 @@ describe('CategoryManagerTree', () => {
     selectedCategoryId: null as number | null,
     onSelect: vi.fn(),
     onAdd: vi.fn(),
-    onSortClick: vi.fn(),
+
     onReorder: vi.fn(),
     onReparent: vi.fn(),
   };
@@ -175,13 +175,9 @@ describe('CategoryManagerTree', () => {
       expect(handleAdd).toHaveBeenCalled();
     });
 
-    it('sort button calls onSortClick', async () => {
-      const user = userEvent.setup();
-      const handleSort = vi.fn();
-      render(<CategoryManagerTree {...defaultProps} onSortClick={handleSort} />);
-
-      await user.click(screen.getByLabelText('Sort categories'));
-      expect(handleSort).toHaveBeenCalled();
+    it('does not render a sort button', () => {
+      render(<CategoryManagerTree {...defaultProps} />);
+      expect(screen.queryByLabelText('Sort categories')).not.toBeInTheDocument();
     });
   });
 

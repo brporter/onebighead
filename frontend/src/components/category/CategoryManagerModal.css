@@ -2,6 +2,12 @@
    CategoryManagerModal — Two-panel layout inside dialog
    ========================================================================== */
 
+.categoryManager__title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 .categoryManager {
   display: flex;
   min-height: 500px;
@@ -15,10 +21,157 @@
   border-right: 1px solid var(--color-border);
   background: var(--color-surface-alt);
   overflow-y: auto;
+  padding: var(--space-lg);
 }
 
 .categoryManager__form {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-md);
+}
+
+/* ==========================================================================
+   Category Tree (inside manager) — matches CategoryNav styling
+   ========================================================================== */
+
+.catTree__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.catTree__title {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.catTree__toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.catTree__addBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 1.2rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.catTree__addBtn:hover {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-primary-text);
+}
+
+/* --------------------------------------------------------------------------
+   Tree rows — match CategoryNav row styling
+   -------------------------------------------------------------------------- */
+
+.catTree__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.catTree__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.catTree__row:hover {
+  background: var(--hover-bg);
+}
+
+.catTree__row--active {
+  background: var(--color-accent-subtle);
+  border-left: 3px solid var(--color-accent);
+}
+
+.catTree__row--dragging {
+  opacity: 0.4;
+}
+
+.catTree__row--dropTarget {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.catTree__row--overlay {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 9px 18px;
+}
+
+.catTree__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.catTree__name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.catTree__chevron {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.catTree__empty {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* --------------------------------------------------------------------------
+   Root drop zone
+   -------------------------------------------------------------------------- */
+
+.catTree__rootDropZone {
+  padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.catTree__rootDropZone--over {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
 }

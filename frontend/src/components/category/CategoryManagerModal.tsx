@@ -6,7 +6,6 @@ import { useToast } from '../../contexts/useToast';
 import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../../utils/publishToastUtils';
 import CategoryManagerTree from './CategoryManagerTree';
 import CategoryManagerForm from './CategoryManagerForm';
-import SortConfirmModal from './SortConfirmModal';
 import { PublishConfirmModal } from '../common/PublishConfirmModal';
 import { UnpublishConfirmModal } from '../common/UnpublishConfirmModal';
 import { SlugSetupModal } from '../common/SlugSetupModal';
@@ -35,7 +34,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [showSortConfirm, setShowSortConfirm] = useState(false);
   const [publishTarget, setPublishTarget] = useState<Category | null>(null);
   const [unpublishPreview, setUnpublishPreview] = useState<UnpublishPreviewResponse | null>(null);
   const [unpublishTarget, setUnpublishTarget] = useState<Category | null>(null);
@@ -176,62 +174,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     }
   }, [categories, updateCategory, reorderCategories, collectionId, loadCategoriesForCollection]);
 
-  const handleSortClick = useCallback(() => {
-    setShowSortConfirm(true);
-  }, []);
-
-  const handleSortConfirm = useCallback(async (scope: 'level' | 'all') => {
-    setShowSortConfirm(false);
-
-    if (scope === 'level') {
-      // Sort siblings of the selected category (or root if nothing selected)
-      const parentId = selectedCategory?.parentCategoryId ?? null;
-      const siblings = categories
-        .filter(c => c.parentCategoryId === parentId && !c.isSystem)
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      const updates = siblings.map((c, i) => ({ categoryId: c.categoryId, sortOrder: i }));
-      if (updates.length > 0) {
-        try {
-          await reorderCategories(updates);
-          await loadCategoriesForCollection(collectionId);
-        } catch (err) {
-          console.error('Failed to sort categories:', err);
-        }
-      }
-    } else {
-      // Sort all levels: group by parentCategoryId, sort each group
-      const groups = new Map<number | null, Category[]>();
-      for (const cat of categories) {
-        if (cat.isSystem) continue;
-        const key = cat.parentCategoryId;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(cat);
-      }
-
-      const allUpdates: { categoryId: number; sortOrder: number }[] = [];
-      for (const [, group] of groups) {
-        group.sort((a, b) => a.name.localeCompare(b.name));
-        group.forEach((c, i) => {
-          allUpdates.push({ categoryId: c.categoryId, sortOrder: i });
-        });
-      }
-
-      if (allUpdates.length > 0) {
-        try {
-          await reorderCategories(allUpdates);
-          await loadCategoriesForCollection(collectionId);
-        } catch (err) {
-          console.error('Failed to sort categories:', err);
-        }
-      }
-    }
-  }, [selectedCategory, categories, reorderCategories, collectionId, loadCategoriesForCollection]);
-
-  const handleSortCancel = useCallback(() => {
-    setShowSortConfirm(false);
-  }, []);
-
   const handlePublish = useCallback((category: Category) => {
     setPublishTarget(category);
   }, []);
@@ -302,9 +244,9 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
 
   return (
     <dialog ref={dialogRef} className="modal-dialog modal-dialog--wide" onClick={handleBackdropClick}>
-      <div className="modal">
+      <div className="modal modal--wide">
         <div className="modal__header">
-          <h2 className="modal__title">Category Manager</h2>
+          <h2 className="modal__title categoryManager__title">Category Manager</h2>
           <button
             type="button"
             className="modal__close"
@@ -321,7 +263,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
               selectedCategoryId={selectedCategoryId}
               onSelect={handleSelect}
               onAdd={handleAdd}
-              onSortClick={handleSortClick}
               onReorder={handleReorder}
               onReparent={handleReparent}
             />
@@ -341,13 +282,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
           </div>
         </div>
       </div>
-
-      {showSortConfirm && (
-        <SortConfirmModal
-          onConfirm={handleSortConfirm}
-          onCancel={handleSortCancel}
-        />
-      )}
 
       {publishTarget && (
         <PublishConfirmModal
