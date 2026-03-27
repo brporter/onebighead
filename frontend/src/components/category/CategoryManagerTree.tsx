@@ -35,8 +35,7 @@ export type DropIntent = 'reparent' | 'reorder-before' | 'reorder-after' | null;
 
 export interface CategoryManagerTreeProps {
   categories: Category[];
-  selectedCategoryId: number | null;
-  onSelect: (categoryId: number) => void;
+  onEditCategory: (categoryId: number) => void;
   onAdd: () => void;
   onReorder: (updates: { categoryId: number; sortOrder: number }[]) => void;
   onReparent: (categoryId: number, newParentId: number | null) => void;
@@ -56,13 +55,12 @@ function RootDropZone() {
 
 interface SortableRowProps {
   row: FlatRow;
-  isSelected: boolean;
-  onSelect: (categoryId: number) => void;
+  onEditCategory: (categoryId: number) => void;
   dropIntent: DropIntent;
   isDisabledTarget: boolean;
 }
 
-function SortableRow({ row, isSelected, onSelect, dropIntent, isDisabledTarget }: SortableRowProps) {
+function SortableRow({ row, onEditCategory, dropIntent, isDisabledTarget }: SortableRowProps) {
   const {
     attributes,
     listeners,
@@ -84,7 +82,6 @@ function SortableRow({ row, isSelected, onSelect, dropIntent, isDisabledTarget }
   const accentColor = getAccentColor(row.rootIndex);
 
   let className = 'catTree__row';
-  if (isSelected) className += ' catTree__row--active';
   if (isDragging) className += ' catTree__row--dragging';
   if (!isDisabledTarget && dropIntent === 'reparent') className += ' catTree__row--dropTarget';
   if (!isDisabledTarget && dropIntent === 'reorder-before') className += ' catTree__row--insertBefore';
@@ -96,13 +93,13 @@ function SortableRow({ row, isSelected, onSelect, dropIntent, isDisabledTarget }
       style={style}
       className={className}
       data-depth={String(row.depth)}
-      onClick={() => onSelect(row.category.categoryId)}
+      onClick={() => onEditCategory(row.category.categoryId)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onSelect(row.category.categoryId);
+          onEditCategory(row.category.categoryId);
         }
       }}
     >
@@ -136,8 +133,7 @@ function getDropIntent(overRect: DOMRect, pointerY: number): DropIntent {
 
 function CategoryManagerTree({
   categories,
-  selectedCategoryId,
-  onSelect,
+  onEditCategory,
   onAdd,
   onReorder,
   onReparent,
@@ -315,8 +311,7 @@ function CategoryManagerTree({
                 <SortableRow
                   key={rowId}
                   row={row}
-                  isSelected={rowId === selectedCategoryId}
-                  onSelect={onSelect}
+                  onEditCategory={onEditCategory}
                   dropIntent={rowDropIntent}
                   isDisabledTarget={disabledTargetIds.has(rowId)}
                 />

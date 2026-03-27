@@ -88,10 +88,8 @@ const mockCategories: Category[] = [
 describe('CategoryManagerTree', () => {
   const defaultProps = {
     categories: mockCategories,
-    selectedCategoryId: null as number | null,
-    onSelect: vi.fn(),
+    onEditCategory: vi.fn(),
     onAdd: vi.fn(),
-
     onReorder: vi.fn(),
     onReparent: vi.fn(),
   };
@@ -149,21 +147,19 @@ describe('CategoryManagerTree', () => {
   });
 
   describe('selection', () => {
-    it('highlights selected category with active styling', () => {
-      const { container } = render(<CategoryManagerTree {...defaultProps} selectedCategoryId={2} />);
-
-      const activeRow = container.querySelector('.catTree__row--active');
-      expect(activeRow).toBeTruthy();
-      expect(activeRow?.textContent).toContain('Film');
+    it('should not apply active styling to any row', () => {
+      render(<CategoryManagerTree {...defaultProps} />);
+      const rows = document.querySelectorAll('.catTree__row');
+      rows.forEach(row => {
+        expect(row.classList.contains('catTree__row--active')).toBe(false);
+      });
     });
 
-    it('clicking a category calls onSelect', async () => {
+    it('should call onEditCategory when row is clicked', async () => {
       const user = userEvent.setup();
-      const handleSelect = vi.fn();
-      render(<CategoryManagerTree {...defaultProps} onSelect={handleSelect} />);
-
+      render(<CategoryManagerTree {...defaultProps} />);
       await user.click(screen.getByText('Film'));
-      expect(handleSelect).toHaveBeenCalledWith(2);
+      expect(defaultProps.onEditCategory).toHaveBeenCalledWith(expect.any(Number));
     });
   });
 
