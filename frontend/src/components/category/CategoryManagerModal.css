@@ -134,19 +134,67 @@
   opacity: 0.4;
 }
 
+/* Reparent indicator — sustained hover shows "make child" highlight */
 .catTree__row--dropTarget {
   border-color: var(--color-accent);
   background: var(--color-accent-subtle);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  border-radius: var(--radius-md);
 }
 
+/* Reorder indicators — prominent lines with dot marker */
 .catTree__row--insertBefore {
-  border-top: 2px solid var(--color-accent);
+  position: relative;
   border-radius: 0;
+}
+
+.catTree__row--insertBefore::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+.catTree__row--insertBefore::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-accent);
+  border-radius: 50%;
 }
 
 .catTree__row--insertAfter {
-  border-bottom: 2px solid var(--color-accent);
+  position: relative;
   border-radius: 0;
+}
+
+.catTree__row--insertAfter::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+.catTree__row--insertAfter::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-accent);
+  border-radius: 50%;
 }
 
 .catTree__row--overlay {

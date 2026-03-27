@@ -33,6 +33,8 @@ import type { FlatRow } from './categoryManagerTreeUtils';
 
 export type DropIntent = 'reparent' | 'reorder-before' | 'reorder-after' | null;
 
+const REPARENT_DWELL_MS = 300;
+
 export interface CategoryManagerTreeProps {
   categories: Category[];
   onEditCategory: (categoryId: number) => void;
@@ -121,15 +123,13 @@ function SortableRow({ row, onEditCategory, dropIntent, isDisabledTarget }: Sort
 }
 
 /**
- * Determine drop intent based on pointer position relative to the over element.
- * Center 40% = reparent, top 30% = insert before, bottom 30% = insert after.
+ * Determine reorder intent (before/after) based on pointer position.
+ * Top half = insert before, bottom half = insert after.
  */
-function getDropIntent(overRect: DOMRect, pointerY: number): DropIntent {
+function getReorderIntent(overRect: { top: number; height: number }, pointerY: number): DropIntent {
   const relativeY = pointerY - overRect.top;
   const ratio = relativeY / overRect.height;
-  if (ratio < 0.3) return 'reorder-before';
-  if (ratio > 0.7) return 'reorder-after';
-  return 'reparent';
+  return ratio < 0.5 ? 'reorder-before' : 'reorder-after';
 }
 
 function CategoryManagerTree({
@@ -145,6 +145,8 @@ function CategoryManagerTree({
   const [dropIntent, setDropIntent] = useState<DropIntent>(null);
   const dropIntentRef = useRef<DropIntent>(null);
   const pointerYRef = useRef<number>(0);
+  const dwellTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dwellTargetRef = useRef<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -179,13 +181,33 @@ function CategoryManagerTree({
     return descendants;
   }, [activeId, categories]);
 
-  // Track pointer position at document level for reliable drop intent detection during drag
+  // Track pointer position at document level for reliable intent detection during drag
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
       pointerYRef.current = e.clientY;
     };
     document.addEventListener('pointermove', handlePointerMove);
     return () => document.removeEventListener('pointermove', handlePointerMove);
+  }, []);
+
+  // Clean up dwell timer on unmount
+  useEffect(() => {
+    return () => {
+      if (dwellTimerRef.current) clearTimeout(dwellTimerRef.current);
+    };
+  }, []);
+
+  const clearDwellTimer = useCallback(() => {
+    if (dwellTimerRef.current) {
+      clearTimeout(dwellTimerRef.current);
+      dwellTimerRef.current = null;
+    }
+    dwellTargetRef.current = null;
+  }, []);
+
+  const setIntent = useCallback((intent: DropIntent) => {
+    setDropIntent(intent);
+    dropIntentRef.current = intent;
   }, []);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -196,15 +218,15 @@ function CategoryManagerTree({
     const { active, over } = event;
     if (!over || active.id === over.id) {
       setOverTargetId(null);
-      setDropIntent(null);
-      dropIntentRef.current = null;
+      setIntent(null);
+      clearDwellTimer();
       return;
     }
 
     if (over.id === 'root-drop-zone') {
       setOverTargetId(null);
-      setDropIntent(null);
-      dropIntentRef.current = null;
+      setIntent(null);
+      clearDwellTimer();
       return;
     }
 
@@ -213,33 +235,50 @@ function CategoryManagerTree({
     // Prevent circular: can't drop onto self or descendant
     if (disabledTargetIds.has(overId)) {
       setOverTargetId(null);
-      setDropIntent(null);
-      dropIntentRef.current = null;
+      setIntent(null);
+      clearDwellTimer();
       return;
     }
 
-    // Determine intent from pointer position using dnd-kit's rect
+    // Determine initial reorder intent (before/after based on top/bottom half)
     const overRect = over.rect;
-    let intent: DropIntent = 'reparent';
-    if (overRect) {
-      intent = getDropIntent(
-        { top: overRect.top, height: overRect.height } as DOMRect,
-        pointerYRef.current
-      );
+    let intent: DropIntent = 'reorder-after';
+    if (overRect && overRect.height > 0) {
+      intent = getReorderIntent(overRect, pointerYRef.current);
     }
 
     setOverTargetId(overId);
-    setDropIntent(intent);
-    dropIntentRef.current = intent;
-  }, [disabledTargetIds]);
+
+    // If we're already dwelling on this target and intent is reparent, keep it
+    if (dwellTargetRef.current === overId && dropIntentRef.current === 'reparent') {
+      // Already showing reparent for this target — keep it
+      return;
+    }
+
+    // If this is a new target, reset dwell timer and show reorder intent
+    if (dwellTargetRef.current !== overId) {
+      clearDwellTimer();
+      dwellTargetRef.current = overId;
+      setIntent(intent);
+
+      // Start dwell timer — after REPARENT_DWELL_MS, switch to reparent
+      dwellTimerRef.current = setTimeout(() => {
+        setDropIntent('reparent');
+        dropIntentRef.current = 'reparent';
+      }, REPARENT_DWELL_MS);
+    } else {
+      // Same target, still waiting for dwell — update reorder direction
+      setIntent(intent);
+    }
+  }, [disabledTargetIds, setIntent, clearDwellTimer]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
 
     setActiveId(null);
     setOverTargetId(null);
-    setDropIntent(null);
-    dropIntentRef.current = null;
+    setIntent(null);
+    clearDwellTimer();
 
     if (!over) return;
 
@@ -261,16 +300,8 @@ function CategoryManagerTree({
     // Prevent circular reference
     if (disabledTargetIds.has(overId)) return;
 
-    // Compute intent at drop time from current pointer position and over element rect
-    // This avoids stale state from handleDragOver and timing issues with sortable transforms
-    let finalIntent: DropIntent = 'reparent';
-    const overRect = over.rect;
-    if (overRect && overRect.height > 0) {
-      finalIntent = getDropIntent(
-        { top: overRect.top, height: overRect.height } as DOMRect,
-        pointerYRef.current
-      );
-    }
+    // Use the ref for the most current intent
+    const finalIntent = dropIntentRef.current;
 
     if (finalIntent === 'reparent') {
       // Drop onto center = make child of the over item
@@ -289,14 +320,14 @@ function CategoryManagerTree({
         onReparent(activeItem.categoryId, newParentId);
       }
     }
-  }, [categories, disabledTargetIds, onReorder, onReparent]);
+  }, [categories, disabledTargetIds, onReorder, onReparent, setIntent, clearDwellTimer]);
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
     setOverTargetId(null);
-    setDropIntent(null);
-    dropIntentRef.current = null;
-  }, []);
+    setIntent(null);
+    clearDwellTimer();
+  }, [setIntent, clearDwellTimer]);
 
   const activeRow = activeId
     ? flatRows.find(r => String(r.category.categoryId) === activeId)
