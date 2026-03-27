@@ -134,13 +134,9 @@ function CategoryManagerForm({
     });
   };
 
-  // Empty state: no category selected and not creating new
+  // Transient state before auto-selection
   if (!category && !isNew) {
-    return (
-      <div className="category-manager-form category-manager-form--empty">
-        <p>Select a category to edit, or click + to add a new one.</p>
-      </div>
-    );
+    return <div className="category-manager-form" />;
   }
 
   // System category: read-only view

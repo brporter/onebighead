@@ -60,12 +60,12 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     const dialog = dialogRef.current;
     if (!dialog) return;
 
-    const handleClose = () => {
+    const handleNativeClose = () => {
       onClose();
     };
 
-    dialog.addEventListener('close', handleClose);
-    return () => dialog.removeEventListener('close', handleClose);
+    dialog.addEventListener('close', handleNativeClose);
+    return () => dialog.removeEventListener('close', handleNativeClose);
   }, [onClose]);
 
   // Load categories when modal opens
@@ -75,44 +75,90 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
       /* eslint-disable react-hooks/set-state-in-effect -- Resetting selection state when modal opens */
       setSelectedCategoryId(null);
       setIsNew(false);
+      setFormHasChanges(false);
       /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen, collectionId, loadCategoriesForCollection]);
+
+  // Auto-select first category when categories load and nothing is selected
+  useEffect(() => {
+    if (isOpen && categories.length > 0 && selectedCategoryId === null && !isNew) {
+      const firstNonSystem = categories.find(c => !c.isSystem);
+      if (firstNonSystem) {
+        /* eslint-disable react-hooks/set-state-in-effect -- Auto-selecting first category on load */
+        setSelectedCategoryId(firstNonSystem.categoryId);
+        /* eslint-enable react-hooks/set-state-in-effect */
+      }
+    }
+  }, [isOpen, categories, selectedCategoryId, isNew]);
 
   const selectedCategory = selectedCategoryId
     ? categories.find(c => c.categoryId === selectedCategoryId) ?? null
     : null;
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-    if (e.target === dialogRef.current) {
+  // Pending navigation target for discard confirmation
+  const [pendingNavigation, setPendingNavigation] = useState<{ type: 'select'; categoryId: number } | { type: 'add' } | { type: 'close' } | null>(null);
+
+  const handleCloseAttempt = useCallback(() => {
+    if (formHasChanges) {
+      setPendingNavigation({ type: 'close' });
+      setShowCancelConfirm(true);
+    } else {
       onClose();
     }
-  };
+  }, [formHasChanges, onClose]);
+
+  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDialogElement>) => {
+    if (e.target === dialogRef.current) {
+      handleCloseAttempt();
+    }
+  }, [handleCloseAttempt]);
 
   const handleSelect = useCallback((categoryId: number) => {
-    setSelectedCategoryId(categoryId);
-    setIsNew(false);
-  }, []);
+    if (categoryId === selectedCategoryId) return;
+    if (formHasChanges) {
+      setPendingNavigation({ type: 'select', categoryId });
+      setShowCancelConfirm(true);
+    } else {
+      setSelectedCategoryId(categoryId);
+      setIsNew(false);
+    }
+  }, [formHasChanges, selectedCategoryId]);
 
   const handleAdd = useCallback(() => {
-    setSelectedCategoryId(null);
-    setIsNew(true);
-  }, []);
+    if (formHasChanges) {
+      setPendingNavigation({ type: 'add' });
+      setShowCancelConfirm(true);
+    } else {
+      setSelectedCategoryId(null);
+      setIsNew(true);
+    }
+  }, [formHasChanges]);
 
   const handleCancelClick = useCallback(() => {
     if (formHasChanges) {
       setShowCancelConfirm(true);
-    } else {
-      setSelectedCategoryId(null);
-      setIsNew(false);
+      setPendingNavigation(null);
     }
   }, [formHasChanges]);
 
-  const handleCancelConfirm = useCallback(() => {
+  const handleDiscardConfirm = useCallback(() => {
     setShowCancelConfirm(false);
-    setSelectedCategoryId(null);
-    setIsNew(false);
-  }, []);
+    setFormHasChanges(false);
+    const nav = pendingNavigation;
+    setPendingNavigation(null);
+
+    if (nav?.type === 'select') {
+      setSelectedCategoryId(nav.categoryId);
+      setIsNew(false);
+    } else if (nav?.type === 'add') {
+      setSelectedCategoryId(null);
+      setIsNew(true);
+    } else if (nav?.type === 'close') {
+      onClose();
+    }
+    // null pendingNavigation = cancel button clicked, just revert to current category
+  }, [pendingNavigation, onClose]);
 
   const handleSaveClick = useCallback(() => {
     formRef.current?.submit();
@@ -148,12 +194,15 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!selectedCategoryId) return;
+    const deletedId = selectedCategoryId;
     setShowDeleteConfirm(false);
     try {
-      await deleteCategory(selectedCategoryId);
+      await deleteCategory(deletedId);
+      await loadCategoriesForCollection(collectionId);
+      // Clear selection so auto-select useEffect can re-fire
       setSelectedCategoryId(null);
       setIsNew(false);
-      await loadCategoriesForCollection(collectionId);
+      setFormHasChanges(false);
     } catch (err) {
       console.error('Failed to delete category:', err);
     }
@@ -269,7 +318,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
           <button
             type="button"
             className="modal__close"
-            onClick={onClose}
+            onClick={handleCloseAttempt}
             aria-label="Close"
           >
             &times;
@@ -300,35 +349,36 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
             />
           </div>
         </div>
-        {(selectedCategory || isNew) && (
-          <div className="categoryManager__footer">
-            {selectedCategory && !isNew && !selectedCategory.isSystem && (
-              <button
-                type="button"
-                className="modal__button modal__button--danger"
-                onClick={handleDeleteClick}
-              >
-                Delete
-              </button>
-            )}
-            <div className="categoryManager__footer-right">
-              <button
-                type="button"
-                className="modal__button modal__button--secondary"
-                onClick={handleCancelClick}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="modal__button modal__button--primary"
-                onClick={handleSaveClick}
-              >
-                {isNew ? 'Create' : 'Save Changes'}
-              </button>
-            </div>
+        <div className="categoryManager__footer">
+          {selectedCategory && !isNew && !selectedCategory.isSystem ? (
+            <button
+              type="button"
+              className="modal__button modal__button--danger"
+              onClick={handleDeleteClick}
+            >
+              Delete
+            </button>
+          ) : (
+            <div />
+          )}
+          <div className="categoryManager__footer-right">
+            <button
+              type="button"
+              className="modal__button modal__button--secondary"
+              onClick={handleCancelClick}
+              disabled={!formHasChanges}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="modal__button modal__button--primary"
+              onClick={handleSaveClick}
+            >
+              {isNew ? 'Create' : 'Save Changes'}
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
       {publishTarget && (
@@ -412,7 +462,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
               <button
                 type="button"
                 className="modal__button modal__button--danger"
-                onClick={handleCancelConfirm}
+                onClick={handleDiscardConfirm}
               >
                 Discard
               </button>
