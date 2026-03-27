@@ -53,6 +53,10 @@ describe('CategoryManagerForm', () => {
     collectionId: 1,
     isNew: false,
     onSave: vi.fn(),
+    onBack: vi.fn(),
+    onDelete: vi.fn(),
+    onCancel: vi.fn(),
+    initialName: '',
     onPublish: vi.fn(),
     onUnpublish: vi.fn(),
   };
@@ -423,6 +427,76 @@ describe('CategoryManagerForm', () => {
       rerender(<CategoryManagerForm {...defaultProps} category={null} isNew={true} />);
 
       expect(screen.getByLabelText(/Name/)).toHaveValue('');
+    });
+  });
+
+  describe('back link', () => {
+    it('should render back link', () => {
+      render(<CategoryManagerForm {...defaultProps} isNew={true} />);
+      expect(screen.getByText('← Back to Categories')).toBeInTheDocument();
+    });
+
+    it('should call onBack when back link is clicked', async () => {
+      const user = userEvent.setup();
+      render(<CategoryManagerForm {...defaultProps} isNew={true} />);
+      await user.click(screen.getByText('← Back to Categories'));
+      expect(defaultProps.onBack).toHaveBeenCalled();
+    });
+  });
+
+  describe('initialName', () => {
+    it('should pre-fill name field with initialName when in create mode', () => {
+      render(<CategoryManagerForm {...defaultProps} isNew={true} initialName="Pre-filled" />);
+      expect(screen.getByDisplayValue('Pre-filled')).toBeInTheDocument();
+    });
+
+    it('should not use initialName in edit mode', () => {
+      const cat = makeCategory({ name: 'Existing' });
+      render(<CategoryManagerForm {...defaultProps} category={cat} isNew={false} initialName="Pre-filled" />);
+      expect(screen.getByDisplayValue('Existing')).toBeInTheDocument();
+      expect(screen.queryByDisplayValue('Pre-filled')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('footer', () => {
+    it('should render footer with Cancel and Save/Create buttons in create mode', () => {
+      render(<CategoryManagerForm {...defaultProps} isNew={true} />);
+      expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+    });
+
+    it('should render footer with Delete, Cancel and Save Changes in edit mode', () => {
+      const cat = makeCategory();
+      render(<CategoryManagerForm {...defaultProps} category={cat} />);
+      expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    });
+
+    it('should not render Delete button for system categories', () => {
+      const cat = makeCategory({ isSystem: true });
+      render(<CategoryManagerForm {...defaultProps} category={cat} />);
+      expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    });
+
+    it('should call onCancel when Cancel clicked', async () => {
+      const user = userEvent.setup();
+      render(<CategoryManagerForm {...defaultProps} isNew={true} />);
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(defaultProps.onCancel).toHaveBeenCalled();
+    });
+
+    it('should call onDelete when Delete clicked', async () => {
+      const user = userEvent.setup();
+      const cat = makeCategory();
+      render(<CategoryManagerForm {...defaultProps} category={cat} />);
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+      expect(defaultProps.onDelete).toHaveBeenCalled();
+    });
+
+    it('should have Cancel disabled when no changes', () => {
+      const cat = makeCategory();
+      render(<CategoryManagerForm {...defaultProps} category={cat} />);
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
     });
   });
 });

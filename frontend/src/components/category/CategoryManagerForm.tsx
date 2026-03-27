@@ -7,7 +7,11 @@ interface CategoryManagerFormProps {
   categories: Category[];
   collectionId: number;
   isNew: boolean;
+  initialName?: string;
   onSave: (updates: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void;
+  onBack: () => void;
+  onDelete: () => void;
+  onCancel: () => void;
   onPublish: (category: Category) => void;
   onUnpublish: (category: Category) => void;
   onHasChanges?: (hasChanges: boolean) => void;
@@ -21,7 +25,11 @@ function CategoryManagerForm({
   categories,
   collectionId,
   isNew,
+  initialName = '',
   onSave,
+  onBack,
+  onDelete,
+  onCancel,
   onPublish,
   onUnpublish,
   onHasChanges,
@@ -79,7 +87,7 @@ function CategoryManagerForm({
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- Synchronizing form state with selected category prop */
     if (isNew) {
-      setName('');
+      setName(initialName);
       setDescription('');
       setParentCategoryId(null);
       setItemTemplateIds([]);
@@ -92,7 +100,7 @@ function CategoryManagerForm({
       setError(null);
     }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [category, isNew]);
+  }, [category, isNew, initialName]);
 
   // Get available parent categories (exclude self and descendants to prevent circular references)
   const getAvailableParents = (): Category[] => {
@@ -143,6 +151,13 @@ function CategoryManagerForm({
   if (category && isSystem) {
     return (
       <div className="category-manager-form">
+        <button
+          type="button"
+          className="category-manager-form__back"
+          onClick={onBack}
+        >
+          ← Back to Categories
+        </button>
         <div className="category-manager-form__header">
           <h3>{category.name}</h3>
         </div>
@@ -173,6 +188,13 @@ function CategoryManagerForm({
 
   return (
     <div className="category-manager-form">
+      <button
+        type="button"
+        className="category-manager-form__back"
+        onClick={onBack}
+      >
+        ← Back to Categories
+      </button>
       {category && (
         <div className="category-manager-form__header">
           <h3>{category.name}</h3>
@@ -277,6 +299,24 @@ function CategoryManagerForm({
         )}
 
       </form>
+
+      <div className="categoryManager__footer">
+        {category && !isNew && !category.isSystem ? (
+          <button type="button" className="modal__button modal__button--danger" onClick={onDelete}>
+            Delete
+          </button>
+        ) : (
+          <div />
+        )}
+        <div className="categoryManager__footer-right">
+          <button type="button" className="modal__button modal__button--secondary" onClick={onCancel} disabled={!isNew && !hasChanges}>
+            Cancel
+          </button>
+          <button type="button" className="modal__button modal__button--primary" onClick={() => formRef?.current?.submit()}>
+            {isNew ? 'Create' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
