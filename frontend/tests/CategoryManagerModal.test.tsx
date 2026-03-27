@@ -146,8 +146,6 @@ vi.mock('../src/components/category/CategoryManagerForm', () => ({
       <div data-testid="category-manager-form">
         <button data-testid="form-save" onClick={() => (props.onSave as (u: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] })}>Save</button>
         <button data-testid="form-back" onClick={props.onBack as () => void}>Back</button>
-        <button data-testid="form-delete" onClick={props.onDelete as () => void}>Delete Form</button>
-        <button data-testid="form-cancel" onClick={props.onCancel as () => void}>Cancel Form</button>
         <button data-testid="form-publish" onClick={() => (props.onPublish as (c: Category) => void)(mockCategories[0])}>Publish</button>
         <button data-testid="form-unpublish" onClick={() => (props.onUnpublish as (c: Category) => void)(mockCategories[2])}>Unpublish</button>
       </div>
@@ -435,7 +433,7 @@ describe('CategoryManagerModal', () => {
       // Edit a category first
       await user.click(screen.getByTestId('tree-edit-1'));
       // Click the Delete button from form
-      await user.click(screen.getByTestId('form-delete'));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
 
       // Confirm in the delete confirmation modal
       const confirmButtons = screen.getAllByRole('button', { name: 'Delete' });
@@ -459,7 +457,7 @@ describe('CategoryManagerModal', () => {
 
       await user.click(screen.getByTestId('tree-edit-1'));
       // Click the Delete button from form
-      await user.click(screen.getByTestId('form-delete'));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
 
       // Click Cancel in the confirmation modal
       const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
@@ -878,7 +876,7 @@ describe('CategoryManagerModal', () => {
 
       await user.click(screen.getByTestId('tree-edit-1'));
       // Click Delete from form
-      await user.click(screen.getByTestId('form-delete'));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
       // Confirm in the delete confirmation modal
       const confirmButtons = screen.getAllByRole('button', { name: 'Delete' });
       await user.click(confirmButtons[confirmButtons.length - 1]);

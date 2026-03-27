@@ -170,6 +170,10 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     }
   }, [formHasChanges]);
 
+  const handleSaveClick = useCallback(() => {
+    formRef.current?.submit();
+  }, []);
+
   const handleDiscardConfirm = useCallback(() => {
     setShowCancelConfirm(false);
     setFormHasChanges(false);
@@ -397,8 +401,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
                 initialName={initialName}
                 onSave={handleSave}
                 onBack={handleBack}
-                onDelete={handleDeleteClick}
-                onCancel={handleCancelClick}
                 onPublish={handlePublish}
                 onUnpublish={handleUnpublish}
                 onHasChanges={setFormHasChanges}
@@ -407,6 +409,25 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
             </div>
           </div>
         </div>
+        {view === 'form' && (
+          <div className="categoryManager__footer">
+            {selectedCategory && !isNew && !selectedCategory.isSystem ? (
+              <button type="button" className="modal__button modal__button--danger" onClick={handleDeleteClick}>
+                Delete
+              </button>
+            ) : (
+              <div />
+            )}
+            <div className="categoryManager__footer-right">
+              <button type="button" className="modal__button modal__button--secondary" onClick={handleCancelClick} disabled={!isNew && !formHasChanges}>
+                Cancel
+              </button>
+              <button type="button" className="modal__button modal__button--primary" onClick={handleSaveClick}>
+                {isNew ? 'Create' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {publishTarget && (

@@ -10,8 +10,6 @@ interface CategoryManagerFormProps {
   initialName?: string;
   onSave: (updates: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void;
   onBack: () => void;
-  onDelete: () => void;
-  onCancel: () => void;
   onPublish: (category: Category) => void;
   onUnpublish: (category: Category) => void;
   onHasChanges?: (hasChanges: boolean) => void;
@@ -28,8 +26,6 @@ function CategoryManagerForm({
   initialName = '',
   onSave,
   onBack,
-  onDelete,
-  onCancel,
   onPublish,
   onUnpublish,
   onHasChanges,
@@ -299,24 +295,6 @@ function CategoryManagerForm({
         )}
 
       </form>
-
-      <div className="categoryManager__footer">
-        {category && !isNew && !category.isSystem ? (
-          <button type="button" className="modal__button modal__button--danger" onClick={onDelete}>
-            Delete
-          </button>
-        ) : (
-          <div />
-        )}
-        <div className="categoryManager__footer-right">
-          <button type="button" className="modal__button modal__button--secondary" onClick={onCancel} disabled={!isNew && !hasChanges}>
-            Cancel
-          </button>
-          <button type="button" className="modal__button modal__button--primary" onClick={() => formRef?.current?.submit()}>
-            {isNew ? 'Create' : 'Save Changes'}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

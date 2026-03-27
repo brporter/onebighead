@@ -54,8 +54,6 @@ describe('CategoryManagerForm', () => {
     isNew: false,
     onSave: vi.fn(),
     onBack: vi.fn(),
-    onDelete: vi.fn(),
-    onCancel: vi.fn(),
     initialName: '',
     onPublish: vi.fn(),
     onUnpublish: vi.fn(),
@@ -458,45 +456,5 @@ describe('CategoryManagerForm', () => {
     });
   });
 
-  describe('footer', () => {
-    it('should render footer with Cancel and Save/Create buttons in create mode', () => {
-      render(<CategoryManagerForm {...defaultProps} isNew={true} />);
-      expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
-    });
-
-    it('should render footer with Delete, Cancel and Save Changes in edit mode', () => {
-      const cat = makeCategory();
-      render(<CategoryManagerForm {...defaultProps} category={cat} />);
-      expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-    });
-
-    it('should not render Delete button for system categories', () => {
-      const cat = makeCategory({ isSystem: true });
-      render(<CategoryManagerForm {...defaultProps} category={cat} />);
-      expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
-    });
-
-    it('should call onCancel when Cancel clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerForm {...defaultProps} isNew={true} />);
-      await user.click(screen.getByRole('button', { name: 'Cancel' }));
-      expect(defaultProps.onCancel).toHaveBeenCalled();
-    });
-
-    it('should call onDelete when Delete clicked', async () => {
-      const user = userEvent.setup();
-      const cat = makeCategory();
-      render(<CategoryManagerForm {...defaultProps} category={cat} />);
-      await user.click(screen.getByRole('button', { name: 'Delete' }));
-      expect(defaultProps.onDelete).toHaveBeenCalled();
-    });
-
-    it('should have Cancel disabled when no changes', () => {
-      const cat = makeCategory();
-      render(<CategoryManagerForm {...defaultProps} category={cat} />);
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
-    });
-  });
+  // Footer (Delete/Cancel/Save) is rendered at the modal level, not inside the form
 });
