@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CategoryManagerForm from '../src/components/category/CategoryManagerForm';
 import type { Category } from '../src/utils/types';
@@ -53,10 +53,8 @@ describe('CategoryManagerForm', () => {
     collectionId: 1,
     isNew: false,
     onSave: vi.fn(),
-    onDelete: vi.fn(),
     onPublish: vi.fn(),
     onUnpublish: vi.fn(),
-    onCancel: vi.fn(),
   };
 
   beforeEach(() => {
@@ -83,12 +81,6 @@ describe('CategoryManagerForm', () => {
 
       expect(screen.getByLabelText(/Name/)).toHaveValue('');
       expect(screen.getByLabelText(/Description/)).toHaveValue('');
-    });
-
-    it('should show "Create" button text when isNew is true', () => {
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} />);
-
-      expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
     });
 
     it('should not show Delete button when isNew is true', () => {
@@ -131,18 +123,6 @@ describe('CategoryManagerForm', () => {
       expect(screen.getByText('Category 1')).toBeInTheDocument();
     });
 
-    it('should show "Save Changes" button text when editing', () => {
-      render(<CategoryManagerForm {...defaultProps} category={existingCategory} />);
-
-      expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
-    });
-
-    it('should show Delete button when editing', () => {
-      render(<CategoryManagerForm {...defaultProps} category={existingCategory} />);
-
-      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-    });
-
     it('should exclude self and descendants from parent dropdown', () => {
       render(<CategoryManagerForm {...defaultProps} category={existingCategory} />);
 
@@ -164,55 +144,61 @@ describe('CategoryManagerForm', () => {
   });
 
   describe('validation', () => {
-    it('should disable Save button when name is empty', () => {
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} />);
-
-      expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
-    });
-
-    it('should enable Save button when name is provided', async () => {
+    it('should show error for reserved name "Unassigned Items" via formRef submit', async () => {
       const user = userEvent.setup();
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} />);
-
-      await user.type(screen.getByLabelText(/Name/), 'New Category');
-
-      expect(screen.getByRole('button', { name: 'Create' })).toBeEnabled();
-    });
-
-    it('should show error for reserved name "Unassigned Items"', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} />);
+      const formRef = { current: null as { submit: () => void } | null };
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} formRef={formRef} />);
 
       await user.type(screen.getByLabelText(/Name/), 'Unassigned Items');
-      await user.click(screen.getByRole('button', { name: 'Create' }));
+      act(() => {
+        formRef.current?.submit();
+      });
 
       expect(screen.getByRole('alert')).toHaveTextContent('"Unassigned Items" is a reserved name and cannot be used');
       expect(defaultProps.onSave).not.toHaveBeenCalled();
     });
 
-    it('should validate reserved name case-insensitively', async () => {
+    it('should validate reserved name case-insensitively via formRef submit', async () => {
       const user = userEvent.setup();
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} />);
+      const formRef = { current: null as { submit: () => void } | null };
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} formRef={formRef} />);
 
       await user.type(screen.getByLabelText(/Name/), 'UNASSIGNED ITEMS');
-      await user.click(screen.getByRole('button', { name: 'Create' }));
+      act(() => {
+        formRef.current?.submit();
+      });
 
       expect(screen.getByRole('alert')).toHaveTextContent('reserved name');
       expect(defaultProps.onSave).not.toHaveBeenCalled();
     });
+
+    it('should show error for empty name via formRef submit', () => {
+      const formRef = { current: null as { submit: () => void } | null };
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} formRef={formRef} />);
+
+      act(() => {
+        formRef.current?.submit();
+      });
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Name is required');
+      expect(defaultProps.onSave).not.toHaveBeenCalled();
+    });
   });
 
-  describe('save', () => {
-    it('should call onSave with updated fields when Save is clicked', async () => {
+  describe('save via formRef', () => {
+    it('should call onSave with updated fields when formRef.submit() is called', async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
       const existingCategory = makeCategory({ categoryId: 1, name: 'Category 1', description: 'Description 1' });
+      const formRef = { current: null as { submit: () => void } | null };
 
-      render(<CategoryManagerForm {...defaultProps} category={existingCategory} onSave={onSave} />);
+      render(<CategoryManagerForm {...defaultProps} category={existingCategory} onSave={onSave} formRef={formRef} />);
 
       await user.clear(screen.getByLabelText(/Name/));
       await user.type(screen.getByLabelText(/Name/), 'Updated Name');
-      await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+      act(() => {
+        formRef.current?.submit();
+      });
 
       expect(onSave).toHaveBeenCalledWith({
         name: 'Updated Name',
@@ -225,12 +211,15 @@ describe('CategoryManagerForm', () => {
     it('should call onSave with selected parent category', async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
+      const formRef = { current: null as { submit: () => void } | null };
 
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} />);
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} formRef={formRef} />);
 
       await user.type(screen.getByLabelText(/Name/), 'New Category');
       await user.selectOptions(screen.getByLabelText(/Parent Category/), '2');
-      await user.click(screen.getByRole('button', { name: 'Create' }));
+      act(() => {
+        formRef.current?.submit();
+      });
 
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({ parentCategoryId: 2 })
@@ -240,12 +229,15 @@ describe('CategoryManagerForm', () => {
     it('should call onSave with selected template ids', async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
+      const formRef = { current: null as { submit: () => void } | null };
 
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} />);
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} formRef={formRef} />);
 
       await user.type(screen.getByLabelText(/Name/), 'New Category');
       await user.click(screen.getByText('Select Templates'));
-      await user.click(screen.getByRole('button', { name: 'Create' }));
+      act(() => {
+        formRef.current?.submit();
+      });
 
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({ itemTemplateIds: [1, 2] })
@@ -255,12 +247,15 @@ describe('CategoryManagerForm', () => {
     it('should trim name and description before saving', async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
+      const formRef = { current: null as { submit: () => void } | null };
 
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} />);
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} formRef={formRef} />);
 
       await user.type(screen.getByLabelText(/Name/), '  New Category  ');
       await user.type(screen.getByLabelText(/Description/), '  Some description  ');
-      await user.click(screen.getByRole('button', { name: 'Create' }));
+      act(() => {
+        formRef.current?.submit();
+      });
 
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -271,42 +266,33 @@ describe('CategoryManagerForm', () => {
     });
   });
 
-  describe('delete', () => {
-    it('should call onDelete when Delete is clicked', async () => {
+  describe('onHasChanges callback', () => {
+    it('calls onHasChanges when form fields change', async () => {
       const user = userEvent.setup();
-      const onDelete = vi.fn();
-      const existingCategory = makeCategory({ categoryId: 5, name: 'To Delete' });
+      const onHasChanges = vi.fn();
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onHasChanges={onHasChanges} />);
 
-      render(<CategoryManagerForm {...defaultProps} category={existingCategory} onDelete={onDelete} />);
+      // Initially no changes
+      expect(onHasChanges).toHaveBeenCalledWith(false);
 
-      await user.click(screen.getByRole('button', { name: 'Delete' }));
+      await user.type(screen.getByLabelText(/Name/), 'Something');
 
-      expect(onDelete).toHaveBeenCalledWith(5);
-    });
-  });
-
-  describe('cancel', () => {
-    it('should call onCancel when Cancel button is clicked', async () => {
-      const user = userEvent.setup();
-      const onCancel = vi.fn();
-      const existingCategory = makeCategory();
-
-      render(<CategoryManagerForm {...defaultProps} category={existingCategory} onCancel={onCancel} />);
-
-      await user.click(screen.getByRole('button', { name: 'Cancel' }));
-
-      expect(onCancel).toHaveBeenCalled();
+      expect(onHasChanges).toHaveBeenCalledWith(true);
     });
 
-    it('should call onCancel in create mode', async () => {
+    it('calls onHasChanges(true) when editing an existing category field', async () => {
       const user = userEvent.setup();
-      const onCancel = vi.fn();
+      const onHasChanges = vi.fn();
+      const existingCategory = makeCategory({ categoryId: 1, name: 'Category 1', description: 'Description 1' });
+      render(<CategoryManagerForm {...defaultProps} category={existingCategory} onHasChanges={onHasChanges} />);
 
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onCancel={onCancel} />);
+      // Initially no changes
+      expect(onHasChanges).toHaveBeenCalledWith(false);
 
-      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      await user.clear(screen.getByLabelText(/Name/));
+      await user.type(screen.getByLabelText(/Name/), 'Changed Name');
 
-      expect(onCancel).toHaveBeenCalled();
+      expect(onHasChanges).toHaveBeenCalledWith(true);
     });
   });
 

@@ -132,13 +132,18 @@ vi.mock('../src/components/category/CategoryManagerTree', () => ({
 vi.mock('../src/components/category/CategoryManagerForm', () => ({
   default: (props: Record<string, unknown>) => {
     lastFormProps = props;
+    // Wire up the formRef so the modal can call submit()
+    const formRef = props.formRef as React.RefObject<{ submit: () => void } | null> | undefined;
+    if (formRef && 'current' in formRef) {
+      (formRef as React.MutableRefObject<{ submit: () => void } | null>).current = {
+        submit: () => (props.onSave as (u: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] }),
+      };
+    }
     return (
       <div data-testid="category-manager-form">
         <button data-testid="form-save" onClick={() => (props.onSave as (u: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] })}>Save</button>
-        <button data-testid="form-delete" onClick={() => (props.onDelete as (id: number) => void)(1)}>Delete</button>
         <button data-testid="form-publish" onClick={() => (props.onPublish as (c: Category) => void)(mockCategories[0])}>Publish</button>
         <button data-testid="form-unpublish" onClick={() => (props.onUnpublish as (c: Category) => void)(mockCategories[2])}>Unpublish</button>
-        <button data-testid="form-cancel" onClick={props.onCancel as () => void}>Cancel</button>
       </div>
     );
   },
@@ -325,13 +330,18 @@ describe('CategoryManagerModal', () => {
   describe('deleting a category', () => {
     it('should call deleteCategory and clear selection', async () => {
       const user = userEvent.setup();
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
       render(<CategoryManagerModal {...defaultProps} />);
 
       // Select a category first
       await user.click(screen.getByTestId('tree-select-1'));
-      // Delete it
-      await user.click(screen.getByTestId('form-delete'));
+      // Click the Delete button in the modal footer
+      const deleteButton = screen.getByRole('button', { name: 'Delete' });
+      await user.click(deleteButton);
+
+      // Confirm in the delete confirmation modal
+      const confirmButtons = screen.getAllByRole('button', { name: 'Delete' });
+      // The confirmation modal's Delete button (last one)
+      await user.click(confirmButtons[confirmButtons.length - 1]);
 
       await waitFor(() => {
         expect(mockDeleteCategory).toHaveBeenCalledWith(1);
@@ -343,11 +353,16 @@ describe('CategoryManagerModal', () => {
 
     it('should not call deleteCategory when confirm is cancelled', async () => {
       const user = userEvent.setup();
-      vi.spyOn(window, 'confirm').mockReturnValue(false);
       render(<CategoryManagerModal {...defaultProps} />);
 
       await user.click(screen.getByTestId('tree-select-1'));
-      await user.click(screen.getByTestId('form-delete'));
+      // Click the Delete button in the modal footer
+      const deleteButton = screen.getByRole('button', { name: 'Delete' });
+      await user.click(deleteButton);
+
+      // Click Cancel in the confirmation modal
+      const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
+      await user.click(cancelButtons[cancelButtons.length - 1]);
 
       expect(mockDeleteCategory).not.toHaveBeenCalled();
     });
@@ -555,15 +570,19 @@ describe('CategoryManagerModal', () => {
       expect(onClose).toHaveBeenCalled();
     });
 
-    it('should call onClose when form cancel is clicked', async () => {
+    it('should clear selection when footer Cancel is clicked with no unsaved changes', async () => {
       const user = userEvent.setup();
       const onClose = vi.fn();
       render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
 
-      await user.click(screen.getByTestId('form-cancel'));
+      // Select a category to make the footer visible
+      await user.click(screen.getByTestId('tree-select-1'));
 
-      // Cancel in form should clear selection, not close modal
-      // Let's check the behavior: cancel resets to no selection
+      // Click Cancel in the modal footer
+      const cancelButton = screen.getByRole('button', { name: 'Cancel' });
+      await user.click(cancelButton);
+
+      // Cancel should clear selection, not close modal
       expect(lastFormProps.isNew).toBe(false);
       expect(lastFormProps.category).toBeNull();
     });
@@ -755,13 +774,17 @@ describe('CategoryManagerModal', () => {
 
     it('should handle deleteCategory failure gracefully', async () => {
       const user = userEvent.setup();
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
       mockDeleteCategory.mockRejectedValue(new Error('Delete failed'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(<CategoryManagerModal {...defaultProps} />);
 
       await user.click(screen.getByTestId('tree-select-1'));
-      await user.click(screen.getByTestId('form-delete'));
+      // Click Delete in footer
+      const deleteButton = screen.getByRole('button', { name: 'Delete' });
+      await user.click(deleteButton);
+      // Confirm in the delete confirmation modal
+      const confirmButtons = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(confirmButtons[confirmButtons.length - 1]);
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalled();
