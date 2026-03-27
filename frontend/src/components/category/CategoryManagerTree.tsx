@@ -1,7 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   DndContext,
-  closestCenter,
   DragOverlay,
   DragStartEvent,
   DragEndEvent,
@@ -11,6 +10,8 @@ import {
   useSensor,
   useSensors,
   useDroppable,
+  pointerWithin,
+  MeasuringStrategy,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -27,9 +28,10 @@ import {
   flattenWithIndent,
   getDescendantIds,
   computeReorderUpdates,
-  determineReparentTarget,
 } from './categoryManagerTreeUtils';
 import type { FlatRow } from './categoryManagerTreeUtils';
+
+export type DropIntent = 'reparent' | 'reorder-before' | 'reorder-after' | null;
 
 export interface CategoryManagerTreeProps {
   categories: Category[];
@@ -56,11 +58,11 @@ interface SortableRowProps {
   row: FlatRow;
   isSelected: boolean;
   onSelect: (categoryId: number) => void;
-  isOverTarget: boolean;
+  dropIntent: DropIntent;
   isDisabledTarget: boolean;
 }
 
-function SortableRow({ row, isSelected, onSelect, isOverTarget, isDisabledTarget }: SortableRowProps) {
+function SortableRow({ row, isSelected, onSelect, dropIntent, isDisabledTarget }: SortableRowProps) {
   const {
     attributes,
     listeners,
@@ -84,7 +86,9 @@ function SortableRow({ row, isSelected, onSelect, isOverTarget, isDisabledTarget
   let className = 'catTree__row';
   if (isSelected) className += ' catTree__row--active';
   if (isDragging) className += ' catTree__row--dragging';
-  if (isOverTarget && !isDisabledTarget) className += ' catTree__row--dropTarget';
+  if (!isDisabledTarget && dropIntent === 'reparent') className += ' catTree__row--dropTarget';
+  if (!isDisabledTarget && dropIntent === 'reorder-before') className += ' catTree__row--insertBefore';
+  if (!isDisabledTarget && dropIntent === 'reorder-after') className += ' catTree__row--insertAfter';
 
   return (
     <div
@@ -118,6 +122,18 @@ function SortableRow({ row, isSelected, onSelect, isOverTarget, isDisabledTarget
   );
 }
 
+/**
+ * Determine drop intent based on pointer position relative to the over element.
+ * Center 40% = reparent, top 30% = insert before, bottom 30% = insert after.
+ */
+function getDropIntent(overRect: DOMRect, pointerY: number): DropIntent {
+  const relativeY = pointerY - overRect.top;
+  const ratio = relativeY / overRect.height;
+  if (ratio < 0.3) return 'reorder-before';
+  if (ratio > 0.7) return 'reorder-after';
+  return 'reparent';
+}
+
 function CategoryManagerTree({
   categories,
   selectedCategoryId,
@@ -127,7 +143,9 @@ function CategoryManagerTree({
   onReparent,
 }: CategoryManagerTreeProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [overParentId, setOverParentId] = useState<number | null | undefined>(undefined);
+  const [overTargetId, setOverTargetId] = useState<number | null>(null);
+  const [dropIntent, setDropIntent] = useState<DropIntent>(null);
+  const pointerYRef = useRef<number>(0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -157,50 +175,59 @@ function CategoryManagerTree({
     return descendants;
   }, [activeId, categories]);
 
+  // Track pointer position for drop intent detection
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    pointerYRef.current = e.clientY;
+  }, []);
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(String(event.active.id));
   }, []);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
-    if (!over) {
-      setOverParentId(undefined);
+    if (!over || active.id === over.id) {
+      setOverTargetId(null);
+      setDropIntent(null);
       return;
     }
 
     if (over.id === 'root-drop-zone') {
-      setOverParentId(null);
+      setOverTargetId(null);
+      setDropIntent(null);
       return;
     }
 
     const overId = Number(over.id);
-    const activeItem = categories.find(c => c.categoryId === Number(active.id));
-    const overItem = categories.find(c => c.categoryId === overId);
-
-    if (!activeItem || !overItem) {
-      setOverParentId(undefined);
-      return;
-    }
-
-    // If same parent, this is a reorder, not a reparent
-    if (activeItem.parentCategoryId === overItem.parentCategoryId) {
-      setOverParentId(undefined);
-      return;
-    }
 
     // Prevent circular: can't drop onto self or descendant
     if (disabledTargetIds.has(overId)) {
-      setOverParentId(undefined);
+      setOverTargetId(null);
+      setDropIntent(null);
       return;
     }
 
-    setOverParentId(overId);
-  }, [categories, disabledTargetIds]);
+    // Determine intent from pointer position using dnd-kit's rect
+    const overRect = over.rect;
+    let intent: DropIntent = 'reparent';
+    if (overRect) {
+      intent = getDropIntent(
+        { top: overRect.top, height: overRect.height } as DOMRect,
+        pointerYRef.current
+      );
+    }
+
+    setOverTargetId(overId);
+    setDropIntent(intent);
+  }, [disabledTargetIds]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
+    const currentIntent = dropIntent;
+
     setActiveId(null);
-    setOverParentId(undefined);
+    setOverTargetId(null);
+    setDropIntent(null);
 
     if (!over) return;
 
@@ -222,25 +249,29 @@ function CategoryManagerTree({
     // Prevent circular reference
     if (disabledTargetIds.has(overId)) return;
 
-    // Reparent: items have different parents
-    if (activeItem.parentCategoryId !== overItem.parentCategoryId) {
-      const target = determineReparentTarget(categories, activeItem.categoryId, overId);
-      if (target !== undefined) {
-        onReparent(activeItem.categoryId, target);
+    if (currentIntent === 'reparent') {
+      // Drop onto center = make child of the over item
+      onReparent(activeItem.categoryId, overId);
+    } else {
+      // Drop on edge = positional move
+      // If same parent, it's a simple reorder
+      if (activeItem.parentCategoryId === overItem.parentCategoryId) {
+        const updates = computeReorderUpdates(categories, activeItem.categoryId, overId);
+        if (updates) {
+          onReorder(updates);
+        }
+      } else {
+        // Different parent: reparent to the over item's parent, then insert at the over item's position
+        const newParentId = overItem.parentCategoryId;
+        onReparent(activeItem.categoryId, newParentId);
       }
-      return;
     }
-
-    // Reorder: same parent, compute new sort orders
-    const updates = computeReorderUpdates(categories, activeItem.categoryId, overId);
-    if (updates) {
-      onReorder(updates);
-    }
-  }, [categories, disabledTargetIds, onReorder, onReparent]);
+  }, [categories, disabledTargetIds, dropIntent, onReorder, onReparent]);
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
-    setOverParentId(undefined);
+    setOverTargetId(null);
+    setDropIntent(null);
   }, []);
 
   const activeRow = activeId
@@ -248,7 +279,7 @@ function CategoryManagerTree({
     : null;
 
   return (
-    <div className="catTree">
+    <div className="catTree" onPointerMove={handlePointerMove}>
       <div className="catTree__toolbar">
         <span className="catTree__title">Categories</span>
         <div className="catTree__toolbarActions">
@@ -265,27 +296,32 @@ function CategoryManagerTree({
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       >
         <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
           <div className="catTree__list">
             {flatRows.length === 0 && (
               <p className="catTree__empty">No categories yet</p>
             )}
-            {flatRows.map((row) => (
-              <SortableRow
-                key={row.category.categoryId}
-                row={row}
-                isSelected={row.category.categoryId === selectedCategoryId}
-                onSelect={onSelect}
-                isOverTarget={overParentId === row.category.categoryId}
-                isDisabledTarget={disabledTargetIds.has(row.category.categoryId)}
-              />
-            ))}
+            {flatRows.map((row) => {
+              const rowId = row.category.categoryId;
+              const rowDropIntent = overTargetId === rowId ? dropIntent : null;
+              return (
+                <SortableRow
+                  key={rowId}
+                  row={row}
+                  isSelected={rowId === selectedCategoryId}
+                  onSelect={onSelect}
+                  dropIntent={rowDropIntent}
+                  isDisabledTarget={disabledTargetIds.has(rowId)}
+                />
+              );
+            })}
             <RootDropZone />
           </div>
         </SortableContext>

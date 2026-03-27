@@ -20,6 +20,8 @@ vi.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: { children: React.ReactNode }) => <div data-testid="dnd-context">{children}</div>,
   DragOverlay: ({ children }: { children: React.ReactNode }) => <div data-testid="drag-overlay">{children}</div>,
   closestCenter: vi.fn(),
+  pointerWithin: vi.fn(),
+  MeasuringStrategy: { Always: 'always' },
   useSensor: vi.fn(() => ({})),
   useSensors: vi.fn(() => []),
   PointerSensor: vi.fn(),

@@ -132,6 +132,16 @@
   background: var(--color-accent-subtle);
 }
 
+.catTree__row--insertBefore {
+  border-top: 2px solid var(--color-accent);
+  border-radius: 0;
+}
+
+.catTree__row--insertAfter {
+  border-bottom: 2px solid var(--color-accent);
+  border-radius: 0;
+}
+
 .catTree__row--overlay {
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
