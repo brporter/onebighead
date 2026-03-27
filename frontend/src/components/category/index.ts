@@ -6,3 +6,4 @@ export { default as CategoryManagerTree } from './CategoryManagerTree';
 export { default as CategoryNav } from './CategoryNav';
 export { default as SortConfirmModal } from './SortConfirmModal';
 export { default as SubcategoryDropdown } from './SubcategoryDropdown';
+export { default as QuickCreatePopover } from './QuickCreatePopover';
