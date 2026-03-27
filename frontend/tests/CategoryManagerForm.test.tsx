@@ -62,10 +62,12 @@ describe('CategoryManagerForm', () => {
   });
 
   describe('empty state', () => {
-    it('should render empty state when no category is selected and not isNew', () => {
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={false} />);
+    it('should render empty div when no category is selected and not isNew', () => {
+      const { container } = render(<CategoryManagerForm {...defaultProps} category={null} isNew={false} />);
 
-      expect(screen.getByText('Select a category to edit, or click + to add a new one.')).toBeInTheDocument();
+      const formDiv = container.querySelector('.category-manager-form');
+      expect(formDiv).toBeInTheDocument();
+      expect(formDiv!.children.length).toBe(0);
     });
 
     it('should not render form fields in empty state', () => {

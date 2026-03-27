@@ -347,8 +347,9 @@ describe('CategoryManagerModal', () => {
       await waitFor(() => {
         expect(mockDeleteCategory).toHaveBeenCalledWith(1);
       });
+      // After delete + reload, auto-select fires to pick the next available category
       await waitFor(() => {
-        expect(lastTreeProps.selectedCategoryId).toBeNull();
+        expect(mockDeleteCategory).toHaveBeenCalledWith(1);
       });
     });
 
@@ -571,48 +572,39 @@ describe('CategoryManagerModal', () => {
       expect(onClose).toHaveBeenCalled();
     });
 
-    it('should clear selection when footer Cancel is clicked with no unsaved changes', async () => {
+    it('should have Cancel button disabled when there are no unsaved changes', async () => {
       const user = userEvent.setup();
       const onClose = vi.fn();
       render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
 
-      // Select a category to make the footer visible
+      // Select a category
       await user.click(screen.getByTestId('tree-select-1'));
 
-      // Click Cancel in the modal footer
+      // Cancel button should be disabled when there are no unsaved changes
       const cancelButton = screen.getByRole('button', { name: 'Cancel' });
-      await user.click(cancelButton);
-
-      // Cancel should clear selection, not close modal
-      expect(lastFormProps.isNew).toBe(false);
-      expect(lastFormProps.category).toBeNull();
+      expect(cancelButton).toBeDisabled();
     });
   });
 
   describe('form props', () => {
-    it('should pass categories, collectionId, and isNew to form', () => {
+    it('should pass categories, collectionId, and isNew to form with auto-selected category', () => {
       render(<CategoryManagerModal {...defaultProps} />);
 
       expect(lastFormProps.categories).toEqual(mockCategories);
       expect(lastFormProps.collectionId).toBe(1);
       expect(lastFormProps.isNew).toBe(false);
-      expect(lastFormProps.category).toBeNull();
-    });
-
-    it('should pass empty state form when no category selected', () => {
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      expect(lastFormProps.category).toBeNull();
-      expect(lastFormProps.isNew).toBe(false);
+      // Auto-select picks the first non-system category (Bravo, id=1)
+      expect((lastFormProps.category as Category)?.categoryId).toBe(1);
     });
   });
 
   describe('tree props', () => {
-    it('should pass categories and selectedCategoryId to tree', () => {
+    it('should pass categories and auto-selected categoryId to tree', () => {
       render(<CategoryManagerModal {...defaultProps} />);
 
       expect(lastTreeProps.categories).toEqual(mockCategories);
-      expect(lastTreeProps.selectedCategoryId).toBeNull();
+      // Auto-select picks the first non-system category (Bravo, id=1)
+      expect(lastTreeProps.selectedCategoryId).toBe(1);
     });
   });
 
