@@ -143,6 +143,7 @@ function CategoryManagerTree({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overTargetId, setOverTargetId] = useState<number | null>(null);
   const [dropIntent, setDropIntent] = useState<DropIntent>(null);
+  const dropIntentRef = useRef<DropIntent>(null);
   const pointerYRef = useRef<number>(0);
 
   const sensors = useSensors(
@@ -196,12 +197,14 @@ function CategoryManagerTree({
     if (!over || active.id === over.id) {
       setOverTargetId(null);
       setDropIntent(null);
+      dropIntentRef.current = null;
       return;
     }
 
     if (over.id === 'root-drop-zone') {
       setOverTargetId(null);
       setDropIntent(null);
+      dropIntentRef.current = null;
       return;
     }
 
@@ -211,6 +214,7 @@ function CategoryManagerTree({
     if (disabledTargetIds.has(overId)) {
       setOverTargetId(null);
       setDropIntent(null);
+      dropIntentRef.current = null;
       return;
     }
 
@@ -226,15 +230,17 @@ function CategoryManagerTree({
 
     setOverTargetId(overId);
     setDropIntent(intent);
+    dropIntentRef.current = intent;
   }, [disabledTargetIds]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
-    const currentIntent = dropIntent;
+    const currentIntent = dropIntentRef.current;
 
     setActiveId(null);
     setOverTargetId(null);
     setDropIntent(null);
+    dropIntentRef.current = null;
 
     if (!over) return;
 
@@ -273,12 +279,13 @@ function CategoryManagerTree({
         onReparent(activeItem.categoryId, newParentId);
       }
     }
-  }, [categories, disabledTargetIds, dropIntent, onReorder, onReparent]);
+  }, [categories, disabledTargetIds, onReorder, onReparent]);
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
     setOverTargetId(null);
     setDropIntent(null);
+    dropIntentRef.current = null;
   }, []);
 
   const activeRow = activeId
