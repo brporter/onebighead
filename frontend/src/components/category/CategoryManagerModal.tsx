@@ -238,7 +238,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     }
   }, [reorderCategories, collectionId, loadCategoriesForCollection]);
 
-  const handleReparent = useCallback(async (categoryId: number, newParentId: number | null) => {
+  const handleReparent = useCallback(async (categoryId: number, newParentId: number | null, insertAtCategoryId?: number, insertAfter?: boolean) => {
     try {
       const cat = categories.find(c => c.categoryId === categoryId);
       if (!cat) return;
@@ -251,11 +251,35 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
       });
 
       // Compute new sort orders for the target sibling group
-      const siblings = categories.filter(c => c.parentCategoryId === newParentId && c.categoryId !== categoryId && !c.isSystem);
-      const sortUpdates = [
-        ...siblings.map((s, i) => ({ categoryId: s.categoryId, sortOrder: i })),
-        { categoryId, sortOrder: siblings.length },
-      ];
+      const siblings = categories
+        .filter(c => c.parentCategoryId === newParentId && c.categoryId !== categoryId && !c.isSystem)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+
+      let sortUpdates: { categoryId: number; sortOrder: number }[];
+
+      if (insertAtCategoryId != null) {
+        // Insert at a specific position relative to a sibling
+        const targetIndex = siblings.findIndex(c => c.categoryId === insertAtCategoryId);
+        if (targetIndex !== -1) {
+          const insertIndex = insertAfter ? targetIndex + 1 : targetIndex;
+          const reordered = [...siblings];
+          reordered.splice(insertIndex, 0, cat);
+          sortUpdates = reordered.map((c, i) => ({ categoryId: c.categoryId, sortOrder: i }));
+        } else {
+          // Target not found — append to end
+          sortUpdates = [
+            ...siblings.map((s, i) => ({ categoryId: s.categoryId, sortOrder: i })),
+            { categoryId, sortOrder: siblings.length },
+          ];
+        }
+      } else {
+        // No position specified — append to end
+        sortUpdates = [
+          ...siblings.map((s, i) => ({ categoryId: s.categoryId, sortOrder: i })),
+          { categoryId, sortOrder: siblings.length },
+        ];
+      }
+
       await reorderCategories(sortUpdates);
       await loadCategoriesForCollection(collectionId);
     } catch (err) {

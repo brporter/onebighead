@@ -35,7 +35,7 @@ export interface CategoryManagerTreeProps {
   onEditCategory: (categoryId: number) => void;
   onAdd: () => void;
   onReorder: (updates: { categoryId: number; sortOrder: number }[]) => void;
-  onReparent: (categoryId: number, newParentId: number | null) => void;
+  onReparent: (categoryId: number, newParentId: number | null, insertAtCategoryId?: number, insertAfter?: boolean) => void;
   toolbarSlot?: React.ReactNode;
 }
 
@@ -279,8 +279,8 @@ function CategoryManagerTree({
       const targetParentId = overItem.parentCategoryId;
 
       if (activeItem.parentCategoryId !== targetParentId) {
-        // Different parent — reparent to the target's parent first, then reorder
-        onReparent(activeItem.categoryId, targetParentId);
+        // Different parent — reparent to the target's parent and insert at the target's position
+        onReparent(activeItem.categoryId, targetParentId, targetId, finalIntent === 'reorder-after');
       } else {
         // Same parent — simple reorder
         const updates = computeReorderUpdates(categories, activeItem.categoryId, targetId, finalIntent === 'reorder-after');
