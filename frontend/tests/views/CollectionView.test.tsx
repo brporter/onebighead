@@ -11,6 +11,18 @@ vi.mock('../../src/contexts/useData', () => ({
   useData: vi.fn(),
 }));
 
+const mockRequestPublish = vi.fn();
+const mockRequestUnpublish = vi.fn();
+
+vi.mock('../../src/contexts/usePublish', () => ({
+  usePublish: () => ({
+    requestPublish: mockRequestPublish,
+    requestUnpublish: mockRequestUnpublish,
+    pendingIntent: null,
+    clearIntent: vi.fn(),
+  }),
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -36,18 +48,11 @@ describe('CollectionView', () => {
     { collectionId: 2, workspaceId: 1, name: 'Collection Two', description: 'Second collection', heroImageUrl: null, slug: 'two', visibility: Visibility.Private, effectiveIsPublic: false },
   ];
 
-  const mockPublishCollection = vi.fn().mockResolvedValue({ published: { type: 'Collection', id: 1, name: 'Collection One' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false });
-  const mockUnpublishCollection = vi.fn().mockResolvedValue({ unpublished: { type: 'Collection', id: 1, name: 'Collection One' }, affectedPublicItems: 0, affectedPublicCategories: 0 });
-  const mockGetUnpublishCollectionPreview = vi.fn().mockResolvedValue({ affectedPublicItems: 3, affectedPublicCategories: 1 });
-
   const mockDataContext = {
     collections: mockCollections,
     collectionsLoading: false,
     collectionsError: null,
     loadCollections: vi.fn(),
-    publishCollection: mockPublishCollection,
-    unpublishCollection: mockUnpublishCollection,
-    getUnpublishCollectionPreview: mockGetUnpublishCollectionPreview,
   };
 
   beforeEach(() => {
@@ -135,17 +140,17 @@ describe('CollectionView', () => {
       expect(screen.getAllByText('Publish').length).toBe(1);
     });
 
-    it('should show PublishConfirmModal when clicking Publish button', async () => {
+    it('should call requestPublish when clicking Publish button', async () => {
       const user = userEvent.setup();
       renderWithRouter();
 
       const publishButtons = screen.getAllByText('Publish');
       await user.click(publishButtons[0]);
 
-      expect(screen.getByText(/Publish collection only/)).toBeInTheDocument();
+      expect(mockRequestPublish).toHaveBeenCalledWith([{ type: 'collection', id: 1 }]);
     });
 
-    it('should show UnpublishConfirmModal when clicking PublicBadge', async () => {
+    it('should call requestUnpublish when clicking PublicBadge', async () => {
       const publicCollections: Collection[] = [
         { ...mockCollections[0], effectiveIsPublic: true },
       ];
@@ -159,101 +164,7 @@ describe('CollectionView', () => {
 
       await user.click(screen.getByText('Public'));
 
-      await waitFor(() => {
-        expect(mockGetUnpublishCollectionPreview).toHaveBeenCalledWith(1);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText(/Make Private/)).toBeInTheDocument();
-      });
-    });
-
-    it('should call publishCollection when confirming publish', async () => {
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      const publishButtons = screen.getAllByText('Publish');
-      await user.click(publishButtons[0]);
-
-      await user.click(screen.getByText(/Publish collection and all/));
-
-      expect(mockPublishCollection).toHaveBeenCalledWith(1, true);
-    });
-
-    it('should call unpublishCollection when confirming unpublish', async () => {
-      const publicCollections: Collection[] = [
-        { ...mockCollections[0], effectiveIsPublic: true },
-      ];
-      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
-        ...mockDataContext,
-        collections: publicCollections,
-      });
-
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      await user.click(screen.getByText('Public'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Make Private/)).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByText('Make Private'));
-
-      expect(mockUnpublishCollection).toHaveBeenCalledWith(1);
-    });
-
-    it('should show SlugSetupModal when publish requires slug setup', async () => {
-      mockPublishCollection.mockResolvedValueOnce({ published: { type: 'Collection', id: 1, name: 'Collection One' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
-
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      const publishButtons = screen.getAllByText('Publish');
-      await user.click(publishButtons[0]);
-
-      await user.click(screen.getByText(/Publish collection and all/));
-
-      await waitFor(() => {
-        expect(screen.getByText('Set Up Your Public Gallery')).toBeInTheDocument();
-      });
-    });
-
-    it('should cancel publish modal', async () => {
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      const publishButtons = screen.getAllByText('Publish');
-      await user.click(publishButtons[0]);
-
-      expect(screen.getByText(/Publish collection only/)).toBeInTheDocument();
-
-      await user.click(screen.getByText('Cancel'));
-
-      expect(screen.queryByText(/Publish collection only/)).not.toBeInTheDocument();
-    });
-
-    it('should cancel unpublish modal', async () => {
-      const publicCollections: Collection[] = [
-        { ...mockCollections[0], effectiveIsPublic: true },
-      ];
-      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
-        ...mockDataContext,
-        collections: publicCollections,
-      });
-
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      await user.click(screen.getByText('Public'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Make Private/)).toBeInTheDocument();
-      });
-
-      await user.click(screen.getAllByText('Cancel')[0]);
-
-      expect(screen.queryByText(/Make Private/)).not.toBeInTheDocument();
+      expect(mockRequestUnpublish).toHaveBeenCalledWith([{ type: 'collection', id: 1 }]);
     });
   });
 

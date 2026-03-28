@@ -4,9 +4,7 @@ import ItemCard from './ItemCard';
 import { getAccentColor } from '../../utils/accentColors';
 import { VisibilityFilter, BulkActionBar } from '../common';
 import type { VisibilityFilterValue } from '../common';
-import { useData } from '../../contexts/useData';
-import { useToast } from '../../contexts/useToast';
-import { buildBulkPublishToastMessage, buildBulkPublishToastDetails, buildBulkUnpublishToastMessage } from '../../utils/publishToastUtils';
+import { usePublish } from '../../contexts/usePublish';
 
 const PAGE_SIZE = 25;
 
@@ -21,8 +19,7 @@ interface ItemListProps {
 }
 
 function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageIndex, onPageChange }: ItemListProps) {
-  const { bulkPublishItems, bulkUnpublishItems } = useData();
-  const { showToast } = useToast();
+  const { requestPublish, requestUnpublish } = usePublish();
   const [filterValue, setFilterValue] = useState<VisibilityFilterValue>('all');
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
@@ -72,17 +69,15 @@ function ItemList({ items, categories, selectedId, onSelect, onAddItem, pageInde
     setSelectedItems(new Set());
   }, []);
 
-  async function handleBulkPublish() {
-    const ids = Array.from(selectedItems);
-    const result = await bulkPublishItems(ids);
-    showToast(buildBulkPublishToastMessage(result), buildBulkPublishToastDetails(result));
+  function handleBulkPublish() {
+    const entities = Array.from(selectedItems).map(id => ({ type: 'item' as const, id }));
+    requestPublish(entities);
     handleCancelSelection();
   }
 
-  async function handleBulkUnpublish() {
-    const ids = Array.from(selectedItems);
-    const result = await bulkUnpublishItems(ids);
-    showToast(buildBulkUnpublishToastMessage(result));
+  function handleBulkUnpublish() {
+    const entities = Array.from(selectedItems).map(id => ({ type: 'item' as const, id }));
+    requestUnpublish(entities);
     handleCancelSelection();
   }
 

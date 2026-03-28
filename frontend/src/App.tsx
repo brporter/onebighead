@@ -1,25 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import './styles/App.css';
 import { useData } from './contexts/useData';
 import { useUser } from './contexts/useUser';
+import { usePublish } from './contexts/usePublish';
+import { PublishProvider } from './contexts/PublishContext';
+import { PublishResolver } from './components/common/PublishResolver';
 import UserButton from './components/user/UserButton';
 import { SupportModal } from './components/support/SupportModal';
 import { UnreadSupportBanner } from './components/support/UnreadSupportBanner';
 import { SiteHeader, SiteFooter } from './components/common';
 
-function App() {
+function AppContent() {
   const {
     collections,
     collectionsLoading,
     loadCollections,
+    loadCategoriesForCollection,
     currentCollection,
   } = useData();
 
   const { user } = useUser();
+  const { pendingIntent, clearIntent } = usePublish();
   const navigate = useNavigate();
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const location = useLocation();
+
+  const handlePublishComplete = useCallback(() => {
+    loadCollections();
+    if (currentCollection) {
+      loadCategoriesForCollection(currentCollection.collectionId);
+    }
+  }, [loadCollections, loadCategoriesForCollection, currentCollection]);
 
   // Load collections on mount
   useEffect(() => {
@@ -109,7 +121,21 @@ function App() {
         onClose={handleCloseSupport}
         userEmail={user?.email}
       />
+
+      <PublishResolver
+        intent={pendingIntent}
+        onClearIntent={clearIntent}
+        onComplete={handlePublishComplete}
+      />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <PublishProvider>
+      <AppContent />
+    </PublishProvider>
   );
 }
 

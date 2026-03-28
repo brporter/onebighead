@@ -111,6 +111,7 @@ export const createMockDataContext = (overrides?: Partial<DataContextValue>): Da
   deleteItemTemplate: vi.fn(async () => {}),
   associateTemplateWithCollection: vi.fn(async () => {}),
   disassociateTemplateFromCollection: vi.fn(async () => {}),
+  invalidateItemCache: vi.fn(),
 
   ...overrides,
 });

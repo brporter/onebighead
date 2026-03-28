@@ -98,6 +98,7 @@ export function PublishResolver({ intent, onClearIntent, onComplete }: PublishRe
   // Run preflight when intent changes
   useEffect(() => {
     if (!intent || !workspaceId) {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting state when intent is cleared */
       resetState();
       return;
     }

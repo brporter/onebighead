@@ -1,8 +1,7 @@
 import { createContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest, CollectionTheme, SetupCollectionRequest } from '../utils/types';
 import { Visibility } from '../utils/types';
-import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi, publishApi } from '../api';
-import type { PublishResponse, UnpublishResponse, BulkPublishResponse, BulkUnpublishResponse, UnpublishPreviewResponse } from '../utils/types';
+import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi } from '../api';
 import { getErrorMessage, logError } from '../utils/errorUtils';
 
 /**
@@ -100,18 +99,6 @@ export interface DataContextValue {
   associateTemplateWithCollection: (collectionId: number, templateId: number) => Promise<void>;
   disassociateTemplateFromCollection: (collectionId: number, templateId: number) => Promise<void>;
 
-  // Publish/unpublish
-  publishItem: (itemId: number) => Promise<PublishResponse>;
-  unpublishItem: (itemId: number) => Promise<UnpublishResponse>;
-  publishCategory: (categoryId: number, includeChildren: boolean) => Promise<PublishResponse>;
-  unpublishCategory: (categoryId: number) => Promise<UnpublishResponse>;
-  publishCollection: (collectionId: number, includeChildren: boolean) => Promise<PublishResponse>;
-  unpublishCollection: (collectionId: number) => Promise<UnpublishResponse>;
-  bulkPublishItems: (itemIds: number[]) => Promise<BulkPublishResponse>;
-  bulkUnpublishItems: (itemIds: number[]) => Promise<BulkUnpublishResponse>;
-  getUnpublishCategoryPreview: (categoryId: number) => Promise<UnpublishPreviewResponse>;
-  getUnpublishCollectionPreview: (collectionId: number) => Promise<UnpublishPreviewResponse>;
-
   // Bulk update
   invalidateItemCache: () => void;
 }
@@ -165,16 +152,6 @@ const defaultContextValue: DataContextValue = {
   deleteItemTemplate: async () => {},
   associateTemplateWithCollection: async () => {},
   disassociateTemplateFromCollection: async () => {},
-  publishItem: async () => ({ published: { type: '', id: 0, name: '' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false }),
-  unpublishItem: async () => ({ unpublished: { type: '', id: 0, name: '' }, affectedPublicItems: 0, affectedPublicCategories: 0 }),
-  publishCategory: async () => ({ published: { type: '', id: 0, name: '' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false }),
-  unpublishCategory: async () => ({ unpublished: { type: '', id: 0, name: '' }, affectedPublicItems: 0, affectedPublicCategories: 0 }),
-  publishCollection: async () => ({ published: { type: '', id: 0, name: '' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false }),
-  unpublishCollection: async () => ({ unpublished: { type: '', id: 0, name: '' }, affectedPublicItems: 0, affectedPublicCategories: 0 }),
-  bulkPublishItems: async () => ({ publishedCount: 0, promoted: [], requiresSlugSetup: false }),
-  bulkUnpublishItems: async () => ({ unpublishedCount: 0 }),
-  getUnpublishCategoryPreview: async () => ({ affectedPublicItems: 0, affectedPublicCategories: 0 }),
-  getUnpublishCollectionPreview: async () => ({ affectedPublicItems: 0, affectedPublicCategories: 0 }),
   invalidateItemCache: () => {},
 };
 
@@ -548,117 +525,6 @@ export function DataProvider({ children }: DataProviderProps) {
     await templatesApi.disassociateFromCollection(collectionId, templateId);
   }, []);
 
-  // Helper to get the workspace ID from the current collection
-  const getWorkspaceId = useCallback((): number => {
-    if (currentCollection) return currentCollection.workspaceId;
-    throw new Error('No active collection to determine workspace');
-  }, [currentCollection]);
-
-  // Publish/unpublish operations
-  const publishItem = useCallback(async (itemId: number): Promise<PublishResponse> => {
-    const workspaceId = getWorkspaceId();
-    const result = await publishApi.publishItem(workspaceId, itemId);
-    itemsCacheRef.current.clear();
-    if (currentCategoryId !== null) {
-      await loadItemsForCategory(currentCategoryId);
-    }
-    return result;
-  }, [getWorkspaceId, currentCategoryId, loadItemsForCategory]);
-
-  const unpublishItem = useCallback(async (itemId: number): Promise<UnpublishResponse> => {
-    const workspaceId = getWorkspaceId();
-    const result = await publishApi.unpublishItem(workspaceId, itemId);
-    itemsCacheRef.current.clear();
-    if (currentCategoryId !== null) {
-      await loadItemsForCategory(currentCategoryId);
-    }
-    return result;
-  }, [getWorkspaceId, currentCategoryId, loadItemsForCategory]);
-
-  const publishCategory = useCallback(async (categoryId: number, includeChildren: boolean): Promise<PublishResponse> => {
-    const workspaceId = getWorkspaceId();
-    const result = await publishApi.publishCategory(workspaceId, categoryId, includeChildren);
-    itemsCacheRef.current.clear();
-    if (currentCollection) {
-      await loadCategoriesForCollection(currentCollection.collectionId);
-    }
-    if (currentCategoryId !== null) {
-      await loadItemsForCategory(currentCategoryId);
-    }
-    return result;
-  }, [getWorkspaceId, currentCollection, currentCategoryId, loadCategoriesForCollection, loadItemsForCategory]);
-
-  const unpublishCategory = useCallback(async (categoryId: number): Promise<UnpublishResponse> => {
-    const workspaceId = getWorkspaceId();
-    const result = await publishApi.unpublishCategory(workspaceId, categoryId);
-    itemsCacheRef.current.clear();
-    if (currentCollection) {
-      await loadCategoriesForCollection(currentCollection.collectionId);
-    }
-    if (currentCategoryId !== null) {
-      await loadItemsForCategory(currentCategoryId);
-    }
-    return result;
-  }, [getWorkspaceId, currentCollection, currentCategoryId, loadCategoriesForCollection, loadItemsForCategory]);
-
-  const publishCollection = useCallback(async (collectionId: number, includeChildren: boolean): Promise<PublishResponse> => {
-    const workspaceId = getWorkspaceId();
-    const result = await publishApi.publishCollection(workspaceId, collectionId, includeChildren);
-    itemsCacheRef.current.clear();
-    await loadCollections();
-    if (currentCollection) {
-      await loadCategoriesForCollection(currentCollection.collectionId);
-    }
-    if (currentCategoryId !== null) {
-      await loadItemsForCategory(currentCategoryId);
-    }
-    return result;
-  }, [getWorkspaceId, currentCollection, currentCategoryId, loadCollections, loadCategoriesForCollection, loadItemsForCategory]);
-
-  const unpublishCollection = useCallback(async (collectionId: number): Promise<UnpublishResponse> => {
-    const workspaceId = getWorkspaceId();
-    const result = await publishApi.unpublishCollection(workspaceId, collectionId);
-    itemsCacheRef.current.clear();
-    await loadCollections();
-    if (currentCollection) {
-      await loadCategoriesForCollection(currentCollection.collectionId);
-    }
-    if (currentCategoryId !== null) {
-      await loadItemsForCategory(currentCategoryId);
-    }
-    return result;
-  }, [getWorkspaceId, currentCollection, currentCategoryId, loadCollections, loadCategoriesForCollection, loadItemsForCategory]);
-
-  const bulkPublishItems = useCallback(async (itemIds: number[]): Promise<BulkPublishResponse> => {
-    const workspaceId = getWorkspaceId();
-    const result = await publishApi.bulkPublish(workspaceId, itemIds);
-    itemsCacheRef.current.clear();
-    if (currentCategoryId !== null) {
-      await loadItemsForCategory(currentCategoryId);
-    }
-    return result;
-  }, [getWorkspaceId, currentCategoryId, loadItemsForCategory]);
-
-  const bulkUnpublishItems = useCallback(async (itemIds: number[]): Promise<BulkUnpublishResponse> => {
-    const workspaceId = getWorkspaceId();
-    const result = await publishApi.bulkUnpublish(workspaceId, itemIds);
-    itemsCacheRef.current.clear();
-    if (currentCategoryId !== null) {
-      await loadItemsForCategory(currentCategoryId);
-    }
-    return result;
-  }, [getWorkspaceId, currentCategoryId, loadItemsForCategory]);
-
-  const getUnpublishCategoryPreview = useCallback(async (categoryId: number): Promise<UnpublishPreviewResponse> => {
-    const workspaceId = getWorkspaceId();
-    return await publishApi.unpublishCategoryPreview(workspaceId, categoryId);
-  }, [getWorkspaceId]);
-
-  const getUnpublishCollectionPreview = useCallback(async (collectionId: number): Promise<UnpublishPreviewResponse> => {
-    const workspaceId = getWorkspaceId();
-    return await publishApi.unpublishCollectionPreview(workspaceId, collectionId);
-  }, [getWorkspaceId]);
-
   const value: DataContextValue = {
     currentCollection,
     setCurrentCollection,
@@ -708,16 +574,6 @@ export function DataProvider({ children }: DataProviderProps) {
     deleteItemTemplate,
     associateTemplateWithCollection,
     disassociateTemplateFromCollection,
-    publishItem,
-    unpublishItem,
-    publishCategory,
-    unpublishCategory,
-    publishCollection,
-    unpublishCollection,
-    bulkPublishItems,
-    bulkUnpublishItems,
-    getUnpublishCategoryPreview,
-    getUnpublishCollectionPreview,
     invalidateItemCache,
   };
 

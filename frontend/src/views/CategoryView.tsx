@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '../contexts/useData';
-import { useToast } from '../contexts/useToast';
-import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../utils/publishToastUtils';
+import { usePublish } from '../contexts/usePublish';
 import CategoryNav from '../components/category/CategoryNav';
 import { CategoryManagerModal } from '../components/category';
 import { CollectionDashboard } from '../components/collection';
 import ItemList from '../components/item/ItemList';
 import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
-import { BackNav, Loading, PublishButton, PublicBadge, PublishConfirmModal, UnpublishConfirmModal, SlugSetupModal } from '../components/common';
-import type { UnpublishPreviewResponse } from '../utils/types';
+import { BackNav, Loading, PublishButton, PublicBadge } from '../components/common';
 import { getCategoryAndDescendantIds } from '../utils/categoryUtils';
 import { bulkUpdatesApi, type BulkUpdateJobResponse } from '../api';
 import '../styles/components/BulkUpdateModal.css';
@@ -31,11 +29,8 @@ function CategoryView() {
     itemsError,
     loadItemsForCategory,
     loadPropertySuggestions,
-    publishCollection,
-    unpublishCollection,
-    getUnpublishCollectionPreview,
   } = useData();
-  const { showToast } = useToast();
+  const { requestPublish, requestUnpublish } = usePublish();
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
@@ -49,9 +44,6 @@ function CategoryView() {
   const [activeBulkJob, setActiveBulkJob] = useState<BulkUpdateJobResponse | null>(null);
   const bulkPollRef = useRef<number | null>(null);
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
-  const [collectionPublishTarget, setCollectionPublishTarget] = useState(false);
-  const [collectionUnpublishPreview, setCollectionUnpublishPreview] = useState<UnpublishPreviewResponse | null>(null);
-  const [showCollectionSlugSetup, setShowCollectionSlugSetup] = useState(false);
 
   // Reset filters when category changes (setState during render pattern)
   if (categoryIdNum !== prevCategoryId) {
@@ -211,46 +203,13 @@ function CategoryView() {
   }
 
   function handleCollectionPublishClick() {
-    setCollectionPublishTarget(true);
-  }
-
-  async function handleCollectionPublishConfirm(includeChildren: boolean) {
     if (!currentCollection) return;
-    const result = await publishCollection(currentCollection.collectionId, includeChildren);
-    setCollectionPublishTarget(false);
-    if (result.requiresSlugSetup) {
-      setShowCollectionSlugSetup(true);
-      return;
-    }
-    showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
-    await loadCollections();
+    requestPublish([{ type: 'collection', id: currentCollection.collectionId }]);
   }
 
-  function handleCollectionPublishCancel() {
-    setCollectionPublishTarget(false);
-  }
-
-  async function handleCollectionUnpublishClick() {
+  function handleCollectionUnpublishClick() {
     if (!currentCollection) return;
-    const preview = await getUnpublishCollectionPreview(currentCollection.collectionId);
-    setCollectionUnpublishPreview(preview);
-  }
-
-  async function handleCollectionUnpublishConfirm() {
-    if (!currentCollection) return;
-    const result = await unpublishCollection(currentCollection.collectionId);
-    showToast(buildUnpublishToastMessage(result));
-    setCollectionUnpublishPreview(null);
-    await loadCollections();
-  }
-
-  function handleCollectionUnpublishCancel() {
-    setCollectionUnpublishPreview(null);
-  }
-
-  async function handleCollectionSlugConfirm() {
-    setShowCollectionSlugSetup(false);
-    await loadCollections();
+    requestUnpublish([{ type: 'collection', id: currentCollection.collectionId }]);
   }
 
   function handleBackToCollections() {
@@ -312,35 +271,6 @@ function CategoryView() {
             onSelectItem={handleSelectItem}
           />
         </main>
-
-        {collectionPublishTarget && (
-          <PublishConfirmModal
-            entityType="collection"
-            entityName={currentCollection.name}
-            itemCount={items.length}
-            categoryCount={categories.length}
-            onConfirm={handleCollectionPublishConfirm}
-            onCancel={handleCollectionPublishCancel}
-          />
-        )}
-
-        {collectionUnpublishPreview && (
-          <UnpublishConfirmModal
-            entityType="collection"
-            entityName={currentCollection.name}
-            affectedPublicItems={collectionUnpublishPreview.affectedPublicItems}
-            affectedPublicCategories={collectionUnpublishPreview.affectedPublicCategories}
-            onConfirm={handleCollectionUnpublishConfirm}
-            onCancel={handleCollectionUnpublishCancel}
-          />
-        )}
-
-        {showCollectionSlugSetup && (
-          <SlugSetupModal
-            onConfirm={handleCollectionSlugConfirm}
-            onCancel={() => setShowCollectionSlugSetup(false)}
-          />
-        )}
 
         {currentCollection && (
           <CategoryManagerModal
@@ -445,35 +375,6 @@ function CategoryView() {
           )}
         </section>
       </main>
-
-      {collectionPublishTarget && (
-        <PublishConfirmModal
-          entityType="collection"
-          entityName={currentCollection.name}
-          itemCount={items.length}
-          categoryCount={categories.length}
-          onConfirm={handleCollectionPublishConfirm}
-          onCancel={handleCollectionPublishCancel}
-        />
-      )}
-
-      {collectionUnpublishPreview && (
-        <UnpublishConfirmModal
-          entityType="collection"
-          entityName={currentCollection.name}
-          affectedPublicItems={collectionUnpublishPreview.affectedPublicItems}
-          affectedPublicCategories={collectionUnpublishPreview.affectedPublicCategories}
-          onConfirm={handleCollectionUnpublishConfirm}
-          onCancel={handleCollectionUnpublishCancel}
-        />
-      )}
-
-      {showCollectionSlugSetup && (
-        <SlugSetupModal
-          onConfirm={handleCollectionSlugConfirm}
-          onCancel={() => setShowCollectionSlugSetup(false)}
-        />
-      )}
 
       {currentCollection && (
         <CategoryManagerModal

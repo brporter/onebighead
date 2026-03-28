@@ -30,4 +30,4 @@ export { workspacesApi, type CreateWorkspaceRequest, type CreateWorkspaceRespons
 export { accountApi, type UserDeletionInfo, type WorkspaceMembershipDeletionInfo, type DeleteAccountRequest, type DeleteAccountResponse, WorkspaceActionType, DeletionBlockerReason } from './account';
 export * from './support';
 export { publicApi, type PublicWorkspace, type PublicCollection, type PublicCollectionDetail, type PublicCategory, type PublicItemSummary, type PublicItem, type PublicItemProperty, type PublicItemImage } from './public';
-export { publishApi } from './publish';
+export { publishManagerApi } from './publishManager';

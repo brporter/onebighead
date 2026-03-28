@@ -6,13 +6,15 @@ import type { Item } from '../src/utils/types';
 import { Visibility, UserFlag } from '../src/utils/types';
 import type { AccentColor } from '../src/utils/accentColors';
 
-const mockPublishItem = vi.fn();
-const mockUnpublishItem = vi.fn();
+const mockRequestPublish = vi.fn();
+const mockRequestUnpublish = vi.fn();
 
-vi.mock('../src/contexts/useData', () => ({
-  useData: () => ({
-    publishItem: mockPublishItem,
-    unpublishItem: mockUnpublishItem,
+vi.mock('../src/contexts/usePublish', () => ({
+  usePublish: () => ({
+    requestPublish: mockRequestPublish,
+    requestUnpublish: mockRequestUnpublish,
+    pendingIntent: null,
+    clearIntent: vi.fn(),
   }),
 }));
 
@@ -62,6 +64,11 @@ describe('ItemCard', () => {
     isSelected: false,
     onSelect: vi.fn(),
   };
+
+  beforeEach(() => {
+    mockRequestPublish.mockReset();
+    mockRequestUnpublish.mockReset();
+  });
 
   describe('snapshots', () => {
     it('should render image card', () => {
@@ -187,13 +194,6 @@ describe('ItemCard', () => {
       effectiveIsPublic: false,
     };
 
-    beforeEach(() => {
-      mockPublishItem.mockReset();
-      mockUnpublishItem.mockReset();
-      mockPublishItem.mockResolvedValue({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false });
-      mockUnpublishItem.mockResolvedValue({ unpublished: { type: 'Item', id: 1, name: 'Leica M3' }, affectedPublicItems: 0, affectedPublicCategories: 0 });
-    });
-
     it('should show PublicBadge when effectiveIsPublic is true', () => {
       render(<ItemCard {...defaultProps} item={publicItem} />);
       expect(screen.getByText('Public')).toBeInTheDocument();
@@ -214,76 +214,38 @@ describe('ItemCard', () => {
       expect(screen.queryByText('Public')).not.toBeInTheDocument();
     });
 
-    it('should call publishItem when clicking Publish button', async () => {
+    it('should call requestPublish when clicking Publish button', async () => {
       const user = userEvent.setup();
       render(<ItemCard {...defaultProps} item={privateItem} />);
 
       await user.click(screen.getByText('Publish'));
-      expect(mockPublishItem).toHaveBeenCalledWith(1);
+      expect(mockRequestPublish).toHaveBeenCalledWith([{ type: 'item', id: 1 }]);
     });
 
-    it('should call unpublishItem when clicking Unpublish on PublicBadge', async () => {
+    it('should call requestUnpublish when clicking Unpublish on PublicBadge', async () => {
       const user = userEvent.setup();
       render(<ItemCard {...defaultProps} item={publicItem} />);
 
-      // PublicBadge is a button, click it
       await user.click(screen.getByText('Public'));
-      expect(mockUnpublishItem).toHaveBeenCalledWith(1);
+      expect(mockRequestUnpublish).toHaveBeenCalledWith([{ type: 'item', id: 1 }]);
     });
 
-    it('should show SlugSetupModal when publish requires slug setup', async () => {
-      mockPublishItem.mockResolvedValue({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
-      const user = userEvent.setup();
-      render(<ItemCard {...defaultProps} item={privateItem} />);
-
-      await user.click(screen.getByText('Publish'));
-      expect(screen.getByText('Set Up Your Public Gallery')).toBeInTheDocument();
-    });
-
-    it('should retry publish after slug setup', async () => {
-      mockPublishItem.mockResolvedValueOnce({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
-      mockPublishItem.mockResolvedValueOnce({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false });
-      const user = userEvent.setup();
-      render(<ItemCard {...defaultProps} item={privateItem} />);
-
-      await user.click(screen.getByText('Publish'));
-      expect(screen.getByText('Set Up Your Public Gallery')).toBeInTheDocument();
-
-      // Fill in slug and confirm
-      await user.type(screen.getByLabelText('Gallery URL'), 'my-gallery');
-      await user.click(screen.getByText('Create Gallery & Publish'));
-
-      expect(mockPublishItem).toHaveBeenCalledTimes(2);
-    });
-
-    it('should close SlugSetupModal on cancel', async () => {
-      mockPublishItem.mockResolvedValue({ published: { type: 'Item', id: 1, name: 'Leica M3' }, promoted: [], childrenPublished: 0, requiresSlugSetup: true });
-      const user = userEvent.setup();
-      render(<ItemCard {...defaultProps} item={privateItem} />);
-
-      await user.click(screen.getByText('Publish'));
-      expect(screen.getByText('Set Up Your Public Gallery')).toBeInTheDocument();
-
-      await user.click(screen.getByText('Cancel'));
-      expect(screen.queryByText('Set Up Your Public Gallery')).not.toBeInTheDocument();
-    });
-
-    it('should not call publishItem when item has null id', async () => {
+    it('should not call requestPublish when item has null id', async () => {
       const user = userEvent.setup();
       const nullIdItem = { ...privateItem, id: null, name: 'No ID item' };
       render(<ItemCard {...defaultProps} item={nullIdItem} />);
 
       await user.click(screen.getByText('Publish'));
-      expect(mockPublishItem).not.toHaveBeenCalled();
+      expect(mockRequestPublish).not.toHaveBeenCalled();
     });
 
-    it('should not call unpublishItem when item has null id', async () => {
+    it('should not call requestUnpublish when item has null id', async () => {
       const user = userEvent.setup();
       const nullIdItem = { ...publicItem, id: null, name: 'No ID item' };
       render(<ItemCard {...defaultProps} item={nullIdItem} />);
 
       await user.click(screen.getByText('Public'));
-      expect(mockUnpublishItem).not.toHaveBeenCalled();
+      expect(mockRequestUnpublish).not.toHaveBeenCalled();
     });
   });
 

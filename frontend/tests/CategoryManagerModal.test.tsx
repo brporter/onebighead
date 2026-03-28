@@ -12,10 +12,8 @@ const {
   mockUpdateCategory,
   mockDeleteCategory,
   mockReorderCategories,
-  mockPublishCategory,
-  mockUnpublishCategory,
-  mockGetUnpublishCategoryPreview,
-  mockShowToast,
+  mockRequestPublish,
+  mockRequestUnpublish,
   mockCategories,
 } = vi.hoisted(() => {
   const cats: Category[] = [
@@ -27,7 +25,7 @@ const {
       description: 'Description 1',
       parentCategoryId: null,
       isSystem: false,
-      visibility: 'Private' as const,
+      visibility: 'Private' as Category['visibility'],
       effectiveIsPublic: false,
       itemTemplateIds: [],
       sortOrder: 0,
@@ -40,7 +38,7 @@ const {
       description: 'Description 2',
       parentCategoryId: null,
       isSystem: false,
-      visibility: 'Private' as const,
+      visibility: 'Private' as Category['visibility'],
       effectiveIsPublic: false,
       itemTemplateIds: [],
       sortOrder: 1,
@@ -53,7 +51,7 @@ const {
       description: 'Description 3',
       parentCategoryId: 1,
       isSystem: false,
-      visibility: 'Public' as const,
+      visibility: 'Public' as Category['visibility'],
       effectiveIsPublic: true,
       itemTemplateIds: [],
       sortOrder: 0,
@@ -66,7 +64,7 @@ const {
       description: 'System category',
       parentCategoryId: null,
       isSystem: true,
-      visibility: 'Private' as const,
+      visibility: 'Private' as Category['visibility'],
       effectiveIsPublic: false,
       itemTemplateIds: [],
       sortOrder: 999,
@@ -79,10 +77,8 @@ const {
     mockUpdateCategory: vi.fn(),
     mockDeleteCategory: vi.fn(),
     mockReorderCategories: vi.fn(),
-    mockPublishCategory: vi.fn(),
-    mockUnpublishCategory: vi.fn(),
-    mockGetUnpublishCategoryPreview: vi.fn(),
-    mockShowToast: vi.fn(),
+    mockRequestPublish: vi.fn(),
+    mockRequestUnpublish: vi.fn(),
     mockCategories: cats,
   };
 });
@@ -96,16 +92,16 @@ vi.mock('../src/contexts/useData', () => ({
     updateCategory: mockUpdateCategory,
     deleteCategory: mockDeleteCategory,
     reorderCategories: mockReorderCategories,
-    publishCategory: mockPublishCategory,
-    unpublishCategory: mockUnpublishCategory,
-    getUnpublishCategoryPreview: mockGetUnpublishCategoryPreview,
   }),
 }));
 
-// Mock useToast
-vi.mock('../src/contexts/useToast', () => ({
-  useToast: () => ({
-    showToast: mockShowToast,
+// Mock usePublish
+vi.mock('../src/contexts/usePublish', () => ({
+  usePublish: () => ({
+    requestPublish: mockRequestPublish,
+    requestUnpublish: mockRequestUnpublish,
+    pendingIntent: null,
+    clearIntent: vi.fn(),
   }),
 }));
 
@@ -168,44 +164,6 @@ vi.mock('../src/components/category/QuickCreatePopover', () => ({
   },
 }));
 
-// Mock PublishConfirmModal
-vi.mock('../src/components/common/PublishConfirmModal', () => ({
-  PublishConfirmModal: (props: { onConfirm: (includeChildren: boolean) => void; onCancel: () => void }) => (
-    <div data-testid="publish-confirm-modal">
-      <button data-testid="publish-with-children" onClick={() => props.onConfirm(true)}>Publish with children</button>
-      <button data-testid="publish-only" onClick={() => props.onConfirm(false)}>Publish only</button>
-      <button data-testid="publish-cancel" onClick={props.onCancel}>Cancel Publish</button>
-    </div>
-  ),
-}));
-
-// Mock UnpublishConfirmModal
-vi.mock('../src/components/common/UnpublishConfirmModal', () => ({
-  UnpublishConfirmModal: (props: { onConfirm: () => void; onCancel: () => void }) => (
-    <div data-testid="unpublish-confirm-modal">
-      <button data-testid="unpublish-confirm" onClick={props.onConfirm}>Confirm Unpublish</button>
-      <button data-testid="unpublish-cancel" onClick={props.onCancel}>Cancel Unpublish</button>
-    </div>
-  ),
-}));
-
-// Mock SlugSetupModal
-vi.mock('../src/components/common/SlugSetupModal', () => ({
-  SlugSetupModal: (props: { onConfirm: (slug: string) => void; onCancel: () => void }) => (
-    <div data-testid="slug-setup-modal">
-      <button data-testid="slug-confirm" onClick={() => props.onConfirm('my-slug')}>Confirm Slug</button>
-      <button data-testid="slug-cancel" onClick={props.onCancel}>Cancel Slug</button>
-    </div>
-  ),
-}));
-
-// Mock publish toast utils
-vi.mock('../src/utils/publishToastUtils', () => ({
-  buildPublishToastMessage: vi.fn(() => 'Published!'),
-  buildPublishToastDetails: vi.fn(() => undefined),
-  buildUnpublishToastMessage: vi.fn(() => 'Unpublished!'),
-}));
-
 describe('CategoryManagerModal', () => {
   const defaultProps = {
     collectionId: 1,
@@ -230,9 +188,6 @@ describe('CategoryManagerModal', () => {
     mockUpdateCategory.mockResolvedValue(undefined);
     mockDeleteCategory.mockResolvedValue(undefined);
     mockReorderCategories.mockResolvedValue(undefined);
-    mockPublishCategory.mockResolvedValue({ published: { type: 'category', id: 1, name: 'Bravo' }, promoted: [], childrenPublished: 0, requiresSlugSetup: false });
-    mockUnpublishCategory.mockResolvedValue({ unpublished: { type: 'category', id: 3, name: 'Child of Bravo' } });
-    mockGetUnpublishCategoryPreview.mockResolvedValue({ affectedPublicItems: 2, affectedPublicCategories: 0 });
   });
 
   afterEach(() => {
@@ -508,7 +463,7 @@ describe('CategoryManagerModal', () => {
         description: '',
         parentCategoryId: 2,
         isSystem: false,
-        visibility: 'Private' as const,
+        visibility: 'Private' as Category['visibility'],
         effectiveIsPublic: false,
         itemTemplateIds: [],
         sortOrder: 0,
@@ -536,104 +491,26 @@ describe('CategoryManagerModal', () => {
   });
 
   describe('publishing a category', () => {
-    it('should show publish confirm modal and call publishCategory on confirm', async () => {
+    it('should call requestPublish with correct entity ref', async () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
       await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-publish'));
 
-      // Publish confirm modal should appear
-      expect(screen.getByTestId('publish-confirm-modal')).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('publish-with-children'));
-
-      await waitFor(() => {
-        expect(mockPublishCategory).toHaveBeenCalledWith(1, true);
-      });
-    });
-
-    it('should show slug setup modal when publish requires slug setup', async () => {
-      const user = userEvent.setup();
-      mockPublishCategory.mockResolvedValue({
-        published: { type: 'category', id: 1, name: 'Bravo' },
-        promoted: [],
-        childrenPublished: 0,
-        requiresSlugSetup: true,
-      });
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-publish'));
-      await user.click(screen.getByTestId('publish-only'));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('slug-setup-modal')).toBeInTheDocument();
-      });
-    });
-
-    it('should cancel publish when cancel clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-publish'));
-      await user.click(screen.getByTestId('publish-cancel'));
-
-      expect(screen.queryByTestId('publish-confirm-modal')).not.toBeInTheDocument();
-      expect(mockPublishCategory).not.toHaveBeenCalled();
+      expect(mockRequestPublish).toHaveBeenCalledWith([{ type: 'category', id: 1 }]);
     });
   });
 
   describe('unpublishing a category', () => {
-    it('should fetch preview and show unpublish confirm modal', async () => {
+    it('should call requestUnpublish with correct entity ref', async () => {
       const user = userEvent.setup();
       render(<CategoryManagerModal {...defaultProps} />);
 
       await user.click(screen.getByTestId('tree-edit-1'));
       await user.click(screen.getByTestId('form-unpublish'));
 
-      await waitFor(() => {
-        expect(mockGetUnpublishCategoryPreview).toHaveBeenCalledWith(3);
-      });
-      await waitFor(() => {
-        expect(screen.getByTestId('unpublish-confirm-modal')).toBeInTheDocument();
-      });
-    });
-
-    it('should call unpublishCategory on confirm', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-unpublish'));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('unpublish-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('unpublish-confirm'));
-
-      await waitFor(() => {
-        expect(mockUnpublishCategory).toHaveBeenCalledWith(3);
-      });
-    });
-
-    it('should cancel unpublish when cancel clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-unpublish'));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('unpublish-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('unpublish-cancel'));
-
-      expect(screen.queryByTestId('unpublish-confirm-modal')).not.toBeInTheDocument();
-      expect(mockUnpublishCategory).not.toHaveBeenCalled();
+      expect(mockRequestUnpublish).toHaveBeenCalledWith([{ type: 'category', id: 3 }]);
     });
   });
 
@@ -711,147 +588,7 @@ describe('CategoryManagerModal', () => {
     });
   });
 
-  describe('slug setup flow', () => {
-    it('should close slug setup modal on cancel', async () => {
-      const user = userEvent.setup();
-      mockPublishCategory.mockResolvedValue({
-        published: { type: 'category', id: 1, name: 'Bravo' },
-        promoted: [],
-        childrenPublished: 0,
-        requiresSlugSetup: true,
-      });
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-publish'));
-      await user.click(screen.getByTestId('publish-only'));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('slug-setup-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('slug-cancel'));
-
-      expect(screen.queryByTestId('slug-setup-modal')).not.toBeInTheDocument();
-    });
-
-    it('should close slug setup modal on confirm and reload categories', async () => {
-      const user = userEvent.setup();
-      mockPublishCategory.mockResolvedValue({
-        published: { type: 'category', id: 1, name: 'Bravo' },
-        promoted: [],
-        childrenPublished: 0,
-        requiresSlugSetup: true,
-      });
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-publish'));
-      await user.click(screen.getByTestId('publish-only'));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('slug-setup-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('slug-confirm'));
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('slug-setup-modal')).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('successful publish with toast', () => {
-    it('should show toast after successful publish without slug setup', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-publish'));
-      await user.click(screen.getByTestId('publish-with-children'));
-
-      await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith('Published!', undefined);
-      });
-    });
-
-    it('should show toast after successful unpublish', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-unpublish'));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('unpublish-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('unpublish-confirm'));
-
-      await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith('Unpublished!');
-      });
-    });
-  });
-
   describe('error handling', () => {
-    it('should handle publishCategory failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockPublishCategory.mockRejectedValue(new Error('Publish failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-publish'));
-      await user.click(screen.getByTestId('publish-with-children'));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to publish category:', expect.any(Error));
-      });
-      // Publish confirm should be dismissed
-      expect(screen.queryByTestId('publish-confirm-modal')).not.toBeInTheDocument();
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle getUnpublishCategoryPreview failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockGetUnpublishCategoryPreview.mockRejectedValue(new Error('Preview failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-unpublish'));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to get unpublish preview:', expect.any(Error));
-      });
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle unpublishCategory failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockUnpublishCategory.mockRejectedValue(new Error('Unpublish failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-unpublish'));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('unpublish-confirm-modal')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByTestId('unpublish-confirm'));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to unpublish category:', expect.any(Error));
-      });
-
-      consoleSpy.mockRestore();
-    });
-
     it('should handle updateCategory failure gracefully', async () => {
       const user = userEvent.setup();
       mockUpdateCategory.mockRejectedValue(new Error('Network error'));

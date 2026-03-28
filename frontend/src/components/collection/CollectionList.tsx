@@ -1,10 +1,6 @@
-import { useState } from 'react';
 import type { Collection } from '../../utils/types';
-import type { UnpublishPreviewResponse } from '../../utils/types';
-import { useData } from '../../contexts/useData';
-import { useToast } from '../../contexts/useToast';
-import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../../utils/publishToastUtils';
-import { PublishButton, PublicBadge, PublishConfirmModal, UnpublishConfirmModal, SlugSetupModal } from '../common';
+import { PublishButton, PublicBadge } from '../common';
+import { usePublish } from '../../contexts/usePublish';
 import '../../styles/components/CollectionList.css';
 
 interface CollectionListProps {
@@ -13,62 +9,14 @@ interface CollectionListProps {
 }
 
 function CollectionList({ collections, onSelect }: CollectionListProps) {
-  const {
-    publishCollection,
-    unpublishCollection,
-    getUnpublishCollectionPreview,
-    loadCollections,
-  } = useData();
-  const { showToast } = useToast();
-
-  const [publishTarget, setPublishTarget] = useState<Collection | null>(null);
-  const [unpublishTarget, setUnpublishTarget] = useState<Collection | null>(null);
-  const [unpublishPreview, setUnpublishPreview] = useState<UnpublishPreviewResponse | null>(null);
-  const [showSlugSetup, setShowSlugSetup] = useState(false);
+  const { requestPublish, requestUnpublish } = usePublish();
 
   function handlePublishClick(collection: Collection) {
-    setPublishTarget(collection);
+    requestPublish([{ type: 'collection', id: collection.collectionId }]);
   }
 
-  async function handlePublishConfirm(includeChildren: boolean) {
-    if (!publishTarget) return;
-    const result = await publishCollection(publishTarget.collectionId, includeChildren);
-    setPublishTarget(null);
-    if (result.requiresSlugSetup) {
-      setShowSlugSetup(true);
-      return;
-    }
-    showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
-    await loadCollections();
-  }
-
-  function handlePublishCancel() {
-    setPublishTarget(null);
-  }
-
-  async function handleUnpublishClick(collection: Collection) {
-    const preview = await getUnpublishCollectionPreview(collection.collectionId);
-    setUnpublishPreview(preview);
-    setUnpublishTarget(collection);
-  }
-
-  async function handleUnpublishConfirm() {
-    if (!unpublishTarget) return;
-    const result = await unpublishCollection(unpublishTarget.collectionId);
-    showToast(buildUnpublishToastMessage(result));
-    setUnpublishTarget(null);
-    setUnpublishPreview(null);
-    await loadCollections();
-  }
-
-  function handleUnpublishCancel() {
-    setUnpublishTarget(null);
-    setUnpublishPreview(null);
-  }
-
-  async function handleSlugConfirm() {
-    setShowSlugSetup(false);
-    await loadCollections();
+  function handleUnpublishClick(collection: Collection) {
+    requestUnpublish([{ type: 'collection', id: collection.collectionId }]);
   }
 
   return (
@@ -113,35 +61,6 @@ function CollectionList({ collections, onSelect }: CollectionListProps) {
           </button>
         ))}
       </div>
-
-      {publishTarget && (
-        <PublishConfirmModal
-          entityType="collection"
-          entityName={publishTarget.name}
-          itemCount={0}
-          categoryCount={0}
-          onConfirm={handlePublishConfirm}
-          onCancel={handlePublishCancel}
-        />
-      )}
-
-      {unpublishTarget && unpublishPreview && (
-        <UnpublishConfirmModal
-          entityType="collection"
-          entityName={unpublishTarget.name}
-          affectedPublicItems={unpublishPreview.affectedPublicItems}
-          affectedPublicCategories={unpublishPreview.affectedPublicCategories}
-          onConfirm={handleUnpublishConfirm}
-          onCancel={handleUnpublishCancel}
-        />
-      )}
-
-      {showSlugSetup && (
-        <SlugSetupModal
-          onConfirm={handleSlugConfirm}
-          onCancel={() => setShowSlugSetup(false)}
-        />
-      )}
     </div>
   );
 }

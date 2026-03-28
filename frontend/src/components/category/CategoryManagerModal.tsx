@@ -1,17 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Category } from '../../utils/types';
-import type { UnpublishPreviewResponse } from '../../utils/types';
 import { useData } from '../../contexts/useData';
-import { useUser } from '../../contexts/useUser';
-import { useToast } from '../../contexts/useToast';
-import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../../utils/publishToastUtils';
+import { usePublish } from '../../contexts/usePublish';
 import CategoryManagerTree from './CategoryManagerTree';
 import CategoryManagerForm from './CategoryManagerForm';
 import QuickCreatePopover from './QuickCreatePopover';
-import { PublishConfirmModal } from '../common/PublishConfirmModal';
-import { UnpublishConfirmModal } from '../common/UnpublishConfirmModal';
-import { SlugSetupModal } from '../common/SlugSetupModal';
-import { workspacesApi } from '../../api/workspaces';
 import './CategoryManagerModal.css';
 
 interface CategoryManagerModalProps {
@@ -28,12 +21,8 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     updateCategory,
     deleteCategory,
     reorderCategories,
-    publishCategory,
-    unpublishCategory,
-    getUnpublishCategoryPreview,
   } = useData();
-  const { user, refetch: refetchUser } = useUser();
-  const { showToast } = useToast();
+  const { requestPublish, requestUnpublish } = usePublish();
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<{ submit: () => void } | null>(null);
@@ -42,10 +31,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   const [formHasChanges, setFormHasChanges] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [publishTarget, setPublishTarget] = useState<Category | null>(null);
-  const [unpublishPreview, setUnpublishPreview] = useState<UnpublishPreviewResponse | null>(null);
-  const [unpublishTarget, setUnpublishTarget] = useState<Category | null>(null);
-  const [showSlugSetup, setShowSlugSetup] = useState(false);
   const [view, setView] = useState<'tree' | 'form'>('tree');
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [initialName, setInitialName] = useState('');
@@ -295,106 +280,12 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   }, [categories, updateCategory, reorderCategories, collectionId, loadCategoriesForCollection]);
 
   const handlePublish = useCallback((category: Category) => {
-    setPublishTarget(category);
-  }, []);
+    requestPublish([{ type: 'category', id: category.categoryId }]);
+  }, [requestPublish]);
 
-  const handlePublishConfirm = useCallback(async (includeChildren: boolean) => {
-    if (!publishTarget) return;
-
-    try {
-      const result = await publishCategory(publishTarget.categoryId, includeChildren);
-
-      if (result.requiresSlugSetup) {
-        // Keep publishTarget so handleSlugConfirm can retry the publish
-        setShowSlugSetup(true);
-        return;
-      }
-
-      setPublishTarget(null);
-      showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
-      await loadCategoriesForCollection(collectionId);
-    } catch (err) {
-      console.error('Failed to publish category:', err);
-      setPublishTarget(null);
-    }
-  }, [publishTarget, publishCategory, collectionId, loadCategoriesForCollection, showToast]);
-
-  const handlePublishCancel = useCallback(() => {
-    setPublishTarget(null);
-  }, []);
-
-  const handleUnpublish = useCallback(async (category: Category) => {
-    try {
-      const preview = await getUnpublishCategoryPreview(category.categoryId);
-      setUnpublishTarget(category);
-      setUnpublishPreview(preview);
-    } catch (err) {
-      console.error('Failed to get unpublish preview:', err);
-    }
-  }, [getUnpublishCategoryPreview]);
-
-  const handleUnpublishConfirm = useCallback(async () => {
-    if (!unpublishTarget) return;
-
-    try {
-      const result = await unpublishCategory(unpublishTarget.categoryId);
-      showToast(buildUnpublishToastMessage(result));
-      setUnpublishTarget(null);
-      setUnpublishPreview(null);
-      await loadCategoriesForCollection(collectionId);
-    } catch (err) {
-      console.error('Failed to unpublish category:', err);
-      setUnpublishTarget(null);
-      setUnpublishPreview(null);
-    }
-  }, [unpublishTarget, unpublishCategory, collectionId, loadCategoriesForCollection, showToast]);
-
-  const handleUnpublishCancel = useCallback(() => {
-    setUnpublishTarget(null);
-    setUnpublishPreview(null);
-  }, []);
-
-  const handleSlugConfirm = useCallback(async (slug: string) => {
-    setShowSlugSetup(false);
-
-    // Save the slug to the workspace
-    const activeWorkspace = user?.activeWorkspace;
-    if (activeWorkspace && slug) {
-      try {
-        await workspacesApi.update(activeWorkspace.workspaceId, {
-          name: activeWorkspace.workspaceName,
-          slug,
-        });
-        // Refetch user so the slug is reflected across the app
-        await refetchUser();
-      } catch (err) {
-        console.error('Failed to save workspace slug:', err);
-        setPublishTarget(null);
-        return;
-      }
-    }
-
-    if (!publishTarget) {
-      await loadCategoriesForCollection(collectionId);
-      return;
-    }
-
-    // Retry publish after slug is saved
-    try {
-      const result = await publishCategory(publishTarget.categoryId, true);
-      setPublishTarget(null);
-      showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
-      await loadCategoriesForCollection(collectionId);
-    } catch (err) {
-      console.error('Failed to publish category after slug setup:', err);
-      setPublishTarget(null);
-    }
-  }, [user, refetchUser, publishTarget, publishCategory, collectionId, loadCategoriesForCollection, showToast]);
-
-  const handleSlugCancel = useCallback(() => {
-    setShowSlugSetup(false);
-    setPublishTarget(null);
-  }, []);
+  const handleUnpublish = useCallback((category: Category) => {
+    requestUnpublish([{ type: 'category', id: category.categoryId }]);
+  }, [requestUnpublish]);
 
   return (
     <dialog ref={dialogRef} className="modal-dialog modal-dialog--wide" onClick={handleBackdropClick}>
@@ -477,34 +368,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
           )}
         </div>
       </div>
-
-      {publishTarget && (
-        <PublishConfirmModal
-          entityType="category"
-          entityName={publishTarget.name}
-          itemCount={0}
-          onConfirm={handlePublishConfirm}
-          onCancel={handlePublishCancel}
-        />
-      )}
-
-      {unpublishPreview && unpublishTarget && (
-        <UnpublishConfirmModal
-          entityType="category"
-          entityName={unpublishTarget.name}
-          affectedPublicItems={unpublishPreview.affectedPublicItems}
-          affectedPublicCategories={unpublishPreview.affectedPublicCategories}
-          onConfirm={handleUnpublishConfirm}
-          onCancel={handleUnpublishCancel}
-        />
-      )}
-
-      {showSlugSetup && (
-        <SlugSetupModal
-          onConfirm={handleSlugConfirm}
-          onCancel={handleSlugCancel}
-        />
-      )}
 
       {showDeleteConfirm && selectedCategory && (
         <div className="modal-overlay">

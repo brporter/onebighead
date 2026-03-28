@@ -275,6 +275,7 @@ export function createMockDataContextValue(vi: { fn: () => ReturnType<typeof imp
     deleteItemTemplate: vi.fn(),
     associateTemplateWithCollection: vi.fn(),
     disassociateTemplateFromCollection: vi.fn(),
+    invalidateItemCache: vi.fn(),
     ...overrides,
   } as import('../../src/contexts/DataContext').DataContextValue;
 }

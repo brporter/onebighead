@@ -5,17 +5,15 @@ import ItemList from '../src/components/item/ItemList';
 import type { Item, Category } from '../src/utils/types';
 import { Visibility, UserFlag } from '../src/utils/types';
 
-const mockBulkPublishItems = vi.fn();
-const mockBulkUnpublishItems = vi.fn();
-const mockPublishItem = vi.fn();
-const mockUnpublishItem = vi.fn();
+const mockRequestPublish = vi.fn();
+const mockRequestUnpublish = vi.fn();
 
-vi.mock('../src/contexts/useData', () => ({
-  useData: () => ({
-    bulkPublishItems: mockBulkPublishItems,
-    bulkUnpublishItems: mockBulkUnpublishItems,
-    publishItem: mockPublishItem,
-    unpublishItem: mockUnpublishItem,
+vi.mock('../src/contexts/usePublish', () => ({
+  usePublish: () => ({
+    requestPublish: mockRequestPublish,
+    requestUnpublish: mockRequestUnpublish,
+    pendingIntent: null,
+    clearIntent: vi.fn(),
   }),
 }));
 
@@ -447,10 +445,8 @@ describe('ItemList', () => {
 
   describe('selection mode and bulk actions', () => {
     beforeEach(() => {
-      mockBulkPublishItems.mockReset();
-      mockBulkUnpublishItems.mockReset();
-      mockBulkPublishItems.mockResolvedValue({ publishedCount: 0, promoted: [], requiresSlugSetup: false });
-      mockBulkUnpublishItems.mockResolvedValue({ unpublishedCount: 0 });
+      mockRequestPublish.mockReset();
+      mockRequestUnpublish.mockReset();
     });
 
     it('should show Select button', () => {
@@ -495,7 +491,7 @@ describe('ItemList', () => {
       await user.click(screen.getByRole('button', { name: 'Select Item 1' }));
       await user.click(screen.getByText('Publish Selected'));
 
-      expect(mockBulkPublishItems).toHaveBeenCalledWith([1]);
+      expect(mockRequestPublish).toHaveBeenCalledWith([{ type: 'item', id: 1 }]);
     });
 
     it('should call bulkUnpublishItems when clicking Make Private', async () => {
@@ -506,7 +502,7 @@ describe('ItemList', () => {
       await user.click(screen.getByRole('button', { name: 'Select Item 2' }));
       await user.click(screen.getByText('Make Private'));
 
-      expect(mockBulkUnpublishItems).toHaveBeenCalledWith([2]);
+      expect(mockRequestUnpublish).toHaveBeenCalledWith([{ type: 'item', id: 2 }]);
     });
 
     it('should exit selection mode when clicking Cancel in BulkActionBar', async () => {
