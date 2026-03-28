@@ -61,7 +61,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddTracingDecorator<IImageProvider, DatabaseImageProvider>(repoSource);
     builder.Services.AddTracingDecorator<IWorkspaceStatisticsRepository, WorkspaceStatisticsRepository>(repoSource);
     builder.Services.AddTracingDecorator<ICollectionStatisticsRepository, CollectionStatisticsRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IVisibilityService, VisibilityService>(appSource);
+    builder.Services.AddTracingDecorator<IPublishManagerService, PublishManagerService>(appSource);
     builder.Services.AddTracingDecorator<IWorkspaceService, WorkspaceService>(appSource);
     builder.Services.AddTracingDecorator<IUserDeletionService, UserDeletionService>(appSource);
     builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
@@ -85,7 +85,7 @@ else
     builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
     builder.Services.AddScoped<IWorkspaceStatisticsRepository, WorkspaceStatisticsRepository>();
     builder.Services.AddScoped<ICollectionStatisticsRepository, CollectionStatisticsRepository>();
-    builder.Services.AddScoped<IVisibilityService, VisibilityService>();
+    builder.Services.AddScoped<IPublishManagerService, PublishManagerService>();
     builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
     builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
     builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));

@@ -15,7 +15,7 @@ public class CategoriesControllerTests
 {
     private readonly Mock<ICategoryRepository> _mockRepository;
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
-    private readonly Mock<IVisibilityService> _mockVisibilityService;
+    private readonly Mock<IPublishManagerService> _mockVisibilityService;
     private readonly CategoriesController _controller;
     private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 1;
@@ -24,7 +24,7 @@ public class CategoriesControllerTests
     {
         _mockRepository = new Mock<ICategoryRepository>();
         _mockCollectionRepository = new Mock<ICollectionRepository>();
-        _mockVisibilityService = new Mock<IVisibilityService>();
+        _mockVisibilityService = new Mock<IPublishManagerService>();
         _controller = new CategoriesController(
             _mockRepository.Object, 
             _mockCollectionRepository.Object,

@@ -14,16 +14,16 @@ public class CategoriesController : ApiControllerBase
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICollectionRepository _collectionRepository;
-    private readonly IVisibilityService _visibilityService;
+    private readonly IPublishManagerService _publishManagerService;
 
     public CategoriesController(
         ICategoryRepository categoryRepository, 
         ICollectionRepository collectionRepository,
-        IVisibilityService visibilityService)
+        IPublishManagerService publishManagerService)
     {
         _categoryRepository = categoryRepository;
         _collectionRepository = collectionRepository;
-        _visibilityService = visibilityService;
+        _publishManagerService = publishManagerService;
     }
 
     [HttpGet]
@@ -60,7 +60,7 @@ public class CategoriesController : ApiControllerBase
         // Compute effective visibility
         if (collection != null)
         {
-            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+            _publishManagerService.ComputeEffectiveVisibility(categoryList, collection);
         }
         
         var response = categoryList.Select(c => CategoryResponse.FromCategory(
@@ -87,7 +87,7 @@ public class CategoriesController : ApiControllerBase
         {
             var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
-            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+            _publishManagerService.ComputeEffectiveVisibility(categoryList, collection);
             
             // Find the category in the computed list to get the effective visibility
             var computed = categoryList.FirstOrDefault(c => c.Id == id);
@@ -138,7 +138,7 @@ public class CategoriesController : ApiControllerBase
 
         // Get all categories for visibility computation
         var allCategories = (await _categoryRepository.GetByCollectionAsync(request.CollectionId, workspaceId)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+        _publishManagerService.ComputeEffectiveVisibility(allCategories, collection);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
         // Validate ParentCategoryId belongs to workspace and same collection
@@ -210,7 +210,7 @@ public class CategoriesController : ApiControllerBase
 
         // Get all categories for visibility computation
         var allCategories = (await _categoryRepository.GetByCollectionAsync(existingCategory.CollectionId, workspaceId)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+        _publishManagerService.ComputeEffectiveVisibility(allCategories, collection);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
         // Validate ParentCategoryId belongs to workspace and same collection
@@ -287,7 +287,7 @@ public class CategoriesController : ApiControllerBase
         var allCategories = (await _categoryRepository.GetByCollectionAsync(collectionId, workspaceId)).ToList();
         if (collection != null)
         {
-            _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+            _publishManagerService.ComputeEffectiveVisibility(allCategories, collection);
         }
         var templateIdsByCategory = await _categoryRepository.GetTemplateIdsByCategoryAsync(collectionId, workspaceId);
         var response = allCategories.Select(c => CategoryResponse.FromCategory(

@@ -18,7 +18,7 @@ public class ItemsController : ApiControllerBase
     private readonly IItemRepository _itemRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICollectionRepository _collectionRepository;
-    private readonly IVisibilityService _visibilityService;
+    private readonly IPublishManagerService _publishManagerService;
     private readonly IBulkUpdateQueue _bulkUpdateQueue;
     private readonly IWorkspaceStatisticsRepository _statisticsRepository;
     private readonly ICollectionStatisticsRepository _collectionStatisticsRepository;
@@ -27,7 +27,7 @@ public class ItemsController : ApiControllerBase
         IItemRepository itemRepository,
         ICategoryRepository categoryRepository,
         ICollectionRepository collectionRepository,
-        IVisibilityService visibilityService,
+        IPublishManagerService publishManagerService,
         IBulkUpdateQueue bulkUpdateQueue,
         IWorkspaceStatisticsRepository statisticsRepository,
         ICollectionStatisticsRepository collectionStatisticsRepository)
@@ -35,7 +35,7 @@ public class ItemsController : ApiControllerBase
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
         _collectionRepository = collectionRepository;
-        _visibilityService = visibilityService;
+        _publishManagerService = publishManagerService;
         _bulkUpdateQueue = bulkUpdateQueue;
         _statisticsRepository = statisticsRepository;
         _collectionStatisticsRepository = collectionStatisticsRepository;
@@ -77,8 +77,8 @@ public class ItemsController : ApiControllerBase
         {
             var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
-            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
-            _visibilityService.ComputeEffectiveVisibility(itemList, collection, categoryList);
+            _publishManagerService.ComputeEffectiveVisibility(categoryList, collection);
+            _publishManagerService.ComputeEffectiveVisibility(itemList, collection, categoryList);
         }
         
         // Compute ETag on full dataset BEFORE pagination for proper HTTP caching semantics
@@ -142,7 +142,7 @@ public class ItemsController : ApiControllerBase
         int collectionId, int workspaceId, Collection collection)
     {
         var categories = (await _categoryRepository.GetByCollectionAsync(collectionId, workspaceId)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(categories, collection);
+        _publishManagerService.ComputeEffectiveVisibility(categories, collection);
         var lookup = categories.ToDictionary(c => c.Id);
         return (categories, lookup);
     }
@@ -192,11 +192,11 @@ public class ItemsController : ApiControllerBase
         {
             var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
-            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+            _publishManagerService.ComputeEffectiveVisibility(categoryList, collection);
             var category = item.CategoryId.HasValue
                 ? categoryList.FirstOrDefault(c => c.Id == item.CategoryId.Value)
                 : null;
-            _visibilityService.ComputeEffectiveVisibility(item, collection, category);
+            _publishManagerService.ComputeEffectiveVisibility(item, collection, category);
         }
 
         return Ok(item);

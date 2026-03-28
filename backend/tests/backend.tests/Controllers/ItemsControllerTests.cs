@@ -17,7 +17,7 @@ public class ItemsControllerTests
     private readonly Mock<IItemRepository> _mockItemRepository;
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
-    private readonly Mock<IVisibilityService> _mockVisibilityService;
+    private readonly Mock<IPublishManagerService> _mockVisibilityService;
     private readonly Mock<IBulkUpdateQueue> _mockBulkUpdateQueue;
     private readonly Mock<IWorkspaceStatisticsRepository> _mockStatisticsRepository;
     private readonly Mock<ICollectionStatisticsRepository> _mockCollectionStatisticsRepository;
@@ -31,7 +31,7 @@ public class ItemsControllerTests
         _mockItemRepository = new Mock<IItemRepository>();
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockCollectionRepository = new Mock<ICollectionRepository>();
-        _mockVisibilityService = new Mock<IVisibilityService>();
+        _mockVisibilityService = new Mock<IPublishManagerService>();
         _mockBulkUpdateQueue = new Mock<IBulkUpdateQueue>();
         _mockStatisticsRepository = new Mock<IWorkspaceStatisticsRepository>();
         _mockCollectionStatisticsRepository = new Mock<ICollectionStatisticsRepository>();
