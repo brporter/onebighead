@@ -33,39 +33,6 @@ export enum Visibility {
   Public = "Public",
 }
 
-export interface PublishedEntityInfo {
-  type: string;
-  id: number;
-  name: string;
-}
-
-export interface PublishResponse {
-  published: PublishedEntityInfo;
-  promoted: PublishedEntityInfo[];
-  childrenPublished: number;
-  requiresSlugSetup: boolean;
-}
-
-export interface BulkPublishResponse {
-  publishedCount: number;
-  promoted: PublishedEntityInfo[];
-  requiresSlugSetup: boolean;
-}
-
-export interface UnpublishResponse {
-  unpublished: PublishedEntityInfo;
-  affectedPublicItems: number;
-  affectedPublicCategories: number;
-}
-
-export interface BulkUnpublishResponse {
-  unpublishedCount: number;
-}
-
-export interface UnpublishPreviewResponse {
-  affectedPublicItems: number;
-  affectedPublicCategories: number;
-}
 
 /**
  * User's role within a workspace.
@@ -252,3 +219,105 @@ export interface UpdateUserRoleRequest {
   role: WorkspaceRole;
 }
 
+// === Publish Manager Types ===
+
+export interface EntityRef {
+  type: 'item' | 'category' | 'collection';
+  id: number;
+}
+
+export interface ChangedEntityInfo {
+  type: string;
+  id: number;
+  name: string;
+}
+
+export interface PreflightRequest {
+  action: 'publish' | 'unpublish';
+  entities: EntityRef[];
+}
+
+export interface PreflightResponse {
+  ready: boolean;
+  requirements: PublishRequirement[];
+}
+
+export type PublishRequirement =
+  | WorkspaceSlugRequiredRequirement
+  | CollectionNotPublicRequirement
+  | CategoryNotPublicRequirement
+  | UnpublishWillHideChildrenRequirement;
+
+export interface WorkspaceSlugRequiredRequirement {
+  kind: 'workspace-slug-required';
+  workspaceId: number;
+  workspaceName: string;
+}
+
+export interface CollectionNotPublicRequirement {
+  kind: 'collection-not-public';
+  collectionId: number;
+  collectionName: string;
+}
+
+export interface CategoryNotPublicRequirement {
+  kind: 'category-not-public';
+  categoryId: number;
+  categoryName: string;
+}
+
+export interface UnpublishWillHideChildrenRequirement {
+  kind: 'unpublish-will-hide-children';
+  entityType: string;
+  entityId: number;
+  entityName: string;
+  affectedPublicItems: number;
+  affectedPublicCategories: number;
+}
+
+export type PublishResolution =
+  | WorkspaceSlugResolution
+  | CollectionNotPublicResolution
+  | CategoryNotPublicResolution
+  | UnpublishWillHideChildrenResolution;
+
+export interface WorkspaceSlugResolution {
+  kind: 'workspace-slug-required';
+  slug: string;
+}
+
+export interface CollectionNotPublicResolution {
+  kind: 'collection-not-public';
+  collectionId: number;
+}
+
+export interface CategoryNotPublicResolution {
+  kind: 'category-not-public';
+  categoryId: number;
+}
+
+export interface UnpublishWillHideChildrenResolution {
+  kind: 'unpublish-will-hide-children';
+  entityType: string;
+  entityId: number;
+}
+
+export interface ExecuteRequest {
+  action: 'publish' | 'unpublish';
+  entities: EntityRef[];
+  resolutions: PublishResolution[];
+}
+
+export interface ExecuteResponse {
+  success: boolean;
+  error?: string;
+  changed: ChangedEntityInfo[];
+  promoted: ChangedEntityInfo[];
+  workspaceSlugSet?: string;
+  requirements?: PublishRequirement[];
+}
+
+export interface PublishIntent {
+  action: 'publish' | 'unpublish';
+  entities: EntityRef[];
+}
