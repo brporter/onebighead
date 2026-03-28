@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Category } from '../../utils/types';
 import type { UnpublishPreviewResponse } from '../../utils/types';
 import { useData } from '../../contexts/useData';
+import { useUser } from '../../contexts/useUser';
 import { useToast } from '../../contexts/useToast';
 import { buildPublishToastMessage, buildPublishToastDetails, buildUnpublishToastMessage } from '../../utils/publishToastUtils';
 import CategoryManagerTree from './CategoryManagerTree';
@@ -10,6 +11,7 @@ import QuickCreatePopover from './QuickCreatePopover';
 import { PublishConfirmModal } from '../common/PublishConfirmModal';
 import { UnpublishConfirmModal } from '../common/UnpublishConfirmModal';
 import { SlugSetupModal } from '../common/SlugSetupModal';
+import { workspacesApi } from '../../api/workspaces';
 import './CategoryManagerModal.css';
 
 interface CategoryManagerModalProps {
@@ -30,6 +32,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     unpublishCategory,
     getUnpublishCategoryPreview,
   } = useData();
+  const { user, refetch: refetchUser } = useUser();
   const { showToast } = useToast();
 
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -351,13 +354,32 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     setUnpublishPreview(null);
   }, []);
 
-  const handleSlugConfirm = useCallback(async () => {
+  const handleSlugConfirm = useCallback(async (slug: string) => {
     setShowSlugSetup(false);
+
+    // Save the slug to the workspace
+    const activeWorkspace = user?.activeWorkspace;
+    if (activeWorkspace && slug) {
+      try {
+        await workspacesApi.update(activeWorkspace.workspaceId, {
+          name: activeWorkspace.workspaceName,
+          slug,
+        });
+        // Refetch user so the slug is reflected across the app
+        await refetchUser();
+      } catch (err) {
+        console.error('Failed to save workspace slug:', err);
+        setPublishTarget(null);
+        return;
+      }
+    }
+
     if (!publishTarget) {
       await loadCategoriesForCollection(collectionId);
       return;
     }
-    // Retry publish after slug setup
+
+    // Retry publish after slug is saved
     try {
       const result = await publishCategory(publishTarget.categoryId, true);
       setPublishTarget(null);
@@ -367,7 +389,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
       console.error('Failed to publish category after slug setup:', err);
       setPublishTarget(null);
     }
-  }, [publishTarget, publishCategory, collectionId, loadCategoriesForCollection, showToast]);
+  }, [user, refetchUser, publishTarget, publishCategory, collectionId, loadCategoriesForCollection, showToast]);
 
   const handleSlugCancel = useCallback(() => {
     setShowSlugSetup(false);
