@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useImperativeHandle } from 'react';
 import type { Category } from '../../utils/types';
+import { Visibility } from '../../utils/types';
 import CategoryTemplateSelector from './CategoryTemplateSelector';
 
 interface CategoryManagerFormProps {
@@ -38,7 +39,7 @@ function CategoryManagerForm({
   const [error, setError] = useState<string | null>(null);
 
   const isSystem = category?.isSystem ?? false;
-  const isPublic = category?.effectiveIsPublic ?? false;
+  const isPublic = category?.visibility === Visibility.Public;
 
   // Track whether form has unsaved changes
   const hasChanges = isNew
