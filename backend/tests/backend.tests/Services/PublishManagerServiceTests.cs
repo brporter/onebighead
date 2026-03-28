@@ -318,4 +318,185 @@ public class PublishManagerServiceTests
     }
 
     #endregion
+
+    #region Execute — Publish
+
+    [Fact]
+    public async Task Execute_Publish_Item_WithResolutions_Succeeds()
+    {
+        var workspace = new Workspace { Id = 1, Name = "WS", Slug = null };
+        var collection = new Collection { Id = 1, Name = "Col", WorkspaceId = 1, Slug = "col", Visibility = Visibility.Private };
+        var category = new Category { Id = 1, Name = "Cat", WorkspaceId = 1, CollectionId = 1, Visibility = Visibility.Private };
+        var item = new Item { Id = 1, Name = "Item", WorkspaceId = 1, CollectionId = 1, CategoryId = 1, Visibility = Visibility.Private };
+
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
+        _mockWorkspaceRepository.Setup(r => r.IsSlugTakenAsync("my-ws", 1)).ReturnsAsync(false);
+        _mockItemRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(item);
+        _mockCollectionRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(category);
+        _mockCategoryRepository.Setup(r => r.GetByCollectionAsync(1, 1)).ReturnsAsync(new List<Category> { category });
+
+        var result = await _service.ExecuteAsync(1, new ExecuteRequest
+        {
+            Action = PublishAction.Publish,
+            Entities = new List<EntityRef> { new() { Type = "item", Id = 1 } },
+            Resolutions = new List<PublishResolution>
+            {
+                new WorkspaceSlugResolution { Slug = "my-ws" },
+                new CollectionNotPublicResolution { CollectionId = 1 },
+                new CategoryNotPublicResolution { CategoryId = 1 },
+            }
+        });
+
+        Assert.True(result.Success);
+        Assert.Single(result.Changed);
+        Assert.Equal("item", result.Changed[0].Type);
+        Assert.Equal(2, result.Promoted.Count);
+        Assert.Equal("my-ws", result.WorkspaceSlugSet);
+
+        // Verify visibility was set
+        Assert.Equal(Visibility.Public, item.Visibility);
+        Assert.Equal(Visibility.Public, collection.Visibility);
+        Assert.Equal(Visibility.Public, category.Visibility);
+    }
+
+    [Fact]
+    public async Task Execute_Publish_MissingResolution_Fails()
+    {
+        var workspace = new Workspace { Id = 1, Name = "WS", Slug = null };
+        var collection = new Collection { Id = 1, Name = "Col", WorkspaceId = 1, Slug = "col", Visibility = Visibility.Private };
+        var item = new Item { Id = 1, Name = "Item", WorkspaceId = 1, CollectionId = 1, Visibility = Visibility.Private };
+
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
+        _mockItemRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(item);
+        _mockCollectionRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(collection);
+
+        var result = await _service.ExecuteAsync(1, new ExecuteRequest
+        {
+            Action = PublishAction.Publish,
+            Entities = new List<EntityRef> { new() { Type = "item", Id = 1 } },
+            Resolutions = new List<PublishResolution>() // Missing resolutions
+        });
+
+        Assert.False(result.Success);
+        Assert.NotNull(result.Error);
+        Assert.NotNull(result.Requirements);
+        Assert.NotEmpty(result.Requirements!);
+    }
+
+    [Fact]
+    public async Task Execute_Publish_SlugTaken_Fails()
+    {
+        var workspace = new Workspace { Id = 1, Name = "WS", Slug = null };
+        var collection = new Collection { Id = 1, Name = "Col", WorkspaceId = 1, Slug = "col", Visibility = Visibility.Public };
+        var item = new Item { Id = 1, Name = "Item", WorkspaceId = 1, CollectionId = 1, Visibility = Visibility.Private };
+
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
+        _mockWorkspaceRepository.Setup(r => r.IsSlugTakenAsync("taken-slug", 1)).ReturnsAsync(true);
+        _mockItemRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(item);
+        _mockCollectionRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(collection);
+
+        var result = await _service.ExecuteAsync(1, new ExecuteRequest
+        {
+            Action = PublishAction.Publish,
+            Entities = new List<EntityRef> { new() { Type = "item", Id = 1 } },
+            Resolutions = new List<PublishResolution>
+            {
+                new WorkspaceSlugResolution { Slug = "taken-slug" },
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.Contains("already taken", result.Error!);
+    }
+
+    [Fact]
+    public async Task Execute_Publish_Category_PromotesParentCategoriesAndCollection()
+    {
+        var workspace = new Workspace { Id = 1, Name = "WS", Slug = "my-ws" };
+        var collection = new Collection { Id = 1, Name = "Col", WorkspaceId = 1, Slug = "col", Visibility = Visibility.Private };
+        var parent = new Category { Id = 1, Name = "Parent", WorkspaceId = 1, CollectionId = 1, Visibility = Visibility.Private };
+        var child = new Category { Id = 2, Name = "Child", WorkspaceId = 1, CollectionId = 1, ParentCategoryId = 1, Visibility = Visibility.Private };
+
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
+        _mockCategoryRepository.Setup(r => r.GetByIdAsync(2, 1)).ReturnsAsync(child);
+        _mockCollectionRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(r => r.GetByCollectionAsync(1, 1)).ReturnsAsync(new List<Category> { parent, child });
+        _mockItemRepository.Setup(r => r.GetByCollectionIdAsync(1, 1)).ReturnsAsync(new List<Item>());
+
+        var result = await _service.ExecuteAsync(1, new ExecuteRequest
+        {
+            Action = PublishAction.Publish,
+            Entities = new List<EntityRef> { new() { Type = "category", Id = 2 } },
+            Resolutions = new List<PublishResolution>
+            {
+                new CollectionNotPublicResolution { CollectionId = 1 },
+                new CategoryNotPublicResolution { CategoryId = 1 },
+            }
+        });
+
+        Assert.True(result.Success);
+        Assert.Single(result.Changed);
+        Assert.Equal("category", result.Changed[0].Type);
+        Assert.Equal(2, result.Promoted.Count); // collection + parent category
+        Assert.Equal(Visibility.Public, parent.Visibility);
+        Assert.Equal(Visibility.Public, child.Visibility);
+        Assert.Equal(Visibility.Public, collection.Visibility);
+    }
+
+    #endregion
+
+    #region Execute — Unpublish
+
+    [Fact]
+    public async Task Execute_Unpublish_Item_Succeeds()
+    {
+        var workspace = new Workspace { Id = 1, Name = "WS", Slug = "my-ws" };
+        var item = new Item { Id = 1, Name = "Item", WorkspaceId = 1, CollectionId = 1, Visibility = Visibility.Public };
+
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
+        _mockItemRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(item);
+
+        var result = await _service.ExecuteAsync(1, new ExecuteRequest
+        {
+            Action = PublishAction.Unpublish,
+            Entities = new List<EntityRef> { new() { Type = "item", Id = 1 } },
+            Resolutions = new List<PublishResolution>()
+        });
+
+        Assert.True(result.Success);
+        Assert.Single(result.Changed);
+        Assert.Equal(Visibility.Private, item.Visibility);
+    }
+
+    [Fact]
+    public async Task Execute_Unpublish_Category_WithAcknowledgment_Succeeds()
+    {
+        var workspace = new Workspace { Id = 1, Name = "WS", Slug = "my-ws" };
+        var collection = new Collection { Id = 1, Name = "Col", WorkspaceId = 1, Slug = "col", Visibility = Visibility.Public };
+        var category = new Category { Id = 1, Name = "Cat", WorkspaceId = 1, CollectionId = 1, Visibility = Visibility.Public };
+        var item = new Item { Id = 1, Name = "Item", WorkspaceId = 1, CollectionId = 1, CategoryId = 1, Visibility = Visibility.Public };
+
+        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
+        _mockCategoryRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(category);
+        _mockCollectionRepository.Setup(r => r.GetByIdAsync(1, 1)).ReturnsAsync(collection);
+        _mockCategoryRepository.Setup(r => r.GetByCollectionAsync(1, 1)).ReturnsAsync(new List<Category> { category });
+        _mockItemRepository.Setup(r => r.GetByCollectionIdAsync(1, 1)).ReturnsAsync(new List<Item> { item });
+
+        var result = await _service.ExecuteAsync(1, new ExecuteRequest
+        {
+            Action = PublishAction.Unpublish,
+            Entities = new List<EntityRef> { new() { Type = "category", Id = 1 } },
+            Resolutions = new List<PublishResolution>
+            {
+                new UnpublishWillHideChildrenResolution { EntityType = "category", EntityId = 1 },
+            }
+        });
+
+        Assert.True(result.Success);
+        Assert.Single(result.Changed);
+        Assert.Equal(Visibility.Private, category.Visibility);
+    }
+
+    #endregion
 }
