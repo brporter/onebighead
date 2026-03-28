@@ -300,13 +300,14 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
 
     try {
       const result = await publishCategory(publishTarget.categoryId, includeChildren);
-      setPublishTarget(null);
 
       if (result.requiresSlugSetup) {
+        // Keep publishTarget so handleSlugConfirm can retry the publish
         setShowSlugSetup(true);
         return;
       }
 
+      setPublishTarget(null);
       showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
       await loadCategoriesForCollection(collectionId);
     } catch (err) {
@@ -352,11 +353,25 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
 
   const handleSlugConfirm = useCallback(async () => {
     setShowSlugSetup(false);
-    await loadCategoriesForCollection(collectionId);
-  }, [collectionId, loadCategoriesForCollection]);
+    if (!publishTarget) {
+      await loadCategoriesForCollection(collectionId);
+      return;
+    }
+    // Retry publish after slug setup
+    try {
+      const result = await publishCategory(publishTarget.categoryId, true);
+      setPublishTarget(null);
+      showToast(buildPublishToastMessage(result), buildPublishToastDetails(result));
+      await loadCategoriesForCollection(collectionId);
+    } catch (err) {
+      console.error('Failed to publish category after slug setup:', err);
+      setPublishTarget(null);
+    }
+  }, [publishTarget, publishCategory, collectionId, loadCategoriesForCollection, showToast]);
 
   const handleSlugCancel = useCallback(() => {
     setShowSlugSetup(false);
+    setPublishTarget(null);
   }, []);
 
   return (
