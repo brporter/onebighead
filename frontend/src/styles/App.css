@@ -1548,6 +1548,10 @@ body {
   gap: var(--space-xs);
 }
 
+.modal__field + .modal__field {
+  margin-top: var(--space-md);
+}
+
 .modal__label {
   font-size: 0.9rem;
   font-weight: 500;
