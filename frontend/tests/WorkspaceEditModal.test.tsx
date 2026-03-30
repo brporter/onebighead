@@ -110,7 +110,8 @@ describe('WorkspaceEditModal', () => {
     it('should not render when isOpen is false', () => {
       render(<WorkspaceEditModal {...defaultProps} isOpen={false} />);
 
-      expect(HTMLDialogElement.prototype.close).toHaveBeenCalled();
+      expect(HTMLDialogElement.prototype.close).not.toHaveBeenCalled();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
     });
 
     it('should call showModal when isOpen is true', () => {

@@ -20,7 +20,7 @@ export function useDialog(
     if (isOpen) {
       if (!dialog.open) dialog.showModal();
     } else {
-      dialog.close();
+      if (dialog.open) dialog.close();
     }
   }, [isOpen]);
 

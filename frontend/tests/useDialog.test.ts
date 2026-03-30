@@ -72,6 +72,29 @@ describe('useDialog', () => {
     void result;
   });
 
+  it('should not call close if dialog is already closed', () => {
+    const onClose = vi.fn();
+    const dialog = document.createElement('dialog');
+    document.body.appendChild(dialog);
+
+    const { result, rerender } = renderHook(
+      ({ isOpen }) => {
+        const hookResult = useDialog(isOpen, onClose);
+        (hookResult[0] as { current: HTMLDialogElement | null }).current = dialog;
+        return hookResult;
+      },
+      { initialProps: { isOpen: false } },
+    );
+
+    // dialog.open is false by default, so close should not be called
+    rerender({ isOpen: false });
+
+    expect(HTMLDialogElement.prototype.close).not.toHaveBeenCalled();
+
+    document.body.removeChild(dialog);
+    void result;
+  });
+
   it('should not call showModal if dialog is already open', () => {
     const onClose = vi.fn();
     const dialog = document.createElement('dialog');

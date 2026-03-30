@@ -74,6 +74,7 @@ function ItemCard({ item, accentColor, isSelected, onSelect, selectionMode, isCh
             checked={isChecked ?? false}
             readOnly
             tabIndex={-1}
+            aria-label={`Select ${item.name}`}
           />
         </div>
       )}

@@ -198,7 +198,7 @@ describe('CategoryManagerModal', () => {
     it('should not render dialog content when isOpen is false', () => {
       render(<CategoryManagerModal {...defaultProps} isOpen={false} />);
 
-      expect(HTMLDialogElement.prototype.close).toHaveBeenCalled();
+      expect(HTMLDialogElement.prototype.close).not.toHaveBeenCalled();
       expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
     });
 

@@ -1,4 +1,4 @@
-using backend.DTOs;
+using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

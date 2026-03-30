@@ -14,7 +14,7 @@ export function createEmptyItem(categoryId: number | null, collectionId: number,
     properties: [],
     images: [],
     visibility: Visibility.Private,
-    effectiveIsPublic: true,
+    effectiveIsPublic: false,
     userFlag: UserFlag.Have,
   };
 }

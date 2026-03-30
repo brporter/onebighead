@@ -258,8 +258,14 @@ public class CategoriesController : ApiControllerBase
             return BadRequest("No categories to reorder");
         }
 
-        // Validate all categories belong to this workspace
+        // Reject duplicate category IDs
         var categoryIds = request.Categories.Select(c => c.CategoryId).ToList();
+        if (categoryIds.Count != categoryIds.Distinct().Count())
+        {
+            return BadRequest("Duplicate category IDs are not allowed");
+        }
+
+        // Validate all categories belong to this workspace
         var existingCategories = new List<Category>();
         foreach (var id in categoryIds)
         {

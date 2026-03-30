@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace backend.DTOs;
+namespace OneBigHead.Server.DTOs;
 
 // === Shared Types ===
 

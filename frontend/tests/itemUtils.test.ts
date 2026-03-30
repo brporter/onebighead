@@ -18,7 +18,7 @@ describe('createEmptyItem', () => {
       properties: [],
       images: [],
       visibility: Visibility.Private,
-      effectiveIsPublic: true,
+      effectiveIsPublic: false,
       userFlag: UserFlag.Have,
     });
   });
@@ -38,7 +38,7 @@ describe('createEmptyItem', () => {
       properties: [],
       images: [],
       visibility: Visibility.Private,
-      effectiveIsPublic: true,
+      effectiveIsPublic: false,
       userFlag: UserFlag.Have,
     });
   });
@@ -58,7 +58,7 @@ describe('createEmptyItem', () => {
       properties: [],
       images: [],
       visibility: Visibility.Private,
-      effectiveIsPublic: true,
+      effectiveIsPublic: false,
       userFlag: UserFlag.Have,
     });
   });
