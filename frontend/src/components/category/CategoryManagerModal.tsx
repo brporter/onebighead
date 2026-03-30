@@ -74,7 +74,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
     if (e.target === dialogRef.current) {
       handleCloseAttempt();
     }
-  }, [handleCloseAttempt]);
+  }, [dialogRef, handleCloseAttempt]);
 
   const handleEditCategory = useCallback((categoryId: number) => {
     setSelectedCategoryId(categoryId);
