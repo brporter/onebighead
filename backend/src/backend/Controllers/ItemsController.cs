@@ -18,7 +18,7 @@ public class ItemsController : ApiControllerBase
     private readonly IItemRepository _itemRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICollectionRepository _collectionRepository;
-    private readonly IVisibilityService _visibilityService;
+    private readonly IPublishManagerService _publishManagerService;
     private readonly IBulkUpdateQueue _bulkUpdateQueue;
     private readonly IWorkspaceStatisticsRepository _statisticsRepository;
     private readonly ICollectionStatisticsRepository _collectionStatisticsRepository;
@@ -27,7 +27,7 @@ public class ItemsController : ApiControllerBase
         IItemRepository itemRepository,
         ICategoryRepository categoryRepository,
         ICollectionRepository collectionRepository,
-        IVisibilityService visibilityService,
+        IPublishManagerService publishManagerService,
         IBulkUpdateQueue bulkUpdateQueue,
         IWorkspaceStatisticsRepository statisticsRepository,
         ICollectionStatisticsRepository collectionStatisticsRepository)
@@ -35,7 +35,7 @@ public class ItemsController : ApiControllerBase
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
         _collectionRepository = collectionRepository;
-        _visibilityService = visibilityService;
+        _publishManagerService = publishManagerService;
         _bulkUpdateQueue = bulkUpdateQueue;
         _statisticsRepository = statisticsRepository;
         _collectionStatisticsRepository = collectionStatisticsRepository;
@@ -77,8 +77,8 @@ public class ItemsController : ApiControllerBase
         {
             var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
-            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
-            _visibilityService.ComputeEffectiveVisibility(itemList, collection, categoryList);
+            _publishManagerService.ComputeEffectiveVisibility(categoryList, collection);
+            _publishManagerService.ComputeEffectiveVisibility(itemList, collection, categoryList);
         }
         
         // Compute ETag on full dataset BEFORE pagination for proper HTTP caching semantics
@@ -142,17 +142,17 @@ public class ItemsController : ApiControllerBase
         int collectionId, int workspaceId, Collection collection)
     {
         var categories = (await _categoryRepository.GetByCollectionAsync(collectionId, workspaceId)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(categories, collection);
+        _publishManagerService.ComputeEffectiveVisibility(categories, collection);
         var lookup = categories.ToDictionary(c => c.Id);
         return (categories, lookup);
     }
 
     /// <summary>
-    /// Validates category ID and visibility for item create/update.
+    /// Validates category ID for item create/update.
     /// Returns the category if valid, or a BadRequest result if invalid.
     /// </summary>
-    private (Category? Category, BadRequestObjectResult? Error) ValidateCategoryAndVisibility(
-        int? categoryId, Visibility visibility, Dictionary<int, Category> categoryLookup, Collection collection)
+    private (Category? Category, BadRequestObjectResult? Error) ValidateCategory(
+        int? categoryId, Dictionary<int, Category> categoryLookup)
     {
         Category? category = null;
 
@@ -164,16 +164,16 @@ public class ItemsController : ApiControllerBase
             }
         }
 
-        if (visibility == Visibility.Public)
-        {
-            bool parentEffectivelyPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
-            if (!parentEffectivelyPublic)
-            {
-                return (null, BadRequest("Cannot set visibility to Public when parent is private."));
-            }
-        }
-
         return (category, null);
+    }
+
+    /// <summary>
+    /// Determines the default visibility for an item based on its parent category or collection.
+    /// </summary>
+    private static Visibility GetDefaultVisibility(Category? category, Collection collection)
+    {
+        bool parentEffectivelyPublic = category?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
+        return parentEffectivelyPublic ? Visibility.Public : Visibility.Private;
     }
 
     [HttpGet("{id}")]
@@ -192,11 +192,11 @@ public class ItemsController : ApiControllerBase
         {
             var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
-            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+            _publishManagerService.ComputeEffectiveVisibility(categoryList, collection);
             var category = item.CategoryId.HasValue
                 ? categoryList.FirstOrDefault(c => c.Id == item.CategoryId.Value)
                 : null;
-            _visibilityService.ComputeEffectiveVisibility(item, collection, category);
+            _publishManagerService.ComputeEffectiveVisibility(item, collection, category);
         }
 
         return Ok(item);
@@ -222,14 +222,15 @@ public class ItemsController : ApiControllerBase
         }
 
         // Load categories and validate
-        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
-        var (_, error) = ValidateCategoryAndVisibility(request.CategoryId, request.Visibility, categoryLookup, collection);
+        var (categories, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
+        var (category, error) = ValidateCategory(request.CategoryId, categoryLookup);
         if (error != null)
         {
             return error;
         }
 
         var item = request.ToItem(workspaceId);
+        item.Visibility = GetDefaultVisibility(category, collection);
         var created = await _itemRepository.CreateAsync(item);
         return CreatedAtAction(nameof(GetItem), new { id = created.Id }, created);
     }
@@ -254,14 +255,17 @@ public class ItemsController : ApiControllerBase
         }
 
         // Load categories and validate
-        var (_, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
-        var (_, error) = ValidateCategoryAndVisibility(request.CategoryId, request.Visibility, categoryLookup, collection);
+        var (categories, categoryLookup) = await LoadCategoriesWithVisibility(request.CollectionId, workspaceId, collection);
+        var (category, error) = ValidateCategory(request.CategoryId, categoryLookup);
         if (error != null)
         {
             return error;
         }
 
+        // Preserve existing visibility - use publish/unpublish endpoints to change it
+        var existingItem = await _itemRepository.GetByIdAsync(id, workspaceId);
         var item = request.ToItem(id, workspaceId);
+        item.Visibility = existingItem?.Visibility ?? GetDefaultVisibility(category, collection);
         var updated = await _itemRepository.UpdateAsync(id, item, workspaceId);
         if (updated is null)
         {

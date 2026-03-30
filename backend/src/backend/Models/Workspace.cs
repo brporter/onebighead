@@ -34,12 +34,6 @@ public class Workspace
     public string? Slug { get; set; }
 
     /// <summary>
-    /// Whether this workspace's public collections are accessible to anonymous users.
-    /// Requires Slug to be set.
-    /// </summary>
-    public bool IsPublicAccessEnabled { get; set; } = false;
-
-    /// <summary>
     /// Users who have this workspace as their active workspace.
     /// </summary>
     public ICollection<User> ActiveUsers { get; set; } = new List<User>();

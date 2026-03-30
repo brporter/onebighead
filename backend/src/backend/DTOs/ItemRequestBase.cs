@@ -32,8 +32,6 @@ public abstract class ItemRequestBase
 
     public List<ItemImage> Images { get; set; } = new();
 
-    public Visibility Visibility { get; set; } = Visibility.Default;
-
     public UserFlag UserFlag { get; set; } = UserFlag.Have;
 
     /// <summary>
@@ -49,7 +47,6 @@ public abstract class ItemRequestBase
         item.Description = Description;
         item.Properties = Properties;
         item.Images = Images;
-        item.Visibility = Visibility;
         item.UserFlag = UserFlag;
     }
 }

@@ -13,10 +13,13 @@ function CollectionList({ collections, onSelect }: CollectionListProps) {
       <p className="collectionList__subtitle">Select a collection to view its items</p>
       <div className="collectionList__grid">
         {collections.map((collection) => (
-          <button
+          <div
             key={collection.collectionId}
             className="collectionList__card"
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(collection)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(collection); } }}
           >
             {collection.heroImageUrl && (
               <div className="collectionList__imageWrap">
@@ -33,7 +36,7 @@ function CollectionList({ collections, onSelect }: CollectionListProps) {
                 <p className="collectionList__description">{collection.description}</p>
               )}
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </div>

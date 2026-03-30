@@ -23,7 +23,55 @@ exports[`ItemList > snapshots > should render empty list 1`] = `
           0
            total
         </div>
+        <button
+          class="list__selectButton"
+          type="button"
+        >
+          Select
+        </button>
       </div>
+    </div>
+    <div
+      aria-label="Visibility filter"
+      class="filter-bar"
+      role="group"
+    >
+      <button
+        aria-pressed="true"
+        class="filter-btn active"
+        type="button"
+      >
+        All
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+          />
+        </svg>
+        Public
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        Private
+      </button>
+      <span
+        class="filter-count"
+      >
+        Showing 
+        0
+         items
+      </span>
     </div>
     <div
       class="list__masonry"
@@ -88,7 +136,55 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
           3
            total
         </div>
+        <button
+          class="list__selectButton"
+          type="button"
+        >
+          Select
+        </button>
       </div>
+    </div>
+    <div
+      aria-label="Visibility filter"
+      class="filter-bar"
+      role="group"
+    >
+      <button
+        aria-pressed="true"
+        class="filter-btn active"
+        type="button"
+      >
+        All
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+          />
+        </svg>
+        Public
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        Private
+      </button>
+      <span
+        class="filter-count"
+      >
+        Showing 
+        3
+         items
+      </span>
     </div>
     <div
       class="list__masonry"
@@ -103,6 +199,21 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -128,6 +239,21 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -153,6 +279,21 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -224,12 +365,60 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
            total
         </div>
         <button
+          class="list__selectButton"
+          type="button"
+        >
+          Select
+        </button>
+        <button
           class="list__addButton"
           type="button"
         >
           + Add Item
         </button>
       </div>
+    </div>
+    <div
+      aria-label="Visibility filter"
+      class="filter-bar"
+      role="group"
+    >
+      <button
+        aria-pressed="true"
+        class="filter-btn active"
+        type="button"
+      >
+        All
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+          />
+        </svg>
+        Public
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        Private
+      </button>
+      <span
+        class="filter-count"
+      >
+        Showing 
+        3
+         items
+      </span>
     </div>
     <div
       class="list__masonry"
@@ -244,6 +433,21 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -269,6 +473,21 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -294,6 +513,21 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -364,7 +598,55 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           50
            total
         </div>
+        <button
+          class="list__selectButton"
+          type="button"
+        >
+          Select
+        </button>
       </div>
+    </div>
+    <div
+      aria-label="Visibility filter"
+      class="filter-bar"
+      role="group"
+    >
+      <button
+        aria-pressed="true"
+        class="filter-btn active"
+        type="button"
+      >
+        All
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+          />
+        </svg>
+        Public
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        Private
+      </button>
+      <span
+        class="filter-count"
+      >
+        Showing 
+        50
+         items
+      </span>
     </div>
     <div
       class="list__masonry"
@@ -379,6 +661,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -404,6 +701,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -429,6 +741,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -454,6 +781,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -479,6 +821,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -504,6 +861,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -529,6 +901,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -554,6 +941,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -579,6 +981,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -604,6 +1021,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -629,6 +1061,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -654,6 +1101,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -679,6 +1141,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -704,6 +1181,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -729,6 +1221,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -754,6 +1261,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -779,6 +1301,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -804,6 +1341,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -829,6 +1381,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -854,6 +1421,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -879,6 +1461,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -904,6 +1501,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -929,6 +1541,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -954,6 +1581,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -979,6 +1621,21 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -1048,7 +1705,55 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
           3
            total
         </div>
+        <button
+          class="list__selectButton"
+          type="button"
+        >
+          Select
+        </button>
       </div>
+    </div>
+    <div
+      aria-label="Visibility filter"
+      class="filter-bar"
+      role="group"
+    >
+      <button
+        aria-pressed="true"
+        class="filter-btn active"
+        type="button"
+      >
+        All
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+          />
+        </svg>
+        Public
+      </button>
+      <button
+        aria-pressed="false"
+        class="filter-btn"
+        type="button"
+      >
+        Private
+      </button>
+      <span
+        class="filter-count"
+      >
+        Showing 
+        3
+         items
+      </span>
     </div>
     <div
       class="list__masonry"
@@ -1063,6 +1768,21 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -1088,6 +1808,21 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >
@@ -1113,6 +1848,21 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
           class="item-card__ribbon"
           style="background: linear-gradient(90deg, rgb(199, 125, 74), rgb(212, 165, 116));"
         />
+        <button
+          class="publish-btn item-card__publish-btn"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              transform="rotate(-90 12 12)"
+            />
+          </svg>
+          Publish
+        </button>
         <div
           class="item-card__body"
         >

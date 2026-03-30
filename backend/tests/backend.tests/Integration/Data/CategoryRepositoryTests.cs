@@ -62,6 +62,28 @@ public class CategoryRepositoryTests : IDisposable
         Assert.Empty(result);
     }
 
+    [Fact]
+    public async Task GetAllAsync_ReturnsCategoriesOrderedBySortOrderThenName()
+    {
+        // Arrange
+        var categories = new List<Category>
+        {
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Bravo", SortOrder = 1 },
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Alpha", SortOrder = 0 },
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Charlie", SortOrder = 1 },
+        };
+        await _context.Categories.AddRangeAsync(categories);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = (await _repository.GetAllAsync(TestWorkspaceId)).ToList();
+
+        // Assert
+        Assert.Equal("Alpha", result[0].Name);
+        Assert.Equal("Bravo", result[1].Name);
+        Assert.Equal("Charlie", result[2].Name);
+    }
+
     #endregion
 
     #region GetByCollectionAsync Tests
@@ -115,6 +137,28 @@ public class CategoryRepositoryTests : IDisposable
 
         // Assert
         Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetByCollectionAsync_ReturnsCategoriesOrderedBySortOrderThenName()
+    {
+        // Arrange
+        var categories = new List<Category>
+        {
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Bravo", SortOrder = 1 },
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Alpha", SortOrder = 0 },
+            new() { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Charlie", SortOrder = 1 },
+        };
+        await _context.Categories.AddRangeAsync(categories);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = (await _repository.GetByCollectionAsync(TestCollectionId, TestWorkspaceId)).ToList();
+
+        // Assert
+        Assert.Equal("Alpha", result[0].Name);
+        Assert.Equal("Bravo", result[1].Name);
+        Assert.Equal("Charlie", result[2].Name);
     }
 
     #endregion
@@ -560,6 +604,87 @@ public class CategoryRepositoryTests : IDisposable
         var updatedItem = await _context.Items.FindAsync(1);
         Assert.NotNull(updatedItem);
         Assert.Null(updatedItem.CategoryId); // Should be null when no Unassigned Items category
+    }
+
+    #endregion
+
+    #region ReorderAsync Tests
+
+    [Fact]
+    public async Task ReorderAsync_UpdatesSortOrderForMultipleCategories()
+    {
+        // Arrange
+        var cat1 = new Category { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "A", SortOrder = 0 };
+        var cat2 = new Category { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "B", SortOrder = 1 };
+        await _context.Categories.AddRangeAsync(cat1, cat2);
+        await _context.SaveChangesAsync();
+
+        var updates = new Dictionary<int, int> { { cat1.Id, 1 }, { cat2.Id, 0 } };
+
+        // Act
+        await _repository.ReorderAsync(updates, TestWorkspaceId);
+
+        // Assert
+        var result = (await _repository.GetByCollectionAsync(TestCollectionId, TestWorkspaceId)).ToList();
+        Assert.Equal("B", result[0].Name);
+        Assert.Equal("A", result[1].Name);
+    }
+
+    [Fact]
+    public async Task ReorderAsync_OnlyUpdatesCategoriesInWorkspace()
+    {
+        // Arrange
+        var cat1 = new Category { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "A", SortOrder = 0 };
+        var cat2 = new Category { WorkspaceId = OtherWorkspaceId, CollectionId = OtherCollectionId, Name = "B", SortOrder = 0 };
+        await _context.Categories.AddRangeAsync(cat1, cat2);
+        await _context.SaveChangesAsync();
+
+        var updates = new Dictionary<int, int> { { cat1.Id, 5 }, { cat2.Id, 10 } };
+
+        // Act
+        await _repository.ReorderAsync(updates, TestWorkspaceId);
+
+        // Assert
+        var updatedCat1 = await _context.Categories.FindAsync(cat1.Id);
+        var updatedCat2 = await _context.Categories.FindAsync(cat2.Id);
+        Assert.Equal(5, updatedCat1!.SortOrder);
+        Assert.Equal(0, updatedCat2!.SortOrder); // Should not be updated (different workspace)
+    }
+
+    [Fact]
+    public async Task ReorderAsync_HandlesEmptyDictionary()
+    {
+        // Arrange
+        var cat1 = new Category { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "A", SortOrder = 0 };
+        await _context.Categories.AddAsync(cat1);
+        await _context.SaveChangesAsync();
+
+        var updates = new Dictionary<int, int>();
+
+        // Act
+        await _repository.ReorderAsync(updates, TestWorkspaceId);
+
+        // Assert
+        var result = await _context.Categories.FindAsync(cat1.Id);
+        Assert.Equal(0, result!.SortOrder); // Unchanged
+    }
+
+    [Fact]
+    public async Task ReorderAsync_IgnoresNonExistentCategoryIds()
+    {
+        // Arrange
+        var cat1 = new Category { WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "A", SortOrder = 0 };
+        await _context.Categories.AddAsync(cat1);
+        await _context.SaveChangesAsync();
+
+        var updates = new Dictionary<int, int> { { cat1.Id, 3 }, { 999, 5 } };
+
+        // Act
+        await _repository.ReorderAsync(updates, TestWorkspaceId);
+
+        // Assert
+        var result = await _context.Categories.FindAsync(cat1.Id);
+        Assert.Equal(3, result!.SortOrder);
     }
 
     #endregion

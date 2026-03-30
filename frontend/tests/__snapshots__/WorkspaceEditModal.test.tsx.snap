@@ -58,7 +58,7 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot when open 1`] = 
         <h3
           class="modal__section-title"
         >
-          Public Access
+          Public Gallery
         </h3>
         <div
           class="modal__field"
@@ -67,7 +67,7 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot when open 1`] = 
             class="modal__label"
             for="public-slug"
           >
-            Public URL Slug
+            Gallery URL Slug
           </label>
           <input
             class="modal__input"
@@ -80,22 +80,23 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot when open 1`] = 
           <p
             class="modal__hint"
           >
-            Lowercase letters, numbers, and hyphens only. 3-50 characters.
+            Reserve your gallery URL. Your gallery becomes active when you publish your first item.
           </p>
         </div>
         <div
-          class="modal__field"
+          class="workspace-edit-modal__preview"
         >
-          <label
-            class="workspace-edit-modal__toggle-label"
+          <span
+            class="workspace-edit-modal__preview-label"
           >
-            <input
-              type="checkbox"
-            />
-            <span>
-              Enable Public Access
-            </span>
-          </label>
+            Gallery URL:
+          </span>
+          <code
+            class="workspace-edit-modal__preview-url"
+          >
+            /public/
+            test-workspace
+          </code>
         </div>
         <div
           class="modal__actions"
@@ -183,7 +184,7 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot with error 1`] =
         <h3
           class="modal__section-title"
         >
-          Public Access
+          Public Gallery
         </h3>
         <div
           class="modal__field"
@@ -192,7 +193,7 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot with error 1`] =
             class="modal__label"
             for="public-slug"
           >
-            Public URL Slug
+            Gallery URL Slug
           </label>
           <input
             class="modal__input"
@@ -205,142 +206,8 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot with error 1`] =
           <p
             class="modal__hint"
           >
-            Lowercase letters, numbers, and hyphens only. 3-50 characters.
+            Reserve your gallery URL. Your gallery becomes active when you publish your first item.
           </p>
-        </div>
-        <div
-          class="modal__field"
-        >
-          <label
-            class="workspace-edit-modal__toggle-label"
-          >
-            <input
-              type="checkbox"
-            />
-            <span>
-              Enable Public Access
-            </span>
-          </label>
-        </div>
-        <div
-          class="modal__actions"
-        >
-          <button
-            class="detail__btn detail__btn--primary"
-            type="submit"
-          >
-            Save
-          </button>
-          <button
-            class="detail__btn detail__btn--secondary"
-            type="button"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  </dialog>
-</div>
-`;
-
-exports[`WorkspaceEditModal > snapshots > should match snapshot with public access enabled 1`] = `
-<div>
-  <dialog
-    class="modal-dialog"
-    open=""
-  >
-    <div
-      class="modal"
-    >
-      <div
-        class="modal__header"
-      >
-        <h2
-          class="modal__title"
-        >
-          Edit Workspace
-        </h2>
-        <button
-          aria-label="Close"
-          class="modal__close"
-          type="button"
-        >
-          ×
-        </button>
-      </div>
-      <form
-        class="modal__body"
-      >
-        <div
-          class="modal__field"
-        >
-          <label
-            class="modal__label"
-            for="workspace-name"
-          >
-            Workspace Name 
-            <span
-              class="modal__required"
-            >
-              *
-            </span>
-          </label>
-          <input
-            class="modal__input"
-            id="workspace-name"
-            maxlength="200"
-            placeholder="Workspace name"
-            required=""
-            type="text"
-            value="Test Workspace"
-          />
-        </div>
-        <div
-          class="modal__divider"
-        />
-        <h3
-          class="modal__section-title"
-        >
-          Public Access
-        </h3>
-        <div
-          class="modal__field"
-        >
-          <label
-            class="modal__label"
-            for="public-slug"
-          >
-            Public URL Slug
-          </label>
-          <input
-            class="modal__input"
-            id="public-slug"
-            maxlength="50"
-            placeholder="my-workspace"
-            type="text"
-            value="my-workspace"
-          />
-          <p
-            class="modal__hint"
-          >
-            Lowercase letters, numbers, and hyphens only. 3-50 characters.
-          </p>
-        </div>
-        <div
-          class="modal__field"
-        >
-          <label
-            class="workspace-edit-modal__toggle-label"
-          >
-            <input
-              checked=""
-              type="checkbox"
-            />
-            <span>
-              Enable Public Access
-            </span>
-          </label>
         </div>
         <div
           class="workspace-edit-modal__preview"
@@ -348,13 +215,13 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot with public acce
           <span
             class="workspace-edit-modal__preview-label"
           >
-            Public URL:
+            Gallery URL:
           </span>
           <code
             class="workspace-edit-modal__preview-url"
           >
             /public/
-            my-workspace
+            test-workspace
           </code>
         </div>
         <div

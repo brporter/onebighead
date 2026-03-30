@@ -17,6 +17,8 @@ public class CategoryRepository : ICategoryRepository
         return await _context.Categories
             .AsNoTracking()
             .Where(c => c.WorkspaceId == workspaceId)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
             .ToListAsync();
     }
 
@@ -25,6 +27,8 @@ public class CategoryRepository : ICategoryRepository
         return await _context.Categories
             .AsNoTracking()
             .Where(c => c.WorkspaceId == workspaceId && c.CollectionId == collectionId)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
             .ToListAsync();
     }
 
@@ -189,6 +193,21 @@ public class CategoryRepository : ICategoryRepository
                 ItemTemplateId = templateId,
                 SortOrder = sortOrder++
             });
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ReorderAsync(Dictionary<int, int> categoryIdToSortOrder, int workspaceId)
+    {
+        var categoryIds = categoryIdToSortOrder.Keys.ToList();
+        var categories = await _context.Categories
+            .Where(c => c.WorkspaceId == workspaceId && categoryIds.Contains(c.Id))
+            .ToListAsync();
+
+        foreach (var category in categories)
+        {
+            category.SortOrder = categoryIdToSortOrder[category.Id];
         }
 
         await _context.SaveChangesAsync();

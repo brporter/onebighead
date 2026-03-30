@@ -355,7 +355,8 @@ public class AuthController : ControllerBase
                 WorkspaceId = m.WorkspaceId,
                 WorkspaceName = m.Workspace!.Name,
                 WorkspaceRole = m.WorkspaceRole,
-                HasCompletedWelcome = m.Workspace.HasCompletedWelcome
+                HasCompletedWelcome = m.Workspace.HasCompletedWelcome,
+                Slug = m.Workspace.Slug
             }).ToList();
 
         var activeWorkspaceRole = workspaceRoleClaim ?? "Normal";
@@ -370,7 +371,8 @@ public class AuthController : ControllerBase
                 WorkspaceId = workspaceId,
                 WorkspaceName = workspace?.Name ?? string.Empty,
                 WorkspaceRole = Enum.Parse<WorkspaceRole>(activeWorkspaceRole),
-                HasCompletedWelcome = workspace?.HasCompletedWelcome ?? false
+                HasCompletedWelcome = workspace?.HasCompletedWelcome ?? false,
+                Slug = workspace?.Slug
             },
             // All workspace memberships
             workspaces = workspaceMemberships,

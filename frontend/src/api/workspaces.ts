@@ -27,11 +27,14 @@ export interface LeaveWorkspaceResponse {
 
 export interface UpdateWorkspaceRequest {
   name: string;
+  slug?: string | null;
 }
 
 export interface UpdateWorkspaceResponse {
   workspaceId: number;
   workspaceName: string;
+  slug?: string | null;
+  publicUrl?: string | null;
 }
 
 export interface SetupWorkspaceRequest {
@@ -102,18 +105,6 @@ export interface RestoreWorkspacesResponse {
 export interface RestoreWorkspaceResponse {
   workspaceId: number;
   name: string;
-}
-
-export interface UpdatePublicAccessRequest {
-  slug: string | null;
-  isPublicAccessEnabled: boolean;
-}
-
-export interface UpdatePublicAccessResponse {
-  workspaceId: number;
-  slug: string | null;
-  isPublicAccessEnabled: boolean;
-  publicUrl: string | null;
 }
 
 export interface CheckSlugResponse {
@@ -204,20 +195,6 @@ export const workspacesApi = {
    */
   restoreWorkspace(workspaceId: number): Promise<RestoreWorkspaceResponse> {
     return api.post<RestoreWorkspaceResponse>(`/workspaces/${workspaceId}/restore`);
-  },
-
-  /**
-   * Get public access settings for a workspace (requires admin)
-   */
-  getPublicAccess(workspaceId: number): Promise<UpdatePublicAccessResponse> {
-    return api.get<UpdatePublicAccessResponse>(`/workspaces/${workspaceId}/public-access`);
-  },
-
-  /**
-   * Update public access settings for a workspace (requires admin)
-   */
-  updatePublicAccess(workspaceId: number, request: UpdatePublicAccessRequest): Promise<UpdatePublicAccessResponse> {
-    return api.put<UpdatePublicAccessResponse>(`/workspaces/${workspaceId}/public-access`, request);
   },
 
   /**

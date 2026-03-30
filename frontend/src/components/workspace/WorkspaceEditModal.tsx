@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { WorkspaceMembership } from '../../utils/types';
 import { workspacesApi } from '../../api';
+import { toSlug, isValidSlug } from '../../utils/slugUtils';
+import { useDialog } from '../../utils/useDialog';
 import '../../styles/components/WorkspaceEditModal.css';
 
 interface WorkspaceEditModalProps {
@@ -10,75 +12,21 @@ interface WorkspaceEditModalProps {
   onSaved?: () => void;
 }
 
-function toSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 50);
-}
-
-function isValidSlug(slug: string): boolean {
-  return /^[a-z0-9]([a-z0-9]|-(?!-))*[a-z0-9]$/.test(slug) && slug.length >= 3 && slug.length <= 50;
-}
-
 function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEditModalProps) {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [dialogRef, handleBackdropClick] = useDialog(isOpen, onClose);
 
-  // Public access state
-  const [publicAccessSlug, setPublicAccessSlug] = useState('');
-  const [publicAccessEnabled, setPublicAccessEnabled] = useState(false);
-  const [publicAccessLoading, setPublicAccessLoading] = useState(false);
+  // Slug state
+  const [slug, setSlug] = useState('');
 
-  // Control dialog open/close
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    if (isOpen) {
-      dialog.showModal();
-    } else {
-      dialog.close();
-    }
-  }, [isOpen]);
-
-  // Handle native dialog close (e.g., Escape key)
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    const handleClose = () => {
-      onClose();
-    };
-
-    dialog.addEventListener('close', handleClose);
-    return () => dialog.removeEventListener('close', handleClose);
-  }, [onClose]);
-
-  // Reset form and load public access data when modal opens
+  // Reset form when modal opens
   useEffect(() => {
     if (isOpen && workspace) {
       setName(workspace.workspaceName);
+      setSlug(workspace.slug || toSlug(workspace.workspaceName));
       setError(null);
-
-      // Load public access settings
-      setPublicAccessLoading(true);
-      workspacesApi.getPublicAccess(workspace.workspaceId)
-        .then((data) => {
-          setPublicAccessSlug(data.slug || '');
-          setPublicAccessEnabled(data.isPublicAccessEnabled);
-        })
-        .catch(() => {
-          // Auto-suggest slug from workspace name if we couldn't load
-          const suggestedSlug = toSlug(workspace.workspaceName);
-          setPublicAccessSlug(suggestedSlug);
-          setPublicAccessEnabled(false);
-        })
-        .finally(() => setPublicAccessLoading(false));
     }
   }, [isOpen, workspace]);
 
@@ -91,14 +39,9 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
       return;
     }
 
-    const slug = publicAccessSlug.trim();
+    const trimmedSlug = slug.trim();
 
-    if (publicAccessEnabled && !slug) {
-      setError('A URL slug is required to enable public access.');
-      return;
-    }
-
-    if (slug && !isValidSlug(slug)) {
+    if (trimmedSlug && !isValidSlug(trimmedSlug)) {
       setError('Slug must be 3-50 characters, lowercase letters, numbers, and hyphens only. Must start and end with a letter or number.');
       return;
     }
@@ -109,10 +52,9 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
     setError(null);
 
     try {
-      await workspacesApi.update(workspace.workspaceId, { name: trimmedName });
-      await workspacesApi.updatePublicAccess(workspace.workspaceId, {
-        slug: slug || null,
-        isPublicAccessEnabled: publicAccessEnabled,
+      await workspacesApi.update(workspace.workspaceId, {
+        name: trimmedName,
+        slug: trimmedSlug || null,
       });
       onSaved?.();
       onClose();
@@ -120,12 +62,6 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-    if (e.target === dialogRef.current) {
-      onClose();
     }
   };
 
@@ -140,7 +76,7 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
             onClick={onClose}
             aria-label="Close"
           >
-            ×
+            &times;
           </button>
         </div>
 
@@ -170,59 +106,35 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
 
           <div className="modal__divider" />
 
-          <h3 className="modal__section-title">Public Access</h3>
+          <h3 className="modal__section-title">Public Gallery</h3>
 
-          {publicAccessLoading ? (
-            <p className="workspace-edit-modal__loading">Loading public access settings...</p>
-          ) : (
-            <>
-              <div className="modal__field">
-                <label htmlFor="public-slug" className="modal__label">
-                  Public URL Slug
-                </label>
-                <input
-                  id="public-slug"
-                  type="text"
-                  className="modal__input"
-                  value={publicAccessSlug}
-                  onChange={(e) => {
-                    const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-                    setPublicAccessSlug(val);
-                    setError(null);
-                  }}
-                  placeholder="my-workspace"
-                  maxLength={50}
-                />
-                <p className="modal__hint">
-                  Lowercase letters, numbers, and hyphens only. 3-50 characters.
-                </p>
-              </div>
+          <div className="modal__field">
+            <label htmlFor="public-slug" className="modal__label">
+              Gallery URL Slug
+            </label>
+            <input
+              id="public-slug"
+              type="text"
+              className="modal__input"
+              value={slug}
+              onChange={(e) => {
+                const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                setSlug(val);
+                setError(null);
+              }}
+              placeholder="my-workspace"
+              maxLength={50}
+            />
+            <p className="modal__hint">
+              Reserve your gallery URL. Your gallery becomes active when you publish your first item.
+            </p>
+          </div>
 
-              <div className="modal__field">
-                <label className="workspace-edit-modal__toggle-label">
-                  <input
-                    type="checkbox"
-                    checked={publicAccessEnabled}
-                    onChange={(e) => {
-                      setPublicAccessEnabled(e.target.checked);
-                      setError(null);
-                    }}
-                    disabled={!publicAccessSlug.trim()}
-                  />
-                  <span>Enable Public Access</span>
-                </label>
-                {!publicAccessSlug.trim() && (
-                  <p className="modal__hint">Set a slug above to enable public access.</p>
-                )}
-              </div>
-
-              {publicAccessEnabled && publicAccessSlug.trim() && (
-                <div className="workspace-edit-modal__preview">
-                  <span className="workspace-edit-modal__preview-label">Public URL:</span>
-                  <code className="workspace-edit-modal__preview-url">/public/{publicAccessSlug.trim()}</code>
-                </div>
-              )}
-            </>
+          {slug.trim() && (
+            <div className="workspace-edit-modal__preview">
+              <span className="workspace-edit-modal__preview-label">Gallery URL:</span>
+              <code className="workspace-edit-modal__preview-url">/public/{slug.trim()}</code>
+            </div>
           )}
 
           <div className="modal__actions">

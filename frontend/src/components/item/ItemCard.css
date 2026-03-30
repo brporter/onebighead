@@ -81,3 +81,41 @@
   background: var(--pill-bg);
   color: var(--color-text-muted);
 }
+
+/* Publish/Public badge positioning */
+.item-card {
+  position: relative;
+}
+
+.item-card__badge,
+.item-card__publish-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
+
+.item-card__publish-btn {
+  opacity: 0;
+}
+
+.item-card:hover .item-card__publish-btn {
+  opacity: 1;
+}
+
+/* Selection mode checkbox */
+.item-card__checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+}
+
+.item-card--selectable {
+  cursor: pointer;
+}
+
+/* Hidden class for filtered items */
+.item-card--hidden {
+  display: none;
+}

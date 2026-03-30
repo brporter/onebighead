@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react';
 import { bulkUpdatesApi } from '../../api/bulkUpdates';
 import type { BulkUpdateJobResponse, EnqueueBulkUpdateRequest } from '../../api/bulkUpdates';
+import { useDialog } from '../../utils/useDialog';
 import '../../styles/components/BulkUpdateModal.css';
 
 type ModalPhase = 'prompt' | 'progress' | 'complete';
@@ -39,7 +40,6 @@ function BulkUpdateModal({
   const [selectedScope, setSelectedScope] = useState(0);
   const [job, setJob] = useState<BulkUpdateJobResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const pollRef = useRef<number | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -49,11 +49,15 @@ function BulkUpdateModal({
     }
   }, []);
 
-  // Control dialog open/close
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
+  const nativeClose = useCallback(() => {
+    stopPolling();
+    onClose();
+  }, [stopPolling, onClose]);
 
+  const [dialogRef] = useDialog(isOpen, nativeClose);
+
+  // Reset state when dialog opens
+  useEffect(() => {
     if (isOpen) {
       void Promise.resolve().then(() => {
         setPhase('prompt');
@@ -61,25 +65,8 @@ function BulkUpdateModal({
         setError(null);
         setSelectedScope(0);
       });
-      dialog.showModal();
-    } else {
-      dialog.close();
     }
   }, [isOpen]);
-
-  // Handle native dialog close
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    const handleClose = () => {
-      stopPolling();
-      onClose();
-    };
-
-    dialog.addEventListener('close', handleClose);
-    return () => dialog.removeEventListener('close', handleClose);
-  }, [onClose, stopPolling]);
 
   // Cleanup polling on unmount
   useEffect(() => {

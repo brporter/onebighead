@@ -587,17 +587,12 @@
 }
 
 .collectionTemplateEditor__item:has(.collectionTemplateEditor__checkbox:checked) {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
 }
 
 .collectionTemplateEditor__checkbox {
   margin-top: 2px;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  cursor: pointer;
-  accent-color: var(--color-primary);
 }
 
 .collectionTemplateEditor__checkbox:disabled {

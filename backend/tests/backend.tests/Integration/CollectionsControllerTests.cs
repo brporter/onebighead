@@ -206,8 +206,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         var request = new CreateCollectionRequest
         {
             Name = "New Collection",
-            Description = "A new test collection",
-            Visibility = Visibility.Public
+            Description = "A new test collection"
         };
 
         // Act
@@ -219,8 +218,8 @@ public class CollectionsControllerTests : IntegrationTestBase
         Assert.NotNull(created);
         Assert.Equal("New Collection", created.Name);
         Assert.Equal("new-collection", created.Slug);
-        Assert.True(created.EffectiveIsPublic);
-        Assert.Equal(Visibility.Public, created.Visibility);
+        Assert.False(created.EffectiveIsPublic);
+        Assert.Equal(Visibility.Private, created.Visibility);
         Assert.Equal(DefaultWorkspaceId, created.WorkspaceId);
 
         // Verify persisted in database
@@ -294,8 +293,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         var request = new UpdateCollectionRequest
         {
             Name = "Updated Collection",
-            Description = "Updated description",
-            Visibility = Visibility.Public
+            Description = "Updated description"
         };
 
         // Act
@@ -307,8 +305,6 @@ public class CollectionsControllerTests : IntegrationTestBase
         Assert.NotNull(updated);
         Assert.Equal("Updated Collection", updated.Name);
         Assert.Equal("Updated description", updated.Description);
-        Assert.True(updated.EffectiveIsPublic);
-        Assert.Equal(Visibility.Public, updated.Visibility);
     }
 
     [Fact]

@@ -24,7 +24,7 @@ describe('ItemDetail', () => {
       { url: 'https://example.com/image1.jpg', alt: 'Image 1' },
       { url: 'https://example.com/image2.jpg', alt: 'Image 2' },
     ],
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: true,
     userFlag: UserFlag.Have,
   };

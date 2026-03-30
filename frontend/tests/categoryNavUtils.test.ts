@@ -6,8 +6,8 @@ import { Visibility } from '../src/utils/types';
 function cat(id: number, name: string, parentId: number | null = null): Category {
   return {
     workspaceId: 1, collectionId: 1, categoryId: id, name, description: '',
-    parentCategoryId: parentId, isSystem: false, visibility: Visibility.Default,
-    effectiveIsPublic: false, itemTemplateIds: [],
+    parentCategoryId: parentId, isSystem: false, visibility: Visibility.Private,
+    effectiveIsPublic: false, itemTemplateIds: [], sortOrder: 0,
   };
 }
 

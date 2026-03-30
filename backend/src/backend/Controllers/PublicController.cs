@@ -18,20 +18,20 @@ public class PublicController : ControllerBase
     private readonly ICollectionRepository _collectionRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly IItemRepository _itemRepository;
-    private readonly IVisibilityService _visibilityService;
+    private readonly IPublishManagerService _publishManagerService;
 
     public PublicController(
         IWorkspaceRepository workspaceRepository,
         ICollectionRepository collectionRepository,
         ICategoryRepository categoryRepository,
         IItemRepository itemRepository,
-        IVisibilityService visibilityService)
+        IPublishManagerService publishManagerService)
     {
         _workspaceRepository = workspaceRepository;
         _collectionRepository = collectionRepository;
         _categoryRepository = categoryRepository;
         _itemRepository = itemRepository;
-        _visibilityService = visibilityService;
+        _publishManagerService = publishManagerService;
     }
 
     /// <summary>
@@ -94,7 +94,7 @@ public class PublicController : ControllerBase
             return NotFound();
 
         var categories = (await _categoryRepository.GetByCollectionAsync(collectionId, workspace.Id)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(categories, collection);
+        _publishManagerService.ComputeEffectiveVisibility(categories, collection);
 
         var templateIdsByCategory = await _categoryRepository.GetTemplateIdsByCategoryAsync(collectionId, workspace.Id);
 
@@ -141,10 +141,10 @@ public class PublicController : ControllerBase
             return NotFound();
 
         var categories = (await _categoryRepository.GetByCollectionAsync(collectionId, workspace.Id)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(categories, collection);
+        _publishManagerService.ComputeEffectiveVisibility(categories, collection);
 
         var items = (await _itemRepository.GetByCollectionIdAsync(collectionId, workspace.Id)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(items, collection, categories);
+        _publishManagerService.ComputeEffectiveVisibility(items, collection, categories);
 
         var publicItems = items
             .Where(i => i.EffectiveIsPublic)
@@ -185,11 +185,11 @@ public class PublicController : ControllerBase
         if (item.CategoryId.HasValue)
         {
             var categories = (await _categoryRepository.GetByCollectionAsync(item.CollectionId, workspace.Id)).ToList();
-            _visibilityService.ComputeEffectiveVisibility(categories, collection);
+            _publishManagerService.ComputeEffectiveVisibility(categories, collection);
             category = categories.FirstOrDefault(c => c.Id == item.CategoryId.Value);
         }
 
-        _visibilityService.ComputeEffectiveVisibility(item, collection, category);
+        _publishManagerService.ComputeEffectiveVisibility(item, collection, category);
 
         if (!item.EffectiveIsPublic)
             return NotFound();

@@ -1,0 +1,362 @@
+/* ==========================================================================
+   CategoryManagerModal — Two-panel layout inside dialog
+   ========================================================================== */
+
+.categoryManager__title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.categoryManager {
+  position: relative;
+  height: 70vh;
+  max-height: 70vh;
+  overflow: hidden;
+}
+
+.categoryManager__track {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  transition: transform 300ms ease-in-out;
+}
+
+.categoryManager__track--form {
+  transform: translateX(-50%);
+}
+
+.categoryManager__tree {
+  width: 50%;
+  background: var(--color-surface-alt);
+  overflow-y: auto;
+  padding: var(--space-lg);
+}
+
+.categoryManager__form {
+  width: 50%;
+  overflow-y: auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.categoryManager__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.categoryManager__footer-right {
+  display: flex;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+/* ==========================================================================
+   Category Tree (inside manager) — matches CategoryNav styling
+   ========================================================================== */
+
+.catTree__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.catTree__title {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.catTree__toolbarActions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.catTree__addBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 1.2rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.catTree__addBtn:hover {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-primary-text);
+}
+
+/* --------------------------------------------------------------------------
+   Tree rows — match CategoryNav row styling
+   -------------------------------------------------------------------------- */
+
+.catTree__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.catTree__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.catTree__row:hover {
+  background: var(--hover-bg);
+}
+
+.catTree__row--dragging {
+  opacity: 0.4;
+}
+
+/* Reparent indicator — sustained hover shows "make child" highlight */
+.catTree__row--dropTarget {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+/* Reorder indicators — prominent lines with dot marker */
+.catTree__row--insertBefore {
+  position: relative;
+  border-radius: 0;
+}
+
+.catTree__row--insertBefore::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+.catTree__row--insertBefore::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-accent);
+  border-radius: 50%;
+}
+
+.catTree__row--insertAfter {
+  position: relative;
+  border-radius: 0;
+}
+
+.catTree__row--insertAfter::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+.catTree__row--insertAfter::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-accent);
+  border-radius: 50%;
+}
+
+.catTree__row--overlay {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 9px 18px;
+}
+
+.catTree__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.catTree__name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.catTree__chevron {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.catTree__empty {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* --------------------------------------------------------------------------
+   Root drop zone
+   -------------------------------------------------------------------------- */
+
+.catTree__rootDropZone {
+  padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.catTree__rootDropZone--over {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+/* ==========================================================================
+   Category Manager Form
+   ========================================================================== */
+
+.category-manager-form {
+  min-height: 0;
+}
+
+.category-manager-form__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.category-manager-form__header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.category-manager-form__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.category-manager-form__badge--public {
+  background: var(--color-success);
+  color: var(--color-primary-text);
+}
+
+.category-manager-form__badge--private {
+  background: var(--color-surface-alt);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.category-manager-form__visibility {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.category-manager-form__visibility-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.category-manager-form__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0;
+  margin-bottom: var(--space-sm);
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.category-manager-form__back:hover {
+  color: var(--color-accent-hover, var(--color-accent));
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   QuickCreatePopover — dropdown from + button
+   ========================================================================== */
+
+.quickCreatePopover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 10;
+  min-width: 300px;
+  margin-top: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.quickCreatePopover__input {
+  margin-bottom: var(--space-sm);
+}
+
+.quickCreatePopover__error {
+  margin-bottom: var(--space-sm);
+  font-size: 0.85rem;
+}
+
+.quickCreatePopover__actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}

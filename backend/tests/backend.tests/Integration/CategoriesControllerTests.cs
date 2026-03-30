@@ -183,9 +183,9 @@ public class CategoriesControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task CreateCategory_WithVisibility_SetsVisibility()
+    public async Task CreateCategory_DefaultsToCollectionVisibility_WhenCollectionPublic()
     {
-        // Arrange - First need a public collection to allow setting Public visibility
+        // Arrange - Make collection public
         await Factory.SeedDatabaseAsync(context =>
         {
             var collection = context.Collections.First(c => c.Id == 1);
@@ -194,9 +194,8 @@ public class CategoriesControllerTests : IntegrationTestBase
 
         var request = new CreateCategoryRequest
         {
-            Name = "Public Category",
-            CollectionId = 1,
-            Visibility = Visibility.Public
+            Name = "Category Inherits Public",
+            CollectionId = 1
         };
 
         // Act
@@ -210,9 +209,9 @@ public class CategoriesControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task CreateCategory_WithPublicVisibility_WhenCollectionPrivate_ReturnsBadRequest()
+    public async Task CreateCategory_DefaultsToPrivate_WhenCollectionPrivate()
     {
-        // Arrange - Ensure collection is private (may have been changed by other tests)
+        // Arrange - Ensure collection is private
         await Factory.SeedDatabaseAsync(context =>
         {
             var collection = context.Collections.First(c => c.Id == 1);
@@ -221,50 +220,54 @@ public class CategoriesControllerTests : IntegrationTestBase
 
         var request = new CreateCategoryRequest
         {
-            Name = "Invalid Public Category",
-            CollectionId = 1,
-            Visibility = Visibility.Public
+            Name = "Category Inherits Private",
+            CollectionId = 1
         };
 
         // Act
         var response = await PostJsonAsync("/api/categories", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.EnsureSuccessStatusCode();
+        var created = await DeserializeResponseAsync<Category>(response);
+        Assert.NotNull(created);
+        Assert.Equal(Visibility.Private, created.Visibility);
     }
 
     [Fact]
-    public async Task CreateCategory_WithPublicVisibility_WhenParentPrivate_ReturnsBadRequest()
+    public async Task CreateCategory_DefaultsToParentCategoryVisibility()
     {
-        // Arrange - Create a public collection and a private parent category
+        // Arrange - Make collection public, create a private parent category
         await Factory.SeedDatabaseAsync(context =>
         {
             var collection = context.Collections.First(c => c.Id == 1);
             collection.Visibility = Visibility.Public;
         });
 
+        // Create parent (will inherit Public from collection)
         var parentRequest = new CreateCategoryRequest
         {
-            Name = "Private Parent",
-            CollectionId = 1,
-            Visibility = Visibility.Private
+            Name = "Public Parent For Default Test",
+            CollectionId = 1
         };
         var parentResponse = await PostJsonAsync("/api/categories", parentRequest);
         var parentCategory = await DeserializeResponseAsync<Category>(parentResponse);
 
         var request = new CreateCategoryRequest
         {
-            Name = "Invalid Public Child",
+            Name = "Child Inherits Parent Visibility",
             CollectionId = 1,
-            ParentCategoryId = parentCategory!.Id,
-            Visibility = Visibility.Public
+            ParentCategoryId = parentCategory!.Id
         };
 
         // Act
         var response = await PostJsonAsync("/api/categories", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.EnsureSuccessStatusCode();
+        var created = await DeserializeResponseAsync<Category>(response);
+        Assert.NotNull(created);
+        Assert.Equal(Visibility.Public, created.Visibility);
     }
 
     #endregion

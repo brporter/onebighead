@@ -27,10 +27,6 @@
   background: var(--color-surface-alt);
 }
 
-.bulk-update-modal__scope input[type="radio"] {
-  accent-color: var(--color-primary);
-}
-
 .bulk-update-modal__progress {
   display: flex;
   flex-direction: column;

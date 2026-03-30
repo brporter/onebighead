@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using OneBigHead.Server.Models;
 
 namespace OneBigHead.Server.DTOs;
 
@@ -14,8 +13,6 @@ public class SetupCollectionRequest
 
     [MaxLength(500)]
     public string? HeroImageUrl { get; set; }
-    
-    public Visibility Visibility { get; set; } = Visibility.Private;
 
     /// <summary>
     /// The theme ID to apply to the new collection.

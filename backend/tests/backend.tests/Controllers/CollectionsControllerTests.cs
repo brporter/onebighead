@@ -258,6 +258,29 @@ public class CollectionsControllerTests
             It.Is<Category>(c => c.Name == "Unassigned Items" && c.IsSystem && c.CollectionId == 1)), Times.Once);
     }
 
+    [Fact]
+    public async Task CreateCollection_DefaultsVisibilityToPrivate()
+    {
+        // Arrange
+        var request = new CreateCollectionRequest { Name = "New Collection" };
+
+        Collection? capturedCollection = null;
+        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync(It.IsAny<string>(), TestWorkspaceId))
+            .ReturnsAsync((Collection?)null);
+        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
+            .Callback<Collection>(c => capturedCollection = c)
+            .ReturnsAsync((Collection c) => new Collection { Id = 1, WorkspaceId = c.WorkspaceId, Name = c.Name, Slug = "new-collection", Visibility = c.Visibility });
+        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
+            .ReturnsAsync(new Category { Id = 1, Name = "Unassigned Items" });
+
+        // Act
+        await _controller.CreateCollection(request);
+
+        // Assert
+        Assert.NotNull(capturedCollection);
+        Assert.Equal(Visibility.Private, capturedCollection!.Visibility);
+    }
+
     #endregion
 
     #region UpdateCollection Tests
@@ -295,6 +318,34 @@ public class CollectionsControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var returnedCollection = Assert.IsType<Collection>(okResult.Value);
         Assert.Equal("Updated Collection", returnedCollection.Name);
+    }
+
+    [Fact]
+    public async Task UpdateCollection_PreservesExistingVisibility()
+    {
+        // Arrange
+        var request = new UpdateCollectionRequest
+        {
+            Name = "Updated Collection",
+            Description = "Updated Description"
+        };
+        var existingCollection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Old Name", Slug = "old-name", Visibility = Visibility.Public };
+
+        Collection? capturedCollection = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
+            .ReturnsAsync(existingCollection);
+        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("updated-collection", TestWorkspaceId))
+            .ReturnsAsync((Collection?)null);
+        _mockCollectionRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Collection>(), TestWorkspaceId))
+            .Callback<int, Collection, int>((id, c, ws) => capturedCollection = c)
+            .ReturnsAsync((int id, Collection c, int ws) => new Collection { Id = id, WorkspaceId = ws, Name = c.Name, Visibility = c.Visibility });
+
+        // Act
+        await _controller.UpdateCollection(1, request);
+
+        // Assert - Visibility should be preserved from existing collection (Public)
+        Assert.NotNull(capturedCollection);
+        Assert.Equal(Visibility.Public, capturedCollection!.Visibility);
     }
 
     [Fact]

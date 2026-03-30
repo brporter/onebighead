@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import type { Category } from '../../utils/types';
 import { useData } from '../../contexts/useData';
 import { getAccentColor } from '../../utils/accentColors';
 import { buildDrillPath, getVisibleCategories, getBreadcrumb } from '../../utils/categoryNavUtils';
-import CategoryEditorModal from './CategoryEditorModal';
 import './CategoryNav.css';
 
 interface CategoryNavProps {
@@ -11,20 +10,15 @@ interface CategoryNavProps {
   selectedCategoryId: number | null;
   onSelect: (categoryId: number | null) => void;
   onCollapse?: () => void;
+  onEdit?: () => void;
 }
 
-function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: CategoryNavProps) {
+function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse, onEdit }: CategoryNavProps) {
   const {
     categoriesLoading,
     categoriesError,
     items,
-    currentCollection,
-    loadCategoriesForCollection,
-    loadItemsForCategory,
   } = useData();
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   // Filter out system categories that have no items
   const visibleCategories = useMemo(() => {
@@ -105,30 +99,6 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
     return map;
   }, [visibleCategories]);
 
-  function handleEdit(category: Category) {
-    setEditingCategory(category);
-    setModalOpen(true);
-  }
-
-  function handleAddNew() {
-    setEditingCategory(null);
-    setModalOpen(true);
-  }
-
-  function handleModalClose() {
-    setModalOpen(false);
-    setEditingCategory(null);
-  }
-
-  async function handleModalSaved() {
-    if (currentCollection) {
-      await loadCategoriesForCollection(currentCollection.collectionId);
-      if (selectedCategoryId) {
-        await loadItemsForCategory(selectedCategoryId);
-      }
-    }
-  }
-
   function handleBack() {
     if (drillPath.length <= 1) {
       onSelect(null);
@@ -162,14 +132,16 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
       <div className="categoryNav__header">
         <h2 className="categoryNav__headerTitle">Categories</h2>
         <div className="categoryNav__headerActions">
-          <button
-            type="button"
-            className="categoryNav__addBtn"
-            onClick={handleAddNew}
-            aria-label="Add category"
-          >
-            +
-          </button>
+          {onEdit && (
+            <button
+              type="button"
+              className="categoryNav__editBtn"
+              onClick={onEdit}
+              aria-label="Edit categories"
+            >
+              &#9998;
+            </button>
+          )}
           {onCollapse && (
             <button
               type="button"
@@ -269,20 +241,6 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
                 )}
               </div>
 
-              {!cat.isSystem && (
-                <button
-                  type="button"
-                  className="categoryNav__edit"
-                  aria-label={`Edit ${cat.name}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(cat);
-                  }}
-                >
-                  &#9998;
-                </button>
-              )}
-
               {hasChildren && (
                 <span className="categoryNav__chevron" aria-hidden="true">&rsaquo;</span>
               )}
@@ -294,13 +252,6 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse }: C
           <p className="categoryNav__empty">No categories yet</p>
         )}
       </div>
-
-      <CategoryEditorModal
-        category={editingCategory}
-        isOpen={modalOpen}
-        onClose={handleModalClose}
-        onSaved={handleModalSaved}
-      />
     </aside>
   );
 }

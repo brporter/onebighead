@@ -9,7 +9,6 @@ import type { DashboardData } from '../api';
 import type { RestorableWorkspace } from '../api/workspaces';
 import ItemTemplateEditor from '../components/template/ItemTemplateEditor';
 import CollectionTemplateEditor from '../components/collection/CollectionTemplateEditor';
-import VisibilityToggle from '../components/common/VisibilityToggle';
 import CollectionSetupWizard from '../components/collection/CollectionSetupWizard';
 import WorkspaceSetupWizard from '../components/wizard/WorkspaceSetupWizard';
 import { SupportSection } from '../components/support/SupportSection';
@@ -17,8 +16,10 @@ import { AccountDeletionSection, UserButton, UserManagement } from '../component
 import { SupportModal } from '../components/support/SupportModal';
 import { WorkspaceEditModal, WorkspaceDeletionSection } from '../components/workspace';
 import { SiteHeader, SiteFooter } from '../components/common';
+import { CategoryManagerModal } from '../components/category';
+import { usePublish } from '../contexts/usePublish';
 import type { Collection, WorkspaceMembership } from '../utils/types';
-import { Visibility, WorkspaceRole } from '../utils/types';
+import { WorkspaceRole } from '../utils/types';
 
 type SettingsSection = 'dashboard' | 'collections' | 'templates' | 'team' | 'workspaces' | 'export' | 'support' | 'account';
 
@@ -27,6 +28,7 @@ function SettingsView() {
   const [searchParams] = useSearchParams();
   const { user } = useUser();
   const { collections, addCollection, updateCollection, deleteCollection, loadCollections } = useData();
+  const { requestPublish, requestUnpublish } = usePublish();
   
   // Initialize section from URL query param or default to dashboard
   const initialSection = (searchParams.get('section') as SettingsSection) || 'dashboard';
@@ -44,8 +46,8 @@ function SettingsView() {
   const [isAdding, setIsAdding] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '', visibility: Visibility.Private });
-  const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '', visibility: Visibility.Private });
+  const [formData, setFormData] = useState({ name: '', description: '', heroImageUrl: '' });
+  const [originalFormData, setOriginalFormData] = useState({ name: '', description: '', heroImageUrl: '' });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -54,6 +56,7 @@ function SettingsView() {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [supportRefreshKey, setSupportRefreshKey] = useState(0);
   const [editingCollectionTemplates, setEditingCollectionTemplates] = useState<Collection | null>(null);
+  const [editingCollectionCategories, setEditingCollectionCategories] = useState<Collection | null>(null);
   const [collectionTemplateEditorDirty, setCollectionTemplateEditorDirty] = useState(false);
   const [teamManagementDirty, setTeamManagementDirty] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -68,8 +71,7 @@ function SettingsView() {
     return (
       formData.name !== originalFormData.name ||
       formData.description !== originalFormData.description ||
-      formData.heroImageUrl !== originalFormData.heroImageUrl ||
-      formData.visibility !== originalFormData.visibility
+      formData.heroImageUrl !== originalFormData.heroImageUrl
     );
   }, [activeSection, templateEditorDirty, teamManagementDirty, editingCollectionTemplates, collectionTemplateEditorDirty, isAdding, editingId, formData, originalFormData]);
 
@@ -149,7 +151,6 @@ function SettingsView() {
       name: collection.name,
       description: collection.description || '',
       heroImageUrl: collection.heroImageUrl || '',
-      visibility: collection.visibility ?? Visibility.Private,
     };
     setFormData(initial);
     setOriginalFormData(initial);
@@ -185,14 +186,12 @@ function SettingsView() {
           formData.name.trim(),
           formData.description.trim() || undefined,
           formData.heroImageUrl.trim() || undefined,
-          formData.visibility
         );
       } else if (editingId !== null) {
         await updateCollection(editingId, {
           name: formData.name.trim(),
           description: formData.description.trim() || undefined,
           heroImageUrl: formData.heroImageUrl.trim() || undefined,
-          visibility: formData.visibility,
         });
       }
       setIsAdding(false);
@@ -398,16 +397,6 @@ function SettingsView() {
                 placeholder="https://example.com/image.jpg"
               />
             </div>
-            <div className="settings-form__field">
-              <VisibilityToggle
-                visibility={formData.visibility}
-                effectiveIsPublic={formData.visibility === Visibility.Public}
-                parentIsPublic={true}
-                onChange={(value) => setFormData((prev) => ({ ...prev, visibility: value }))}
-                label="Collection Visibility"
-                isCollection={true}
-              />
-            </div>
             {editingId !== null && (
               <div className="settings-form__field">
                 <label className="settings-form__label">Item Templates</label>
@@ -428,6 +417,42 @@ function SettingsView() {
                 </button>
               </div>
             )}
+            {editingId !== null && (() => {
+              const collection = collections.find(c => c.collectionId === editingId);
+              if (!collection) return null;
+              return (
+                <div className="settings-form__field">
+                  <label className="settings-form__label">Visibility</label>
+                  {collection.effectiveIsPublic ? (
+                    <>
+                      <p className="settings-form__hint">
+                        This collection is currently visible in your public gallery.
+                      </p>
+                      <button
+                        type="button"
+                        className="settings-form__button settings-form__button--danger"
+                        onClick={() => requestUnpublish([{ type: 'collection', id: collection.collectionId }])}
+                      >
+                        Unpublish Collection
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="settings-form__hint">
+                        This collection is private. Publish it to make it visible in your public gallery.
+                      </p>
+                      <button
+                        type="button"
+                        className="settings-form__button settings-form__button--primary"
+                        onClick={() => requestPublish([{ type: 'collection', id: collection.collectionId }])}
+                      >
+                        Publish Collection
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
             <div className="settings-form__actions">
               <button
                 type="submit"
@@ -464,6 +489,12 @@ function SettingsView() {
                   </div>
                 </div>
                 <div className="settings-collection-card__actions">
+                  <button
+                    className="settings-collection-card__button"
+                    onClick={() => setEditingCollectionCategories(collection)}
+                  >
+                    Categories
+                  </button>
                   <button
                     className="settings-collection-card__button"
                     onClick={() => setEditingCollectionTemplates(collection)}
@@ -832,6 +863,9 @@ function SettingsView() {
   return (
     <div className="app">
       <SiteHeader>
+        <a href="/collections" className="gallery-link" onClick={(e) => { e.preventDefault(); confirmAndNavigate('/collections'); }}>
+          Return to Collections
+        </a>
         <button className="support-link support-link--icon" onClick={() => setIsSupportOpen(true)} title="Support" aria-label="Support">
           <span className="support-link__icon">?</span>
         </button>
@@ -860,9 +894,6 @@ function SettingsView() {
         <main className="app__content settings-content">
           <div className="settings-title-bar">
             <h1 className="settings-title-bar__title">Settings</h1>
-            <button className="settings-title-bar__back" onClick={() => confirmAndNavigate('/collections')}>
-              Back to Collections →
-            </button>
           </div>
           <div className="settings-panel">
             {renderContent()}
@@ -885,6 +916,14 @@ function SettingsView() {
         onClose={() => setEditingWorkspace(null)}
         onSaved={() => window.location.reload()}
       />
+
+      {editingCollectionCategories && (
+        <CategoryManagerModal
+          collectionId={editingCollectionCategories.collectionId}
+          isOpen={!!editingCollectionCategories}
+          onClose={() => setEditingCollectionCategories(null)}
+        />
+      )}
     </div>
   );
 }

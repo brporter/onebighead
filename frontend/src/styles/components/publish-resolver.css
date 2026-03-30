@@ -1,0 +1,104 @@
+.publish-resolver__dialog {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  height: 100%;
+}
+
+.publish-resolver__dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.publish-resolver__dialog[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+
+.publish-resolver {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 480px;
+  width: 90vw;
+}
+
+.publish-resolver__header {
+  padding: var(--space-lg) var(--space-lg) 0;
+}
+
+.publish-resolver__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.publish-resolver__body {
+  padding: var(--space-md) var(--space-lg);
+}
+
+.publish-resolver__error {
+  color: var(--color-danger);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-md);
+}
+
+.publish-resolver__requirement {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+}
+
+.publish-resolver__requirement label {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.publish-resolver__slug-group {
+  margin-bottom: var(--space-md);
+}
+
+.publish-resolver__slug-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.publish-resolver__slug-input {
+  width: 100%;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+}
+
+.publish-resolver__slug-preview {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-xs);
+}
+
+.publish-resolver__impact {
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.publish-resolver__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding: 0 var(--space-lg) var(--space-lg);
+}

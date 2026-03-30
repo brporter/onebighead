@@ -15,7 +15,7 @@ public class CategoriesControllerTests
 {
     private readonly Mock<ICategoryRepository> _mockRepository;
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
-    private readonly Mock<IVisibilityService> _mockVisibilityService;
+    private readonly Mock<IPublishManagerService> _mockVisibilityService;
     private readonly CategoriesController _controller;
     private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 1;
@@ -24,7 +24,7 @@ public class CategoriesControllerTests
     {
         _mockRepository = new Mock<ICategoryRepository>();
         _mockCollectionRepository = new Mock<ICollectionRepository>();
-        _mockVisibilityService = new Mock<IVisibilityService>();
+        _mockVisibilityService = new Mock<IPublishManagerService>();
         _controller = new CategoriesController(
             _mockRepository.Object, 
             _mockCollectionRepository.Object,
@@ -502,6 +502,86 @@ public class CategoriesControllerTests
 
         // Assert
         Assert.IsType<NotFoundResult>(result);
+    }
+
+    #endregion
+
+    #region Visibility Default Tests
+
+    [Fact]
+    public async Task CreateCategory_DefaultsToCollectionVisibility_WhenNoParent()
+    {
+        // Arrange
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Public Collection", Slug = "test", Visibility = Visibility.Public };
+        var request = new CreateCategoryRequest { CollectionId = TestCollectionId, Name = "New Category" };
+
+        Category? capturedCategory = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category>());
+        _mockRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
+            .Callback<Category>(c => capturedCategory = c)
+            .ReturnsAsync((Category c) => new Category { Id = 1, WorkspaceId = c.WorkspaceId, CollectionId = c.CollectionId, Name = c.Name, Visibility = c.Visibility });
+
+        // Act
+        await _controller.CreateCategory(request);
+
+        // Assert
+        Assert.NotNull(capturedCategory);
+        Assert.Equal(Visibility.Public, capturedCategory!.Visibility);
+    }
+
+    [Fact]
+    public async Task CreateCategory_DefaultsToParentVisibility()
+    {
+        // Arrange
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Public Collection", Slug = "test", Visibility = Visibility.Public };
+        var parentCategory = new Category { Id = 10, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Private Parent", Visibility = Visibility.Private, EffectiveIsPublic = false };
+        var request = new CreateCategoryRequest { CollectionId = TestCollectionId, Name = "Child Category", ParentCategoryId = 10 };
+
+        Category? capturedCategory = null;
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category> { parentCategory });
+        _mockRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
+            .Callback<Category>(c => capturedCategory = c)
+            .ReturnsAsync((Category c) => new Category { Id = 2, WorkspaceId = c.WorkspaceId, CollectionId = c.CollectionId, Name = c.Name, Visibility = c.Visibility });
+
+        // Act
+        await _controller.CreateCategory(request);
+
+        // Assert
+        Assert.NotNull(capturedCategory);
+        Assert.Equal(Visibility.Private, capturedCategory!.Visibility);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_PreservesExistingVisibility()
+    {
+        // Arrange
+        var collection = new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test", Visibility = Visibility.Private };
+        var existingCategory = new Category { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Original", IsSystem = false, Visibility = Visibility.Public };
+        var request = new UpdateCategoryRequest { Name = "Updated Category", Description = "Updated Desc" };
+
+        Category? capturedCategory = null;
+        _mockRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
+            .ReturnsAsync(existingCategory);
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(collection);
+        _mockRepository.Setup(repo => repo.GetByCollectionAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new List<Category> { existingCategory });
+        _mockRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Category>(), TestWorkspaceId))
+            .Callback<int, Category, int>((id, c, ws) => capturedCategory = c)
+            .ReturnsAsync((int id, Category c, int ws) => new Category { Id = id, WorkspaceId = ws, Name = c.Name, Visibility = c.Visibility });
+
+        // Act
+        await _controller.UpdateCategory(1, request);
+
+        // Assert - Visibility should be preserved from existing category (Public)
+        Assert.NotNull(capturedCategory);
+        Assert.Equal(Visibility.Public, capturedCategory!.Visibility);
     }
 
     #endregion

@@ -17,7 +17,7 @@ public interface IWorkspaceRepository
     Task<WorkspaceStats> GetStatsAsync(int workspaceId);
 
     /// <summary>
-    /// Gets a workspace by its public slug. Only returns workspaces with public access enabled.
+    /// Gets a non-deleted workspace by its public slug.
     /// </summary>
     Task<Workspace?> GetBySlugAsync(string slug);
 

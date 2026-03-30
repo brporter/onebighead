@@ -89,7 +89,7 @@ public class CollectionsController : ApiControllerBase
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
             Slug = slug,
-            Visibility = request.Visibility
+            Visibility = Visibility.Private
         };
 
         var created = await _collectionRepository.CreateAsync(collection);
@@ -141,7 +141,7 @@ public class CollectionsController : ApiControllerBase
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
             Slug = slug,
-            Visibility = request.Visibility
+            Visibility = Visibility.Private
         };
 
         var created = await _collectionRepository.CreateAsync(collection);
@@ -264,7 +264,7 @@ public class CollectionsController : ApiControllerBase
             Description = request.Description ?? string.Empty,
             HeroImageUrl = request.HeroImageUrl,
             Slug = slug,
-            Visibility = request.Visibility
+            Visibility = existing.Visibility
         };
 
         var updated = await _collectionRepository.UpdateAsync(id, collection, workspaceId);

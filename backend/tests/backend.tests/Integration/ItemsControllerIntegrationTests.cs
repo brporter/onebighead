@@ -41,13 +41,13 @@ public class ItemsControllerIntegrationTests : IDisposable
         var itemRepository = new ItemRepository(_context, mockStatsRepo, mockCollectionStatsRepo, new Mock<ILogger<ItemRepository>>().Object);
         var categoryRepository = new CategoryRepository(_context);
         var collectionRepository = new CollectionRepository(_context, mockStatsRepo, mockCollectionStatsRepo);
-        var visibilityService = new VisibilityService();
+        var mockPublishManagerService = new Mock<IPublishManagerService>().Object;
 
         _controller = new ItemsController(
             itemRepository,
             categoryRepository,
             collectionRepository,
-            visibilityService,
+            mockPublishManagerService,
             new BulkUpdateQueue(),
             new Mock<IWorkspaceStatisticsRepository>().Object,
             new Mock<ICollectionStatisticsRepository>().Object);

@@ -18,8 +18,10 @@ exports[`CollectionView > snapshots > should match snapshot with collections 1`]
     <div
       class="collectionList__grid"
     >
-      <button
+      <div
         class="collectionList__card"
+        role="button"
+        tabindex="0"
       >
         <div
           class="collectionList__content"
@@ -35,9 +37,11 @@ exports[`CollectionView > snapshots > should match snapshot with collections 1`]
             First collection
           </p>
         </div>
-      </button>
-      <button
+      </div>
+      <div
         class="collectionList__card"
+        role="button"
+        tabindex="0"
       >
         <div
           class="collectionList__content"
@@ -53,7 +57,7 @@ exports[`CollectionView > snapshots > should match snapshot with collections 1`]
             Second collection
           </p>
         </div>
-      </button>
+      </div>
     </div>
   </div>
 </div>

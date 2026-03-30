@@ -43,22 +43,19 @@ public class PublicControllerTests : IntegrationTestBase
         if (context.Workspaces.Any(w => w.Id == PublicWorkspaceId))
             return Task.CompletedTask;
 
-        // Workspace with public access enabled
+        // Workspace with public access (has a slug)
         context.Workspaces.Add(new Workspace
         {
             Id = PublicWorkspaceId,
             Name = "Public Test Workspace",
-            Slug = PublicWorkspaceSlug,
-            IsPublicAccessEnabled = true
+            Slug = PublicWorkspaceSlug
         });
 
-        // Workspace with public access disabled
+        // Workspace without public access (no slug)
         context.Workspaces.Add(new Workspace
         {
             Id = DisabledWorkspaceId,
-            Name = "Disabled Test Workspace",
-            Slug = DisabledWorkspaceSlug,
-            IsPublicAccessEnabled = false
+            Name = "Disabled Test Workspace"
         });
 
         // Public collection
@@ -92,7 +89,7 @@ public class PublicControllerTests : IntegrationTestBase
             Name = "Unassigned Items",
             Description = "Items not assigned to a category",
             IsSystem = true,
-            Visibility = Visibility.Default
+            Visibility = Visibility.Private
         });
 
         // Public category in the public collection
@@ -201,9 +198,9 @@ public class PublicControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task GetWorkspace_DisabledPublicAccess_Returns404()
+    public async Task GetWorkspace_WorkspaceWithoutSlug_Returns404()
     {
-        // Arrange
+        // Arrange - DisabledWorkspaceId has no slug, so looking up by its old slug should 404
         using var anonClient = CreateAnonymousClient();
 
         // Act
@@ -257,13 +254,12 @@ public class PublicControllerTests : IntegrationTestBase
         Assert.Equal("Public Collection", detail.Collection.Name);
         Assert.Equal(PublicCollectionId, detail.Collection.Id);
 
-        // Should have the public category and the system category (which inherits from public collection)
-        // but NOT the private category
+        // Should have the public category but NOT the private category or the private system category
         Assert.DoesNotContain(detail.Categories, c => c.Name == "Private Category");
         Assert.Contains(detail.Categories, c => c.Name == "Public Category");
 
-        // The system category inherits from the public collection, so it should be present
-        Assert.Contains(detail.Categories, c => c.Name == "Unassigned Items" && c.IsSystem);
+        // The system category has Visibility.Private, so it should NOT be present
+        Assert.DoesNotContain(detail.Categories, c => c.Name == "Unassigned Items");
     }
 
     [Fact]

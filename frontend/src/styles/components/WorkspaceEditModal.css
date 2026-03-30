@@ -34,17 +34,6 @@
   cursor: pointer;
 }
 
-.workspace-edit-modal__toggle-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-primary);
-  cursor: pointer;
-}
-
-.workspace-edit-modal__toggle-label input[type="checkbox"]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .workspace-edit-modal__preview {
   display: flex;

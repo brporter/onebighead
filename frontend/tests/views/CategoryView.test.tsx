@@ -11,6 +11,18 @@ vi.mock('../../src/contexts/useData', () => ({
   useData: vi.fn(),
 }));
 
+const mockRequestPublish = vi.fn();
+const mockRequestUnpublish = vi.fn();
+
+vi.mock('../../src/contexts/usePublish', () => ({
+  usePublish: () => ({
+    requestPublish: mockRequestPublish,
+    requestUnpublish: mockRequestUnpublish,
+    pendingIntent: null,
+    clearIntent: vi.fn(),
+  }),
+}));
+
 vi.mock('../../src/api/collections', () => ({
   collectionsApi: {
     getStatistics: vi.fn().mockResolvedValue({
@@ -21,6 +33,12 @@ vi.mock('../../src/api/collections', () => ({
       recentlyAddedItems: [],
     }),
   },
+}));
+
+vi.mock('../../src/components/category', () => ({
+  CategoryManagerModal: ({ collectionId, isOpen, onClose }: { collectionId: number; isOpen: boolean; onClose: () => void }) => (
+    isOpen ? <div data-testid="category-manager-modal" data-collection-id={collectionId}><button onClick={onClose}>Close Manager</button></div> : null
+  ),
 }));
 
 const mockNavigate = vi.fn();
@@ -49,8 +67,8 @@ describe('CategoryView', () => {
   ];
 
   const mockCategories: Category[] = [
-    { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
-    { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, visibility: Visibility.Default, effectiveIsPublic: true, itemTemplateIds: [] },
+    { workspaceId: 1, categoryId: 1, collectionId: 1, name: 'Root Category', description: 'Root desc', parentCategoryId: null, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [], sortOrder: 0 },
+    { workspaceId: 1, categoryId: 2, collectionId: 1, name: 'Child Category', description: 'Child desc', parentCategoryId: 1, isSystem: false, visibility: Visibility.Private, effectiveIsPublic: true, itemTemplateIds: [], sortOrder: 0 },
   ];
 
   const mockItems: Item[] = [
@@ -65,7 +83,7 @@ describe('CategoryView', () => {
       description: 'Description 1',
       properties: [],
       images: [],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       userFlag: UserFlag.Have,
     },
@@ -80,7 +98,7 @@ describe('CategoryView', () => {
       description: 'Description 2',
       properties: [],
       images: [],
-      visibility: Visibility.Default,
+      visibility: Visibility.Private,
       effectiveIsPublic: true,
       userFlag: UserFlag.Have,
     },
@@ -213,14 +231,14 @@ describe('CategoryView', () => {
     it('should show back to categories button', () => {
       renderWithRouter('/collections/1/categories/1');
 
-      expect(screen.getByText('← Categories')).toBeInTheDocument();
+      expect(screen.getByText('\u2190 Categories')).toBeInTheDocument();
     });
 
     it('should navigate back to collection when back is clicked', async () => {
       const user = userEvent.setup();
       renderWithRouter('/collections/1/categories/1');
 
-      await user.click(screen.getByText('← Categories'));
+      await user.click(screen.getByText('\u2190 Categories'));
 
       expect(mockNavigate).toHaveBeenCalledWith('/collections/1');
     });
@@ -348,6 +366,130 @@ describe('CategoryView', () => {
       expect(screen.queryByText('Root Category')).not.toBeInTheDocument();
 
       window.matchMedia = originalMatchMedia;
+    });
+  });
+
+  describe('CategoryManagerModal integration', () => {
+    it('should open CategoryManagerModal when Edit button in CategoryNav is clicked', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      // CategoryManagerModal should not be visible initially
+      expect(screen.queryByTestId('category-manager-modal')).not.toBeInTheDocument();
+
+      // Click the Edit button in CategoryNav
+      await user.click(screen.getByLabelText('Edit categories'));
+
+      // CategoryManagerModal should now be visible
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+    });
+
+    it('should pass correct collectionId to CategoryManagerModal', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Edit categories'));
+
+      const modal = screen.getByTestId('category-manager-modal');
+      expect(modal).toHaveAttribute('data-collection-id', '1');
+    });
+
+    it('should close CategoryManagerModal when onClose is called', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByLabelText('Edit categories'));
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+
+      await user.click(screen.getByText('Close Manager'));
+      expect(screen.queryByTestId('category-manager-modal')).not.toBeInTheDocument();
+    });
+
+    it('should open CategoryManagerModal from category selected view', async () => {
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1/categories/1');
+
+      expect(screen.queryByTestId('category-manager-modal')).not.toBeInTheDocument();
+
+      await user.click(screen.getByLabelText('Edit categories'));
+
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('category-manager-modal')).toHaveAttribute('data-collection-id', '1');
+    });
+  });
+
+  describe('collection publish/unpublish in title bar', () => {
+    const privateCollection = { ...mockCollections[0], effectiveIsPublic: false, visibility: Visibility.Private };
+    const privateCategories = mockCategories.map(c => ({ ...c, effectiveIsPublic: false }));
+    const privateItems = mockItems.map(i => ({ ...i, effectiveIsPublic: false }));
+
+    it('should show PublishButton for private collection (no category selected)', () => {
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        currentCollection: privateCollection,
+        collections: [privateCollection],
+        categories: privateCategories,
+        items: privateItems,
+      });
+
+      renderWithRouter('/collections/1');
+      // The collection title bar should have a Publish button
+      expect(screen.getAllByText('Publish').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should show PublicBadge for public collection (no category selected)', () => {
+      renderWithRouter('/collections/1');
+      // Default mock has effectiveIsPublic: true for collection
+      expect(screen.getAllByText('Public').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should show PublishButton for private collection (with category selected)', () => {
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        currentCollection: privateCollection,
+        collections: [privateCollection],
+        categories: privateCategories,
+        items: privateItems,
+      });
+
+      renderWithRouter('/collections/1/categories/1');
+      const publishButtons = screen.getAllByText('Publish');
+      expect(publishButtons.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should show PublicBadge for public collection (with category selected)', () => {
+      renderWithRouter('/collections/1/categories/1');
+      // Default mock has effectiveIsPublic: true
+      expect(screen.getAllByText('Public').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should call requestPublish when clicking Publish on collection title bar', async () => {
+      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockDataContext,
+        currentCollection: privateCollection,
+        collections: [privateCollection],
+        categories: [],
+        items: [],
+      });
+
+      const user = userEvent.setup();
+      renderWithRouter('/collections/1');
+
+      await user.click(screen.getByText('Publish'));
+
+      expect(mockRequestPublish).toHaveBeenCalledWith([{ type: 'collection', id: 1 }]);
+    });
+
+    it('should call requestUnpublish when clicking PublicBadge on collection title bar', async () => {
+      const user = userEvent.setup();
+      const { container } = renderWithRouter('/collections/1');
+
+      // Target the Public badge inside the collection-title-bar specifically
+      const titleBar = container.querySelector('.collection-title-bar');
+      const badge = titleBar!.querySelector('.collection-title-bar__badge');
+      await user.click(badge!);
+
+      expect(mockRequestUnpublish).toHaveBeenCalledWith([{ type: 'collection', id: 1 }]);
     });
   });
 

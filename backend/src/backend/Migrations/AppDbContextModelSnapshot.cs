@@ -50,6 +50,9 @@ namespace OneBigHead.Server.Migrations
                     b.Property<int?>("ParentCategoryId")
                         .HasColumnType("int");
 
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
                     b.Property<int>("Visibility")
                         .HasColumnType("int")
                         .HasJsonPropertyName("visibility");
@@ -741,9 +744,6 @@ namespace OneBigHead.Server.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsPublicAccessEnabled")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")

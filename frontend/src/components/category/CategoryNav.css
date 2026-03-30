@@ -32,7 +32,7 @@
   gap: var(--space-xs);
 }
 
-.categoryNav__addBtn,
+.categoryNav__editBtn,
 .categoryNav__collapseBtn {
   width: 28px;
   height: 28px;
@@ -49,7 +49,7 @@
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
-.categoryNav__addBtn:hover {
+.categoryNav__editBtn:hover {
   background: var(--color-success);
   border-color: var(--color-success);
   color: var(--color-primary-text);
@@ -177,33 +177,6 @@
   font-size: 0.75rem;
   color: var(--color-text-muted);
   flex-shrink: 0;
-}
-
-.categoryNav__edit {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.categoryNav__row:hover .categoryNav__edit,
-.categoryNav__row:focus-within .categoryNav__edit,
-.categoryNav__edit:focus {
-  opacity: 1;
-}
-
-.categoryNav__edit:hover {
-  background: var(--color-surface-alt);
-  color: var(--color-text);
 }
 
 .categoryNav__chevron {

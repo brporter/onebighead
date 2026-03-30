@@ -330,6 +330,65 @@ public class DtoMappingTests
 
     #endregion
 
+    #region CategoryResponse Tests
+
+    [Fact]
+    public void CategoryResponse_FromCategory_MapsSortOrder()
+    {
+        // Arrange
+        var category = new Category
+        {
+            Id = 10,
+            WorkspaceId = 1,
+            CollectionId = 2,
+            Name = "Test Category",
+            Description = "Test Description",
+            IsSystem = false,
+            ParentCategoryId = null,
+            Visibility = Visibility.Public,
+            EffectiveIsPublic = true,
+            SortOrder = 7
+        };
+        var templateIds = new List<int> { 1, 2, 3 };
+
+        // Act
+        var response = CategoryResponse.FromCategory(category, templateIds);
+
+        // Assert
+        Assert.Equal(10, response.CategoryId);
+        Assert.Equal(1, response.WorkspaceId);
+        Assert.Equal(2, response.CollectionId);
+        Assert.Equal("Test Category", response.Name);
+        Assert.Equal("Test Description", response.Description);
+        Assert.False(response.IsSystem);
+        Assert.Null(response.ParentCategoryId);
+        Assert.Equal(Visibility.Public, response.Visibility);
+        Assert.True(response.EffectiveIsPublic);
+        Assert.Equal(7, response.SortOrder);
+        Assert.Equal(new List<int> { 1, 2, 3 }, response.ItemTemplateIds);
+    }
+
+    [Fact]
+    public void CategoryResponse_FromCategory_DefaultsSortOrderToZero()
+    {
+        // Arrange
+        var category = new Category
+        {
+            Id = 1,
+            WorkspaceId = 1,
+            CollectionId = 1,
+            Name = "Test"
+        };
+
+        // Act
+        var response = CategoryResponse.FromCategory(category);
+
+        // Assert
+        Assert.Equal(0, response.SortOrder);
+    }
+
+    #endregion
+
     #region CreateItemRequest Tests
 
     [Fact]
@@ -343,8 +402,7 @@ public class DtoMappingTests
             Description = "Item description",
             CollectionId = 10,
             CategoryId = 5,
-            UserFlag = UserFlag.Want,
-            Visibility = Visibility.Public
+            UserFlag = UserFlag.Want
         };
 
         // Act
@@ -357,7 +415,6 @@ public class DtoMappingTests
         Assert.Equal(10, item.CollectionId);
         Assert.Equal(5, item.CategoryId);
         Assert.Equal(UserFlag.Want, item.UserFlag);
-        Assert.Equal(Visibility.Public, item.Visibility);
         Assert.Equal(1, item.WorkspaceId);
     }
 
@@ -379,7 +436,6 @@ public class DtoMappingTests
         Assert.Equal(string.Empty, item.Description);
         Assert.Null(item.CategoryId);
         Assert.Equal(UserFlag.Have, item.UserFlag);
-        Assert.Equal(Visibility.Default, item.Visibility);
         Assert.Equal(2, item.WorkspaceId);
     }
 
@@ -398,8 +454,7 @@ public class DtoMappingTests
             Description = "Updated description",
             CollectionId = 15,
             CategoryId = 8,
-            UserFlag = UserFlag.TradeOrSell,
-            Visibility = Visibility.Private
+            UserFlag = UserFlag.TradeOrSell
         };
 
         // Act
@@ -413,7 +468,6 @@ public class DtoMappingTests
         Assert.Equal(15, item.CollectionId);
         Assert.Equal(8, item.CategoryId);
         Assert.Equal(UserFlag.TradeOrSell, item.UserFlag);
-        Assert.Equal(Visibility.Private, item.Visibility);
         Assert.Equal(3, item.WorkspaceId);
     }
 

@@ -20,6 +20,17 @@ vi.mock('../../src/contexts/useData', () => ({
   useData: vi.fn(),
 }));
 
+const mockRequestPublish = vi.fn();
+const mockRequestUnpublish = vi.fn();
+vi.mock('../../src/contexts/usePublish', () => ({
+  usePublish: () => ({
+    requestPublish: mockRequestPublish,
+    requestUnpublish: mockRequestUnpublish,
+    pendingIntent: null,
+    clearIntent: vi.fn(),
+  }),
+}));
+
 // Mock the export API
 vi.mock('../../src/api/export', () => ({
   exportApi: {
@@ -100,16 +111,13 @@ vi.mock('../../src/components/workspace', () => ({
     ) : null,
 }));
 
-vi.mock('../../src/components/common/VisibilityToggle', () => ({
-  default: ({ label, visibility, onChange }: { label: string; visibility: string; onChange: (v: string) => void }) => (
-    <div data-testid="visibility-toggle">
-      <label>{label}</label>
-      <select value={visibility} onChange={(e) => onChange(e.target.value)}>
-        <option value="Private">Private</option>
-        <option value="Public">Public</option>
-      </select>
-    </div>
-  ),
+vi.mock('../../src/components/category', () => ({
+  CategoryManagerModal: ({ collectionId, isOpen, onClose }: { collectionId: number; isOpen: boolean; onClose: () => void }) =>
+    isOpen ? (
+      <div data-testid="category-manager-modal" data-collection-id={collectionId}>
+        <button onClick={onClose}>Close Category Manager</button>
+      </div>
+    ) : null,
 }));
 
 vi.mock('../../src/components/common', async () => {
@@ -250,7 +258,6 @@ describe('SettingsView', () => {
       renderWithRouter();
 
       expect(screen.getByText('Settings')).toBeInTheDocument();
-      expect(screen.getByText('Back to Collections →')).toBeInTheDocument();
       expect(screen.getByTestId('user-button')).toBeInTheDocument();
     });
 
@@ -292,51 +299,6 @@ describe('SettingsView', () => {
       expect(nav).toHaveTextContent('Support');
     });
 
-    it('should navigate back to collections when back button clicked', async () => {
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      await user.click(screen.getByText('Back to Collections →'));
-
-      expect(mockNavigate).toHaveBeenCalledWith('/collections');
-    });
-
-    it('should show confirm dialog when navigating with unsaved changes', async () => {
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      // Click edit on a collection to enter edit mode
-      const editButtons = screen.getAllByText('Edit');
-      await user.click(editButtons[0]);
-
-      // Modify the name
-      const nameInput = screen.getByDisplayValue('Test Collection 1');
-      await user.clear(nameInput);
-      await user.type(nameInput, 'Modified Name');
-
-      // Try to navigate back
-      await user.click(screen.getByText('Back to Collections →'));
-
-      expect(mockConfirm).toHaveBeenCalledWith('You have unsaved changes. Discard them?');
-    });
-
-    it('should not navigate when user cancels confirm dialog', async () => {
-      mockConfirm.mockReturnValue(false);
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      // Enter edit mode and modify
-      const editButtons = screen.getAllByText('Edit');
-      await user.click(editButtons[0]);
-      const nameInput = screen.getByDisplayValue('Test Collection 1');
-      await user.clear(nameInput);
-      await user.type(nameInput, 'Modified Name');
-
-      // Try to navigate back
-      await user.click(screen.getByText('Back to Collections →'));
-
-      expect(mockNavigate).not.toHaveBeenCalled();
-    });
   });
 
   describe('section navigation', () => {
@@ -635,6 +597,50 @@ describe('SettingsView', () => {
       expect(screen.getByText('Test Collection 1')).toBeInTheDocument();
     });
 
+    it('should show Unpublish Collection button when editing a public collection', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const editButtons = screen.getAllByText('Edit');
+      await user.click(editButtons[0]);
+
+      expect(screen.getByText('Unpublish Collection')).toBeInTheDocument();
+      expect(screen.queryByText('Publish Collection')).not.toBeInTheDocument();
+    });
+
+    it('should show Publish Collection button when editing a private collection', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const editButtons = screen.getAllByText('Edit');
+      await user.click(editButtons[1]);
+
+      expect(screen.getByText('Publish Collection')).toBeInTheDocument();
+      expect(screen.queryByText('Unpublish Collection')).not.toBeInTheDocument();
+    });
+
+    it('should call requestUnpublish when clicking Unpublish Collection', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const editButtons = screen.getAllByText('Edit');
+      await user.click(editButtons[0]);
+      await user.click(screen.getByText('Unpublish Collection'));
+
+      expect(mockRequestUnpublish).toHaveBeenCalledWith([{ type: 'collection', id: 1 }]);
+    });
+
+    it('should call requestPublish when clicking Publish Collection', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const editButtons = screen.getAllByText('Edit');
+      await user.click(editButtons[1]);
+      await user.click(screen.getByText('Publish Collection'));
+
+      expect(mockRequestPublish).toHaveBeenCalledWith([{ type: 'collection', id: 2 }]);
+    });
+
     it('should warn when canceling with unsaved changes', async () => {
       const user = userEvent.setup();
       renderWithRouter();
@@ -736,6 +742,40 @@ describe('SettingsView', () => {
       await user.click(screen.getByText('Close Collection Templates'));
 
       expect(screen.queryByTestId('collection-template-editor')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('collections section - category manager', () => {
+    it('should open CategoryManagerModal from collection card Categories button', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const categoriesButtons = screen.getAllByText('Categories');
+      await user.click(categoriesButtons[0]);
+
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+    });
+
+    it('should pass correct collectionId to CategoryManagerModal', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const categoriesButtons = screen.getAllByText('Categories');
+      await user.click(categoriesButtons[0]);
+
+      expect(screen.getByTestId('category-manager-modal')).toHaveAttribute('data-collection-id', '1');
+    });
+
+    it('should close CategoryManagerModal', async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      const categoriesButtons = screen.getAllByText('Categories');
+      await user.click(categoriesButtons[0]);
+      expect(screen.getByTestId('category-manager-modal')).toBeInTheDocument();
+
+      await user.click(screen.getByText('Close Category Manager'));
+      expect(screen.queryByTestId('category-manager-modal')).not.toBeInTheDocument();
     });
   });
 

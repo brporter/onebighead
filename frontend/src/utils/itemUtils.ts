@@ -13,8 +13,8 @@ export function createEmptyItem(categoryId: number | null, collectionId: number,
     description: '',
     properties: [],
     images: [],
-    visibility: Visibility.Default,
-    effectiveIsPublic: true,
+    visibility: Visibility.Private,
+    effectiveIsPublic: false,
     userFlag: UserFlag.Have,
   };
 }

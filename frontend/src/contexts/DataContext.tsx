@@ -1,6 +1,5 @@
 import { createContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import type { Category, Item, Collection, ItemTemplate, CreateItemTemplateRequest, UpdateItemTemplateRequest, CollectionTheme, SetupCollectionRequest } from '../utils/types';
-import { Visibility } from '../utils/types';
 import { collectionsApi, categoriesApi, itemsApi, imagesApi, templatesApi, suggestionsApi, themesApi } from '../api';
 import { getErrorMessage, logError } from '../utils/errorUtils';
 
@@ -29,6 +28,8 @@ interface CategoryItemsCache {
 // Maximum number of category caches to keep
 const MAX_CACHE_SIZE = 20;
 
+const sortByName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
+
 interface PropertySuggestionsCache {
   categories: string[];
   names: string[];
@@ -44,9 +45,9 @@ export interface DataContextValue {
   collectionsLoading: boolean;
   collectionsError: string | null;
   loadCollections: () => Promise<void>;
-  addCollection: (name: string, description?: string, heroImageUrl?: string, visibility?: Visibility) => Promise<Collection>;
+  addCollection: (name: string, description?: string, heroImageUrl?: string) => Promise<Collection>;
   setupCollection: (request: SetupCollectionRequest) => Promise<Collection>;
-  updateCollection: (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string; visibility?: Visibility }) => Promise<void>;
+  updateCollection: (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string }) => Promise<void>;
   deleteCollection: (collectionId: number) => Promise<void>;
   
   // Collection themes
@@ -60,10 +61,11 @@ export interface DataContextValue {
   categoriesLoading: boolean;
   categoriesError: string | null;
   loadCategoriesForCollection: (collectionId: number) => Promise<void>;
-  addCategory: (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; visibility?: Visibility; itemTemplateIds?: number[] }) => Promise<number>;
-  updateCategory: (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; visibility?: Visibility; itemTemplateIds?: number[] }) => Promise<void>;
+  addCategory: (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; itemTemplateIds?: number[] }) => Promise<number>;
+  updateCategory: (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; itemTemplateIds?: number[] }) => Promise<void>;
   deleteCategory: (categoryId: number) => Promise<void>;
   getCategoryTemplates: (categoryId: number) => Promise<number[]>;
+  reorderCategories: (categories: { categoryId: number; sortOrder: number }[]) => Promise<void>;
   
   // Items (scoped to current collection/category)
   items: Item[];
@@ -102,58 +104,7 @@ export interface DataContextValue {
   invalidateItemCache: () => void;
 }
 
-const defaultContextValue: DataContextValue = {
-  currentCollection: null,
-  setCurrentCollection: () => {},
-  collections: [],
-  collectionsLoading: false,
-  collectionsError: null,
-  loadCollections: async () => {},
-  addCollection: async () => ({ collectionId: 0, workspaceId: 0, name: '', description: '', heroImageUrl: null, slug: '', visibility: Visibility.Private, effectiveIsPublic: false }),
-  setupCollection: async () => ({ collectionId: 0, workspaceId: 0, name: '', description: '', heroImageUrl: null, slug: '', visibility: Visibility.Private, effectiveIsPublic: false }),
-  updateCollection: async () => {},
-  deleteCollection: async () => {},
-  themes: [],
-  themesLoading: false,
-  themesError: null,
-  loadThemes: async () => {},
-  categories: [],
-  categoriesLoading: false,
-  categoriesError: null,
-  loadCategoriesForCollection: async () => {},
-  addCategory: async () => 0,
-  updateCategory: async () => {},
-  deleteCategory: async () => {},
-  getCategoryTemplates: async () => [],
-  items: [],
-  itemsLoading: false,
-  itemsError: null,
-  loadItemsForCategory: async () => {},
-  loadItemById: async () => null,
-  addItem: async () => 0,
-  updateItem: async () => {},
-  deleteItem: async () => {},
-  uploadImage: async () => ({ key: '', url: '' }),
-  propertyCategorySuggestions: [],
-  propertyNameSuggestions: [],
-  loadPropertySuggestions: async () => {},
-  syncPropertySuggestions: async () => {},
-  addLocalCategorySuggestion: () => {},
-  addLocalNameSuggestion: () => {},
-  itemTemplates: [],
-  itemTemplatesLoading: false,
-  itemTemplatesError: null,
-  loadItemTemplates: async () => {},
-  loadCollectionTemplates: async () => [],
-  createItemTemplate: async () => ({ itemTemplateId: 0, templateKey: '', name: '', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' }),
-  updateItemTemplate: async () => ({ itemTemplateId: 0, templateKey: '', name: '', description: '', isSystem: false, properties: [], createdAt: '', updatedAt: '' }),
-  deleteItemTemplate: async () => {},
-  associateTemplateWithCollection: async () => {},
-  disassociateTemplateFromCollection: async () => {},
-  invalidateItemCache: () => {},
-};
-
-const DataContext = createContext<DataContextValue>(defaultContextValue);
+const DataContext = createContext<DataContextValue | null>(null);
 
 interface DataProviderProps {
   children: ReactNode;
@@ -293,8 +244,8 @@ export function DataProvider({ children }: DataProviderProps) {
     return loadPromise;
   }, []);
 
-  const addCollection = useCallback(async (name: string, description?: string, heroImageUrl?: string, visibility?: Visibility): Promise<Collection> => {
-    const created = await collectionsApi.create({ name, description, heroImageUrl, visibility });
+  const addCollection = useCallback(async (name: string, description?: string, heroImageUrl?: string): Promise<Collection> => {
+    const created = await collectionsApi.create({ name, description, heroImageUrl });
     setCollections((prev) => [...prev, created]);
     return created;
   }, []);
@@ -305,7 +256,7 @@ export function DataProvider({ children }: DataProviderProps) {
     return created;
   }, []);
 
-  const updateCollection = useCallback(async (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string; visibility?: Visibility }): Promise<void> => {
+  const updateCollection = useCallback(async (collectionId: number, updates: { name: string; description?: string; heroImageUrl?: string }): Promise<void> => {
     const result = await collectionsApi.update(collectionId, updates);
     setCollections((prev) =>
       prev.map((col) => (col.collectionId === collectionId ? result : col))
@@ -348,13 +299,13 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, []);
 
-  const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; visibility?: Visibility; itemTemplateIds?: number[] }): Promise<number> => {
+  const addCategory = useCallback(async (category: { collectionId: number; name: string; description?: string; parentCategoryId?: number | null; itemTemplateIds?: number[] }): Promise<number> => {
     const created = await categoriesApi.create(category);
     setCategories((prev) => [...prev, created]);
     return created.categoryId;
   }, []);
 
-  const updateCategory = useCallback(async (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; visibility?: Visibility; itemTemplateIds?: number[] }): Promise<void> => {
+  const updateCategory = useCallback(async (categoryId: number, updates: { name: string; description?: string; parentCategoryId?: number | null; itemTemplateIds?: number[] }): Promise<void> => {
     const result = await categoriesApi.update(categoryId, updates);
     setCategories((prev) =>
       prev.map((cat) => (cat.categoryId === categoryId ? result : cat))
@@ -369,6 +320,11 @@ export function DataProvider({ children }: DataProviderProps) {
 
   const getCategoryTemplates = useCallback(async (categoryId: number): Promise<number[]> => {
     return await categoriesApi.getTemplates(categoryId);
+  }, []);
+
+  const reorderCategories = useCallback(async (updates: { categoryId: number; sortOrder: number }[]) => {
+    const result = await categoriesApi.reorder({ categories: updates });
+    setCategories(result);
   }, []);
 
   // Item operations
@@ -431,14 +387,17 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, []);
 
+  const invalidateAndSync = useCallback((collectionId: number) => {
+    itemsCacheRef.current.clear();
+    syncPropertySuggestions(collectionId);
+  }, [syncPropertySuggestions]);
+
   const addItem = useCallback(async (item: Item): Promise<number> => {
     const created = await itemsApi.create(item);
-    itemsCacheRef.current.clear();
     setItems((prev) => [...prev, created]);
-    // Sync property suggestions to include new property names/categories
-    syncPropertySuggestions(created.collectionId);
+    invalidateAndSync(created.collectionId);
     return created.id!;
-  }, [syncPropertySuggestions]);
+  }, [invalidateAndSync]);
 
   const updateItem = useCallback(async (id: number, updates: Partial<Item>): Promise<void> => {
     const currentItem = items.find((i) => i.id === id);
@@ -446,24 +405,20 @@ export function DataProvider({ children }: DataProviderProps) {
 
     const updatedItem = { ...currentItem, ...updates };
     const result = await itemsApi.update(id, updatedItem);
-    itemsCacheRef.current.clear();
     setItems((prev) =>
       prev.map((item) => (item.id === id ? result : item))
     );
-    // Sync property suggestions to reflect property changes
-    syncPropertySuggestions(result.collectionId);
-  }, [items, syncPropertySuggestions]);
+    invalidateAndSync(result.collectionId);
+  }, [items, invalidateAndSync]);
 
   const deleteItem = useCallback(async (id: number): Promise<void> => {
     const itemToDelete = items.find((i) => i.id === id);
     await itemsApi.delete(id);
-    itemsCacheRef.current.clear();
     setItems((prev) => prev.filter((item) => item.id !== id));
-    // Sync property suggestions to remove unused ones
     if (itemToDelete) {
-      syncPropertySuggestions(itemToDelete.collectionId);
+      invalidateAndSync(itemToDelete.collectionId);
     }
-  }, [items, syncPropertySuggestions]);
+  }, [items, invalidateAndSync]);
 
   const uploadImage = useCallback(async (file: File): Promise<{ key: string; url: string }> => {
     return await imagesApi.upload(file);
@@ -493,14 +448,14 @@ export function DataProvider({ children }: DataProviderProps) {
 
   const createItemTemplate = useCallback(async (request: CreateItemTemplateRequest): Promise<ItemTemplate> => {
     const created = await templatesApi.create(request);
-    setItemTemplates((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+    setItemTemplates((prev) => [...prev, created].sort(sortByName));
     return created;
   }, []);
 
   const updateItemTemplate = useCallback(async (id: number, request: UpdateItemTemplateRequest): Promise<ItemTemplate> => {
     const updated = await templatesApi.update(id, request);
     setItemTemplates((prev) =>
-      prev.map((t) => (t.itemTemplateId === id ? updated : t)).sort((a, b) => a.name.localeCompare(b.name))
+      prev.map((t) => (t.itemTemplateId === id ? updated : t)).sort(sortByName)
     );
     return updated;
   }, []);
@@ -541,6 +496,7 @@ export function DataProvider({ children }: DataProviderProps) {
     updateCategory,
     deleteCategory,
     getCategoryTemplates,
+    reorderCategories,
     items,
     itemsLoading,
     itemsError,

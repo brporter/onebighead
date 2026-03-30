@@ -1,6 +1,8 @@
 import type { Item } from '../../utils/types';
 import type { AccentColor } from '../../utils/accentColors';
 import type { KeyboardEvent } from 'react';
+import { PublishButton, PublicBadge } from '../common';
+import { usePublish } from '../../contexts/usePublish';
 import './ItemCard.css';
 
 const MAX_PILLS = 3;
@@ -10,13 +12,21 @@ interface ItemCardProps {
   accentColor: AccentColor;
   isSelected: boolean;
   onSelect: (id: number) => void;
+  selectionMode?: boolean;
+  isChecked?: boolean;
+  onToggleCheck?: (id: number) => void;
 }
 
-function ItemCard({ item, accentColor, isSelected, onSelect }: ItemCardProps) {
+function ItemCard({ item, accentColor, isSelected, onSelect, selectionMode, isChecked, onToggleCheck }: ItemCardProps) {
+  const { requestPublish, requestUnpublish } = usePublish();
   const hasImages = item.images.length > 0;
   const isTextOnly = !hasImages;
 
   function handleClick() {
+    if (selectionMode && onToggleCheck && item.id !== null) {
+      onToggleCheck(item.id);
+      return;
+    }
     if (item.id !== null) {
       onSelect(item.id);
     }
@@ -25,10 +35,24 @@ function ItemCard({ item, accentColor, isSelected, onSelect }: ItemCardProps) {
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
+      if (selectionMode && onToggleCheck && item.id !== null) {
+        onToggleCheck(item.id);
+        return;
+      }
       if (item.id !== null) {
         onSelect(item.id);
       }
     }
+  }
+
+  function handlePublish() {
+    if (item.id === null) return;
+    requestPublish([{ type: 'item', id: item.id }]);
+  }
+
+  function handleUnpublish() {
+    if (item.id === null) return;
+    requestUnpublish([{ type: 'item', id: item.id }]);
   }
 
   const visibleProps = item.properties.slice(0, MAX_PILLS);
@@ -36,17 +60,42 @@ function ItemCard({ item, accentColor, isSelected, onSelect }: ItemCardProps) {
 
   return (
     <div
-      className={`item-card${isTextOnly ? ' item-card--textonly' : ''}${isSelected ? ' item-card--selected' : ''}`}
+      className={`item-card${isTextOnly ? ' item-card--textonly' : ''}${isSelected ? ' item-card--selected' : ''}${selectionMode ? ' item-card--selectable' : ''}`}
       role="button"
       tabIndex={0}
       aria-label={`Select ${item.name}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
+      {selectionMode && (
+        <div className="item-card__checkbox">
+          <input
+            type="checkbox"
+            checked={isChecked ?? false}
+            readOnly
+            tabIndex={-1}
+            aria-label={`Select ${item.name}`}
+          />
+        </div>
+      )}
+
       <div
         className="item-card__ribbon"
         style={{ background: `linear-gradient(90deg, ${accentColor.start}, ${accentColor.end})` }}
       />
+
+      {item.effectiveIsPublic ? (
+        <PublicBadge
+          effectiveIsPublic={item.effectiveIsPublic}
+          onUnpublish={handleUnpublish}
+          className="item-card__badge"
+        />
+      ) : (
+        <PublishButton
+          onPublish={handlePublish}
+          className="item-card__publish-btn"
+        />
+      )}
 
       {hasImages && (
         <img

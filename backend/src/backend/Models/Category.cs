@@ -25,8 +25,10 @@ public class Category
 
     public int? ParentCategoryId { get; set; }
 
+    public int SortOrder { get; set; } = 0;
+
     [JsonPropertyName("visibility")]
-    public Visibility Visibility { get; set; } = Visibility.Default;
+    public Visibility Visibility { get; set; } = Visibility.Private;
 
     [NotMapped]
     [JsonPropertyName("effectiveIsPublic")]

@@ -101,12 +101,6 @@ export class ApiClient {
         credentials: 'include',
       });
 
-      clearTimeout(timeoutId);
-
-      if (requestKey) {
-        this.abortControllers.delete(requestKey);
-      }
-
       // Handle 304 Not Modified (return undefined, caller should handle)
       if (response.status === 304) {
         return undefined as T;
@@ -158,12 +152,6 @@ export class ApiClient {
 
       return await response.json();
     } catch (error) {
-      clearTimeout(timeoutId);
-
-      if (requestKey) {
-        this.abortControllers.delete(requestKey);
-      }
-
       if (error instanceof ApiError) {
         throw error;
       }
@@ -177,6 +165,11 @@ export class ApiClient {
         0,
         'NetworkError'
       );
+    } finally {
+      clearTimeout(timeoutId);
+      if (requestKey) {
+        this.abortControllers.delete(requestKey);
+      }
     }
   }
 

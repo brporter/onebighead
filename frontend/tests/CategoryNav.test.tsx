@@ -92,12 +92,13 @@ describe('CategoryNav', () => {
       expect(screen.queryByLabelText('Go back')).not.toBeInTheDocument();
     });
 
-    it('shows header with title and add button', () => {
+    it('shows header with title and edit button', () => {
+      const onEdit = vi.fn();
       render(
-        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
+        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} onEdit={onEdit} />
       );
       expect(screen.getByText('Categories')).toBeInTheDocument();
-      expect(screen.getByLabelText('Add category')).toBeInTheDocument();
+      expect(screen.getByLabelText('Edit categories')).toBeInTheDocument();
     });
   });
 
@@ -289,32 +290,47 @@ describe('CategoryNav', () => {
     });
   });
 
-  describe('edit', () => {
-    it('edit button visible on hover (has aria-label="Edit [Name]")', () => {
+  describe('edit button', () => {
+    it('renders Edit button in header that calls onEdit', async () => {
+      const user = userEvent.setup();
+      const onEdit = vi.fn();
       render(
-        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
+        <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} onEdit={onEdit} />
       );
-      expect(screen.getByLabelText('Edit Rangefinders')).toBeInTheDocument();
-      expect(screen.getByLabelText('Edit SLR Cameras')).toBeInTheDocument();
+      const editBtn = screen.getByLabelText('Edit categories');
+      expect(editBtn).toBeInTheDocument();
+      await user.click(editBtn);
+      expect(onEdit).toHaveBeenCalledTimes(1);
     });
 
-    it('clicking edit button opens CategoryEditorModal with that category', async () => {
-      const user = userEvent.setup();
+    it('does not render edit button when onEdit is not provided', () => {
       render(
         <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
       );
-      await user.click(screen.getByLabelText('Edit Rangefinders'));
-      // Modal should open - look for the dialog
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Edit categories')).not.toBeInTheDocument();
     });
 
-    it('clicking add button opens CategoryEditorModal for new category', async () => {
-      const user = userEvent.setup();
+    it('does not render publish buttons on rows', () => {
+      const publicCategories = [
+        createMockCategory({ categoryId: 1, name: 'Rangefinders', parentCategoryId: null, effectiveIsPublic: false }),
+        createMockCategory({ categoryId: 5, name: 'SLR Cameras', parentCategoryId: null, effectiveIsPublic: false }),
+      ];
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+        categories: publicCategories,
+      }));
+
+      render(
+        <CategoryNav categories={publicCategories} selectedCategoryId={null} onSelect={() => {}} />
+      );
+      expect(screen.queryByText('Publish')).not.toBeInTheDocument();
+    });
+
+    it('does not render edit pencil buttons on rows', () => {
       render(
         <CategoryNav categories={mockCategories} selectedCategoryId={null} onSelect={() => {}} />
       );
-      await user.click(screen.getByLabelText('Add category'));
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Edit Rangefinders')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Edit SLR Cameras')).not.toBeInTheDocument();
     });
   });
 

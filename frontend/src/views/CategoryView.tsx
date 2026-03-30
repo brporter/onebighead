@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '../contexts/useData';
+import { usePublish } from '../contexts/usePublish';
 import CategoryNav from '../components/category/CategoryNav';
+import { CategoryManagerModal } from '../components/category';
 import { CollectionDashboard } from '../components/collection';
 import ItemList from '../components/item/ItemList';
 import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
-import { BackNav, Loading } from '../components/common';
+import { BackNav, Loading, PublishButton, PublicBadge } from '../components/common';
 import { getCategoryAndDescendantIds } from '../utils/categoryUtils';
 import { bulkUpdatesApi, type BulkUpdateJobResponse } from '../api';
 import '../styles/components/BulkUpdateModal.css';
@@ -28,6 +30,7 @@ function CategoryView() {
     loadItemsForCategory,
     loadPropertySuggestions,
   } = useData();
+  const { requestPublish, requestUnpublish } = usePublish();
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
   const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
@@ -40,6 +43,7 @@ function CategoryView() {
   const [prevCategoryId, setPrevCategoryId] = useState(categoryIdNum);
   const [activeBulkJob, setActiveBulkJob] = useState<BulkUpdateJobResponse | null>(null);
   const bulkPollRef = useRef<number | null>(null);
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
 
   // Reset filters when category changes (setState during render pattern)
   if (categoryIdNum !== prevCategoryId) {
@@ -198,6 +202,16 @@ function CategoryView() {
     );
   }
 
+  function handleCollectionPublishClick() {
+    if (!currentCollection) return;
+    requestPublish([{ type: 'collection', id: currentCollection.collectionId }]);
+  }
+
+  function handleCollectionUnpublishClick() {
+    if (!currentCollection) return;
+    requestUnpublish([{ type: 'collection', id: currentCollection.collectionId }]);
+  }
+
   function handleBackToCollections() {
     navigate('/collections');
   }
@@ -210,20 +224,24 @@ function CategoryView() {
       <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
         <nav className="app__sidebar" aria-label="Category navigation">
           {sidebarCollapsed ? (
-            <button
-              type="button"
-              className="app__sidebar-toggle"
-              onClick={() => setSidebarCollapsed(false)}
-              aria-label="Expand sidebar"
-            >
-              ▶
-            </button>
+            <div className="app__sidebar-collapsed-content">
+              <button
+                type="button"
+                className="app__sidebar-toggle"
+                onClick={() => setSidebarCollapsed(false)}
+                aria-label="Expand sidebar"
+              >
+                &raquo;
+              </button>
+              <span className="app__sidebar-collapsed-label">Categories</span>
+            </div>
           ) : (
             <CategoryNav
               categories={categories}
               selectedCategoryId={null}
               onSelect={handleSelectCategory}
               onCollapse={() => setSidebarCollapsed(true)}
+              onEdit={() => setCategoryManagerOpen(true)}
             />
           )}
         </nav>
@@ -235,12 +253,32 @@ function CategoryView() {
               </button>
             )}
             <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
+            {currentCollection.effectiveIsPublic ? (
+              <PublicBadge
+                effectiveIsPublic={currentCollection.effectiveIsPublic}
+                onUnpublish={handleCollectionUnpublishClick}
+                className="collection-title-bar__badge"
+              />
+            ) : (
+              <PublishButton
+                onPublish={handleCollectionPublishClick}
+                className="collection-title-bar__publish-btn"
+              />
+            )}
           </div>
           <CollectionDashboard
             collectionId={collectionIdNum!}
             onSelectItem={handleSelectItem}
           />
         </main>
+
+        {currentCollection && (
+          <CategoryManagerModal
+            collectionId={currentCollection.collectionId}
+            isOpen={categoryManagerOpen}
+            onClose={() => setCategoryManagerOpen(false)}
+          />
+        )}
       </div>
     );
   }
@@ -264,6 +302,7 @@ function CategoryView() {
             selectedCategoryId={categoryIdNum}
             onSelect={handleSelectCategory}
             onCollapse={() => setSidebarCollapsed(true)}
+            onEdit={() => setCategoryManagerOpen(true)}
           />
         )}
       </nav>
@@ -277,6 +316,18 @@ function CategoryView() {
           <Link to={`/collections/${collectionIdNum}`} className="collection-title-bar__title-link">
             <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
           </Link>
+          {currentCollection.effectiveIsPublic ? (
+            <PublicBadge
+              effectiveIsPublic={currentCollection.effectiveIsPublic}
+              onUnpublish={handleCollectionUnpublishClick}
+              className="collection-title-bar__badge"
+            />
+          ) : (
+            <PublishButton
+              onPublish={handleCollectionPublishClick}
+              className="collection-title-bar__publish-btn"
+            />
+          )}
           <p className="collection-title-bar__subtitle">Browse categories, then view items and details.</p>
         </div>
         <section className="app__items">
@@ -324,6 +375,14 @@ function CategoryView() {
           )}
         </section>
       </main>
+
+      {currentCollection && (
+        <CategoryManagerModal
+          collectionId={currentCollection.collectionId}
+          isOpen={categoryManagerOpen}
+          onClose={() => setCategoryManagerOpen(false)}
+        />
+      )}
     </div>
   );
 }

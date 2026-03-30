@@ -34,7 +34,7 @@ export function createMockItem(overrides: Partial<Item> = {}): Item {
     description: 'Test description',
     properties: [],
     images: [],
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: false,
     userFlag: UserFlag.Have,
     ...overrides,
@@ -53,9 +53,10 @@ export function createMockCategory(overrides: Partial<Category> = {}): Category 
     description: 'Test description',
     parentCategoryId: null,
     isSystem: false,
-    visibility: Visibility.Default,
+    visibility: Visibility.Private,
     effectiveIsPublic: false,
     itemTemplateIds: [],
+    sortOrder: 0,
     ...overrides,
   };
 }
@@ -248,6 +249,7 @@ export function createMockDataContextValue(vi: { fn: () => ReturnType<typeof imp
     updateCategory: vi.fn(),
     deleteCategory: vi.fn(),
     getCategoryTemplates: vi.fn(),
+    reorderCategories: vi.fn(),
     items: [],
     itemsLoading: false,
     itemsError: null,
@@ -273,6 +275,7 @@ export function createMockDataContextValue(vi: { fn: () => ReturnType<typeof imp
     deleteItemTemplate: vi.fn(),
     associateTemplateWithCollection: vi.fn(),
     disassociateTemplateFromCollection: vi.fn(),
+    invalidateItemCache: vi.fn(),
     ...overrides,
   } as import('../../src/contexts/DataContext').DataContextValue;
 }

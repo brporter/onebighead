@@ -14,16 +14,16 @@ public class CategoriesController : ApiControllerBase
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICollectionRepository _collectionRepository;
-    private readonly IVisibilityService _visibilityService;
+    private readonly IPublishManagerService _publishManagerService;
 
     public CategoriesController(
         ICategoryRepository categoryRepository, 
         ICollectionRepository collectionRepository,
-        IVisibilityService visibilityService)
+        IPublishManagerService publishManagerService)
     {
         _categoryRepository = categoryRepository;
         _collectionRepository = collectionRepository;
-        _visibilityService = visibilityService;
+        _publishManagerService = publishManagerService;
     }
 
     [HttpGet]
@@ -60,7 +60,7 @@ public class CategoriesController : ApiControllerBase
         // Compute effective visibility
         if (collection != null)
         {
-            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+            _publishManagerService.ComputeEffectiveVisibility(categoryList, collection);
         }
         
         var response = categoryList.Select(c => CategoryResponse.FromCategory(
@@ -87,7 +87,7 @@ public class CategoriesController : ApiControllerBase
         {
             var allCategories = await _categoryRepository.GetAllAsync(workspaceId);
             var categoryList = allCategories.ToList();
-            _visibilityService.ComputeEffectiveVisibility(categoryList, collection);
+            _publishManagerService.ComputeEffectiveVisibility(categoryList, collection);
             
             // Find the category in the computed list to get the effective visibility
             var computed = categoryList.FirstOrDefault(c => c.Id == id);
@@ -138,7 +138,7 @@ public class CategoriesController : ApiControllerBase
 
         // Get all categories for visibility computation
         var allCategories = (await _categoryRepository.GetByCollectionAsync(request.CollectionId, workspaceId)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+        _publishManagerService.ComputeEffectiveVisibility(allCategories, collection);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
         // Validate ParentCategoryId belongs to workspace and same collection
@@ -151,15 +151,10 @@ public class CategoriesController : ApiControllerBase
             }
         }
 
-        // Validate visibility: cannot set Public when parent is private
-        if (request.Visibility == Visibility.Public)
-        {
-            bool parentEffectivelyPublic = parentCategory?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
-            if (!parentEffectivelyPublic)
-            {
-                return BadRequest("Cannot set visibility to Public when parent is private.");
-            }
-        }
+        // Default visibility from parent category or collection
+        var defaultVisibility = parentCategory?.EffectiveIsPublic ?? collection.EffectiveIsPublic
+            ? Visibility.Public
+            : Visibility.Private;
 
         var category = new Category
         {
@@ -169,7 +164,7 @@ public class CategoriesController : ApiControllerBase
             Description = request.Description ?? string.Empty,
             ParentCategoryId = request.ParentCategoryId,
             IsSystem = false,
-            Visibility = request.Visibility
+            Visibility = defaultVisibility
         };
 
         var created = await _categoryRepository.CreateAsync(category);
@@ -215,26 +210,15 @@ public class CategoriesController : ApiControllerBase
 
         // Get all categories for visibility computation
         var allCategories = (await _categoryRepository.GetByCollectionAsync(existingCategory.CollectionId, workspaceId)).ToList();
-        _visibilityService.ComputeEffectiveVisibility(allCategories, collection);
+        _publishManagerService.ComputeEffectiveVisibility(allCategories, collection);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
         // Validate ParentCategoryId belongs to workspace and same collection
-        Category? parentCategory = null;
         if (request.ParentCategoryId.HasValue)
         {
-            if (!categoryLookup.TryGetValue(request.ParentCategoryId.Value, out parentCategory))
+            if (!categoryLookup.TryGetValue(request.ParentCategoryId.Value, out _))
             {
                 return BadRequest("Invalid parent category");
-            }
-        }
-
-        // Validate visibility: cannot set Public when parent is private
-        if (request.Visibility == Visibility.Public)
-        {
-            bool parentEffectivelyPublic = parentCategory?.EffectiveIsPublic ?? collection.EffectiveIsPublic;
-            if (!parentEffectivelyPublic)
-            {
-                return BadRequest("Cannot set visibility to Public when parent is private.");
             }
         }
 
@@ -245,7 +229,7 @@ public class CategoriesController : ApiControllerBase
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             ParentCategoryId = request.ParentCategoryId,
-            Visibility = request.Visibility
+            Visibility = existingCategory.Visibility
         };
 
         var updated = await _categoryRepository.UpdateAsync(id, category, workspaceId);
@@ -262,6 +246,61 @@ public class CategoriesController : ApiControllerBase
         
         var templateIds = await _categoryRepository.GetTemplateIdsAsync(id, workspaceId);
         return Ok(CategoryResponse.FromCategory(updated, templateIds));
+    }
+
+    [HttpPut("reorder")]
+    public async Task<ActionResult<IEnumerable<CategoryResponse>>> ReorderCategories(ReorderCategoriesRequest request)
+    {
+        var workspaceId = GetWorkspaceId();
+
+        if (request.Categories.Count == 0)
+        {
+            return BadRequest("No categories to reorder");
+        }
+
+        // Reject duplicate category IDs
+        var categoryIds = request.Categories.Select(c => c.CategoryId).ToList();
+        if (categoryIds.Count != categoryIds.Distinct().Count())
+        {
+            return BadRequest("Duplicate category IDs are not allowed");
+        }
+
+        // Validate all categories belong to this workspace
+        var existingCategories = new List<Category>();
+        foreach (var id in categoryIds)
+        {
+            var cat = await _categoryRepository.GetByIdAsync(id, workspaceId);
+            if (cat is null)
+            {
+                return BadRequest($"Category {id} not found in workspace");
+            }
+            existingCategories.Add(cat);
+        }
+
+        // Validate all categories belong to the same collection
+        var collectionIds = existingCategories.Select(c => c.CollectionId).Distinct().ToList();
+        if (collectionIds.Count > 1)
+        {
+            return BadRequest("All categories must belong to the same collection");
+        }
+
+        var updates = request.Categories.ToDictionary(c => c.CategoryId, c => c.SortOrder);
+        await _categoryRepository.ReorderAsync(updates, workspaceId);
+
+        // Return updated category list
+        var collectionId = collectionIds[0];
+        var collection = await _collectionRepository.GetByIdAsync(collectionId, workspaceId);
+        var allCategories = (await _categoryRepository.GetByCollectionAsync(collectionId, workspaceId)).ToList();
+        if (collection != null)
+        {
+            _publishManagerService.ComputeEffectiveVisibility(allCategories, collection);
+        }
+        var templateIdsByCategory = await _categoryRepository.GetTemplateIdsByCategoryAsync(collectionId, workspaceId);
+        var response = allCategories.Select(c => CategoryResponse.FromCategory(
+            c,
+            templateIdsByCategory.TryGetValue(c.Id, out var ids) ? ids : null
+        ));
+        return Ok(response);
     }
 
     [HttpDelete("{id}")]

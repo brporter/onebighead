@@ -2,10 +2,12 @@ import { Outlet, Link, useParams } from 'react-router-dom';
 import { useCallback } from 'react';
 import { publicApi, type PublicWorkspace } from '../../api';
 import { useAsyncData } from '../../utils/useAsyncData';
+import { useUser } from '../../contexts/useUser';
 import '../../styles/components/PublicLayout.css';
 
 function PublicLayout() {
   const { slug } = useParams<{ slug: string }>();
+  const { user, loading: userLoading } = useUser();
 
   const fetchWorkspace = useCallback(
     () => publicApi.getWorkspace(slug!),
@@ -41,7 +43,11 @@ function PublicLayout() {
           <Link to={`/public/${slug}`} className="publicLayout__brand">
             {workspace.name}
           </Link>
-          <a href="/signin" className="publicLayout__signIn">Sign in</a>
+          {!userLoading && (user ? (
+            <a href="/collections" className="publicLayout__signIn">My Collections</a>
+          ) : (
+            <a href="/signin" className="publicLayout__signIn">Sign in</a>
+          ))}
         </div>
       </header>
       <main className="publicLayout__main">

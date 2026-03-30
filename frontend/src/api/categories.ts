@@ -3,31 +3,31 @@
  */
 import { api } from './client';
 import type { Category } from '../utils/types';
-import { Visibility } from '../utils/types';
 
 export interface CreateCategoryRequest {
   collectionId: number;
   name: string;
   description?: string;
   parentCategoryId?: number | null;
-  visibility?: Visibility;
   itemTemplateIds?: number[];
+}
+
+export interface ReorderCategoriesRequest {
+  categories: { categoryId: number; sortOrder: number }[];
 }
 
 export interface UpdateCategoryRequest {
   name: string;
   description?: string;
   parentCategoryId?: number | null;
-  visibility?: Visibility;
   itemTemplateIds?: number[];
 }
 
 export const categoriesApi = {
   getAll(collectionId?: number): Promise<Category[]> {
-    const endpoint = collectionId 
-      ? `/categories?collectionId=${collectionId}` 
-      : '/categories';
-    return api.get<Category[]>(endpoint);
+    if (!collectionId) return api.get<Category[]>('/categories');
+    const params = new URLSearchParams({ collectionId: String(collectionId) });
+    return api.get<Category[]>(`/categories?${params}`);
   },
 
   getById(id: number): Promise<Category> {
@@ -44,6 +44,10 @@ export const categoriesApi = {
 
   delete(id: number): Promise<void> {
     return api.delete(`/categories/${id}`);
+  },
+
+  reorder(request: ReorderCategoriesRequest): Promise<Category[]> {
+    return api.put<Category[]>('/categories/reorder', request);
   },
 
   /**

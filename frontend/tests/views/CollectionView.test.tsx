@@ -39,6 +39,7 @@ describe('CollectionView', () => {
   const mockDataContext = {
     collections: mockCollections,
     collectionsLoading: false,
+    collectionsError: null,
     loadCollections: vi.fn(),
   };
 

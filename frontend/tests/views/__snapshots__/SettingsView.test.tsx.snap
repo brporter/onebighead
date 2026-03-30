@@ -11,6 +11,12 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -183,11 +189,6 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
@@ -251,6 +252,11 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
                   <button
                     class="settings-collection-card__button"
                   >
+                    Categories
+                  </button>
+                  <button
+                    class="settings-collection-card__button"
+                  >
                     Templates
                   </button>
                   <button
@@ -297,6 +303,11 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
                   <button
                     class="settings-collection-card__button"
                   >
+                    Categories
+                  </button>
+                  <button
+                    class="settings-collection-card__button"
+                  >
                     Templates
                   </button>
                   <button
@@ -336,6 +347,12 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -508,11 +525,6 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
@@ -588,6 +600,12 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -712,11 +730,6 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
@@ -775,6 +788,11 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
                   <button
                     class="settings-collection-card__button"
                   >
+                    Categories
+                  </button>
+                  <button
+                    class="settings-collection-card__button"
+                  >
                     Templates
                   </button>
                   <button
@@ -816,6 +834,11 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
                   <button
                     class="settings-collection-card__button"
                   >
+                    Categories
+                  </button>
+                  <button
+                    class="settings-collection-card__button"
+                  >
                     Templates
                   </button>
                   <button
@@ -850,6 +873,12 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -1022,11 +1051,6 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
@@ -1081,6 +1105,12 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -1253,11 +1283,6 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
@@ -1315,6 +1340,12 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -1487,11 +1518,6 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
@@ -1533,6 +1559,12 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -1705,11 +1737,6 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
@@ -1795,29 +1822,6 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
               <div
                 class="settings-form__field"
               >
-                <div
-                  data-testid="visibility-toggle"
-                >
-                  <label>
-                    Collection Visibility
-                  </label>
-                  <select>
-                    <option
-                      value="Private"
-                    >
-                      Private
-                    </option>
-                    <option
-                      value="Public"
-                    >
-                      Public
-                    </option>
-                  </select>
-                </div>
-              </div>
-              <div
-                class="settings-form__field"
-              >
                 <label
                   class="settings-form__label"
                 >
@@ -1833,6 +1837,26 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
                   type="button"
                 >
                   Manage Templates
+                </button>
+              </div>
+              <div
+                class="settings-form__field"
+              >
+                <label
+                  class="settings-form__label"
+                >
+                  Visibility
+                </label>
+                <p
+                  class="settings-form__hint"
+                >
+                  This collection is currently visible in your public gallery.
+                </p>
+                <button
+                  class="settings-form__button settings-form__button--danger"
+                  type="button"
+                >
+                  Unpublish Collection
                 </button>
               </div>
               <div
@@ -1876,6 +1900,12 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -2048,11 +2078,6 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
@@ -2098,6 +2123,12 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -2270,11 +2301,6 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
@@ -2365,29 +2391,6 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
               <div
                 class="settings-form__field"
               >
-                <div
-                  data-testid="visibility-toggle"
-                >
-                  <label>
-                    Collection Visibility
-                  </label>
-                  <select>
-                    <option
-                      value="Private"
-                    >
-                      Private
-                    </option>
-                    <option
-                      value="Public"
-                    >
-                      Public
-                    </option>
-                  </select>
-                </div>
-              </div>
-              <div
-                class="settings-form__field"
-              >
                 <label
                   class="settings-form__label"
                 >
@@ -2403,6 +2406,26 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
                   type="button"
                 >
                   Manage Templates
+                </button>
+              </div>
+              <div
+                class="settings-form__field"
+              >
+                <label
+                  class="settings-form__label"
+                >
+                  Visibility
+                </label>
+                <p
+                  class="settings-form__hint"
+                >
+                  This collection is currently visible in your public gallery.
+                </p>
+                <button
+                  class="settings-form__button settings-form__button--danger"
+                  type="button"
+                >
+                  Unpublish Collection
                 </button>
               </div>
               <div
@@ -2446,6 +2469,12 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
       <span>
         Site Header
       </span>
+      <a
+        class="gallery-link"
+        href="/collections"
+      >
+        Return to Collections
+      </a>
       <button
         aria-label="Support"
         class="support-link support-link--icon"
@@ -2618,11 +2647,6 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
           >
             Settings
           </h1>
-          <button
-            class="settings-title-bar__back"
-          >
-            Back to Collections →
-          </button>
         </div>
         <div
           class="settings-panel"
