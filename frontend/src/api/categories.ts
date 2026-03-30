@@ -25,10 +25,9 @@ export interface UpdateCategoryRequest {
 
 export const categoriesApi = {
   getAll(collectionId?: number): Promise<Category[]> {
-    const endpoint = collectionId 
-      ? `/categories?collectionId=${collectionId}` 
-      : '/categories';
-    return api.get<Category[]>(endpoint);
+    if (!collectionId) return api.get<Category[]>('/categories');
+    const params = new URLSearchParams({ collectionId: String(collectionId) });
+    return api.get<Category[]>(`/categories?${params}`);
   },
 
   getById(id: number): Promise<Category> {

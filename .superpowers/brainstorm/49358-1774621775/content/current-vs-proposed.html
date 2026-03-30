@@ -1,0 +1,179 @@
+<h2>CategoryManager: Current vs. Proposed Flow</h2>
+<p class="subtitle">Let me confirm I understand your vision before we dive into details</p>
+
+<div class="section">
+  <h3>Current Layout (Side-by-Side)</h3>
+  <div class="mockup">
+    <div class="mockup-header">Category Manager — Current</div>
+    <div class="mockup-body" style="display:flex; gap:0; min-height:320px;">
+      <div style="width:35%; background:#1a1a2e; border-right:1px solid #333; padding:16px; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <span style="font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#888;">Categories</span>
+          <span style="color:#4ade80; cursor:pointer;">+</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="padding:8px 12px; background:#2a2a4e; border-left:3px solid #6366f1; border-radius:4px; font-size:13px; color:#e2e8f0;">📁 Electronics</div>
+          <div style="padding:8px 12px 8px 28px; font-size:13px; color:#94a3b8;">📄 Phones</div>
+          <div style="padding:8px 12px 8px 28px; font-size:13px; color:#94a3b8;">📄 Laptops</div>
+          <div style="padding:8px 12px; font-size:13px; color:#94a3b8;">📁 Clothing</div>
+          <div style="padding:8px 12px 8px 28px; font-size:13px; color:#94a3b8;">📄 Shirts</div>
+        </div>
+      </div>
+      <div style="flex:1; padding:20px; display:flex; flex-direction:column; gap:12px;">
+        <div style="font-size:16px; font-weight:600; color:#e2e8f0;">Electronics <span style="background:#4ade80; color:#000; padding:2px 8px; border-radius:10px; font-size:11px;">Public</span></div>
+        <div>
+          <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Name *</label>
+          <div class="mock-input" style="font-size:13px;">Electronics</div>
+        </div>
+        <div>
+          <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Description</label>
+          <div class="mock-input" style="font-size:13px; height:48px;">Electronic devices and gadgets</div>
+        </div>
+        <div>
+          <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Parent Category</label>
+          <div class="mock-input" style="font-size:13px;">None (root level)</div>
+        </div>
+        <div>
+          <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Recommended Templates</label>
+          <div style="font-size:13px; color:#94a3b8;">☑ Product Template  ☐ Review Template</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:12px 16px; border-top:1px solid #333; background:#111;">
+      <button class="mock-button" style="background:#dc2626; font-size:12px; padding:6px 14px;">Delete</button>
+      <div style="display:flex; gap:8px;">
+        <button class="mock-button" style="background:#333; font-size:12px; padding:6px 14px;">Cancel</button>
+        <button class="mock-button" style="background:#6366f1; font-size:12px; padding:6px 14px;">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:32px;">
+  <h3>Proposed Flow (Single Panel with Transitions)</h3>
+  <div style="display:flex; gap:20px; flex-wrap:wrap;">
+
+    <div style="flex:1; min-width:280px;">
+      <div class="label" style="margin-bottom:8px;">State 1: Tree View (default)</div>
+      <div class="mockup">
+        <div class="mockup-header">Category Manager — Tree View</div>
+        <div class="mockup-body" style="min-height:300px; padding:16px; display:flex; flex-direction:column;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <span style="font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#888;">Categories</span>
+            <span style="color:#4ade80; cursor:pointer; font-size:18px;">+</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+            <div style="padding:10px 14px; background:#2a2a4e; border-radius:6px; font-size:14px; color:#e2e8f0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <span style="color:#666;">⠿</span> <span style="width:8px;height:8px;border-radius:50%;background:#6366f1;"></span> Electronics <span style="margin-left:auto; color:#666;">›</span>
+            </div>
+            <div style="padding:10px 14px 10px 34px; border-radius:6px; font-size:14px; color:#94a3b8; display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <span style="color:#666;">⠿</span> <span style="width:8px;height:8px;border-radius:50%;background:#6366f1;"></span> Phones
+            </div>
+            <div style="padding:10px 14px 10px 34px; border-radius:6px; font-size:14px; color:#94a3b8; display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <span style="color:#666;">⠿</span> <span style="width:8px;height:8px;border-radius:50%;background:#6366f1;"></span> Laptops
+            </div>
+            <div style="padding:10px 14px; border-radius:6px; font-size:14px; color:#94a3b8; display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <span style="color:#666;">⠿</span> <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span> Clothing <span style="margin-left:auto; color:#666;">›</span>
+            </div>
+            <div style="padding:10px 14px 10px 34px; border-radius:6px; font-size:14px; color:#94a3b8; display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <span style="color:#666;">⠿</span> <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span> Shirts
+            </div>
+          </div>
+          <div style="margin-top:auto; padding:12px; border:1px dashed #444; border-radius:6px; text-align:center; color:#666; font-size:12px;">
+            Move here to make root level
+          </div>
+        </div>
+      </div>
+      <p style="color:#94a3b8; font-size:12px; margin-top:8px; text-align:center;">Drag to reorder & reparent. Click to edit. Plus to create.</p>
+    </div>
+
+    <div style="display:flex; align-items:center; color:#666; font-size:24px;">→</div>
+
+    <div style="flex:1; min-width:280px;">
+      <div class="label" style="margin-bottom:8px;">State 2: Quick Create (popover)</div>
+      <div class="mockup">
+        <div class="mockup-header">Quick Create Category</div>
+        <div class="mockup-body" style="min-height:300px; padding:24px; display:flex; flex-direction:column; justify-content:center;">
+          <div style="max-width:360px; margin:0 auto; width:100%;">
+            <div style="margin-bottom:16px;">
+              <label style="font-size:13px; color:#94a3b8; display:block; margin-bottom:6px;">Category Name</label>
+              <div class="mock-input" style="font-size:14px; padding:10px 12px;">New Category</div>
+            </div>
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+              <button class="mock-button" style="background:#1a1a3e; border:1px solid #444; font-size:13px; padding:8px 16px;">More Details...</button>
+              <button class="mock-button" style="background:#333; font-size:13px; padding:8px 16px;">Cancel</button>
+              <button class="mock-button" style="background:#6366f1; font-size:13px; padding:8px 16px;">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="color:#94a3b8; font-size:12px; margin-top:8px; text-align:center;">Fast-path: name only. "More Details" opens full form.</p>
+    </div>
+
+    <div style="display:flex; align-items:center; color:#666; font-size:24px;">→</div>
+
+    <div style="flex:1; min-width:280px;">
+      <div class="label" style="margin-bottom:8px;">State 3: Full Edit/Create Form</div>
+      <div class="mockup">
+        <div class="mockup-header">Category Manager — Edit Form</div>
+        <div class="mockup-body" style="min-height:300px; padding:20px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span style="color:#6366f1; cursor:pointer; font-size:14px;">← Back to Categories</span>
+          </div>
+          <div>
+            <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Name *</label>
+            <div class="mock-input" style="font-size:13px;">Electronics</div>
+          </div>
+          <div>
+            <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Description</label>
+            <div class="mock-input" style="font-size:13px; height:48px;">Electronic devices and gadgets</div>
+          </div>
+          <div>
+            <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Parent Category</label>
+            <div class="mock-input" style="font-size:13px;">None (root level)</div>
+          </div>
+          <div>
+            <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Templates</label>
+            <div style="font-size:13px; color:#94a3b8;">☑ Product Template</div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:12px 16px; border-top:1px solid #333;">
+          <button class="mock-button" style="background:#dc2626; font-size:12px; padding:6px 14px;">Delete</button>
+          <div style="display:flex; gap:8px;">
+            <button class="mock-button" style="background:#333; font-size:12px; padding:6px 14px;">Cancel</button>
+            <button class="mock-button" style="background:#6366f1; font-size:12px; padding:6px 14px;">Save Changes</button>
+          </div>
+        </div>
+      </div>
+      <p style="color:#94a3b8; font-size:12px; margin-top:8px; text-align:center;">Full form with all fields. Slides in animated from tree view.</p>
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top:32px;">
+  <h3>Does this capture your vision?</h3>
+  <div class="options">
+    <div class="option" data-choice="yes" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Yes, this is right</h3>
+        <p>The three states and flow between them match what I had in mind</p>
+      </div>
+    </div>
+    <div class="option" data-choice="adjustments" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Close, but needs adjustments</h3>
+        <p>The general idea is right but some details need changing</p>
+      </div>
+    </div>
+    <div class="option" data-choice="rethink" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>Not quite — let me clarify</h3>
+        <p>I need to explain the flow differently</p>
+      </div>
+    </div>
+  </div>
+</div>

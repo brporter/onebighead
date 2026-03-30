@@ -3,5 +3,7 @@ import ToastContext from './ToastContext';
 import type { ToastContextValue } from './ToastContext';
 
 export function useToast(): ToastContextValue {
-  return useContext(ToastContext);
+  const ctx = useContext(ToastContext);
+  if (!ctx) throw new Error('useToast must be used within a ToastProvider');
+  return ctx;
 }

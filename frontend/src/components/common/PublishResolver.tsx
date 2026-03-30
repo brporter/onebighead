@@ -3,6 +3,7 @@ import { publishManagerApi } from '../../api/publishManager';
 import { useToast } from '../../contexts/useToast';
 import { useUser } from '../../contexts/useUser';
 import { isValidSlug } from '../../utils/slugUtils';
+import { useDialog } from '../../utils/useDialog';
 import type {
   PublishIntent,
   PublishRequirement,
@@ -188,6 +189,8 @@ export function PublishResolver({ intent, onClearIntent, onComplete }: PublishRe
     onClearIntent();
   }, [resetState, onClearIntent]);
 
+  const [dialogRef, handleBackdropClick] = useDialog(showModal, handleCancel);
+
   const toggleCollection = useCallback((id: number) => {
     setAcknowledgedCollections(prev => {
       const next = new Set(prev);
@@ -212,14 +215,12 @@ export function PublishResolver({ intent, onClearIntent, onComplete }: PublishRe
     });
   }, []);
 
-  if (!showModal || !intent) return null;
-
-  const isPublish = intent.action === 'publish';
+  const isPublish = intent?.action === 'publish';
   const title = isPublish ? 'Publish' : 'Make Private';
 
   return (
-    <div className="publish-resolver__overlay" onClick={handleCancel}>
-      <div className="publish-resolver" onClick={e => e.stopPropagation()}>
+    <dialog ref={dialogRef} className="publish-resolver__dialog" onClick={handleBackdropClick}>
+      <div className="publish-resolver">
         <div className="publish-resolver__header">
           <h2 className="publish-resolver__title">{title}</h2>
         </div>
@@ -328,6 +329,6 @@ export function PublishResolver({ intent, onClearIntent, onComplete }: PublishRe
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -8,12 +8,7 @@ export interface PublishContextValue {
   clearIntent: () => void;
 }
 
-const PublishContext = createContext<PublishContextValue>({
-  requestPublish: () => {},
-  requestUnpublish: () => {},
-  pendingIntent: null,
-  clearIntent: () => {},
-});
+const PublishContext = createContext<PublishContextValue | null>(null);
 
 export function PublishProvider({ children }: { children: ReactNode }) {
   const [pendingIntent, setPendingIntent] = useState<PublishIntent | null>(null);

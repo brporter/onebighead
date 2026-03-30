@@ -17,6 +17,7 @@ import { SupportModal } from '../components/support/SupportModal';
 import { WorkspaceEditModal, WorkspaceDeletionSection } from '../components/workspace';
 import { SiteHeader, SiteFooter } from '../components/common';
 import { CategoryManagerModal } from '../components/category';
+import { usePublish } from '../contexts/usePublish';
 import type { Collection, WorkspaceMembership } from '../utils/types';
 import { WorkspaceRole } from '../utils/types';
 
@@ -27,6 +28,7 @@ function SettingsView() {
   const [searchParams] = useSearchParams();
   const { user } = useUser();
   const { collections, addCollection, updateCollection, deleteCollection, loadCollections } = useData();
+  const { requestPublish, requestUnpublish } = usePublish();
   
   // Initialize section from URL query param or default to dashboard
   const initialSection = (searchParams.get('section') as SettingsSection) || 'dashboard';
@@ -415,6 +417,42 @@ function SettingsView() {
                 </button>
               </div>
             )}
+            {editingId !== null && (() => {
+              const collection = collections.find(c => c.collectionId === editingId);
+              if (!collection) return null;
+              return (
+                <div className="settings-form__field">
+                  <label className="settings-form__label">Visibility</label>
+                  {collection.effectiveIsPublic ? (
+                    <>
+                      <p className="settings-form__hint">
+                        This collection is currently visible in your public gallery.
+                      </p>
+                      <button
+                        type="button"
+                        className="settings-form__button settings-form__button--danger"
+                        onClick={() => requestUnpublish([{ type: 'collection', id: collection.collectionId }])}
+                      >
+                        Unpublish Collection
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="settings-form__hint">
+                        This collection is private. Publish it to make it visible in your public gallery.
+                      </p>
+                      <button
+                        type="button"
+                        className="settings-form__button settings-form__button--primary"
+                        onClick={() => requestPublish([{ type: 'collection', id: collection.collectionId }])}
+                      >
+                        Publish Collection
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
             <div className="settings-form__actions">
               <button
                 type="submit"
@@ -825,6 +863,9 @@ function SettingsView() {
   return (
     <div className="app">
       <SiteHeader>
+        <a href="/collections" className="gallery-link" onClick={(e) => { e.preventDefault(); confirmAndNavigate('/collections'); }}>
+          Return to Collections
+        </a>
         <button className="support-link support-link--icon" onClick={() => setIsSupportOpen(true)} title="Support" aria-label="Support">
           <span className="support-link__icon">?</span>
         </button>
@@ -853,9 +894,6 @@ function SettingsView() {
         <main className="app__content settings-content">
           <div className="settings-title-bar">
             <h1 className="settings-title-bar__title">Settings</h1>
-            <button className="settings-title-bar__back" onClick={() => confirmAndNavigate('/collections')}>
-              Back to Collections →
-            </button>
           </div>
           <div className="settings-panel">
             {renderContent()}

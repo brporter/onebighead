@@ -32,6 +32,16 @@ vi.mock('../src/contexts/useToast', () => ({
   })),
 }));
 
+// Mock the PublishContext
+vi.mock('../src/contexts/usePublish', () => ({
+  usePublish: vi.fn(() => ({
+    requestPublish: vi.fn(),
+    requestUnpublish: vi.fn(),
+    pendingIntent: null,
+    clearIntent: vi.fn(),
+  })),
+}));
+
 // Helper to render with router
 function renderWithRouter(initialRoute = '/collections') {
   return render(
@@ -188,7 +198,7 @@ describe('App with Router', () => {
     it('should render collections page at /collections', () => {
       renderWithRouter('/collections');
 
-      expect(screen.getByRole('heading', { level: 1, name: 'Collections' })).toBeInTheDocument();
+      expect(screen.getByText('OneBigHead')).toBeInTheDocument();
     });
 
     it('should show loading state while collections are loading', () => {

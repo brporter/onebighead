@@ -1,11 +1,22 @@
-.publish-resolver__overlay {
-  position: fixed;
-  inset: 0;
+.publish-resolver__dialog {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  height: 100%;
+}
+
+.publish-resolver__dialog::backdrop {
   background: rgba(0, 0, 0, 0.5);
+}
+
+.publish-resolver__dialog[open] {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  padding: var(--space-lg);
 }
 
 .publish-resolver {

@@ -6,15 +6,20 @@ import { router } from './router';
 import { DataProvider } from './contexts/DataContext';
 import { UserProvider } from './contexts/UserContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { PublishProvider } from './contexts/PublishContext';
 import { ToastContainer } from './components/common';
+import { PublishApp } from './components/common/PublishApp';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <UserProvider>
       <DataProvider>
         <ToastProvider>
-          <RouterProvider router={router} />
-          <ToastContainer />
+          <PublishProvider>
+            <RouterProvider router={router} />
+            <PublishApp />
+            <ToastContainer />
+          </PublishProvider>
         </ToastProvider>
       </DataProvider>
     </UserProvider>

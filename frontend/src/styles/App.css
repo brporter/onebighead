@@ -73,8 +73,87 @@
   --radius-md: 6px;
   --radius-lg: 8px;
 
+  /* Scrollbar */
+  --scrollbar-thumb: var(--color-border-strong);
+  --scrollbar-track: transparent;
+
   /* Transitions */
   --transition-fast: 0.15s ease;
+}
+
+/* ==========================================================================
+   Global Form Controls — Custom Checkbox
+   ========================================================================== */
+
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  position: relative;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--color-accent);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input[type="radio"] {
+  accent-color: var(--color-accent);
+}
+
+/* ==========================================================================
+   Scrollbar Styling
+   ========================================================================== */
+
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
 /* ==========================================================================
@@ -1065,7 +1144,6 @@ body {
 .detail__radioInput {
   width: 16px;
   height: 16px;
-  accent-color: var(--color-primary);
   cursor: pointer;
 }
 

@@ -1,6 +1,4 @@
 import type { Collection } from '../../utils/types';
-import { PublishButton, PublicBadge } from '../common';
-import { usePublish } from '../../contexts/usePublish';
 import '../../styles/components/CollectionList.css';
 
 interface CollectionListProps {
@@ -9,40 +7,20 @@ interface CollectionListProps {
 }
 
 function CollectionList({ collections, onSelect }: CollectionListProps) {
-  const { requestPublish, requestUnpublish } = usePublish();
-
-  function handlePublishClick(collection: Collection) {
-    requestPublish([{ type: 'collection', id: collection.collectionId }]);
-  }
-
-  function handleUnpublishClick(collection: Collection) {
-    requestUnpublish([{ type: 'collection', id: collection.collectionId }]);
-  }
-
   return (
     <div className="collectionList">
       <h2 className="collectionList__title">Your Collections</h2>
       <p className="collectionList__subtitle">Select a collection to view its items</p>
       <div className="collectionList__grid">
         {collections.map((collection) => (
-          <button
+          <div
             key={collection.collectionId}
             className="collectionList__card"
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(collection)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(collection); } }}
           >
-            {collection.effectiveIsPublic ? (
-              <PublicBadge
-                effectiveIsPublic={collection.effectiveIsPublic}
-                onUnpublish={() => handleUnpublishClick(collection)}
-                className="collectionList__badge"
-              />
-            ) : (
-              <PublishButton
-                onPublish={() => handlePublishClick(collection)}
-                className="collectionList__publish-btn"
-              />
-            )}
-
             {collection.heroImageUrl && (
               <div className="collectionList__imageWrap">
                 <img
@@ -58,7 +36,7 @@ function CollectionList({ collections, onSelect }: CollectionListProps) {
                 <p className="collectionList__description">{collection.description}</p>
               )}
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </div>

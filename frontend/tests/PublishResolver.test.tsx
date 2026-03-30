@@ -34,11 +34,49 @@ describe('PublishResolver', () => {
     vi.clearAllMocks();
   });
 
-  it('renders nothing when no pending intent', () => {
-    const { container } = render(
+  it('does not open dialog when no pending intent', () => {
+    render(
       <PublishResolver intent={null} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />
     );
-    expect(container.innerHTML).toBe('');
+    const dialog = document.querySelector('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).not.toHaveAttribute('open');
+  });
+
+  it('opens dialog via showModal when preflight returns requirements', async () => {
+    mockPreflight.mockResolvedValue({
+      ready: false,
+      requirements: [{ kind: 'collection-not-public', collectionId: 5, collectionName: 'Vintage Cars' }],
+    });
+
+    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
+    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
+
+    await waitFor(() => {
+      const dialog = document.querySelector('dialog');
+      expect(dialog).toHaveAttribute('open');
+    });
+  });
+
+  it('closes dialog and clears intent on backdrop click', async () => {
+    mockPreflight.mockResolvedValue({
+      ready: false,
+      requirements: [{ kind: 'collection-not-public', collectionId: 5, collectionName: 'Vintage Cars' }],
+    });
+
+    const user = userEvent.setup();
+    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
+    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
+
+    const dialog = await waitFor(() => {
+      const d = document.querySelector('dialog');
+      expect(d).toHaveAttribute('open');
+      return d!;
+    });
+
+    await user.click(dialog);
+
+    expect(mockClearIntent).toHaveBeenCalled();
   });
 
   it('auto-executes when preflight returns ready', async () => {

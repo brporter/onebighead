@@ -21,3 +21,4 @@ export type { VisibilityFilterValue } from './VisibilityFilter';
 export { BulkActionBar } from './BulkActionBar';
 export type { BulkActionBarProps } from './BulkActionBar';
 export { ToastContainer } from './ToastContainer';
+export { PublishApp } from './PublishApp';

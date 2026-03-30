@@ -12,11 +12,7 @@ export interface ToastContextValue {
   dismissToast: (id: number) => void;
 }
 
-const ToastContext = createContext<ToastContextValue>({
-  toasts: [],
-  showToast: () => {},
-  dismissToast: () => {},
-});
+const ToastContext = createContext<ToastContextValue | null>(null);
 
 interface ToastProviderProps {
   children: ReactNode;

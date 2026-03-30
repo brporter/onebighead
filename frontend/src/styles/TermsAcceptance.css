@@ -93,11 +93,7 @@
 }
 
 .terms-acceptance__checkbox input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
   margin-top: 2px;
-  accent-color: var(--color-primary);
-  cursor: pointer;
 }
 
 .terms-acceptance__checkbox span {

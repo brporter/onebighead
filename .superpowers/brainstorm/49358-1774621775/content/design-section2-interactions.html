@@ -1,0 +1,131 @@
+<h2>Design Section 2: Interaction Flows</h2>
+<p class="subtitle">How each user action maps to state changes</p>
+
+<div class="section">
+  <h3>Flow 1: Click Category Row → Edit</h3>
+  <div class="mockup">
+    <div class="mockup-header">Click to Edit Flow</div>
+    <div class="mockup-body" style="padding:20px;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div style="padding:12px 16px; background:#1a1a2e; border-radius:6px; text-align:center; min-width:120px;">
+          <div style="font-size:12px; color:#94a3b8;">User clicks</div>
+          <div style="font-size:14px; color:#e2e8f0; margin-top:4px;">Category row</div>
+        </div>
+        <span style="color:#666;">→</span>
+        <div style="padding:12px 16px; background:#1a1a2e; border-radius:6px; text-align:center; min-width:120px;">
+          <div style="font-size:12px; color:#94a3b8;">State changes</div>
+          <div style="font-size:14px; color:#e2e8f0; margin-top:4px;">selectedId = id<br>view = 'form'</div>
+        </div>
+        <span style="color:#666;">→</span>
+        <div style="padding:12px 16px; background:#1a1a2e; border-radius:6px; text-align:center; min-width:120px;">
+          <div style="font-size:12px; color:#94a3b8;">Animation</div>
+          <div style="font-size:14px; color:#e2e8f0; margin-top:4px;">Tree slides left<br>Form slides in</div>
+        </div>
+        <span style="color:#666;">→</span>
+        <div style="padding:12px 16px; background:#2a2a4e; border:1px solid #6366f1; border-radius:6px; text-align:center; min-width:120px;">
+          <div style="font-size:12px; color:#6366f1;">Result</div>
+          <div style="font-size:14px; color:#e2e8f0; margin-top:4px;">Edit form shown<br>Footer appears</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;">
+  <h3>Flow 2: Quick Create (+ Button)</h3>
+  <div class="mockup">
+    <div class="mockup-header">Quick Create Flow</div>
+    <div class="mockup-body" style="padding:20px;">
+      <div style="display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+        <div style="padding:12px 16px; background:#1a1a2e; border-radius:6px; text-align:center; min-width:100px;">
+          <div style="font-size:12px; color:#94a3b8;">User clicks</div>
+          <div style="font-size:14px; color:#e2e8f0; margin-top:4px;">+ button</div>
+        </div>
+        <span style="color:#666; margin-top:16px;">→</span>
+        <div style="padding:12px 16px; background:#1a1a2e; border-radius:6px; text-align:center; min-width:100px;">
+          <div style="font-size:12px; color:#94a3b8;">Popover opens</div>
+          <div style="font-size:14px; color:#e2e8f0; margin-top:4px;">Name input<br>focused</div>
+        </div>
+        <span style="color:#666; margin-top:16px;">→</span>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="padding:10px 14px; background:#1a3a1a; border:1px solid #4ade80; border-radius:6px; text-align:center; min-width:110px;">
+              <div style="font-size:12px; color:#4ade80;">Save</div>
+              <div style="font-size:12px; color:#94a3b8; margin-top:4px;">Create w/ name only<br>Add to top of tree<br>Close popover<br>Stay on tree view</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="padding:10px 14px; background:#1a1a3e; border:1px solid #6366f1; border-radius:6px; text-align:center; min-width:110px;">
+              <div style="font-size:12px; color:#6366f1;">More Details</div>
+              <div style="font-size:12px; color:#94a3b8; margin-top:4px;">Close popover<br>Slide to form view<br>Name pre-filled<br>isNew = true</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="padding:10px 14px; background:#1a1a2e; border:1px solid #444; border-radius:6px; text-align:center; min-width:110px;">
+              <div style="font-size:12px; color:#94a3b8;">Cancel</div>
+              <div style="font-size:12px; color:#94a3b8; margin-top:4px;">Close popover<br>No changes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;">
+  <h3>Flow 3: Back to Tree / Cancel / Close</h3>
+  <div class="mockup">
+    <div class="mockup-header">Navigation Away from Form</div>
+    <div class="mockup-body" style="padding:20px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+        <div style="padding:14px; background:#1a1a2e; border-radius:6px;">
+          <div style="font-size:13px; font-weight:600; color:#e2e8f0; margin-bottom:8px;">← Back to Categories</div>
+          <div style="font-size:12px; color:#94a3b8;">
+            <strong>No changes:</strong> Slide back to tree immediately<br><br>
+            <strong>Has changes:</strong> "Discard changes?" confirm → slide back to tree
+          </div>
+        </div>
+        <div style="padding:14px; background:#1a1a2e; border-radius:6px;">
+          <div style="font-size:13px; font-weight:600; color:#e2e8f0; margin-bottom:8px;">Cancel Button</div>
+          <div style="font-size:12px; color:#94a3b8;">
+            <strong>No changes:</strong> Button disabled (current behavior)<br><br>
+            <strong>Has changes:</strong> "Discard changes?" confirm → slide back to tree
+          </div>
+        </div>
+        <div style="padding:14px; background:#1a1a2e; border-radius:6px;">
+          <div style="font-size:13px; font-weight:600; color:#e2e8f0; margin-bottom:8px;">× Close Modal</div>
+          <div style="font-size:12px; color:#94a3b8;">
+            <strong>Tree view:</strong> Close modal immediately<br><br>
+            <strong>Form, no changes:</strong> Slide back to tree<br><br>
+            <strong>Form, has changes:</strong> "Discard changes?" confirm → slide back to tree
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;">
+  <h3>Flow 4: Save & Delete</h3>
+  <div class="mockup">
+    <div class="mockup-header">Mutation Flows</div>
+    <div class="mockup-body" style="padding:20px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div style="padding:14px; background:#1a1a2e; border-radius:6px;">
+          <div style="font-size:13px; font-weight:600; color:#e2e8f0; margin-bottom:8px;">Save Changes / Create</div>
+          <div style="font-size:12px; color:#94a3b8;">
+            Validate form → API call → Reload categories → Slide back to tree<br><br>
+            <em>After save, user returns to the updated tree view</em>
+          </div>
+        </div>
+        <div style="padding:14px; background:#1a1a2e; border-radius:6px;">
+          <div style="font-size:13px; font-weight:600; color:#e2e8f0; margin-bottom:8px;">Delete</div>
+          <div style="font-size:12px; color:#94a3b8;">
+            "Confirm delete?" modal → API call → Reload categories → Slide back to tree<br><br>
+            <em>Category removed, tree updates</em>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

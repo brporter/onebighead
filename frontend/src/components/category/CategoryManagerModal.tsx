@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Category } from '../../utils/types';
 import { useData } from '../../contexts/useData';
 import { usePublish } from '../../contexts/usePublish';
+import { useDialog } from '../../utils/useDialog';
 import CategoryManagerTree from './CategoryManagerTree';
 import CategoryManagerForm from './CategoryManagerForm';
 import QuickCreatePopover from './QuickCreatePopover';
@@ -24,7 +25,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   } = useData();
   const { requestPublish, requestUnpublish } = usePublish();
 
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [dialogRef] = useDialog(isOpen, onClose);
   const formRef = useRef<{ submit: () => void } | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -34,31 +35,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   const [view, setView] = useState<'tree' | 'form'>('tree');
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [initialName, setInitialName] = useState('');
-
-  // Control dialog open/close
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    if (isOpen) {
-      dialog.showModal();
-    } else {
-      dialog.close();
-    }
-  }, [isOpen]);
-
-  // Handle native dialog close (e.g., Escape key)
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    const handleNativeClose = () => {
-      onClose();
-    };
-
-    dialog.addEventListener('close', handleNativeClose);
-    return () => dialog.removeEventListener('close', handleNativeClose);
-  }, [onClose]);
 
   // Load categories when modal opens and reset state
   useEffect(() => {

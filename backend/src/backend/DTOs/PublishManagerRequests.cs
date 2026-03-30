@@ -43,35 +43,28 @@ public class PreflightResponse
 [JsonDerivedType(typeof(CollectionNotPublicRequirement), "collection-not-public")]
 [JsonDerivedType(typeof(CategoryNotPublicRequirement), "category-not-public")]
 [JsonDerivedType(typeof(UnpublishWillHideChildrenRequirement), "unpublish-will-hide-children")]
-public abstract class PublishRequirement
-{
-    public abstract string Kind { get; }
-}
+public abstract class PublishRequirement { }
 
 public class WorkspaceSlugRequiredRequirement : PublishRequirement
 {
-    public override string Kind => "workspace-slug-required";
     public int WorkspaceId { get; set; }
     public required string WorkspaceName { get; set; }
 }
 
 public class CollectionNotPublicRequirement : PublishRequirement
 {
-    public override string Kind => "collection-not-public";
     public int CollectionId { get; set; }
     public required string CollectionName { get; set; }
 }
 
 public class CategoryNotPublicRequirement : PublishRequirement
 {
-    public override string Kind => "category-not-public";
     public int CategoryId { get; set; }
     public required string CategoryName { get; set; }
 }
 
 public class UnpublishWillHideChildrenRequirement : PublishRequirement
 {
-    public override string Kind => "unpublish-will-hide-children";
     public required string EntityType { get; set; }
     public int EntityId { get; set; }
     public required string EntityName { get; set; }
@@ -93,32 +86,25 @@ public class ExecuteRequest
 [JsonDerivedType(typeof(CollectionNotPublicResolution), "collection-not-public")]
 [JsonDerivedType(typeof(CategoryNotPublicResolution), "category-not-public")]
 [JsonDerivedType(typeof(UnpublishWillHideChildrenResolution), "unpublish-will-hide-children")]
-public abstract class PublishResolution
-{
-    public abstract string Kind { get; }
-}
+public abstract class PublishResolution { }
 
 public class WorkspaceSlugResolution : PublishResolution
 {
-    public override string Kind => "workspace-slug-required";
     public required string Slug { get; set; }
 }
 
 public class CollectionNotPublicResolution : PublishResolution
 {
-    public override string Kind => "collection-not-public";
     public int CollectionId { get; set; }
 }
 
 public class CategoryNotPublicResolution : PublishResolution
 {
-    public override string Kind => "category-not-public";
     public int CategoryId { get; set; }
 }
 
 public class UnpublishWillHideChildrenResolution : PublishResolution
 {
-    public override string Kind => "unpublish-will-hide-children";
     public required string EntityType { get; set; }
     public int EntityId { get; set; }
 }

@@ -11,13 +11,7 @@ export interface UserContextValue {
   logout: () => Promise<void>;
 }
 
-const UserContext = createContext<UserContextValue>({
-  user: null,
-  loading: true,
-  error: null,
-  refetch: async () => {},
-  logout: async () => {},
-});
+const UserContext = createContext<UserContextValue | null>(null);
 
 interface UserProviderProps {
   children: ReactNode;

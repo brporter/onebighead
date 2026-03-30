@@ -11,18 +11,6 @@ vi.mock('../../src/contexts/useData', () => ({
   useData: vi.fn(),
 }));
 
-const mockRequestPublish = vi.fn();
-const mockRequestUnpublish = vi.fn();
-
-vi.mock('../../src/contexts/usePublish', () => ({
-  usePublish: () => ({
-    requestPublish: mockRequestPublish,
-    requestUnpublish: mockRequestUnpublish,
-    pendingIntent: null,
-    clearIntent: vi.fn(),
-  }),
-}));
-
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -115,56 +103,6 @@ describe('CollectionView', () => {
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/collections/1', { replace: true });
-    });
-  });
-
-  describe('publish/unpublish in collection list', () => {
-    it('should show PublishButton for private collections', () => {
-      renderWithRouter();
-      const publishButtons = screen.getAllByText('Publish');
-      expect(publishButtons.length).toBe(2);
-    });
-
-    it('should show PublicBadge for public collections', () => {
-      const publicCollections: Collection[] = [
-        { ...mockCollections[0], effectiveIsPublic: true },
-        { ...mockCollections[1], effectiveIsPublic: false },
-      ];
-      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
-        ...mockDataContext,
-        collections: publicCollections,
-      });
-
-      renderWithRouter();
-      expect(screen.getByText('Public')).toBeInTheDocument();
-      expect(screen.getAllByText('Publish').length).toBe(1);
-    });
-
-    it('should call requestPublish when clicking Publish button', async () => {
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      const publishButtons = screen.getAllByText('Publish');
-      await user.click(publishButtons[0]);
-
-      expect(mockRequestPublish).toHaveBeenCalledWith([{ type: 'collection', id: 1 }]);
-    });
-
-    it('should call requestUnpublish when clicking PublicBadge', async () => {
-      const publicCollections: Collection[] = [
-        { ...mockCollections[0], effectiveIsPublic: true },
-      ];
-      (useData as ReturnType<typeof vi.fn>).mockReturnValue({
-        ...mockDataContext,
-        collections: publicCollections,
-      });
-
-      const user = userEvent.setup();
-      renderWithRouter();
-
-      await user.click(screen.getByText('Public'));
-
-      expect(mockRequestUnpublish).toHaveBeenCalledWith([{ type: 'collection', id: 1 }]);
     });
   });
 

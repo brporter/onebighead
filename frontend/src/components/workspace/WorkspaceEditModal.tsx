@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { WorkspaceMembership } from '../../utils/types';
 import { workspacesApi } from '../../api';
 import { toSlug, isValidSlug } from '../../utils/slugUtils';
+import { useDialog } from '../../utils/useDialog';
 import '../../styles/components/WorkspaceEditModal.css';
 
 interface WorkspaceEditModalProps {
@@ -15,35 +16,10 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [dialogRef, handleBackdropClick] = useDialog(isOpen, onClose);
 
   // Slug state
   const [slug, setSlug] = useState('');
-
-  // Control dialog open/close
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    if (isOpen) {
-      dialog.showModal();
-    } else {
-      dialog.close();
-    }
-  }, [isOpen]);
-
-  // Handle native dialog close (e.g., Escape key)
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    const handleClose = () => {
-      onClose();
-    };
-
-    dialog.addEventListener('close', handleClose);
-    return () => dialog.removeEventListener('close', handleClose);
-  }, [onClose]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -86,12 +62,6 @@ function WorkspaceEditModal({ workspace, isOpen, onClose, onSaved }: WorkspaceEd
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-    if (e.target === dialogRef.current) {
-      onClose();
     }
   };
 
