@@ -17,14 +17,21 @@ namespace OneBigHead.Server.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            // Seed default sort orders: alphabetical within each parent group
+            // Seed default sort orders: alphabetical within each parent group.
+            // Wrapped in EXEC so the UPDATE is compiled at execution time, after the
+            // ALTER TABLE above has added the SortOrder column. Without EXEC, the
+            // idempotent deployment script emits ALTER + UPDATE in a single batch,
+            // and SQL Server binds column references against existing tables at
+            // batch-compile time, causing "Invalid column name 'SortOrder'".
             migrationBuilder.Sql(@"
-                WITH Ranked AS (
-                    SELECT Id, ROW_NUMBER() OVER (PARTITION BY ParentCategoryId, CollectionId ORDER BY Name) - 1 AS NewSort
-                    FROM Categories
-                )
-                UPDATE c SET c.SortOrder = r.NewSort
-                FROM Categories c INNER JOIN Ranked r ON c.Id = r.Id
+                EXEC(N'
+                    WITH Ranked AS (
+                        SELECT Id, ROW_NUMBER() OVER (PARTITION BY ParentCategoryId, CollectionId ORDER BY Name) - 1 AS NewSort
+                        FROM Categories
+                    )
+                    UPDATE c SET c.SortOrder = r.NewSort
+                    FROM Categories c INNER JOIN Ranked r ON c.Id = r.Id
+                ')
             ");
         }
 
