@@ -10,13 +10,12 @@ the VM picks it up automatically.
 ```
 GitHub Actions (on merge to main)
   ├─ run tests
-  ├─ apply EF migrations + seed data ──────────► Azure SQL (serverless)
   └─ build image, push ghcr.io/brporter/onebighead:latest
                                                       │
 shell.betaporter.dev                                  │ polls every 5 min
   /opt/shared      caddy (TLS, reverse proxy)         │
                    watchtower ◄───────────────────────┘
-  /opt/onebighead  app container (this repo, deploy/vm/docker-compose.yml)
+  /opt/onebighead  app container ──► Azure SQL (serverless)
   /opt/phosphor    phosphor stack (unrelated app, same pattern)
 ```
 
@@ -28,24 +27,25 @@ shell.betaporter.dev                                  │ polls every 5 min
 - **App stack** (`/opt/onebighead`, from `deploy/vm/`): a single `app` service
   running `ghcr.io/brporter/onebighead:latest` with secrets in a local `.env`
   file (see `deploy/vm/.env.example`).
-- **Database**: the existing Azure SQL serverless database. Migrations and
-  seeding run from GitHub Actions, not from the VM.
+- **Database**: the existing Azure SQL serverless database. The pipeline does
+  **not** touch it — migrations and seeding are run manually (see
+  [Applying migrations](#applying-migrations) below).
 
 ## Pipeline flow (`.github/workflows/deploy.yml`)
 
 1. `test` job — backend tests, frontend lint + build
-2. `deploy` job:
-   - build frontend + backend into `publish/`
-   - generate idempotent EF migration script
-   - open a temporary SQL firewall rule, apply migrations, seed reference
-     data, close the rule (authenticated via Azure OIDC)
-   - build the Docker image and push `:latest` + `:<sha>` to ghcr.io
-   - poll `https://onebighead.com/health` for up to 10 minutes while
-     watchtower swaps the container
+2. `deploy` job — build frontend + backend into `publish/` (including the EF
+   migration bundle and seeder), build the Docker image, push `:latest` +
+   `:<sha>` to ghcr.io
 
-Migrations run **before** the image is published, so new code never arrives
-ahead of its schema. Rollback: push the previous image digest as `:latest`
-(or `docker compose pull` a pinned tag on the VM).
+Watchtower deploys the new image within ~5 minutes of the push. The pipeline
+needs **no repository secrets** — the ghcr.io push uses the automatic
+`GITHUB_TOKEN`. Rollback: push the previous image digest as `:latest` (or
+`docker compose pull` a pinned tag on the VM).
+
+When a release includes schema changes, run the migration bundle before (or
+right after) the image lands — the app tolerates a brief window where code is
+ahead of schema only if the migration is additive, so prefer running it first.
 
 ## One-time setup
 
@@ -73,9 +73,8 @@ so no credentials are stored anywhere.
 The connection string in `/opt/onebighead/.env` uses
 `Authentication=Active Directory Managed Identity` (see `.env.example`).
 
-The identity needs a database user. Either set the `SQL_APP_PRINCIPAL_NAME`
-GitHub secret to `shell` (the pipeline ensures the user on every deploy), or
-create it once by hand as a SQL admin, connected to the app database:
+The identity needs a database user. Create it once by hand as a SQL admin,
+connected to the app database:
 
 ```sql
 CREATE USER [shell] FROM EXTERNAL PROVIDER;
@@ -89,18 +88,11 @@ reach the database.
 
 ### 3. GitHub secrets
 
-| Secret | Required | Description |
-|--------|----------|-------------|
-| `AZURE_CLIENT_ID` | Yes | CI service principal (OIDC) — used for SQL firewall + migrations |
-| `AZURE_TENANT_ID` | Yes | Azure AD tenant ID |
-| `AZURE_SUBSCRIPTION_ID` | Yes | Azure subscription ID |
-| `AZURE_APP_NAME` | Yes | Base name of Azure resources (e.g., `onebighead`) |
-| `APP_DOMAIN` | No | Public hostname; defaults to `onebighead.com` |
-| `SQL_APP_PRINCIPAL_NAME` | No | Entra principal the VM app connects as — the VM's managed identity, i.e. `shell` (see above) |
+None. The pipeline pushes to ghcr.io with the automatic `GITHUB_TOKEN`.
 
-The ACR/Container App secrets (`JWT_SIGNING_KEY`, OAuth client IDs/secrets,
-email settings) are no longer consumed by the pipeline — those values now live
-in `/opt/onebighead/.env` on the VM.
+The legacy secrets (`AZURE_*`, `JWT_SIGNING_KEY`, OAuth client IDs/secrets,
+email settings) are no longer consumed — runtime values live in
+`/opt/onebighead/.env` on the VM, and database operations are manual.
 
 ### 4. ghcr.io package visibility
 
@@ -130,10 +122,20 @@ sudo docker compose pull app
 sudo docker compose up -d app
 ```
 
-### Manual migration from the container
+### Applying migrations
 
 The published image includes a self-contained EF bundle at `/app/efbundle`
-and the seeder at `/app/dbseed` if you ever need to run them by hand.
+and the seeder at `/app/dbseed`. Run them from the VM against Azure SQL using
+the container's own connection string (managed identity):
+
+```bash
+cd /opt/onebighead
+sudo docker compose exec app sh -c '/app/efbundle --connection "$ConnectionStrings__DefaultConnection"'
+sudo docker compose exec app sh -c 'cd /app && ./dbseed seeds --force'
+```
+
+Alternatively run `dotnet ef database update` from a dev machine as an Entra
+admin (requires a SQL firewall rule for your IP).
 
 ## Legacy Azure Container Apps deployment
 
