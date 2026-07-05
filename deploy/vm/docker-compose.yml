@@ -1,0 +1,17 @@
+services:
+  app:
+    image: ghcr.io/brporter/onebighead:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      default: {}
+      web:
+        aliases: [onebighead]
+
+networks:
+  web:
+    external: true

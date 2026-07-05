@@ -1,5 +1,11 @@
 # CI/CD Pipeline Configuration Guide
 
+> **⚠️ Historical document:** the application no longer deploys to Azure
+> Container Apps. Production runs on a VM with watchtower-driven image
+> updates — see [DEPLOYMENT.md](DEPLOYMENT.md). This guide remains useful for
+> the Azure SQL / service principal / OIDC setup, which the current pipeline
+> still uses for database migrations.
+
 This guide provides step-by-step instructions for configuring the GitHub Actions deployment pipeline for OneBigHead.
 
 ## Overview
