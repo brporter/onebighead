@@ -5,12 +5,36 @@ services:
     env_file: .env
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      postgres:
+        condition: service_healthy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     networks:
       default: {}
       web:
         aliases: [onebighead]
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: onebighead
+      POSTGRES_USER: onebighead
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onebighead -d onebighead"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      default: {}
+
+volumes:
+  pgdata:
 
 networks:
   web:

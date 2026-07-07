@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -15,12 +16,12 @@ namespace OneBigHead.Server.Migrations
                 name: "CollectionThemes",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    IconName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    IconName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    SortOrder = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,20 +32,20 @@ namespace OneBigHead.Server.Migrations
                 name: "ContentScanLogs",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    ScannerName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsMatch = table.Column<bool>(type: "bit", nullable: false),
-                    MatchScore = table.Column<double>(type: "float", nullable: false),
-                    Details = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    OriginalFileName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ContentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkspaceId = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: true),
+                    ScannerName = table.Column<string>(type: "text", nullable: false),
+                    IsMatch = table.Column<bool>(type: "boolean", nullable: false),
+                    MatchScore = table.Column<double>(type: "double precision", nullable: false),
+                    Details = table.Column<string>(type: "text", nullable: true),
+                    OriginalFileName = table.Column<string>(type: "text", nullable: true),
+                    ContentType = table.Column<string>(type: "text", nullable: false),
                     FileSizeBytes = table.Column<long>(type: "bigint", nullable: false),
-                    ImageHash = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ScannedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ReportSubmitted = table.Column<bool>(type: "bit", nullable: false),
-                    ReportedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    ImageHash = table.Column<string>(type: "text", nullable: true),
+                    ScannedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ReportSubmitted = table.Column<bool>(type: "boolean", nullable: false),
+                    ReportedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -55,16 +56,15 @@ namespace OneBigHead.Server.Migrations
                 name: "Workspaces",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    HasCompletedWelcome = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeletedByUserId = table.Column<int>(type: "int", nullable: true),
-                    Slug = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    IsPublicAccessEnabled = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    HasCompletedWelcome = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedByUserId = table.Column<int>(type: "integer", nullable: true),
+                    Slug = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -75,10 +75,10 @@ namespace OneBigHead.Server.Migrations
                 name: "WorkspaceStatistics",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
-                    StatisticType = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkspaceId = table.Column<int>(type: "integer", nullable: false),
+                    StatisticType = table.Column<int>(type: "integer", nullable: false),
                     Date = table.Column<DateOnly>(type: "date", nullable: false),
                     Value = table.Column<long>(type: "bigint", nullable: false)
                 },
@@ -91,13 +91,13 @@ namespace OneBigHead.Server.Migrations
                 name: "CollectionThemeCategories",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ThemeId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    ParentName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ThemeId = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    ParentName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    SortOrder = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -114,15 +114,15 @@ namespace OneBigHead.Server.Migrations
                 name: "Collections",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    HeroImageUrl = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
-                    Slug = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Visibility = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkspaceId = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    HeroImageUrl = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    Slug = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Visibility = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -139,14 +139,14 @@ namespace OneBigHead.Server.Migrations
                 name: "ItemTemplates",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    TemplateKey = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    WorkspaceId = table.Column<int>(type: "int", nullable: true),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TemplateKey = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkspaceId = table.Column<int>(type: "integer", nullable: true),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -163,12 +163,12 @@ namespace OneBigHead.Server.Migrations
                 name: "StoredImages",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
-                    FileName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    ContentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Data = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkspaceId = table.Column<int>(type: "integer", nullable: false),
+                    FileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    ContentType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Data = table.Column<byte[]>(type: "bytea", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -185,17 +185,17 @@ namespace OneBigHead.Server.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ActiveWorkspaceId = table.Column<int>(type: "int", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
-                    IdentityProvider = table.Column<int>(type: "int", nullable: false),
-                    ProviderSubjectId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    IsSystemAdministrator = table.Column<bool>(type: "bit", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    AcceptedTermsAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ActiveWorkspaceId = table.Column<int>(type: "integer", nullable: false),
+                    Email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
+                    IdentityProvider = table.Column<int>(type: "integer", nullable: false),
+                    ProviderSubjectId = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    IsSystemAdministrator = table.Column<bool>(type: "boolean", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    AcceptedTermsAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -212,15 +212,16 @@ namespace OneBigHead.Server.Migrations
                 name: "Categories",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
-                    CollectionId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    IsSystem = table.Column<bool>(type: "bit", nullable: false),
-                    ParentCategoryId = table.Column<int>(type: "int", nullable: true),
-                    Visibility = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkspaceId = table.Column<int>(type: "integer", nullable: false),
+                    CollectionId = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    IsSystem = table.Column<bool>(type: "boolean", nullable: false),
+                    ParentCategoryId = table.Column<int>(type: "integer", nullable: true),
+                    SortOrder = table.Column<int>(type: "integer", nullable: false),
+                    Visibility = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -249,10 +250,10 @@ namespace OneBigHead.Server.Migrations
                 name: "CollectionStatistics",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CollectionId = table.Column<int>(type: "int", nullable: false),
-                    StatisticType = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CollectionId = table.Column<int>(type: "integer", nullable: false),
+                    StatisticType = table.Column<int>(type: "integer", nullable: false),
                     Value = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
@@ -270,12 +271,12 @@ namespace OneBigHead.Server.Migrations
                 name: "PropertySuggestions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
-                    CollectionId = table.Column<int>(type: "int", nullable: false),
-                    Type = table.Column<int>(type: "int", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkspaceId = table.Column<int>(type: "integer", nullable: false),
+                    CollectionId = table.Column<int>(type: "integer", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    Value = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -298,8 +299,8 @@ namespace OneBigHead.Server.Migrations
                 name: "CollectionItemTemplates",
                 columns: table => new
                 {
-                    CollectionId = table.Column<int>(type: "int", nullable: false),
-                    ItemTemplateId = table.Column<int>(type: "int", nullable: false)
+                    CollectionId = table.Column<int>(type: "integer", nullable: false),
+                    ItemTemplateId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -322,9 +323,9 @@ namespace OneBigHead.Server.Migrations
                 name: "CollectionThemeTemplates",
                 columns: table => new
                 {
-                    ThemeId = table.Column<int>(type: "int", nullable: false),
-                    ItemTemplateId = table.Column<int>(type: "int", nullable: false),
-                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                    ThemeId = table.Column<int>(type: "integer", nullable: false),
+                    ItemTemplateId = table.Column<int>(type: "integer", nullable: false),
+                    SortOrder = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -347,12 +348,12 @@ namespace OneBigHead.Server.Migrations
                 name: "ItemTemplateProperties",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ItemTemplateId = table.Column<int>(type: "int", nullable: false),
-                    Category = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ItemTemplateId = table.Column<int>(type: "integer", nullable: false),
+                    Category = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    SortOrder = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -369,17 +370,17 @@ namespace OneBigHead.Server.Migrations
                 name: "SupportRequests",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
-                    Subject = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: true),
+                    Email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
+                    Subject = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -396,10 +397,10 @@ namespace OneBigHead.Server.Migrations
                 name: "WorkspaceUsers",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
-                    WorkspaceRole = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    WorkspaceId = table.Column<int>(type: "integer", nullable: false),
+                    WorkspaceRole = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -422,9 +423,9 @@ namespace OneBigHead.Server.Migrations
                 name: "CategoryItemTemplates",
                 columns: table => new
                 {
-                    CategoryId = table.Column<int>(type: "int", nullable: false),
-                    ItemTemplateId = table.Column<int>(type: "int", nullable: false),
-                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                    CategoryId = table.Column<int>(type: "integer", nullable: false),
+                    ItemTemplateId = table.Column<int>(type: "integer", nullable: false),
+                    SortOrder = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -447,20 +448,20 @@ namespace OneBigHead.Server.Migrations
                 name: "Items",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorkspaceId = table.Column<int>(type: "int", nullable: false),
-                    CollectionId = table.Column<int>(type: "int", nullable: false),
-                    CategoryId = table.Column<int>(type: "int", nullable: true),
-                    TemplateKey = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Summary = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Properties = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Images = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Visibility = table.Column<int>(type: "int", nullable: false),
-                    UserFlag = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkspaceId = table.Column<int>(type: "integer", nullable: false),
+                    CollectionId = table.Column<int>(type: "integer", nullable: false),
+                    CategoryId = table.Column<int>(type: "integer", nullable: true),
+                    TemplateKey = table.Column<Guid>(type: "uuid", nullable: true),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Summary = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Properties = table.Column<string>(type: "text", nullable: false),
+                    Images = table.Column<string>(type: "text", nullable: false),
+                    Visibility = table.Column<int>(type: "integer", nullable: false),
+                    UserFlag = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -489,14 +490,14 @@ namespace OneBigHead.Server.Migrations
                 name: "SupportReplies",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    SupportRequestId = table.Column<int>(type: "int", nullable: false),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    IsFromAdmin = table.Column<bool>(type: "bit", nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsRead = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    SupportRequestId = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: true),
+                    IsFromAdmin = table.Column<bool>(type: "boolean", nullable: false),
+                    Message = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsRead = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -519,10 +520,10 @@ namespace OneBigHead.Server.Migrations
                 name: "CollectionItemHighlights",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CollectionId = table.Column<int>(type: "int", nullable: false),
-                    ItemId = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CollectionId = table.Column<int>(type: "integer", nullable: false),
+                    ItemId = table.Column<int>(type: "integer", nullable: false),
                     ViewCount = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
@@ -765,8 +766,7 @@ namespace OneBigHead.Server.Migrations
                 name: "IX_Users_IdentityProvider_ProviderSubjectId",
                 table: "Users",
                 columns: new[] { "IdentityProvider", "ProviderSubjectId" },
-                unique: true,
-                filter: "[ProviderSubjectId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Workspaces_IsDeleted",
@@ -783,7 +783,7 @@ namespace OneBigHead.Server.Migrations
                 table: "Workspaces",
                 column: "Slug",
                 unique: true,
-                filter: "[Slug] IS NOT NULL");
+                filter: "\"Slug\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkspaceStatistics_WorkspaceId",

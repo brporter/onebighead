@@ -92,7 +92,7 @@ public class AppDbContextTests : IDisposable
     [Fact]
     public async Task DeleteParent_LeavesChildrenOrphanedWithRestrict()
     {
-        // Arrange - Category self-referencing FK uses Restrict to avoid SQL Server cycles
+        // Arrange - Category self-referencing FK uses Restrict to avoid delete cycles
         var parent = new Category { Id = 1, WorkspaceId = 1, Name = "Parent", Description = "Parent Desc" };
         var child = new Category { Id = 2, WorkspaceId = 1, Name = "Child", Description = "Child Desc", ParentCategoryId = 1 };
 

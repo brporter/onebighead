@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 // Database Reset Utility
 // Drops all tables from the database, optionally preserving migration history
@@ -38,9 +38,9 @@ if (string.IsNullOrEmpty(connectionString))
 }
 
 // Parse server/database from connection string for display
-var builder = new SqlConnectionStringBuilder(connectionString);
-var serverName = builder.DataSource;
-var databaseName = builder.InitialCatalog;
+var builder = new NpgsqlConnectionStringBuilder(connectionString);
+var serverName = builder.Host;
+var databaseName = builder.Database;
 
 Console.WriteLine("Database Reset Utility");
 Console.WriteLine("======================");
@@ -62,23 +62,24 @@ if (!force)
 
 try
 {
-    using var connection = new SqlConnection(connectionString);
+    using var connection = new NpgsqlConnection(connectionString);
     await connection.OpenAsync();
     Console.WriteLine("Connected to database.");
 
     // Get list of tables to drop
     var tables = new List<(string schema, string name)>();
     var listTablesSql = @"
-        SELECT TABLE_SCHEMA, TABLE_NAME 
-        FROM INFORMATION_SCHEMA.TABLES 
-        WHERE TABLE_TYPE = 'BASE TABLE'";
-    
+        SELECT table_schema, table_name
+        FROM information_schema.tables
+        WHERE table_type = 'BASE TABLE'
+          AND table_schema NOT IN ('pg_catalog', 'information_schema')";
+
     if (preserveHistory)
     {
-        listTablesSql += " AND TABLE_NAME != '__EFMigrationsHistory'";
+        listTablesSql += " AND table_name != '__EFMigrationsHistory'";
     }
 
-    using (var cmd = new SqlCommand(listTablesSql, connection))
+    using (var cmd = new NpgsqlCommand(listTablesSql, connection))
     using (var reader = await cmd.ExecuteReaderAsync())
     {
         while (await reader.ReadAsync())
@@ -95,32 +96,19 @@ try
 
     Console.WriteLine($"Found {tables.Count} table(s) to drop.");
 
-    // Drop foreign key constraints first to avoid dependency issues
-    Console.WriteLine("Dropping foreign key constraints...");
-    var dropFkSql = @"
-        DECLARE @sql NVARCHAR(MAX) = '';
-        SELECT @sql += 'ALTER TABLE [' + OBJECT_SCHEMA_NAME(parent_object_id) + '].[' + OBJECT_NAME(parent_object_id) + '] DROP CONSTRAINT [' + name + ']; '
-        FROM sys.foreign_keys;
-        EXEC sp_executesql @sql;";
-    
-    using (var cmd = new SqlCommand(dropFkSql, connection))
-    {
-        await cmd.ExecuteNonQueryAsync();
-    }
-
-    // Drop tables
+    // Drop tables (CASCADE removes dependent foreign key constraints)
     Console.WriteLine("Dropping tables...");
     foreach (var (schema, name) in tables)
     {
-        var dropSql = $"DROP TABLE IF EXISTS [{schema}].[{name}]";
-        using var cmd = new SqlCommand(dropSql, connection);
+        var dropSql = $"DROP TABLE IF EXISTS \"{schema}\".\"{name}\" CASCADE";
+        using var cmd = new NpgsqlCommand(dropSql, connection);
         await cmd.ExecuteNonQueryAsync();
-        Console.WriteLine($"  Dropped [{schema}].[{name}]");
+        Console.WriteLine($"  Dropped \"{schema}\".\"{name}\"");
     }
 
     Console.WriteLine();
     Console.WriteLine("Database reset complete.");
-    
+
     if (!preserveHistory)
     {
         Console.WriteLine();

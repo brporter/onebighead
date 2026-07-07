@@ -27,7 +27,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // Set environment to Testing - this causes Program.cs to skip SQL Server configuration
+        // Set environment to Testing - this causes Program.cs to skip PostgreSQL configuration
         builder.UseEnvironment("Testing");
 
         builder.ConfigureTestServices(services =>

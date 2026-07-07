@@ -19,7 +19,7 @@ Ensure ALL new code or edits include corresponding unit tests. Code coverage MUS
 ### Development Startup
 
 ```bash
-# Full startup (recommended) - starts Docker SQL Server, runs tests, launches backend and frontend
+# Full startup (recommended) - starts Docker PostgreSQL, runs tests, launches backend and frontend
 ./scripts/dev-start.sh                    # macOS/Linux
 ./scripts/dev-start.ps1                   # Windows
 
@@ -52,7 +52,7 @@ npm run test:coverage             # Tests with coverage
 ### Database
 
 ```bash
-docker compose up -d              # Start local SQL Server
+docker compose up -d              # Start local PostgreSQL
 ./scripts/reset-database.sh       # Reset local database (drop and recreate)
 ```
 
@@ -140,7 +140,7 @@ Key patterns:
 2. DataContext calls typed API modules (`collectionsApi`, `itemsApi`, etc.)
 3. API modules use the shared `api/client.ts` with consistent error handling
 4. Backend controllers validate workspace context and delegate to repositories
-5. Repositories use EF Core with SQL Server
+5. Repositories use EF Core with PostgreSQL
 
 ### Domain Model
 

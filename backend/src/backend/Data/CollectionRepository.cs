@@ -84,7 +84,7 @@ public class CollectionRepository : ICollectionRepository
             return false;
         }
 
-        // Manually delete items since we use Restrict to avoid SQL Server cascade cycles
+        // Manually delete items since we use Restrict to avoid cascade cycles
         var items = await _context.Items
             .Where(i => i.CollectionId == id)
             .ToListAsync();

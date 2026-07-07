@@ -23,7 +23,7 @@ Rider automatically sets `OTEL_EXPORTER_OTLP_ENDPOINT` when launching the app. T
 
 - Auto-instrumentation only works with **Run**, not **Debug**
 - If running from the terminal (`dotnet run`), telemetry goes nowhere unless you set `OTEL_EXPORTER_OTLP_ENDPOINT` yourself
-- The `docker-compose.yml` only runs SQL Server; there is no local OTel stack to manage
+- The `docker-compose.yml` only runs PostgreSQL; there is no local OTel stack to manage
 
 ---
 
@@ -49,11 +49,11 @@ Azure Managed Grafana reads from Application Insights via the Azure Monitor data
 
 The backend checks for `APPLICATIONINSIGHTS_CONNECTION_STRING` at startup. When present, it registers Azure Monitor exporters for traces, metrics, and logs. When absent (local dev), those exporters are simply not registered.
 
-Both `deployment/deploy.sh` and the GitHub Actions pipeline set this environment variable on the Container App automatically.
+In production, set the variable in `/opt/onebighead/.env` on the VM (see `deploy/vm/.env.example`).
 
-### Resources created by deploy.sh
+### Azure Monitor resources
 
-The first run of `deployment/deploy.sh` (without `--skip-infra`) provisions:
+Telemetry flows into the following Azure resources (provision them manually or reuse existing ones):
 
 | Resource | Naming Convention | Purpose |
 |----------|-------------------|---------|
@@ -61,13 +61,13 @@ The first run of `deployment/deploy.sh` (without `--skip-infra`) provisions:
 | Application Insights | `<app-name>-appinsights` | Application telemetry (traces, metrics, logs, exceptions) |
 | Azure Managed Grafana | `<app-name>-grafana` | Dashboard visualization with Azure Monitor datasource |
 
-The Grafana instance gets **Monitoring Reader** RBAC on the resource group, allowing it to query Application Insights data.
+The Grafana instance needs **Monitoring Reader** RBAC on the resource group, allowing it to query Application Insights data.
 
 ---
 
 ## Setting Up the Grafana Dashboard
 
-After deploying to Azure, import the pre-built dashboard to visualize application health.
+Once telemetry is flowing into Application Insights, import the pre-built dashboard to visualize application health.
 
 ### Step 1: Get your Grafana URL
 

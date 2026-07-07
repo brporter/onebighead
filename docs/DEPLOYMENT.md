@@ -1,7 +1,7 @@
 # Deploying OneBigHead
 
 Production runs on the shell.betaporter.dev VM behind a shared Caddy reverse
-proxy, with the database remaining in Azure SQL. Deployment is continuous:
+proxy, with a PostgreSQL container on the same VM. Deployment is continuous:
 merging a PR to `main` builds and publishes a Docker image, and watchtower on
 the VM picks it up automatically.
 
@@ -15,7 +15,7 @@ GitHub Actions (on merge to main)
 shell.betaporter.dev                                  │ polls every 5 min
   /opt/shared      caddy (TLS, reverse proxy)         │
                    watchtower ◄───────────────────────┘
-  /opt/onebighead  app container ──► Azure SQL (serverless)
+  /opt/onebighead  app container ──► postgres container (same compose stack)
   /opt/phosphor    phosphor stack (unrelated app, same pattern)
 ```
 
@@ -24,11 +24,13 @@ shell.betaporter.dev                                  │ polls every 5 min
   `onebighead.com` to this app's container over the shared external `web`
   Docker network. Watchtower redeploys any container labeled
   `com.centurylinklabs.watchtower.enable=true` when its image changes.
-- **App stack** (`/opt/onebighead`, from `deploy/vm/`): a single `app` service
-  running `ghcr.io/brporter/onebighead:latest` with secrets in a local `.env`
+- **App stack** (`/opt/onebighead`, from `deploy/vm/`): an `app` service
+  running `ghcr.io/brporter/onebighead:latest` plus a `postgres` service
+  running the official `postgres:17` image, with secrets in a local `.env`
   file (see `deploy/vm/.env.example`).
-- **Database**: the existing Azure SQL serverless database. The pipeline does
-  **not** touch it — migrations and seeding are run manually (see
+- **Database**: the `postgres` container in the same compose stack, with data
+  in the `pgdata` named volume. The pipeline does **not** touch it —
+  migrations and seeding are run manually (see
   [Applying migrations](#applying-migrations) below).
 
 ## Pipeline flow (`.github/workflows/deploy.yml`)
@@ -65,26 +67,20 @@ The shared `web` network and the caddy/watchtower stack must already exist
 
 ### 2. Database access for the app
 
-The SQL server is Entra-only (no SQL passwords). The app authenticates as the
-VM's **system-assigned managed identity** — the VM (`shell`) requests tokens
-from the Azure Instance Metadata Service, which containers reach by default,
-so no credentials are stored anywhere.
+The `postgres` service initializes itself on first start from the `.env`
+values: `POSTGRES_PASSWORD` sets the password for the `onebighead` role, and
+the `onebighead` database is created automatically. The app connects over the
+compose-internal network using `ConnectionStrings__DefaultConnection`
+(`Host=postgres;...` — see `.env.example`); the database is not exposed
+outside the VM.
 
-The connection string in `/opt/onebighead/.env` uses
-`Authentication=Active Directory Managed Identity` (see `.env.example`).
+Data lives in the `pgdata` named volume, so it survives container recreation
+and image updates. Back it up with `pg_dump`:
 
-The identity needs a database user. Create it once by hand as a SQL admin,
-connected to the app database:
-
-```sql
-CREATE USER [shell] FROM EXTERNAL PROVIDER;
-ALTER ROLE db_datareader ADD MEMBER [shell];
-ALTER ROLE db_datawriter ADD MEMBER [shell];
-ALTER ROLE db_ddladmin ADD MEMBER [shell];
+```bash
+cd /opt/onebighead
+sudo docker compose exec postgres pg_dump -U onebighead onebighead > backup.sql
 ```
-
-Also add an Azure SQL firewall rule allowing the VM's public IP so the app can
-reach the database.
 
 ### 3. GitHub secrets
 
@@ -125,8 +121,8 @@ sudo docker compose up -d app
 ### Applying migrations
 
 The published image includes a self-contained EF bundle at `/app/efbundle`
-and the seeder at `/app/dbseed`. Run them from the VM against Azure SQL using
-the container's own connection string (managed identity):
+and the seeder at `/app/dbseed`. Run them from the VM against the postgres
+container using the app container's own connection string:
 
 ```bash
 cd /opt/onebighead
@@ -134,12 +130,8 @@ sudo docker compose exec app sh -c '/app/efbundle --connection "$ConnectionStrin
 sudo docker compose exec app sh -c 'cd /app && ./dbseed seeds --force'
 ```
 
-Alternatively run `dotnet ef database update` from a dev machine as an Entra
-admin (requires a SQL firewall rule for your IP).
+## History
 
-## Legacy Azure Container Apps deployment
-
-The previous ACA-based pipeline and its Bicep provisioning are documented in
-`docs/PIPELINE.md` and `deployment/`. The Bicep templates are still the source
-of the Azure SQL server, Log Analytics, and Application Insights resources;
-the Container App itself is no longer deployed to.
+The app previously deployed to Azure Container Apps with an Azure SQL
+database. That pipeline, its Bicep provisioning, and the related scripts have
+been removed — see git history if you need them.

@@ -1,7 +1,7 @@
 #!/bin/bash
 # dev-start.sh
 # Development startup script for macOS/Linux
-# Starts SQL Server, builds and tests, then launches backend and frontend
+# Starts PostgreSQL, builds and tests, then launches backend and frontend
 
 set -e
 
@@ -9,7 +9,7 @@ RESET_DATABASE=false
 SKIP_TESTS=false
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-CONTAINER_NAME="onebighead-sqlserver"
+CONTAINER_NAME="onebighead-postgres"
 BACKEND_PID=""
 
 # Colors
@@ -32,7 +32,7 @@ Options:
     -h, --help          Show this help message
 
 This script will:
-    1. Start the SQL Server Docker container if not running
+    1. Start the PostgreSQL Docker container if not running
     2. Restore tools, run tests, and build backend (produces efbundle)
     3. Apply migrations (or reset database if requested)
     4. Start the backend (displays PID)
@@ -86,15 +86,15 @@ echo -e "${CYAN}  OneBigHead Development Startup${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
 
-# Step 1: Check/Start SQL Server container
-echo -e "${YELLOW}[1/5] Checking SQL Server container...${NC}"
+# Step 1: Check/Start PostgreSQL container
+echo -e "${YELLOW}[1/5] Checking PostgreSQL container...${NC}"
 if ! docker ps --filter "name=$CONTAINER_NAME" --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
-    echo -e "${CYAN}      SQL Server not running. Starting via docker compose...${NC}"
+    echo -e "${CYAN}      PostgreSQL not running. Starting via docker compose...${NC}"
     cd "$REPO_ROOT"
     docker compose up -d
     
-    # Wait for SQL Server to be ready
-    echo -e "${CYAN}      Waiting for SQL Server to be ready...${NC}"
+    # Wait for PostgreSQL to be ready
+    echo -e "${CYAN}      Waiting for PostgreSQL to be ready...${NC}"
     retries=30
     while [ $retries -gt 0 ]; do
         health=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "unknown")
@@ -107,12 +107,12 @@ if ! docker ps --filter "name=$CONTAINER_NAME" --format "{{.Names}}" | grep -q "
     done
     
     if [ $retries -eq 0 ]; then
-        echo -e "${RED}      Error: SQL Server did not become ready in time${NC}"
+        echo -e "${RED}      Error: PostgreSQL did not become ready in time${NC}"
         exit 1
     fi
-    echo -e "${GREEN}      SQL Server is ready!${NC}"
+    echo -e "${GREEN}      PostgreSQL is ready!${NC}"
 else
-    echo -e "${GREEN}      SQL Server is already running.${NC}"
+    echo -e "${GREEN}      PostgreSQL is already running.${NC}"
 fi
 
 # Step 2: Restore tools, run tests, and build backend
@@ -168,7 +168,7 @@ else
     echo -e "${YELLOW}[3/5] Applying pending migrations...${NC}"
     EFBUNDLE="$REPO_ROOT/backend/src/backend/efbundle"
     if [ -f "$EFBUNDLE" ]; then
-        "$EFBUNDLE" --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=DevPassword123!;TrustServerCertificate=True"
+        "$EFBUNDLE" --connection "Host=localhost;Port=5432;Database=onebighead;Username=postgres;Password=DevPassword123!"
         echo -e "${GREEN}      Migrations applied.${NC}"
     else
         echo -e "${YELLOW}      Warning: efbundle not found.${NC}"

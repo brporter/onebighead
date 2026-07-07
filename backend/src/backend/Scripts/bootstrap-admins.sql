@@ -3,11 +3,11 @@
 -- It updates existing users to be system administrators based on their email address.
 
 -- Add bryan@bryanporter.com as a system administrator
-UPDATE Users 
-SET IsSystemAdministrator = 1 
-WHERE Email = 'bryan@bryanporter.com';
+UPDATE "Users"
+SET "IsSystemAdministrator" = TRUE
+WHERE "Email" = 'bryan@bryanporter.com';
 
 -- Verify the update
-SELECT Id, Email, IsSystemAdministrator, CreatedAt 
-FROM Users 
-WHERE IsSystemAdministrator = 1;
+SELECT "Id", "Email", "IsSystemAdministrator", "CreatedAt"
+FROM "Users"
+WHERE "IsSystemAdministrator" = TRUE;
