@@ -4,22 +4,22 @@
 
 - .NET 10.0 SDK
 - Node.js (for frontend)
-- Docker (for local SQL Server)
+- Docker (for local PostgreSQL)
 
-## Local SQL Server Setup
+## Local PostgreSQL Setup
 
-This project uses SQL Server for all environments. For local development, use Docker:
+This project uses PostgreSQL for all environments. For local development, use Docker:
 
 ```bash
-# Start the local SQL Server instance
+# Start the local PostgreSQL instance
 docker compose up -d
 
 # Verify it's running
-docker ps --filter "name=onebighead-sqlserver"
+docker ps --filter "name=onebighead-postgres"
 ```
 
-The SQL Server instance will be available at `localhost:1433` with:
-- Username: `sa`
+The PostgreSQL instance will be available at `localhost:5432` with:
+- Username: `postgres`
 - Password: `DevPassword123!`
 - Database: `onebighead` (created automatically on first run)
 
@@ -84,7 +84,7 @@ Use the development startup script to launch everything:
 ```
 
 The script will:
-1. Start SQL Server Docker container if not running
+1. Start PostgreSQL Docker container if not running
 2. Optionally reset the database
 3. Run backend tests and build
 4. Start the backend (displays PID for easy management)
@@ -143,7 +143,7 @@ cd backend/src/backend
 dotnet run
 ```
 
-### Production (SQL Azure)
+### Production (PostgreSQL on the VM)
 
 Production uses a migration bundle strategy. The bundle is a self-contained executable that applies migrations.
 
@@ -163,7 +163,7 @@ The bundle includes the connection string from appsettings, or you can override 
 ./efbundle.exe
 
 # Overriding connection string
-./efbundle.exe --connection "Server=tcp:YOUR_SERVER.database.windows.net,1433;Database=onebighead;..."
+./efbundle.exe --connection "Host=your-server;Port=5432;Database=onebighead;Username=onebighead;Password=..."
 ```
 
 For CI/CD pipelines, the bundle can be deployed alongside the application and executed before starting the app.
@@ -176,15 +176,15 @@ System administrators are users with elevated privileges who can manage tenants,
 
 ```sql
 -- From backend/src/backend/Scripts/bootstrap-admins.sql
-UPDATE Users 
-SET IsSystemAdministrator = 1 
-WHERE Email = 'bryan@bryanporter.com';
+UPDATE "Users"
+SET "IsSystemAdministrator" = TRUE
+WHERE "Email" = 'bryan@bryanporter.com';
 ```
 
-Or using sqlcmd:
+Or using psql:
 
 ```bash
-sqlcmd -S localhost -U sa -P "DevPassword123!" -d onebighead -i backend/src/backend/Scripts/bootstrap-admins.sql
+docker exec -i onebighead-postgres psql -U postgres -d onebighead < backend/src/backend/Scripts/bootstrap-admins.sql
 ```
 
 ### Admin Capabilities
@@ -250,6 +250,25 @@ dotnet test
 ```
 
 Coverage report is generated in `backend/tests/backend.tests/TestResults/`.
+
+### PostgreSQL Integration Tests
+
+Tests tagged `Category=PostgresIntegration` (in `Integration/Postgres/`) run
+against a real PostgreSQL 17 instance. Testcontainers starts a throwaway
+container for the test run and removes it afterwards — a running Docker
+daemon is the only prerequisite; no manual setup or teardown is needed, and
+the local dev database is not touched.
+
+```bash
+cd backend/tests/backend.tests
+dotnet test --filter "Category=PostgresIntegration"   # integration tests only
+dotnet test --filter "Category!=PostgresIntegration"  # what CI runs
+dotnet test                                           # everything
+```
+
+These tests are excluded from the CI pipeline and from `dev-start` — run them
+locally after changing migrations, the seeder, seed JSON files, or anything
+provider-specific.
 
 ### Frontend Tests
 

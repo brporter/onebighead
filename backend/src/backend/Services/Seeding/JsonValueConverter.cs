@@ -17,9 +17,11 @@ public static class JsonValueConverter
             return element.ValueKind switch
             {
                 JsonValueKind.String => element.GetString(),
+                // Box each branch explicitly - a bare nested ternary would infer
+                // the common numeric type (double) and widen every integer.
                 JsonValueKind.Number => element.TryGetInt32(out var i) ? i :
                     element.TryGetInt64(out var l) ? l :
-                    element.GetDouble(),
+                    (object)element.GetDouble(),
                 JsonValueKind.True => true,
                 JsonValueKind.False => false,
                 JsonValueKind.Null => null,

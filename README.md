@@ -14,22 +14,21 @@ onebighead/
 │   ├── seeds/                      # Database seed JSON files
 │   └── tools/                      # DB utilities (dbreset, dbseed)
 ├── frontend/                       # React 19 + Vite frontend
+├── deploy/vm/                      # Production VM compose stack (app + PostgreSQL)
 ├── deployment/                     # Deployment artifacts
-│   ├── infra/                      # Azure Bicep templates
 │   ├── build/                      # Build scripts
-│   ├── deploy.sh / deploy.ps1     # Infrastructure provisioning
 │   └── Dockerfile                  # Production container image
 ├── scripts/                        # Development utility scripts
 │   ├── dev-start.sh / .ps1        # Full dev environment startup
 │   └── reset-database.sh / .ps1   # Database reset
 ├── docs/                           # Documentation
-└── docker-compose.yml              # Local SQL Server
+└── docker-compose.yml              # Local PostgreSQL
 ```
 
 ## Quick Start
 
 ```bash
-# Start everything (SQL Server, tests, backend, frontend)
+# Start everything (PostgreSQL, tests, backend, frontend)
 ./scripts/dev-start.sh       # macOS/Linux
 ./scripts/dev-start.ps1      # Windows
 ```
@@ -39,6 +38,5 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup instructions.
 ## Documentation
 
 - [Development Setup](docs/DEVELOPMENT.md) - Local development environment and workflow
-- [Deployment Guide](docs/DEPLOYMENT.md) - Azure deployment and infrastructure
-- [CI/CD Pipeline](docs/PIPELINE.md) - GitHub Actions workflow documentation
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production VM deployment and CI/CD pipeline
 - [Observability](docs/OBSERVABILITY.md) - Monitoring, tracing, and telemetry

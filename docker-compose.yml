@@ -1,17 +1,14 @@
 services:
-  sqlserver:
-    build:
-      context: ./deployment/build/sqlserver
-      dockerfile: Dockerfile
-    image: onebighead-sqlserver:latest
-    container_name: onebighead-sqlserver
+  postgres:
+    image: postgres:17
+    container_name: onebighead-postgres
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=DevPassword123!
+      - POSTGRES_PASSWORD=DevPassword123!
+      - POSTGRES_DB=onebighead
     ports:
-      - "1433:1433"
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "(cat < /dev/null > /dev/tcp/localhost/1433) 2>/dev/null && exit 0 || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d onebighead"]
       interval: 10s
       timeout: 5s
       retries: 10

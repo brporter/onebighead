@@ -6,15 +6,15 @@ param(
     [switch]$Force
 )
 
-$containerName = "onebighead-sqlserver"
+$containerName = "onebighead-postgres"
 $databaseName = "onebighead"
-$saPassword = "DevPassword123!"
+$postgresPassword = "DevPassword123!"
 $rootDir = Split-Path -Parent $PSScriptRoot
 
 # Check if container is running
 $container = docker ps --filter "name=$containerName" --format "{{.Names}}" 2>$null
 if ($container -ne $containerName) {
-    Write-Host "Error: SQL Server container '$containerName' is not running." -ForegroundColor Red
+    Write-Host "Error: PostgreSQL container '$containerName' is not running." -ForegroundColor Red
     Write-Host "Start it with: docker compose up -d" -ForegroundColor Yellow
     exit 1
 }
@@ -29,9 +29,9 @@ if (-not $Force) {
 
 Write-Host "Dropping database '$databaseName'..." -ForegroundColor Cyan
 
-$dropResult = docker exec $containerName sqlcmd `
-    -S localhost -U sa -P $saPassword -C `
-    -Q "IF EXISTS (SELECT name FROM sys.databases WHERE name = N'$databaseName') BEGIN ALTER DATABASE [$databaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$databaseName]; END" 2>&1
+$dropResult = docker exec $containerName psql `
+    -U postgres -d postgres `
+    -c "DROP DATABASE IF EXISTS `"$databaseName`" WITH (FORCE)" 2>&1
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Warning: Could not drop database (it may not exist yet)" -ForegroundColor Yellow
@@ -51,7 +51,7 @@ if ($LASTEXITCODE -ne 0) {
 
 if (Test-Path $efBundle) {
     Write-Host "Applying migrations..." -ForegroundColor Cyan
-    & $efBundle --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=$saPassword;TrustServerCertificate=True"
+    & $efBundle --connection "Host=localhost;Port=5432;Database=$databaseName;Username=postgres;Password=$postgresPassword"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Migration bundle failed!" -ForegroundColor Red
         exit 1
@@ -63,7 +63,7 @@ if (Test-Path $efBundle) {
 }
 
 # Seed database
-$connectionString = "Server=localhost,1433;Database=onebighead;User Id=sa;Password=$saPassword;TrustServerCertificate=True"
+$connectionString = "Host=localhost;Port=5432;Database=$databaseName;Username=postgres;Password=$postgresPassword"
 $seedsPath = Join-Path $rootDir "backend\seeds"
 $dbseedProject = Join-Path $rootDir "backend\tools\dbseed\dbseed.csproj"
 if (Test-Path $dbseedProject) {

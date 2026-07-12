@@ -6,9 +6,9 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-CONTAINER_NAME="onebighead-sqlserver"
+CONTAINER_NAME="onebighead-postgres"
 DATABASE_NAME="onebighead"
-SA_PASSWORD="${MSSQL_SA_PASSWORD:-DevPassword123!}"
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-DevPassword123!}"
 FORCE=false
 
 # Colors
@@ -36,7 +36,7 @@ Options:
     -h, --help     Show this help message
 
 Environment variables:
-    MSSQL_SA_PASSWORD    SQL Server SA password (default: DevPassword123!)
+    POSTGRES_PASSWORD    PostgreSQL password (default: DevPassword123!)
 EOF
             exit 0
             ;;
@@ -49,7 +49,7 @@ done
 
 # Check if container is running
 if ! docker ps --filter "name=$CONTAINER_NAME" --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
-    echo -e "${RED}Error: SQL Server container '$CONTAINER_NAME' is not running.${NC}"
+    echo -e "${RED}Error: PostgreSQL container '$CONTAINER_NAME' is not running.${NC}"
     echo -e "${YELLOW}Start it with: docker compose up -d${NC}"
     exit 1
 fi
@@ -68,9 +68,9 @@ echo -e "${CYAN}Dropping database '$DATABASE_NAME'...${NC}"
 
 # Drop the database - capture output for error reporting
 set +e
-DROP_OUTPUT=$(docker exec "$CONTAINER_NAME" sqlcmd \
-    -S localhost -U sa -P "$SA_PASSWORD" -C \
-    -Q "IF EXISTS (SELECT name FROM sys.databases WHERE name = N'$DATABASE_NAME') BEGIN ALTER DATABASE [$DATABASE_NAME] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$DATABASE_NAME]; END" 2>&1)
+DROP_OUTPUT=$(docker exec "$CONTAINER_NAME" psql \
+    -U postgres -d postgres \
+    -c "DROP DATABASE IF EXISTS \"$DATABASE_NAME\" WITH (FORCE)" 2>&1)
 DROP_STATUS=$?
 set -e
 
@@ -79,7 +79,7 @@ if [ $DROP_STATUS -eq 0 ]; then
 else
     echo -e "${YELLOW}Warning: Could not drop database (it may not exist yet)${NC}"
     if [ -n "$DROP_OUTPUT" ]; then
-        echo -e "${RED}sqlcmd output:${NC}"
+        echo -e "${RED}psql output:${NC}"
         echo "$DROP_OUTPUT"
     fi
 fi
@@ -101,7 +101,7 @@ dotnet ef migrations bundle \
 
 if [ -f "$EFBUNDLE" ]; then
     echo -e "${CYAN}Applying migrations...${NC}"
-    "$EFBUNDLE" --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=$SA_PASSWORD;TrustServerCertificate=True"
+    "$EFBUNDLE" --connection "Host=localhost;Port=5432;Database=$DATABASE_NAME;Username=postgres;Password=$POSTGRES_PASSWORD"
     echo -e "${GREEN}Migrations applied successfully.${NC}"
 else
     echo -e "${RED}Error: Failed to create migration bundle.${NC}"
@@ -109,7 +109,7 @@ else
 fi
 
 # Seed database
-CONNECTION_STRING="Server=localhost,1433;Database=onebighead;User Id=sa;Password=$SA_PASSWORD;TrustServerCertificate=True"
+CONNECTION_STRING="Host=localhost;Port=5432;Database=$DATABASE_NAME;Username=postgres;Password=$POSTGRES_PASSWORD"
 SEEDS_PATH="$REPO_ROOT/backend/seeds"
 DBSEED_PROJECT="$REPO_ROOT/backend/tools/dbseed/dbseed.csproj"
 if [ -f "$DBSEED_PROJECT" ]; then

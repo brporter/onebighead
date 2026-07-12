@@ -78,7 +78,9 @@ jobs:
         run: dotnet restore backend/tests/backend.tests/backend.tests.csproj
 
       - name: Run all backend tests
-        run: dotnet test backend/tests/backend.tests/backend.tests.csproj --no-restore --verbosity normal
+        # PostgresIntegration tests need a Docker daemon and run separately/locally:
+        #   dotnet test --filter "Category=PostgresIntegration"
+        run: dotnet test backend/tests/backend.tests/backend.tests.csproj --no-restore --verbosity normal --filter "Category!=PostgresIntegration"
 
       - name: Install frontend dependencies
         run: |

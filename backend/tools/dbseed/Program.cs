@@ -1,5 +1,5 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using OneBigHead.Server.Services.Seeding;
 
 // Database Seed Utility
@@ -117,7 +117,7 @@ try
 
     return 0;
 }
-catch (SqlException ex)
+catch (NpgsqlException ex)
 {
     Console.Error.WriteLine($"Database error: {ex.Message}");
     return 1;

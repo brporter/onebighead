@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # dev-start.ps1
 # Development startup script for Windows
-# Starts SQL Server, builds and tests, then launches backend and frontend
+# Starts PostgreSQL, builds and tests, then launches backend and frontend
 
 param(
     [switch]$ResetDatabase,
@@ -21,7 +21,7 @@ Options:
     -Help             Show this help message
 
 This script will:
-    1. Start the SQL Server Docker container if not running
+    1. Start the PostgreSQL Docker container if not running
     2. Restore tools, run tests, and build backend (produces efbundle)
     3. Apply migrations (or reset database if requested)
     4. Start the backend (displays PID)
@@ -31,7 +31,7 @@ This script will:
 }
 
 $ErrorActionPreference = "Stop"
-$containerName = "onebighead-sqlserver"
+$containerName = "onebighead-postgres"
 $rootDir = Split-Path -Parent $PSScriptRoot
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -39,17 +39,17 @@ Write-Host "  OneBigHead Development Startup" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Step 1: Check/Start SQL Server container
-Write-Host "[1/5] Checking SQL Server container..." -ForegroundColor Yellow
+# Step 1: Check/Start PostgreSQL container
+Write-Host "[1/5] Checking PostgreSQL container..." -ForegroundColor Yellow
 $container = docker ps --filter "name=$containerName" --format "{{.Names}}" 2>$null
 if ($container -ne $containerName) {
-    Write-Host "      SQL Server not running. Starting via docker compose..." -ForegroundColor Cyan
+    Write-Host "      PostgreSQL not running. Starting via docker compose..." -ForegroundColor Cyan
     Push-Location $rootDir
     docker compose up -d
     Pop-Location
     
-    # Wait for SQL Server to be ready
-    Write-Host "      Waiting for SQL Server to be ready..." -ForegroundColor Cyan
+    # Wait for PostgreSQL to be ready
+    Write-Host "      Waiting for PostgreSQL to be ready..." -ForegroundColor Cyan
     $retries = 30
     $ready = $false
     while ($retries -gt 0 -and -not $ready) {
@@ -64,12 +64,12 @@ if ($container -ne $containerName) {
     }
     
     if (-not $ready) {
-        Write-Host "      Error: SQL Server did not become ready in time" -ForegroundColor Red
+        Write-Host "      Error: PostgreSQL did not become ready in time" -ForegroundColor Red
         exit 1
     }
-    Write-Host "      SQL Server is ready!" -ForegroundColor Green
+    Write-Host "      PostgreSQL is ready!" -ForegroundColor Green
 } else {
-    Write-Host "      SQL Server is already running." -ForegroundColor Green
+    Write-Host "      PostgreSQL is already running." -ForegroundColor Green
 }
 
 # Step 2: Restore tools, run tests, and build backend
@@ -94,7 +94,8 @@ Pop-Location
 if (-not $SkipTests) {
     Write-Host "      Running tests..." -ForegroundColor Cyan
     Push-Location "$rootDir\backend\tests\backend.tests"
-    dotnet test --no-restore --verbosity minimal
+    # PostgresIntegration tests run separately: dotnet test --filter "Category=PostgresIntegration"
+    dotnet test --no-restore --verbosity minimal --filter "Category!=PostgresIntegration"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "      Backend tests failed!" -ForegroundColor Red
         Pop-Location
@@ -142,7 +143,7 @@ if ($ResetDatabase) {
     Write-Host "[3/5] Applying pending migrations..." -ForegroundColor Yellow
     $efBundle = Join-Path $rootDir "backend\src\backend\efbundle.exe"
     if (Test-Path $efBundle) {
-        & $efBundle --connection "Server=localhost,1433;Database=onebighead;User Id=sa;Password=DevPassword123!;TrustServerCertificate=True"
+        & $efBundle --connection "Host=localhost;Port=5432;Database=onebighead;Username=postgres;Password=DevPassword123!"
         if ($LASTEXITCODE -ne 0) {
             Write-Host "      Migration bundle failed!" -ForegroundColor Red
             exit 1

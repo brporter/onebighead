@@ -1,6 +1,7 @@
 using System.Text.Json;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace OneBigHead.Server.Services.Seeding;
 
@@ -39,7 +40,7 @@ public class JsonDatabaseSeeder
     /// <returns>List of results for each table seeded.</returns>
     public async Task<List<SeedResult>> SeedAsync(string connectionString, bool dryRun = false)
     {
-        using var connection = new SqlConnection(connectionString);
+        using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync();
         return await SeedAsync(connection, dryRun);
     }
@@ -50,7 +51,7 @@ public class JsonDatabaseSeeder
     /// <param name="connection">Open database connection.</param>
     /// <param name="dryRun">If true, only simulates the seeding without making changes.</param>
     /// <returns>List of results for each table seeded.</returns>
-    public async Task<List<SeedResult>> SeedAsync(SqlConnection connection, bool dryRun = false)
+    public async Task<List<SeedResult>> SeedAsync(NpgsqlConnection connection, bool dryRun = false)
     {
         var results = new List<SeedResult>();
 
@@ -110,7 +111,7 @@ public class JsonDatabaseSeeder
             .ToList();
     }
 
-    private async Task<SeedResult> ProcessTableAsync(SqlConnection connection, SeedTable table, bool dryRun)
+    private async Task<SeedResult> ProcessTableAsync(NpgsqlConnection connection, SeedTable table, bool dryRun)
     {
         var result = new SeedResult { TableName = table.Name };
 
@@ -122,55 +123,44 @@ public class JsonDatabaseSeeder
 
         var checkColumns = table.GetCheckColumns();
 
-        // Enable identity insert if needed
-        if (table.IdentityInsert && !dryRun)
+        foreach (var row in table.Rows)
         {
-            await ExecuteNonQueryAsync(connection, $"SET IDENTITY_INSERT [{table.Name}] ON");
-        }
+            var columns = row.Keys.ToList();
+            var columnList = string.Join(", ", columns.Select(QuoteIdentifier));
+            var paramList = string.Join(", ", columns.Select((_, i) => $"@p{i}"));
+            var insertSql = $"INSERT INTO {QuoteIdentifier(table.Name)} ({columnList}) VALUES ({paramList})";
 
-        try
-        {
-            foreach (var row in table.Rows)
+            if (dryRun)
             {
-                var columns = row.Keys.ToList();
-                var columnList = string.Join(", ", columns.Select(c => $"[{c}]"));
-                var paramList = string.Join(", ", columns.Select((_, i) => $"@p{i}"));
-                var insertSql = $"INSERT INTO [{table.Name}] ({columnList}) VALUES ({paramList})";
+                result.InsertedCount++;
+                continue;
+            }
 
-                if (dryRun)
+            // Check if row exists (idempotent insert)
+            if (checkColumns.Count > 0 && checkColumns.All(c => row.ContainsKey(c)))
+            {
+                if (await RowExistsAsync(connection, table.Name, checkColumns, row))
                 {
-                    result.InsertedCount++;
+                    result.SkippedCount++;
                     continue;
                 }
-
-                // Check if row exists (idempotent insert)
-                if (checkColumns.Count > 0 && checkColumns.All(c => row.ContainsKey(c)))
-                {
-                    if (await RowExistsAsync(connection, table.Name, checkColumns, row))
-                    {
-                        result.SkippedCount++;
-                        continue;
-                    }
-                }
-
-                // Insert the row
-                using var cmd = new SqlCommand(insertSql, connection);
-                for (int i = 0; i < columns.Count; i++)
-                {
-                    var value = JsonValueConverter.ConvertJsonElement(row[columns[i]]);
-                    cmd.Parameters.AddWithValue($"@p{i}", value ?? DBNull.Value);
-                }
-                await cmd.ExecuteNonQueryAsync();
-                result.InsertedCount++;
             }
-        }
-        finally
-        {
-            // Disable identity insert
-            if (table.IdentityInsert && !dryRun)
+
+            // Insert the row
+            using var cmd = new NpgsqlCommand(insertSql, connection);
+            for (int i = 0; i < columns.Count; i++)
             {
-                await ExecuteNonQueryAsync(connection, $"SET IDENTITY_INSERT [{table.Name}] OFF");
+                AddParameter(cmd, $"p{i}", row[columns[i]]);
             }
+            await cmd.ExecuteNonQueryAsync();
+            result.InsertedCount++;
+        }
+
+        // After inserting explicit identity values, resynchronize the identity
+        // sequence so subsequent application inserts don't collide.
+        if (table.IdentityInsert && !dryRun && result.InsertedCount > 0)
+        {
+            await ResyncIdentitySequenceAsync(connection, table);
         }
 
         if (result.InsertedCount > 0 || result.SkippedCount > 0)
@@ -184,28 +174,57 @@ public class JsonDatabaseSeeder
     }
 
     private async Task<bool> RowExistsAsync(
-        SqlConnection connection,
+        NpgsqlConnection connection,
         string tableName,
         List<string> checkColumns,
         Dictionary<string, object?> row)
     {
-        var whereClauses = checkColumns.Select((c, i) => $"[{c}] = @check{i}");
-        var existsSql = $"SELECT COUNT(*) FROM [{tableName}] WHERE {string.Join(" AND ", whereClauses)}";
+        var whereClauses = checkColumns.Select((c, i) => $"{QuoteIdentifier(c)} = @check{i}");
+        var existsSql = $"SELECT COUNT(*) FROM {QuoteIdentifier(tableName)} WHERE {string.Join(" AND ", whereClauses)}";
 
-        using var cmd = new SqlCommand(existsSql, connection);
+        using var cmd = new NpgsqlCommand(existsSql, connection);
         for (int i = 0; i < checkColumns.Count; i++)
         {
-            var value = JsonValueConverter.ConvertJsonElement(row[checkColumns[i]]);
-            cmd.Parameters.AddWithValue($"@check{i}", value ?? DBNull.Value);
+            AddParameter(cmd, $"check{i}", row[checkColumns[i]]);
         }
 
         var result = await cmd.ExecuteScalarAsync();
-        return result != null && (int)result > 0;
+        return result != null && Convert.ToInt64(result) > 0;
     }
 
-    private async Task ExecuteNonQueryAsync(SqlConnection connection, string sql)
+    private static async Task ResyncIdentitySequenceAsync(NpgsqlConnection connection, SeedTable table)
     {
-        using var cmd = new SqlCommand(sql, connection);
+        // Seed tables using identity insert provide explicit "Id" values;
+        // advance the backing sequence past the highest inserted value.
+        const string idColumn = "Id";
+        if (!table.Rows.Any(r => r.ContainsKey(idColumn)))
+            return;
+
+        var sql = $"""
+            SELECT setval(
+                pg_get_serial_sequence('{QuoteIdentifier(table.Name)}', '{idColumn}'),
+                GREATEST((SELECT COALESCE(MAX({QuoteIdentifier(idColumn)}), 1) FROM {QuoteIdentifier(table.Name)}), 1))
+            """;
+        using var cmd = new NpgsqlCommand(sql, connection);
         await cmd.ExecuteNonQueryAsync();
     }
+
+    private static void AddParameter(NpgsqlCommand cmd, string name, object? rawValue)
+    {
+        var value = JsonValueConverter.ConvertJsonElement(rawValue);
+
+        // Strings may target non-text columns (uuid, timestamptz, etc.).
+        // NpgsqlDbType.Unknown lets PostgreSQL infer the type from the target column.
+        if (value is string)
+        {
+            cmd.Parameters.Add(new NpgsqlParameter(name, NpgsqlDbType.Unknown) { Value = value });
+        }
+        else
+        {
+            cmd.Parameters.AddWithValue(name, value ?? DBNull.Value);
+        }
+    }
+
+    private static string QuoteIdentifier(string identifier)
+        => $"\"{identifier.Replace("\"", "\"\"")}\"";
 }

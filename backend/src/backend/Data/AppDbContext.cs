@@ -44,7 +44,7 @@ public class AppDbContext : DbContext
             entity.HasIndex(w => w.IsDeleted);
             entity.HasIndex(w => w.Slug)
                 .IsUnique()
-                .HasFilter("[Slug] IS NOT NULL");
+                .HasFilter("\"Slug\" IS NOT NULL");
         });
 
         modelBuilder.Entity<User>(entity =>
@@ -94,13 +94,13 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(c => c.Id);
 
-            // Self-referencing FK must use Restrict/NoAction on SQL Server to avoid cycles
+            // Self-referencing FK uses Restrict to avoid delete cycles
             entity.HasOne(c => c.ParentCategory)
                 .WithMany(c => c.ChildCategories)
                 .HasForeignKey(c => c.ParentCategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Use Restrict to avoid multiple cascade paths in SQL Server
+            // Use Restrict to avoid multiple cascade paths
             entity.HasOne(c => c.Workspace)
                 .WithMany(w => w.Categories)
                 .HasForeignKey(c => c.WorkspaceId)
@@ -120,13 +120,13 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(i => i.Id);
 
-            // Use Restrict to avoid multiple cascade paths in SQL Server
+            // Use Restrict to avoid multiple cascade paths
             entity.HasOne(i => i.Workspace)
                 .WithMany()
                 .HasForeignKey(i => i.WorkspaceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Use Restrict to avoid multiple cascade paths in SQL Server
+            // Use Restrict to avoid multiple cascade paths
             // (Collections → Categories → Items via SetNull creates a second path)
             entity.HasOne(i => i.Collection)
                 .WithMany(c => c.Items)
@@ -183,7 +183,7 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(p => p.Id);
 
-            // Use Restrict to avoid multiple cascade paths in SQL Server
+            // Use Restrict to avoid multiple cascade paths
             entity.HasOne(p => p.Workspace)
                 .WithMany()
                 .HasForeignKey(p => p.WorkspaceId)
@@ -231,7 +231,7 @@ public class AppDbContext : DbContext
                 .HasForeignKey(ct => ct.CollectionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Use Restrict to avoid multiple cascade paths in SQL Server
+            // Use Restrict to avoid multiple cascade paths
             entity.HasOne(ct => ct.ItemTemplate)
                 .WithMany(t => t.CollectionItemTemplates)
                 .HasForeignKey(ct => ct.ItemTemplateId)
@@ -247,7 +247,7 @@ public class AppDbContext : DbContext
                 .HasForeignKey(ct => ct.CategoryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Use Restrict to avoid multiple cascade paths in SQL Server
+            // Use Restrict to avoid multiple cascade paths
             entity.HasOne(ct => ct.ItemTemplate)
                 .WithMany(t => t.CategoryItemTemplates)
                 .HasForeignKey(ct => ct.ItemTemplateId)

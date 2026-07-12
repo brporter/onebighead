@@ -34,12 +34,12 @@ builder.Services.Configure<RouteOptions>(options =>
     options.LowercaseUrls = true;
 });
 
-// Configure EF Core with SQL Server (skipped in Testing environment - tests provide their own)
+// Configure EF Core with PostgreSQL (skipped in Testing environment - tests provide their own)
 if (!builder.Environment.IsEnvironment("Testing"))
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(connectionString));
+        options.UseNpgsql(connectionString));
 }
 
 // Register repositories and services with tracing decorators (skip in Testing environment)
@@ -237,7 +237,8 @@ var app = builder.Build();
 // In Development: seed database with system data (migrations applied via efbundle)
 if (app.Environment.IsDevelopment())
 {
-    var seedsPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "seeds");
+    // BaseDirectory is bin/<Config>/<tfm>/ inside backend/src/backend; seeds live in backend/seeds
+    var seedsPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "seeds");
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
     using var scope = app.Services.CreateScope();
     var seederLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
