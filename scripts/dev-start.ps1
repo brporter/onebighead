@@ -94,7 +94,8 @@ Pop-Location
 if (-not $SkipTests) {
     Write-Host "      Running tests..." -ForegroundColor Cyan
     Push-Location "$rootDir\backend\tests\backend.tests"
-    dotnet test --no-restore --verbosity minimal
+    # PostgresIntegration tests run separately: dotnet test --filter "Category=PostgresIntegration"
+    dotnet test --no-restore --verbosity minimal --filter "Category!=PostgresIntegration"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "      Backend tests failed!" -ForegroundColor Red
         Pop-Location

@@ -251,6 +251,25 @@ dotnet test
 
 Coverage report is generated in `backend/tests/backend.tests/TestResults/`.
 
+### PostgreSQL Integration Tests
+
+Tests tagged `Category=PostgresIntegration` (in `Integration/Postgres/`) run
+against a real PostgreSQL 17 instance. Testcontainers starts a throwaway
+container for the test run and removes it afterwards — a running Docker
+daemon is the only prerequisite; no manual setup or teardown is needed, and
+the local dev database is not touched.
+
+```bash
+cd backend/tests/backend.tests
+dotnet test --filter "Category=PostgresIntegration"   # integration tests only
+dotnet test --filter "Category!=PostgresIntegration"  # what CI runs
+dotnet test                                           # everything
+```
+
+These tests are excluded from the CI pipeline and from `dev-start` — run them
+locally after changing migrations, the seeder, seed JSON files, or anything
+provider-specific.
+
 ### Frontend Tests
 
 ```bash

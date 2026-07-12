@@ -133,7 +133,8 @@ fi
 if [ "$SKIP_TESTS" = false ]; then
     echo -e "${CYAN}      Running tests...${NC}"
     cd "$REPO_ROOT/backend/tests/backend.tests"
-    if ! dotnet test --no-restore --verbosity minimal; then
+    # PostgresIntegration tests run separately: dotnet test --filter "Category=PostgresIntegration"
+    if ! dotnet test --no-restore --verbosity minimal --filter "Category!=PostgresIntegration"; then
         echo -e "${RED}      Backend tests failed!${NC}"
         exit 1
     fi
