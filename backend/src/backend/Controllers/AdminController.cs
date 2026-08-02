@@ -12,12 +12,12 @@ namespace OneBigHead.Server.Controllers;
 [Authorize(Roles = "SystemAdministrator")]
 public class AdminController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly IItemTemplateRepository _templateRepository;
 
-    public AdminController(AppDbContext context, IItemTemplateRepository templateRepository)
+    public AdminController(IDbContextFactory<AppDbContext> contextFactory, IItemTemplateRepository templateRepository)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _templateRepository = templateRepository;
     }
 
@@ -27,14 +27,15 @@ public class AdminController : ControllerBase
     [HttpGet("workspaces")]
     public async Task<ActionResult<IEnumerable<WorkspaceSummaryResponse>>> GetWorkspaces()
     {
-        var workspaces = await _context.Workspaces
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var workspaces = await context.Workspaces
             .Select(w => new WorkspaceSummaryResponse
             {
                 WorkspaceId = w.Id,
                 Name = w.Name,
                 UserCount = w.WorkspaceUsers.Count,
                 CollectionCount = w.Collections.Count,
-                ItemCount = _context.Items.Count(i => i.WorkspaceId == w.Id),
+                ItemCount = context.Items.Count(i => i.WorkspaceId == w.Id),
                 ImageCount = 0,
                 CreatedAt = w.CreatedAt
             })
@@ -43,7 +44,7 @@ public class AdminController : ControllerBase
 
         // Calculate image counts client-side (Images is a JSON column, can't be counted in SQL)
         var workspaceIds = workspaces.Select(w => w.WorkspaceId).ToList();
-        var items = await _context.Items
+        var items = await context.Items
             .Where(i => workspaceIds.Contains(i.WorkspaceId))
             .Select(i => new { i.WorkspaceId, ImageCount = i.Images.Count })
             .ToListAsync();
@@ -69,7 +70,8 @@ public class AdminController : ControllerBase
     [HttpDelete("workspaces/{id}")]
     public async Task<IActionResult> DeleteWorkspace(int id)
     {
-        var workspace = await _context.Workspaces
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var workspace = await context.Workspaces
             .Include(w => w.Collections)
                 .ThenInclude(c => c.Items)
             .Include(w => w.Collections)
@@ -83,8 +85,8 @@ public class AdminController : ControllerBase
         }
 
         // Delete all related data (cascading should handle most, but be explicit)
-        _context.Workspaces.Remove(workspace);
-        await _context.SaveChangesAsync();
+        context.Workspaces.Remove(workspace);
+        await context.SaveChangesAsync();
 
         return NoContent();
     }
@@ -95,7 +97,8 @@ public class AdminController : ControllerBase
     [HttpGet("users")]
     public async Task<ActionResult<IEnumerable<UserSummaryResponse>>> GetUsers([FromQuery] string? email = null)
     {
-        var query = _context.Users
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var query = context.Users
             .Include(u => u.ActiveWorkspace)
             .AsQueryable();
 
@@ -127,14 +130,15 @@ public class AdminController : ControllerBase
     [HttpDelete("users/{id}")]
     public async Task<IActionResult> DeleteUser(int id)
     {
-        var user = await _context.Users.FindAsync(id);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var user = await context.Users.FindAsync(id);
         if (user is null)
         {
             return NotFound();
         }
 
-        _context.Users.Remove(user);
-        await _context.SaveChangesAsync();
+        context.Users.Remove(user);
+        await context.SaveChangesAsync();
 
         return NoContent();
     }
@@ -145,7 +149,8 @@ public class AdminController : ControllerBase
     [HttpPut("users/{id}/admin")]
     public async Task<ActionResult<UserSummaryResponse>> SetAdminStatus(int id, SetAdminStatusRequest request)
     {
-        var user = await _context.Users
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var user = await context.Users
             .Include(u => u.ActiveWorkspace)
             .FirstOrDefaultAsync(u => u.Id == id);
 
@@ -155,7 +160,7 @@ public class AdminController : ControllerBase
         }
 
         user.IsSystemAdministrator = request.IsSystemAdministrator;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return Ok(new UserSummaryResponse
         {
@@ -175,7 +180,8 @@ public class AdminController : ControllerBase
     [HttpGet("templates")]
     public async Task<ActionResult<IEnumerable<ItemTemplateResponse>>> GetSystemTemplates()
     {
-        var templates = await _context.ItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var templates = await context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
             .Where(t => t.WorkspaceId == null)
             .OrderBy(t => t.Name)
@@ -191,6 +197,7 @@ public class AdminController : ControllerBase
     [HttpPost("templates")]
     public async Task<ActionResult<ItemTemplateResponse>> CreateSystemTemplate(SystemTemplateRequest request)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var template = new ItemTemplate
         {
             WorkspaceId = null, // System template
@@ -212,8 +219,8 @@ public class AdminController : ControllerBase
             });
         }
 
-        _context.ItemTemplates.Add(template);
-        await _context.SaveChangesAsync();
+        context.ItemTemplates.Add(template);
+        await context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetSystemTemplate), new { id = template.Id }, 
             ItemTemplateResponse.FromItemTemplate(template));
@@ -225,7 +232,8 @@ public class AdminController : ControllerBase
     [HttpGet("templates/{id}")]
     public async Task<ActionResult<ItemTemplateResponse>> GetSystemTemplate(int id)
     {
-        var template = await _context.ItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var template = await context.ItemTemplates
             .Include(t => t.Properties.OrderBy(p => p.SortOrder))
             .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == null);
 
@@ -243,7 +251,8 @@ public class AdminController : ControllerBase
     [HttpPut("templates/{id}")]
     public async Task<ActionResult<ItemTemplateResponse>> UpdateSystemTemplate(int id, SystemTemplateRequest request)
     {
-        var template = await _context.ItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var template = await context.ItemTemplates
             .Include(t => t.Properties)
             .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == null);
 
@@ -257,7 +266,7 @@ public class AdminController : ControllerBase
         template.UpdatedAt = DateTime.UtcNow;
 
         // Replace properties
-        _context.ItemTemplateProperties.RemoveRange(template.Properties);
+        context.ItemTemplateProperties.RemoveRange(template.Properties);
         
         var sortOrder = 0;
         foreach (var prop in request.Properties)
@@ -271,7 +280,7 @@ public class AdminController : ControllerBase
             });
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return Ok(ItemTemplateResponse.FromItemTemplate(template));
     }
@@ -282,7 +291,8 @@ public class AdminController : ControllerBase
     [HttpDelete("templates/{id}")]
     public async Task<IActionResult> DeleteSystemTemplate(int id)
     {
-        var template = await _context.ItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var template = await context.ItemTemplates
             .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == null);
 
         if (template is null)
@@ -290,8 +300,8 @@ public class AdminController : ControllerBase
             return NotFound();
         }
 
-        _context.ItemTemplates.Remove(template);
-        await _context.SaveChangesAsync();
+        context.ItemTemplates.Remove(template);
+        await context.SaveChangesAsync();
 
         return NoContent();
     }

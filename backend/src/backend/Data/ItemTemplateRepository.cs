@@ -5,23 +5,24 @@ namespace OneBigHead.Server.Data;
 
 public class ItemTemplateRepository : IItemTemplateRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public ItemTemplateRepository(AppDbContext context)
+    public ItemTemplateRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<IEnumerable<ItemTemplate>> GetAllAccessibleAsync(int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Get workspace template names to filter out overridden system templates
-        var workspaceTemplateNames = await _context.ItemTemplates
+        var workspaceTemplateNames = await context.ItemTemplates
             .AsNoTracking()
             .Where(t => t.WorkspaceId == workspaceId)
             .Select(t => t.Name)
             .ToListAsync();
 
-        return await _context.ItemTemplates
+        return await context.ItemTemplates
             .AsNoTracking()
             .Include(t => t.Properties)
             .Where(t =>
@@ -33,14 +34,15 @@ public class ItemTemplateRepository : IItemTemplateRepository
 
     public async Task<IEnumerable<ItemTemplate>> GetSystemTemplatesAsync(int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Get workspace template names to filter out overridden system templates
-        var workspaceTemplateNames = await _context.ItemTemplates
+        var workspaceTemplateNames = await context.ItemTemplates
             .AsNoTracking()
             .Where(t => t.WorkspaceId == workspaceId)
             .Select(t => t.Name)
             .ToListAsync();
 
-        return await _context.ItemTemplates
+        return await context.ItemTemplates
             .AsNoTracking()
             .Include(t => t.Properties)
             .Where(t => t.WorkspaceId == null && !workspaceTemplateNames.Contains(t.Name))
@@ -50,7 +52,8 @@ public class ItemTemplateRepository : IItemTemplateRepository
 
     public async Task<IEnumerable<ItemTemplate>> GetWorkspaceTemplatesAsync(int workspaceId)
     {
-        return await _context.ItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ItemTemplates
             .AsNoTracking()
             .Include(t => t.Properties)
             .Where(t => t.WorkspaceId == workspaceId)
@@ -60,7 +63,8 @@ public class ItemTemplateRepository : IItemTemplateRepository
 
     public async Task<ItemTemplate?> GetByIdAsync(int id, int workspaceId)
     {
-        return await _context.ItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ItemTemplates
             .AsNoTracking()
             .Include(t => t.Properties)
             .FirstOrDefaultAsync(t =>
@@ -70,7 +74,8 @@ public class ItemTemplateRepository : IItemTemplateRepository
 
     public async Task<IEnumerable<ItemTemplate>> GetByCollectionAsync(int collectionId)
     {
-        return await _context.CollectionItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.CollectionItemTemplates
             .AsNoTracking()
             .Where(ct => ct.CollectionId == collectionId)
             .Include(ct => ct.ItemTemplate)
@@ -82,18 +87,20 @@ public class ItemTemplateRepository : IItemTemplateRepository
 
     public async Task<ItemTemplate> CreateAsync(ItemTemplate template)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         template.CreatedAt = DateTime.UtcNow;
         template.UpdatedAt = DateTime.UtcNow;
 
-        _context.ItemTemplates.Add(template);
-        await _context.SaveChangesAsync();
+        context.ItemTemplates.Add(template);
+        await context.SaveChangesAsync();
         return template;
     }
 
     public async Task<ItemTemplate?> UpdateAsync(int id, ItemTemplate template, int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Only workspace-owned templates can be updated directly
-        var existing = await _context.ItemTemplates
+        var existing = await context.ItemTemplates
             .Include(t => t.Properties)
             .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == workspaceId);
 
@@ -107,7 +114,7 @@ public class ItemTemplateRepository : IItemTemplateRepository
         existing.UpdatedAt = DateTime.UtcNow;
 
         // Replace properties
-        _context.ItemTemplateProperties.RemoveRange(existing.Properties);
+        context.ItemTemplateProperties.RemoveRange(existing.Properties);
 
         var sortOrder = 0;
         foreach (var prop in template.Properties)
@@ -121,13 +128,14 @@ public class ItemTemplateRepository : IItemTemplateRepository
             });
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return existing;
     }
 
     public async Task<ItemTemplate> CopySystemTemplateAsync(int systemTemplateId, int workspaceId, ItemTemplate updates)
     {
-        var systemTemplate = await _context.ItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var systemTemplate = await context.ItemTemplates
             .Include(t => t.Properties)
             .FirstOrDefaultAsync(t => t.Id == systemTemplateId && t.WorkspaceId == null);
 
@@ -158,15 +166,16 @@ public class ItemTemplateRepository : IItemTemplateRepository
             });
         }
 
-        _context.ItemTemplates.Add(newTemplate);
-        await _context.SaveChangesAsync();
+        context.ItemTemplates.Add(newTemplate);
+        await context.SaveChangesAsync();
         return newTemplate;
     }
 
     public async Task<bool> DeleteAsync(int id, int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Only workspace-owned templates can be deleted
-        var template = await _context.ItemTemplates
+        var template = await context.ItemTemplates
             .FirstOrDefaultAsync(t => t.Id == id && t.WorkspaceId == workspaceId);
 
         if (template is null)
@@ -174,14 +183,15 @@ public class ItemTemplateRepository : IItemTemplateRepository
             return false;
         }
 
-        _context.ItemTemplates.Remove(template);
-        await _context.SaveChangesAsync();
+        context.ItemTemplates.Remove(template);
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<bool> AssociateWithCollectionAsync(int templateId, int collectionId)
     {
-        var exists = await _context.CollectionItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var exists = await context.CollectionItemTemplates
             .AnyAsync(ct => ct.CollectionId == collectionId && ct.ItemTemplateId == templateId);
 
         if (exists)
@@ -189,19 +199,20 @@ public class ItemTemplateRepository : IItemTemplateRepository
             return true; // Already associated
         }
 
-        _context.CollectionItemTemplates.Add(new CollectionItemTemplate
+        context.CollectionItemTemplates.Add(new CollectionItemTemplate
         {
             CollectionId = collectionId,
             ItemTemplateId = templateId
         });
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<bool> DisassociateFromCollectionAsync(int templateId, int collectionId)
     {
-        var association = await _context.CollectionItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var association = await context.CollectionItemTemplates
             .FirstOrDefaultAsync(ct => ct.CollectionId == collectionId && ct.ItemTemplateId == templateId);
 
         if (association is null)
@@ -209,14 +220,15 @@ public class ItemTemplateRepository : IItemTemplateRepository
             return false;
         }
 
-        _context.CollectionItemTemplates.Remove(association);
-        await _context.SaveChangesAsync();
+        context.CollectionItemTemplates.Remove(association);
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task AssociateMultipleWithCollectionAsync(IEnumerable<int> templateIds, int collectionId)
     {
-        var existingTemplateIds = await _context.CollectionItemTemplates
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existingTemplateIds = await context.CollectionItemTemplates
             .Where(ct => ct.CollectionId == collectionId)
             .Select(ct => ct.ItemTemplateId)
             .ToHashSetAsync();
@@ -232,8 +244,8 @@ public class ItemTemplateRepository : IItemTemplateRepository
 
         if (newAssociations.Count > 0)
         {
-            _context.CollectionItemTemplates.AddRange(newAssociations);
-            await _context.SaveChangesAsync();
+            context.CollectionItemTemplates.AddRange(newAssociations);
+            await context.SaveChangesAsync();
         }
     }
 }

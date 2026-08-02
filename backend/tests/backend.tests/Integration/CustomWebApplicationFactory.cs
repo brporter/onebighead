@@ -34,7 +34,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             // Add in-memory database for testing
             // (Program.cs skips DbContext registration in Testing environment)
-            services.AddDbContext<AppDbContext>(options =>
+            services.AddDbContextFactory<AppDbContext>(options =>
             {
                 options.UseInMemoryDatabase(_databaseName)
                     .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
@@ -42,15 +42,15 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             // Replace email service with a test implementation
             services.RemoveAll<IEmailService>();
-            services.AddScoped<IEmailService, TestEmailService>();
+            services.AddSingleton<IEmailService, TestEmailService>();
 
             // Replace statistics repositories with in-memory-compatible test doubles
             // (the real implementations use ExecuteUpdateAsync which is unsupported by the in-memory provider)
             services.RemoveAll<IWorkspaceStatisticsRepository>();
-            services.AddScoped<IWorkspaceStatisticsRepository, TestWorkspaceStatisticsRepository>();
+            services.AddSingleton<IWorkspaceStatisticsRepository, TestWorkspaceStatisticsRepository>();
 
             services.RemoveAll<ICollectionStatisticsRepository>();
-            services.AddScoped<ICollectionStatisticsRepository, TestCollectionStatisticsRepository>();
+            services.AddSingleton<ICollectionStatisticsRepository, TestCollectionStatisticsRepository>();
 
             // Configure test authentication
             services.AddAuthentication(defaultScheme: TestAuthHandler.SchemeName)

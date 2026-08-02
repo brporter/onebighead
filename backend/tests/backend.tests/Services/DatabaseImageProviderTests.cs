@@ -20,7 +20,7 @@ public class DatabaseImageProviderTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _provider = new DatabaseImageProvider(_context, new Mock<IWorkspaceStatisticsRepository>().Object);
+        _provider = new DatabaseImageProvider(new TestDbContextFactory(options), new Mock<IWorkspaceStatisticsRepository>().Object);
     }
 
     public void Dispose()

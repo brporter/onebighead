@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Models;
 
@@ -10,18 +10,19 @@ namespace OneBigHead.Server.Tests.Integration;
 /// </summary>
 public class TestWorkspaceStatisticsRepository : IWorkspaceStatisticsRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public TestWorkspaceStatisticsRepository(AppDbContext context)
+    public TestWorkspaceStatisticsRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task IncrementAsync(int workspaceId, StatisticType type, long amount = 1, DateOnly? date = null)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var effectiveDate = date ?? DateOnly.MinValue;
 
-        var stat = await _context.WorkspaceStatistics
+        var stat = await context.WorkspaceStatistics
             .FirstOrDefaultAsync(s => s.WorkspaceId == workspaceId && s.StatisticType == type && s.Date == effectiveDate);
 
         if (stat != null)
@@ -30,7 +31,7 @@ public class TestWorkspaceStatisticsRepository : IWorkspaceStatisticsRepository
         }
         else
         {
-            _context.WorkspaceStatistics.Add(new WorkspaceStatistic
+            context.WorkspaceStatistics.Add(new WorkspaceStatistic
             {
                 WorkspaceId = workspaceId,
                 StatisticType = type,
@@ -39,24 +40,26 @@ public class TestWorkspaceStatisticsRepository : IWorkspaceStatisticsRepository
             });
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task DecrementAsync(int workspaceId, StatisticType type, long amount = 1)
     {
-        var stat = await _context.WorkspaceStatistics
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var stat = await context.WorkspaceStatistics
             .FirstOrDefaultAsync(s => s.WorkspaceId == workspaceId && s.StatisticType == type && s.Date == DateOnly.MinValue);
 
         if (stat != null)
         {
             stat.Value = Math.Max(0, stat.Value - amount);
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 
     public async Task<Dictionary<StatisticType, long>> GetAggregatesAsync(int workspaceId)
     {
-        return await _context.WorkspaceStatistics
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.WorkspaceStatistics
             .AsNoTracking()
             .Where(s => s.WorkspaceId == workspaceId && s.Date == DateOnly.MinValue)
             .ToDictionaryAsync(s => s.StatisticType, s => s.Value);
@@ -64,7 +67,8 @@ public class TestWorkspaceStatisticsRepository : IWorkspaceStatisticsRepository
 
     public async Task<List<DailyStatistic>> GetDailyAsync(int workspaceId, StatisticType type, DateOnly from, DateOnly to)
     {
-        return await _context.WorkspaceStatistics
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.WorkspaceStatistics
             .AsNoTracking()
             .Where(s => s.WorkspaceId == workspaceId && s.StatisticType == type && s.Date >= from && s.Date <= to)
             .OrderBy(s => s.Date)

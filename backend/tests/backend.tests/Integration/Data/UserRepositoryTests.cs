@@ -20,8 +20,9 @@ public class UserRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new UserRepository(_context);
-        _workspaceUserRepository = new WorkspaceUserRepository(_context);
+        var contextFactory = new TestDbContextFactory(options);
+        _repository = new UserRepository(contextFactory);
+        _workspaceUserRepository = new WorkspaceUserRepository(contextFactory);
     }
 
     public void Dispose()
@@ -430,6 +431,8 @@ public class UserRepositoryTests : IDisposable
         // Act
         var result = await _workspaceUserRepository.UpdateRoleAsync(user.Id, workspace.Id, WorkspaceRole.WorkspaceAdmin);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         Assert.True(result);
         var workspaceUser = await _context.WorkspaceUsers
@@ -512,6 +515,8 @@ public class UserRepositoryTests : IDisposable
 
         // Act - delete only membership
         var result = await _repository.DeleteByIdAndWorkspaceAsync(userId, workspace.Id);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         Assert.True(result);

@@ -38,9 +38,10 @@ public class ItemsControllerIntegrationTests : IDisposable
         // Set up real repositories
         var mockStatsRepo = new Mock<IWorkspaceStatisticsRepository>().Object;
         var mockCollectionStatsRepo = new Mock<ICollectionStatisticsRepository>().Object;
-        var itemRepository = new ItemRepository(_context, mockStatsRepo, mockCollectionStatsRepo, new Mock<ILogger<ItemRepository>>().Object);
-        var categoryRepository = new CategoryRepository(_context);
-        var collectionRepository = new CollectionRepository(_context, mockStatsRepo, mockCollectionStatsRepo);
+        var contextFactory = new TestDbContextFactory(options);
+        var itemRepository = new ItemRepository(contextFactory, mockStatsRepo, mockCollectionStatsRepo, new Mock<ILogger<ItemRepository>>().Object);
+        var categoryRepository = new CategoryRepository(contextFactory);
+        var collectionRepository = new CollectionRepository(contextFactory, mockStatsRepo, mockCollectionStatsRepo);
         var mockPublishManagerService = new Mock<IPublishManagerService>().Object;
 
         _controller = new ItemsController(

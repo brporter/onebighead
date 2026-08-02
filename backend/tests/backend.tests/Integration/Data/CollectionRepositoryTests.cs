@@ -20,7 +20,7 @@ public class CollectionRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new CollectionRepository(_context, new Mock<IWorkspaceStatisticsRepository>().Object, new Mock<ICollectionStatisticsRepository>().Object);
+        _repository = new CollectionRepository(new TestDbContextFactory(options), new Mock<IWorkspaceStatisticsRepository>().Object, new Mock<ICollectionStatisticsRepository>().Object);
     }
 
     public void Dispose()
@@ -300,6 +300,8 @@ public class CollectionRepositoryTests : IDisposable
 
         // Act
         var result = await _repository.DeleteAsync(1, TestWorkspaceId);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         Assert.True(result);

@@ -17,7 +17,7 @@ public class WorkspaceRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new WorkspaceRepository(_context);
+        _repository = new WorkspaceRepository(new TestDbContextFactory(options));
     }
 
     public void Dispose()

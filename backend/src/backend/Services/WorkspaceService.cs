@@ -7,20 +7,20 @@ namespace OneBigHead.Server.Services;
 
 public class WorkspaceService : IWorkspaceService
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
     private readonly IUserRepository _userRepository;
     private readonly ILogger<WorkspaceService> _logger;
 
     public WorkspaceService(
-        AppDbContext context,
+        IDbContextFactory<AppDbContext> contextFactory,
         IWorkspaceRepository workspaceRepository,
         IWorkspaceUserRepository workspaceUserRepository,
         IUserRepository userRepository,
         ILogger<WorkspaceService> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _workspaceRepository = workspaceRepository;
         _workspaceUserRepository = workspaceUserRepository;
         _userRepository = userRepository;
@@ -29,16 +29,17 @@ public class WorkspaceService : IWorkspaceService
 
     public async Task<WorkspaceStatsResponse?> GetWorkspaceStatsAsync(int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
         if (workspace == null || workspace.IsDeleted)
         {
             return null;
         }
 
-        var collectionCount = await _context.Collections.CountAsync(c => c.WorkspaceId == workspaceId);
-        var categoryCount = await _context.Categories.CountAsync(c => c.WorkspaceId == workspaceId);
-        var itemCount = await _context.Items.CountAsync(i => i.WorkspaceId == workspaceId);
-        var imageCount = await _context.StoredImages.CountAsync(i => i.WorkspaceId == workspaceId);
+        var collectionCount = await context.Collections.CountAsync(c => c.WorkspaceId == workspaceId);
+        var categoryCount = await context.Categories.CountAsync(c => c.WorkspaceId == workspaceId);
+        var itemCount = await context.Items.CountAsync(i => i.WorkspaceId == workspaceId);
+        var imageCount = await context.StoredImages.CountAsync(i => i.WorkspaceId == workspaceId);
         var userCount = await _workspaceUserRepository.CountMembersInWorkspaceAsync(workspaceId);
         var adminCount = await _workspaceUserRepository.CountAdminsInWorkspaceAsync(workspaceId);
 
@@ -57,6 +58,7 @@ public class WorkspaceService : IWorkspaceService
 
     public async Task<WorkspaceDeletionResponse> SoftDeleteWorkspaceAsync(int workspaceId, int deletedByUserId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
         if (workspace == null || workspace.IsDeleted)
         {
@@ -74,7 +76,7 @@ public class WorkspaceService : IWorkspaceService
             workspaceId, workspace.Name, deletedByUserId);
 
         // Get all users who had this as their active workspace and switch them
-        var affectedUsers = await _context.Users
+        var affectedUsers = await context.Users
             .Where(u => u.ActiveWorkspaceId == workspaceId)
             .ToListAsync();
 
@@ -83,7 +85,7 @@ public class WorkspaceService : IWorkspaceService
         foreach (var user in affectedUsers)
         {
             // Find another workspace for this user
-            var nextMembership = await _context.WorkspaceUsers
+            var nextMembership = await context.WorkspaceUsers
                 .Include(wu => wu.Workspace)
                 .Where(wu => wu.UserId == user.Id && wu.WorkspaceId != workspaceId && !wu.Workspace!.IsDeleted)
                 .FirstOrDefaultAsync();
@@ -114,11 +116,11 @@ public class WorkspaceService : IWorkspaceService
         if (deletingUser != null)
         {
             // Count user's workspace memberships (excluding the one being deleted)
-            var otherMemberships = await _context.WorkspaceUsers
+            var otherMemberships = await context.WorkspaceUsers
                 .CountAsync(wu => wu.UserId == deletedByUserId && wu.WorkspaceId != workspaceId);
 
             // Check if user was WorkspaceAdmin of the deleted workspace
-            var wasAdmin = await _context.WorkspaceUsers
+            var wasAdmin = await context.WorkspaceUsers
                 .AnyAsync(wu => wu.UserId == deletedByUserId &&
                                 wu.WorkspaceId == workspaceId &&
                                 wu.WorkspaceRole == WorkspaceRole.WorkspaceAdmin);
@@ -158,8 +160,9 @@ public class WorkspaceService : IWorkspaceService
 
     public async Task<bool> HasUserAnyActiveWorkspaceAsync(int userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Check if the user has any workspace memberships where the workspace is not deleted
-        return await _context.WorkspaceUsers
+        return await context.WorkspaceUsers
             .Include(wu => wu.Workspace)
             .AnyAsync(wu => wu.UserId == userId && !wu.Workspace!.IsDeleted);
     }

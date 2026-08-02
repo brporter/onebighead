@@ -7,20 +7,20 @@ namespace OneBigHead.Server.Services;
 
 public class UserDeletionService : IUserDeletionService
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly IUserRepository _userRepository;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
     private readonly IWorkspaceService _workspaceService;
     private readonly ILogger<UserDeletionService> _logger;
 
     public UserDeletionService(
-        AppDbContext context,
+        IDbContextFactory<AppDbContext> contextFactory,
         IUserRepository userRepository,
         IWorkspaceUserRepository workspaceUserRepository,
         IWorkspaceService workspaceService,
         ILogger<UserDeletionService> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _userRepository = userRepository;
         _workspaceUserRepository = workspaceUserRepository;
         _workspaceService = workspaceService;
@@ -29,6 +29,7 @@ public class UserDeletionService : IUserDeletionService
 
     public async Task<UserDeletionInfoResponse?> GetDeletionInfoAsync(int userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
         {
@@ -72,7 +73,7 @@ public class UserDeletionService : IUserDeletionService
             var otherUsers = new List<UserBasicInfo>();
             if (isOnlyAdmin)
             {
-                var workspaceUsers = await _context.WorkspaceUsers
+                var workspaceUsers = await context.WorkspaceUsers
                     .Include(wu => wu.User)
                     .Where(wu => wu.WorkspaceId == membership.WorkspaceId && wu.UserId != userId)
                     .ToListAsync();

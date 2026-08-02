@@ -20,7 +20,7 @@ public class CollectionStatisticsRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new TestCollectionStatisticsRepository(_context);
+        _repository = new TestCollectionStatisticsRepository(new TestDbContextFactory(options));
     }
 
     public void Dispose()
@@ -57,6 +57,8 @@ public class CollectionStatisticsRepositoryTests : IDisposable
 
         // Act
         await _repository.IncrementAsync(TestCollectionId, CollectionStatisticType.ItemCount, 3);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         var stat = await _context.CollectionStatistics
@@ -113,6 +115,8 @@ public class CollectionStatisticsRepositoryTests : IDisposable
         // Act
         await _repository.DecrementAsync(TestCollectionId, CollectionStatisticType.ItemCount, 3);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         var stat = await _context.CollectionStatistics
             .FirstOrDefaultAsync(s => s.CollectionId == TestCollectionId && s.StatisticType == CollectionStatisticType.ItemCount);
@@ -134,6 +138,8 @@ public class CollectionStatisticsRepositoryTests : IDisposable
 
         // Act
         await _repository.DecrementAsync(TestCollectionId, CollectionStatisticType.ItemCount, 5);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         var stat = await _context.CollectionStatistics
@@ -244,6 +250,8 @@ public class CollectionStatisticsRepositoryTests : IDisposable
 
         // Act
         await _repository.IncrementItemViewAsync(TestCollectionId, 1);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         var highlight = await _context.CollectionItemHighlights

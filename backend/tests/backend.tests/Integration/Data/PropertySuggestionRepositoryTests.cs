@@ -20,7 +20,7 @@ public class PropertySuggestionRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new PropertySuggestionRepository(_context);
+        _repository = new PropertySuggestionRepository(new TestDbContextFactory(options));
     }
 
     public void Dispose()

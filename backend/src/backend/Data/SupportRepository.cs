@@ -5,25 +5,27 @@ namespace OneBigHead.Server.Data;
 
 public class SupportRepository : ISupportRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public SupportRepository(AppDbContext context)
+    public SupportRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<SupportRequest> CreateRequestAsync(SupportRequest request)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         request.CreatedAt = DateTime.UtcNow;
         request.UpdatedAt = DateTime.UtcNow;
-        _context.SupportRequests.Add(request);
-        await _context.SaveChangesAsync();
+        context.SupportRequests.Add(request);
+        await context.SaveChangesAsync();
         return request;
     }
 
     public async Task<SupportRequest?> GetRequestByIdAsync(int id, bool includeReplies = false)
     {
-        var query = _context.SupportRequests.AsQueryable();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var query = context.SupportRequests.AsQueryable();
 
         if (includeReplies)
         {
@@ -35,7 +37,8 @@ public class SupportRepository : ISupportRepository
 
     public async Task<IEnumerable<SupportRequest>> GetRequestsForUserAsync(int userId, bool includeDeleted = false)
     {
-        var query = _context.SupportRequests
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var query = context.SupportRequests
             .Include(sr => sr.Replies)
             .Where(sr => sr.UserId == userId);
 
@@ -55,7 +58,8 @@ public class SupportRepository : ISupportRepository
         int? limit = null,
         int? offset = null)
     {
-        var query = _context.SupportRequests
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var query = context.SupportRequests
             .Include(sr => sr.Replies)
             .AsQueryable();
 
@@ -86,7 +90,8 @@ public class SupportRepository : ISupportRepository
 
     public async Task<int> GetRequestCountAsync(SupportRequestStatus? status = null, bool includeDeleted = false)
     {
-        var query = _context.SupportRequests.AsQueryable();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var query = context.SupportRequests.AsQueryable();
 
         if (!includeDeleted)
         {
@@ -103,23 +108,25 @@ public class SupportRepository : ISupportRepository
 
     public async Task<SupportReply> AddReplyAsync(SupportReply reply)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         reply.CreatedAt = DateTime.UtcNow;
-        _context.SupportReplies.Add(reply);
+        context.SupportReplies.Add(reply);
 
         // Update the parent request's UpdatedAt timestamp
-        var request = await _context.SupportRequests.FindAsync(reply.SupportRequestId);
+        var request = await context.SupportRequests.FindAsync(reply.SupportRequestId);
         if (request != null)
         {
             request.UpdatedAt = DateTime.UtcNow;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return reply;
     }
 
     public async Task<SupportRequest?> UpdateStatusAsync(int requestId, SupportRequestStatus status)
     {
-        var request = await _context.SupportRequests
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var request = await context.SupportRequests
             .Include(sr => sr.Replies)
             .FirstOrDefaultAsync(sr => sr.Id == requestId);
         if (request == null || request.IsDeleted)
@@ -129,13 +136,14 @@ public class SupportRepository : ISupportRepository
 
         request.Status = status;
         request.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return request;
     }
 
     public async Task<bool> SoftDeleteAsync(int requestId)
     {
-        var request = await _context.SupportRequests.FindAsync(requestId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var request = await context.SupportRequests.FindAsync(requestId);
         if (request == null)
         {
             return false;
@@ -143,14 +151,15 @@ public class SupportRepository : ISupportRepository
 
         request.IsDeleted = true;
         request.DeletedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task MarkRepliesAsReadAsync(int requestId, int userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Only mark admin replies as read for requests belonging to this user
-        var request = await _context.SupportRequests
+        var request = await context.SupportRequests
             .Include(sr => sr.Replies)
             .FirstOrDefaultAsync(sr => sr.Id == requestId && sr.UserId == userId);
 
@@ -164,12 +173,13 @@ public class SupportRepository : ISupportRepository
             reply.IsRead = true;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task<int> GetUnreadCountForUserAsync(int userId)
     {
-        return await _context.SupportReplies
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.SupportReplies
             .Where(r => r.SupportRequest != null &&
                         r.SupportRequest.UserId == userId &&
                         !r.SupportRequest.IsDeleted &&

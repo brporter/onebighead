@@ -6,16 +6,17 @@ namespace OneBigHead.Server.Data;
 
 public class WorkspaceUserRepository : IWorkspaceUserRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public WorkspaceUserRepository(AppDbContext context)
+    public WorkspaceUserRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<WorkspaceUser?> GetMembershipAsync(int userId, int workspaceId)
     {
-        return await _context.WorkspaceUsers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.WorkspaceUsers
             .Include(tu => tu.Workspace)
             .Include(tu => tu.User)
             .FirstOrDefaultAsync(tu => tu.UserId == userId && tu.WorkspaceId == workspaceId);
@@ -23,7 +24,8 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
 
     public async Task<IEnumerable<WorkspaceUser>> GetByUserIdAsync(int userId)
     {
-        return await _context.WorkspaceUsers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.WorkspaceUsers
             .Include(tu => tu.Workspace)
             .Where(tu => tu.UserId == userId)
             .OrderBy(tu => tu.CreatedAt)
@@ -32,7 +34,8 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
 
     public async Task<IEnumerable<WorkspaceUser>> GetByWorkspaceIdAsync(int workspaceId)
     {
-        return await _context.WorkspaceUsers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.WorkspaceUsers
             .Include(tu => tu.User)
             .Where(tu => tu.WorkspaceId == workspaceId)
             .OrderBy(tu => tu.CreatedAt)
@@ -41,6 +44,7 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
 
     public async Task<WorkspaceUser> CreateAsync(int userId, int workspaceId, WorkspaceRole role)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var workspaceUser = new WorkspaceUser
         {
             UserId = userId,
@@ -49,19 +53,20 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.WorkspaceUsers.Add(workspaceUser);
-        await _context.SaveChangesAsync();
+        context.WorkspaceUsers.Add(workspaceUser);
+        await context.SaveChangesAsync();
 
         // Load related entities
-        await _context.Entry(workspaceUser).Reference(tu => tu.Workspace).LoadAsync();
-        await _context.Entry(workspaceUser).Reference(tu => tu.User).LoadAsync();
+        await context.Entry(workspaceUser).Reference(tu => tu.Workspace).LoadAsync();
+        await context.Entry(workspaceUser).Reference(tu => tu.User).LoadAsync();
 
         return workspaceUser;
     }
 
     public async Task<bool> UpdateRoleAsync(int userId, int workspaceId, WorkspaceRole role)
     {
-        var workspaceUser = await _context.WorkspaceUsers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var workspaceUser = await context.WorkspaceUsers
             .FirstOrDefaultAsync(tu => tu.UserId == userId && tu.WorkspaceId == workspaceId);
 
         if (workspaceUser == null)
@@ -70,13 +75,14 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
         }
 
         workspaceUser.WorkspaceRole = role;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<bool> DeleteAsync(int userId, int workspaceId)
     {
-        var workspaceUser = await _context.WorkspaceUsers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var workspaceUser = await context.WorkspaceUsers
             .FirstOrDefaultAsync(wu => wu.UserId == userId && wu.WorkspaceId == workspaceId);
 
         if (workspaceUser == null)
@@ -84,37 +90,41 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
             return false;
         }
 
-        _context.WorkspaceUsers.Remove(workspaceUser);
-        await _context.SaveChangesAsync();
+        context.WorkspaceUsers.Remove(workspaceUser);
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<int> CountAdminsInWorkspaceAsync(int workspaceId)
     {
-        return await _context.WorkspaceUsers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.WorkspaceUsers
             .CountAsync(tu => tu.WorkspaceId == workspaceId && tu.WorkspaceRole == WorkspaceRole.WorkspaceAdmin);
     }
 
     public async Task<int> CountMembersInWorkspaceAsync(int workspaceId)
     {
-        return await _context.WorkspaceUsers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.WorkspaceUsers
             .CountAsync(tu => tu.WorkspaceId == workspaceId);
     }
 
     public async Task<int> CountUserMembershipsAsync(int userId)
     {
-        return await _context.WorkspaceUsers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.WorkspaceUsers
             .CountAsync(tu => tu.UserId == userId);
     }
 
     public async Task<AdminCheckResult> UpdateRoleWithAdminCheckAsync(int userId, int workspaceId, WorkspaceRole newRole)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Use serializable isolation to prevent race conditions when checking/updating admin count
-        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+        await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
 
         try
         {
-            var workspaceUser = await _context.WorkspaceUsers
+            var workspaceUser = await context.WorkspaceUsers
                 .FirstOrDefaultAsync(tu => tu.UserId == userId && tu.WorkspaceId == workspaceId);
 
             if (workspaceUser == null)
@@ -126,7 +136,7 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
             // Check if demoting from admin to non-admin
             if (workspaceUser.WorkspaceRole == WorkspaceRole.WorkspaceAdmin && newRole != WorkspaceRole.WorkspaceAdmin)
             {
-                var adminCount = await _context.WorkspaceUsers
+                var adminCount = await context.WorkspaceUsers
                     .CountAsync(tu => tu.WorkspaceId == workspaceId && tu.WorkspaceRole == WorkspaceRole.WorkspaceAdmin);
 
                 if (adminCount <= 1)
@@ -137,7 +147,7 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
             }
 
             workspaceUser.WorkspaceRole = newRole;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             await transaction.CommitAsync();
 
             return AdminCheckResult.Success;
@@ -151,12 +161,13 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
 
     public async Task<AdminCheckResult> DeleteWithAdminCheckAsync(int userId, int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Use serializable isolation to prevent race conditions when checking/deleting admin
-        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+        await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
 
         try
         {
-            var workspaceUser = await _context.WorkspaceUsers
+            var workspaceUser = await context.WorkspaceUsers
                 .FirstOrDefaultAsync(tu => tu.UserId == userId && tu.WorkspaceId == workspaceId);
 
             if (workspaceUser == null)
@@ -168,7 +179,7 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
             // Check if removing an admin
             if (workspaceUser.WorkspaceRole == WorkspaceRole.WorkspaceAdmin)
             {
-                var adminCount = await _context.WorkspaceUsers
+                var adminCount = await context.WorkspaceUsers
                     .CountAsync(tu => tu.WorkspaceId == workspaceId && tu.WorkspaceRole == WorkspaceRole.WorkspaceAdmin);
 
                 if (adminCount <= 1)
@@ -178,8 +189,8 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
                 }
             }
 
-            _context.WorkspaceUsers.Remove(workspaceUser);
-            await _context.SaveChangesAsync();
+            context.WorkspaceUsers.Remove(workspaceUser);
+            await context.SaveChangesAsync();
             await transaction.CommitAsync();
 
             return AdminCheckResult.Success;
@@ -193,7 +204,8 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
 
     public async Task<IEnumerable<WorkspaceUser>> GetAdminMembershipsIncludingDeletedAsync(int userId)
     {
-        return await _context.WorkspaceUsers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.WorkspaceUsers
             .Include(wu => wu.Workspace)
             .Where(wu => wu.UserId == userId && wu.WorkspaceRole == WorkspaceRole.WorkspaceAdmin)
             .ToListAsync();

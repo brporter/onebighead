@@ -6,17 +6,18 @@ namespace OneBigHead.Server.Services;
 
 public class DatabaseImageProvider : IImageProvider
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly IWorkspaceStatisticsRepository _statsRepository;
 
-    public DatabaseImageProvider(AppDbContext context, IWorkspaceStatisticsRepository statsRepository)
+    public DatabaseImageProvider(IDbContextFactory<AppDbContext> contextFactory, IWorkspaceStatisticsRepository statsRepository)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _statsRepository = statsRepository;
     }
 
     public async Task<StoredImageInfo> StoreAsync(int workspaceId, string fileName, string contentType, Stream data)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         using var memoryStream = new MemoryStream();
         await data.CopyToAsync(memoryStream);
         var imageData = memoryStream.ToArray();
@@ -31,8 +32,8 @@ public class DatabaseImageProvider : IImageProvider
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.StoredImages.Add(image);
-        await _context.SaveChangesAsync();
+        context.StoredImages.Add(image);
+        await context.SaveChangesAsync();
 
         await _statsRepository.IncrementAsync(workspaceId, StatisticType.ImageCount);
         await _statsRepository.IncrementAsync(workspaceId, StatisticType.TotalImageSizeBytes, imageData.Length);
@@ -43,7 +44,8 @@ public class DatabaseImageProvider : IImageProvider
 
     public async Task<RetrievedImage?> RetrieveAsync(Guid key, int workspaceId)
     {
-        var image = await _context.StoredImages
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var image = await context.StoredImages
             .AsNoTracking()
             .FirstOrDefaultAsync(i => i.Id == key && i.WorkspaceId == workspaceId);
 
@@ -55,7 +57,8 @@ public class DatabaseImageProvider : IImageProvider
 
     public async Task<RetrievedImage?> RetrievePublicAsync(Guid key)
     {
-        var image = await _context.StoredImages
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var image = await context.StoredImages
             .AsNoTracking()
             .Include(i => i.Workspace)
             .FirstOrDefaultAsync(i => i.Id == key && i.Workspace != null && i.Workspace.Slug != null);
@@ -68,14 +71,15 @@ public class DatabaseImageProvider : IImageProvider
 
     public async Task DeleteAsync(Guid key, int workspaceId)
     {
-        var image = await _context.StoredImages
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var image = await context.StoredImages
             .FirstOrDefaultAsync(i => i.Id == key && i.WorkspaceId == workspaceId);
 
         if (image != null)
         {
             var imageSize = image.Data.Length;
-            _context.StoredImages.Remove(image);
-            await _context.SaveChangesAsync();
+            context.StoredImages.Remove(image);
+            await context.SaveChangesAsync();
 
             await _statsRepository.DecrementAsync(workspaceId, StatisticType.ImageCount);
             await _statsRepository.DecrementAsync(workspaceId, StatisticType.TotalImageSizeBytes, imageSize);

@@ -5,30 +5,33 @@ namespace OneBigHead.Server.Data;
 
 public class ContentScanLogRepository : IContentScanLogRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public ContentScanLogRepository(AppDbContext context)
+    public ContentScanLogRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<ContentScanLog> CreateAsync(ContentScanLog scanLog)
     {
-        _context.ContentScanLogs.Add(scanLog);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.ContentScanLogs.Add(scanLog);
+        await context.SaveChangesAsync();
         return scanLog;
     }
 
     public async Task<ContentScanLog?> GetByIdAsync(Guid id)
     {
-        return await _context.ContentScanLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ContentScanLogs
             .AsNoTracking()
             .FirstOrDefaultAsync(l => l.Id == id);
     }
 
     public async Task UpdateAsync(ContentScanLog scanLog)
     {
-        _context.ContentScanLogs.Update(scanLog);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.ContentScanLogs.Update(scanLog);
+        await context.SaveChangesAsync();
     }
 }

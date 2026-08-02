@@ -21,7 +21,7 @@ public class CategoryRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new CategoryRepository(_context);
+        _repository = new CategoryRepository(new TestDbContextFactory(options));
     }
 
     public void Dispose()
@@ -318,6 +318,8 @@ public class CategoryRepositoryTests : IDisposable
         // Act
         var result = await _repository.DeleteAsync(1, TestWorkspaceId);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         Assert.True(result);
         var deletedCategory = await _context.Categories.FindAsync(1);
@@ -480,6 +482,8 @@ public class CategoryRepositoryTests : IDisposable
         // Act
         var result = await _repository.DeleteAsync(2, TestWorkspaceId);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         Assert.True(result);
         var updatedSubcategory = await _context.Categories.FindAsync(3);
@@ -499,6 +503,8 @@ public class CategoryRepositoryTests : IDisposable
 
         // Act
         var result = await _repository.DeleteAsync(1, TestWorkspaceId);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         Assert.True(result);
@@ -537,6 +543,8 @@ public class CategoryRepositoryTests : IDisposable
         // Act
         var result = await _repository.DeleteAsync(2, TestWorkspaceId);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         Assert.True(result);
         var updatedItem = await _context.Items.FindAsync(1);
@@ -571,6 +579,8 @@ public class CategoryRepositoryTests : IDisposable
         // Act
         var result = await _repository.DeleteAsync(2, TestWorkspaceId);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         Assert.True(result);
         var updatedItems = await _context.Items.Where(i => i.WorkspaceId == TestWorkspaceId).ToListAsync();
@@ -598,6 +608,8 @@ public class CategoryRepositoryTests : IDisposable
 
         // Act
         var result = await _repository.DeleteAsync(1, TestWorkspaceId);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         Assert.True(result);
@@ -644,6 +656,8 @@ public class CategoryRepositoryTests : IDisposable
         // Act
         await _repository.ReorderAsync(updates, TestWorkspaceId);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         var updatedCat1 = await _context.Categories.FindAsync(cat1.Id);
         var updatedCat2 = await _context.Categories.FindAsync(cat2.Id);
@@ -681,6 +695,8 @@ public class CategoryRepositoryTests : IDisposable
 
         // Act
         await _repository.ReorderAsync(updates, TestWorkspaceId);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         var result = await _context.Categories.FindAsync(cat1.Id);
