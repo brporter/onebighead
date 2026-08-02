@@ -3,6 +3,8 @@
  * Provides consistent error handling, request/response interceptors, and type safety.
  */
 
+import { handleUnauthorized } from '../utils/authErrors';
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -25,7 +27,8 @@ export interface RequestOptions extends globalThis.RequestInit {
 interface ApiClientConfig {
   baseUrl: string;
   defaultHeaders?: globalThis.HeadersInit;
-  onUnauthorized?: () => void;
+  /** Called on 401 responses with the typed error code from the response body, if any. */
+  onUnauthorized?: (errorCode?: string) => void;
   onUserDeleted?: () => void;
   onNoActiveWorkspaces?: () => void;
 }
@@ -134,7 +137,7 @@ export class ApiClient {
           } else if (errorCode === 'NO_ACTIVE_WORKSPACES' && this.config.onNoActiveWorkspaces) {
             this.config.onNoActiveWorkspaces();
           } else if (this.config.onUnauthorized) {
-            this.config.onUnauthorized();
+            this.config.onUnauthorized(errorCode);
           }
         }
 
@@ -241,10 +244,7 @@ async function clearAuthAndRedirect(reason: string): Promise<void> {
 // Create singleton instance
 export const api = new ApiClient({
   baseUrl: '/api',
-  onUnauthorized: () => {
-    // Redirect to login or handle as needed
-    console.warn('Unauthorized request - user may need to log in');
-  },
+  onUnauthorized: handleUnauthorized,
   onUserDeleted: () => {
     clearAuthAndRedirect('User account deleted');
   },

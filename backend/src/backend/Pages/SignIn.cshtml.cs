@@ -20,9 +20,11 @@ public class SignInModel : PageModel
     public string? ErrorMessage { get; set; }
     public string? ReturnUrl { get; set; }
 
-    public void OnGet(string? error = null, string? returnUrl = null)
+    public void OnGet(string? error = null, string? returnUrl = null, AuthErrorType errorType = AuthErrorType.None)
     {
-        ErrorMessage = error;
+        // A typed error code takes precedence over free-text error messages
+        // (used by the OAuth flow) and is mapped to its display string here.
+        ErrorMessage = AuthErrorMessages.GetMessage(errorType) ?? error;
         ReturnUrl = returnUrl ?? "/collections";
     }
 }

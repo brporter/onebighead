@@ -24,6 +24,7 @@ public class WorkspacesControllerTests
     private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
     private readonly Mock<IThemeRepository> _mockThemeRepository;
     private readonly Mock<ITokenService> _mockTokenService;
+    private readonly Mock<ITokenRevocationService> _mockTokenRevocationService;
     private readonly Mock<IWorkspaceService> _mockWorkspaceService;
     private readonly Mock<ILogger<WorkspacesController>> _mockLogger;
     private readonly WorkspacesController _controller;
@@ -40,6 +41,7 @@ public class WorkspacesControllerTests
         _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
         _mockThemeRepository = new Mock<IThemeRepository>();
         _mockTokenService = new Mock<ITokenService>();
+        _mockTokenRevocationService = new Mock<ITokenRevocationService>();
         _mockWorkspaceService = new Mock<IWorkspaceService>();
         _mockLogger = new Mock<ILogger<WorkspacesController>>();
 
@@ -54,6 +56,7 @@ public class WorkspacesControllerTests
             _mockItemTemplateRepository.Object,
             _mockThemeRepository.Object,
             _mockTokenService.Object,
+            _mockTokenRevocationService.Object,
             _mockWorkspaceService.Object,
             settings,
             _mockLogger.Object);
@@ -230,6 +233,108 @@ public class WorkspacesControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         _mockWorkspaceRepository.Verify(r => r.IsSlugTakenAsync(It.IsAny<string>(), It.IsAny<int?>()), Times.Never);
+    }
+
+    #endregion
+
+    #region TransferAdmin Tests
+
+    private const int NewAdminUserId = 99;
+
+    private void SetupTransferAdminMemberships()
+    {
+        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(TestUserId, TestWorkspaceId))
+            .ReturnsAsync(new WorkspaceUser
+            {
+                UserId = TestUserId,
+                WorkspaceId = TestWorkspaceId,
+                WorkspaceRole = WorkspaceRole.WorkspaceAdmin
+            });
+        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(NewAdminUserId, TestWorkspaceId))
+            .ReturnsAsync(new WorkspaceUser
+            {
+                UserId = NewAdminUserId,
+                WorkspaceId = TestWorkspaceId,
+                WorkspaceRole = WorkspaceRole.Normal
+            });
+    }
+
+    [Fact]
+    public async Task TransferAdmin_Success_UpdatesRolesAndRevokesBothUsersTokens()
+    {
+        // Arrange
+        SetupTransferAdminMemberships();
+        _mockUserRepository.Setup(r => r.GetByIdAsync(TestUserId))
+            .ReturnsAsync(new User { Id = TestUserId, ActiveWorkspaceId = TestWorkspaceId, Email = "test@example.com" });
+        _mockTokenService.Setup(t => t.GenerateAppToken(It.IsAny<User>(), WorkspaceRole.Normal))
+            .Returns("new-token");
+
+        // Act
+        var result = await _controller.TransferAdmin(TestWorkspaceId, new TransferAdminRequest { NewAdminUserId = NewAdminUserId });
+
+        // Assert
+        Assert.IsType<OkObjectResult>(result);
+        _mockWorkspaceUserRepository.Verify(r => r.UpdateRoleAsync(NewAdminUserId, TestWorkspaceId, WorkspaceRole.WorkspaceAdmin), Times.Once);
+        _mockWorkspaceUserRepository.Verify(r => r.UpdateRoleAsync(TestUserId, TestWorkspaceId, WorkspaceRole.Normal), Times.Once);
+        _mockTokenRevocationService.Verify(s => s.RevokeAsync(NewAdminUserId), Times.Once);
+        _mockTokenRevocationService.Verify(s => s.RevokeAsync(TestUserId), Times.Once);
+    }
+
+    [Fact]
+    public async Task TransferAdmin_NotAMember_ReturnsNotFoundWithoutRevoking()
+    {
+        // Arrange
+        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(TestUserId, TestWorkspaceId))
+            .ReturnsAsync((WorkspaceUser?)null);
+
+        // Act
+        var result = await _controller.TransferAdmin(TestWorkspaceId, new TransferAdminRequest { NewAdminUserId = NewAdminUserId });
+
+        // Assert
+        Assert.IsType<NotFoundObjectResult>(result);
+        _mockTokenRevocationService.Verify(s => s.RevokeAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TransferAdmin_NotAdmin_ReturnsForbidWithoutRevoking()
+    {
+        // Arrange
+        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(TestUserId, TestWorkspaceId))
+            .ReturnsAsync(new WorkspaceUser
+            {
+                UserId = TestUserId,
+                WorkspaceId = TestWorkspaceId,
+                WorkspaceRole = WorkspaceRole.Normal
+            });
+
+        // Act
+        var result = await _controller.TransferAdmin(TestWorkspaceId, new TransferAdminRequest { NewAdminUserId = NewAdminUserId });
+
+        // Assert
+        Assert.IsType<ForbidResult>(result);
+        _mockTokenRevocationService.Verify(s => s.RevokeAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TransferAdmin_TargetNotAMember_ReturnsBadRequestWithoutRevoking()
+    {
+        // Arrange
+        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(TestUserId, TestWorkspaceId))
+            .ReturnsAsync(new WorkspaceUser
+            {
+                UserId = TestUserId,
+                WorkspaceId = TestWorkspaceId,
+                WorkspaceRole = WorkspaceRole.WorkspaceAdmin
+            });
+        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(NewAdminUserId, TestWorkspaceId))
+            .ReturnsAsync((WorkspaceUser?)null);
+
+        // Act
+        var result = await _controller.TransferAdmin(TestWorkspaceId, new TransferAdminRequest { NewAdminUserId = NewAdminUserId });
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+        _mockTokenRevocationService.Verify(s => s.RevokeAsync(It.IsAny<int>()), Times.Never);
     }
 
     #endregion
