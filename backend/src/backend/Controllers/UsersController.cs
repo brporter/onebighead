@@ -19,6 +19,7 @@ public class UsersController : ApiControllerBase
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
     private readonly IUserDeletionService _userDeletionService;
     private readonly IWorkspaceRepository _workspaceRepository;
+    private readonly ITokenRevocationService _tokenRevocationService;
     private readonly AuthenticationSettings _authSettings;
     private readonly ILogger<UsersController> _logger;
 
@@ -27,6 +28,7 @@ public class UsersController : ApiControllerBase
         IWorkspaceUserRepository workspaceUserRepository,
         IUserDeletionService userDeletionService,
         IWorkspaceRepository workspaceRepository,
+        ITokenRevocationService tokenRevocationService,
         IOptions<AuthenticationSettings> authSettings,
         ILogger<UsersController> logger)
     {
@@ -34,6 +36,7 @@ public class UsersController : ApiControllerBase
         _workspaceUserRepository = workspaceUserRepository;
         _userDeletionService = userDeletionService;
         _workspaceRepository = workspaceRepository;
+        _tokenRevocationService = tokenRevocationService;
         _authSettings = authSettings.Value;
         _logger = logger;
     }
@@ -116,6 +119,9 @@ public class UsersController : ApiControllerBase
             return BadRequest(new { error = "Cannot demote the last admin. Promote another user first." });
         }
 
+        // The user's existing tokens carry a stale workspace_role claim
+        await _tokenRevocationService.RevokeAsync(id);
+
         _logger.LogInformation("Updated user {UserId} role to {Role} in workspace {WorkspaceId}",
             id, request.Role, workspaceId);
 
@@ -150,6 +156,12 @@ public class UsersController : ApiControllerBase
         {
             return BadRequest(new { error = "Cannot remove the last admin. Promote another user first." });
         }
+
+        // The user's existing tokens still carry claims for this workspace.
+        // Revoke before the potential hard delete below (the revocation row has
+        // an FK to Users and cascades away with the user, which is fine — a
+        // deleted user's requests are rejected by the user-existence checks).
+        await _tokenRevocationService.RevokeAsync(id);
 
         // Check if we need to clean up the user record (if they have no other memberships)
         var remainingMemberships = await _workspaceUserRepository.CountUserMembershipsAsync(id);

@@ -7,4 +7,5 @@ public class JwtSettings
     public string Audience { get; set; } = string.Empty;
     public int SlidingExpirationMinutes { get; set; } = 1440; // 24 hours
     public int AbsoluteExpirationDays { get; set; } = 7;
+    public int RevocationCacheSeconds { get; set; } = 30;
 }

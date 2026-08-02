@@ -69,6 +69,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddTracingDecorator<IContentScanLogRepository, ContentScanLogRepository>(repoSource);
     builder.Services.AddTracingDecorator<IContentScanner, NoOpContentScanner>(appSource);
     builder.Services.AddTracingDecorator<ICsamReportingService, NoOpCsamReportingService>(appSource);
+    builder.Services.AddTracingDecorator<ITokenRevocationRepository, TokenRevocationRepository>(repoSource);
 }
 else
 {
@@ -93,6 +94,7 @@ else
     builder.Services.AddScoped<IContentScanLogRepository, ContentScanLogRepository>();
     builder.Services.AddScoped<IContentScanner, NoOpContentScanner>();
     builder.Services.AddScoped<ICsamReportingService, NoOpCsamReportingService>();
+    builder.Services.AddScoped<ITokenRevocationRepository, TokenRevocationRepository>();
 }
 
 // Register image processor (environment-independent, stateless singleton)
@@ -108,6 +110,8 @@ builder.Services.AddHostedService<BulkUpdateWorker>();
 // Configure authentication
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ITokenRevocationService, TokenRevocationService>();
 builder.Services.AddSingleton<IOidcTokenValidator, OidcTokenValidator>();
 builder.Services.AddScoped<IOAuthService, OAuthService>();
 builder.Services.AddHttpClient();

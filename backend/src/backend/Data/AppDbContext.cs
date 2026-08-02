@@ -32,6 +32,7 @@ public class AppDbContext : DbContext
     public DbSet<CollectionStatistic> CollectionStatistics => Set<CollectionStatistic>();
     public DbSet<CollectionItemHighlight> CollectionItemHighlights => Set<CollectionItemHighlight>();
     public DbSet<ContentScanLog> ContentScanLogs => Set<ContentScanLog>();
+    public DbSet<TokenRevocation> TokenRevocations => Set<TokenRevocation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -380,6 +381,20 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(h => new { h.CollectionId, h.ItemId }).IsUnique();
             entity.HasIndex(h => new { h.CollectionId, h.ViewCount });
+        });
+
+        modelBuilder.Entity<TokenRevocation>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // One revocation cutoff per user; the unique index also makes the
+            // per-request lookup (WHERE UserId = @id) an index-only point read.
+            entity.HasIndex(r => r.UserId).IsUnique();
         });
 
         // ContentScanLog intentionally has no foreign key relationships to Workspace or User.

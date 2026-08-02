@@ -23,6 +23,7 @@ public class WorkspacesController : ApiControllerBase
     private readonly IItemTemplateRepository _itemTemplateRepository;
     private readonly IThemeRepository _themeRepository;
     private readonly ITokenService _tokenService;
+    private readonly ITokenRevocationService _tokenRevocationService;
     private readonly IWorkspaceService _workspaceService;
     private readonly AuthenticationSettings _settings;
     private readonly ILogger<WorkspacesController> _logger;
@@ -36,6 +37,7 @@ public class WorkspacesController : ApiControllerBase
         IItemTemplateRepository itemTemplateRepository,
         IThemeRepository themeRepository,
         ITokenService tokenService,
+        ITokenRevocationService tokenRevocationService,
         IWorkspaceService workspaceService,
         IOptions<AuthenticationSettings> settings,
         ILogger<WorkspacesController> logger)
@@ -48,6 +50,7 @@ public class WorkspacesController : ApiControllerBase
         _itemTemplateRepository = itemTemplateRepository;
         _themeRepository = themeRepository;
         _tokenService = tokenService;
+        _tokenRevocationService = tokenRevocationService;
         _workspaceService = workspaceService;
         _settings = settings.Value;
         _logger = logger;
@@ -665,6 +668,10 @@ public class WorkspacesController : ApiControllerBase
         // Promote target user and demote current user
         await _workspaceUserRepository.UpdateRoleAsync(request.NewAdminUserId, workspaceId, WorkspaceRole.WorkspaceAdmin);
         await _workspaceUserRepository.UpdateRoleAsync(userId, workspaceId, WorkspaceRole.Normal);
+
+        // Both users' tokens now carry stale workspace_role claims
+        await _tokenRevocationService.RevokeAsync(request.NewAdminUserId);
+        await _tokenRevocationService.RevokeAsync(userId);
 
         _logger.LogInformation("User {UserId} transferred admin role to user {NewAdminUserId} in workspace {WorkspaceId}",
             userId, request.NewAdminUserId, workspaceId);
