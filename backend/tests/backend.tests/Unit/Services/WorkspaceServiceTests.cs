@@ -22,12 +22,13 @@ public class WorkspaceServiceTests : IDisposable
         _context = new AppDbContext(options);
         _loggerMock = new Mock<ILogger<WorkspaceService>>();
 
-        var workspaceRepo = new WorkspaceRepository(_context);
-        var workspaceUserRepo = new WorkspaceUserRepository(_context);
-        var userRepo = new UserRepository(_context);
+        var contextFactory = new TestDbContextFactory(options);
+        var workspaceRepo = new WorkspaceRepository(contextFactory);
+        var workspaceUserRepo = new WorkspaceUserRepository(contextFactory);
+        var userRepo = new UserRepository(contextFactory);
 
         _service = new WorkspaceService(
-            _context, workspaceRepo, workspaceUserRepo, userRepo, _loggerMock.Object);
+            contextFactory, workspaceRepo, workspaceUserRepo, userRepo, _loggerMock.Object);
     }
 
     public void Dispose() => _context.Dispose();
@@ -61,6 +62,8 @@ public class WorkspaceServiceTests : IDisposable
 
         // Act
         var result = await _service.SoftDeleteWorkspaceAsync(workspace.Id, user.Id);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         Assert.True(result.Success);

@@ -23,9 +23,10 @@ public class ItemRepositoryImageStatsTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _collectionStatsRepo = new TestCollectionStatisticsRepository(_context);
+        var contextFactory = new TestDbContextFactory(options);
+        _collectionStatsRepo = new TestCollectionStatisticsRepository(contextFactory);
         _repository = new ItemRepository(
-            _context,
+            contextFactory,
             new Mock<IWorkspaceStatisticsRepository>().Object,
             _collectionStatsRepo,
             new Mock<ILogger<ItemRepository>>().Object);

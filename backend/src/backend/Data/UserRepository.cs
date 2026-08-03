@@ -5,37 +5,41 @@ namespace OneBigHead.Server.Data;
 
 public class UserRepository : IUserRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public UserRepository(AppDbContext context)
+    public UserRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<User?> GetByEmailAsync(string email)
     {
-        return await _context.Users
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Users
             .Include(u => u.ActiveWorkspace)
             .FirstOrDefaultAsync(u => u.Email == email);
     }
 
     public async Task<User?> GetByProviderIdAsync(IdentityProvider provider, string providerSubjectId)
     {
-        return await _context.Users
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Users
             .Include(u => u.ActiveWorkspace)
             .FirstOrDefaultAsync(u => u.IdentityProvider == provider && u.ProviderSubjectId == providerSubjectId);
     }
 
     public async Task<User?> GetByIdAsync(int id)
     {
-        return await _context.Users
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Users
             .Include(u => u.ActiveWorkspace)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public async Task<User?> GetByIdWithMembershipsAsync(int id)
     {
-        return await _context.Users
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Users
             .Include(u => u.ActiveWorkspace)
             .Include(u => u.WorkspaceMemberships)
                 .ThenInclude(wm => wm.Workspace)
@@ -44,13 +48,14 @@ public class UserRepository : IUserRepository
 
     public async Task<IEnumerable<User>> GetByWorkspaceIdAsync(int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Get users who are members of this workspace via WorkspaceUser
-        var userIds = await _context.WorkspaceUsers
+        var userIds = await context.WorkspaceUsers
             .Where(wu => wu.WorkspaceId == workspaceId)
             .Select(wu => wu.UserId)
             .ToListAsync();
 
-        return await _context.Users
+        return await context.Users
             .Include(u => u.ActiveWorkspace)
             .Where(u => userIds.Contains(u.Id))
             .OrderBy(u => u.CreatedAt)
@@ -59,7 +64,8 @@ public class UserRepository : IUserRepository
 
     public async Task<User> CreateWithNewWorkspaceAsync(string email, IdentityProvider provider, string providerSubjectId)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync();
 
         try
         {
@@ -71,8 +77,8 @@ public class UserRepository : IUserRepository
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Workspaces.Add(workspace);
-            await _context.SaveChangesAsync();
+            context.Workspaces.Add(workspace);
+            await context.SaveChangesAsync();
 
             // Note: We no longer create a default collection here.
             // New users will be directed to the setup wizard to create their first collection.
@@ -87,8 +93,8 @@ public class UserRepository : IUserRepository
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
 
             // Create the WorkspaceUser membership - first user is WorkspaceAdmin
             var workspaceUser = new WorkspaceUser
@@ -99,8 +105,8 @@ public class UserRepository : IUserRepository
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.WorkspaceUsers.Add(workspaceUser);
-            await _context.SaveChangesAsync();
+            context.WorkspaceUsers.Add(workspaceUser);
+            await context.SaveChangesAsync();
 
             await transaction.CommitAsync();
 
@@ -116,7 +122,8 @@ public class UserRepository : IUserRepository
 
     public async Task<User> CreatePendingUserAsync(int workspaceId, string email, WorkspaceRole role)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync();
 
         try
         {
@@ -129,8 +136,8 @@ public class UserRepository : IUserRepository
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
 
             // Create the WorkspaceUser membership
             var workspaceUser = new WorkspaceUser
@@ -141,13 +148,13 @@ public class UserRepository : IUserRepository
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.WorkspaceUsers.Add(workspaceUser);
-            await _context.SaveChangesAsync();
+            context.WorkspaceUsers.Add(workspaceUser);
+            await context.SaveChangesAsync();
 
             await transaction.CommitAsync();
 
             // Load workspace for response
-            await _context.Entry(user).Reference(u => u.ActiveWorkspace).LoadAsync();
+            await context.Entry(user).Reference(u => u.ActiveWorkspace).LoadAsync();
 
             return user;
         }
@@ -160,7 +167,8 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> LinkUserAsync(int userId, IdentityProvider provider, string providerSubjectId)
     {
-        var user = await _context.Users
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var user = await context.Users
             .Include(u => u.ActiveWorkspace)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -172,14 +180,15 @@ public class UserRepository : IUserRepository
         user.IdentityProvider = provider;
         user.ProviderSubjectId = providerSubjectId;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return user;
     }
 
     public async Task<bool> DeleteByIdAndWorkspaceAsync(int userId, int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Delete the WorkspaceUser membership
-        var workspaceUser = await _context.WorkspaceUsers
+        var workspaceUser = await context.WorkspaceUsers
             .FirstOrDefaultAsync(wu => wu.UserId == userId && wu.WorkspaceId == workspaceId);
 
         if (workspaceUser == null)
@@ -187,28 +196,28 @@ public class UserRepository : IUserRepository
             return false;
         }
 
-        _context.WorkspaceUsers.Remove(workspaceUser);
+        context.WorkspaceUsers.Remove(workspaceUser);
 
         // Check if this was the user's only membership
-        var remainingMemberships = await _context.WorkspaceUsers
+        var remainingMemberships = await context.WorkspaceUsers
             .CountAsync(wu => wu.UserId == userId && wu.WorkspaceId != workspaceId);
 
         if (remainingMemberships == 0)
         {
             // If no remaining memberships, delete the user entirely
-            var user = await _context.Users.FindAsync(userId);
+            var user = await context.Users.FindAsync(userId);
             if (user != null)
             {
-                _context.Users.Remove(user);
+                context.Users.Remove(user);
             }
         }
         else
         {
             // If user was viewing this workspace, switch to another
-            var user = await _context.Users.FindAsync(userId);
+            var user = await context.Users.FindAsync(userId);
             if (user != null && user.ActiveWorkspaceId == workspaceId)
             {
-                var nextMembership = await _context.WorkspaceUsers
+                var nextMembership = await context.WorkspaceUsers
                     .Where(wu => wu.UserId == userId && wu.WorkspaceId != workspaceId)
                     .OrderBy(wu => wu.CreatedAt)
                     .FirstAsync();
@@ -216,36 +225,42 @@ public class UserRepository : IUserRepository
             }
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<bool> DeleteAsync(int userId)
     {
-        var user = await _context.Users.FindAsync(userId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var user = await context.Users.FindAsync(userId);
         if (user == null)
         {
             return false;
         }
 
-        _context.Users.Remove(user);
-        await _context.SaveChangesAsync();
+        context.Users.Remove(user);
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task UpdateAsync(User user)
     {
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        // Attach only the root entity: users fetched from this repository have
+        // ActiveWorkspace eagerly loaded, and Update() would mark that detached
+        // workspace as Modified too, re-writing it with stale values.
+        context.Entry(user).State = EntityState.Modified;
+        await context.SaveChangesAsync();
     }
 
     public async Task UpdateActiveWorkspaceAsync(int userId, int workspaceId)
     {
-        var user = await _context.Users.FindAsync(userId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var user = await context.Users.FindAsync(userId);
         if (user != null)
         {
             user.ActiveWorkspaceId = workspaceId;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 }

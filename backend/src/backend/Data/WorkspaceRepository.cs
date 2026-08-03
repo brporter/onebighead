@@ -5,51 +5,60 @@ namespace OneBigHead.Server.Data;
 
 public class WorkspaceRepository : IWorkspaceRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public WorkspaceRepository(AppDbContext context)
+    public WorkspaceRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<Workspace?> GetByIdAsync(int id)
     {
-        return await _context.Workspaces.FirstOrDefaultAsync(t => t.Id == id);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Workspaces.FirstOrDefaultAsync(t => t.Id == id);
     }
 
     public async Task UpdateAsync(Workspace workspace)
     {
-        _context.Workspaces.Update(workspace);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        // Attach only the root entity: callers pass detached instances whose
+        // navigations may hold stale entities loaded from another context, and
+        // Update() would mark that entire graph as Modified.
+        context.Entry(workspace).State = EntityState.Modified;
+        await context.SaveChangesAsync();
     }
 
     public async Task CreateAsync(Workspace workspace)
     {
-        _context.Workspaces.Add(workspace);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.Workspaces.Add(workspace);
+        await context.SaveChangesAsync();
     }
 
     public async Task<WorkspaceStats> GetStatsAsync(int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         return new WorkspaceStats
         {
-            CollectionCount = await _context.Collections.CountAsync(c => c.WorkspaceId == workspaceId),
-            ItemCount = await _context.Items.CountAsync(i => i.WorkspaceId == workspaceId),
-            CategoryCount = await _context.Categories.CountAsync(c => c.WorkspaceId == workspaceId),
-            ImageCount = await _context.StoredImages.CountAsync(i => i.WorkspaceId == workspaceId)
+            CollectionCount = await context.Collections.CountAsync(c => c.WorkspaceId == workspaceId),
+            ItemCount = await context.Items.CountAsync(i => i.WorkspaceId == workspaceId),
+            CategoryCount = await context.Categories.CountAsync(c => c.WorkspaceId == workspaceId),
+            ImageCount = await context.StoredImages.CountAsync(i => i.WorkspaceId == workspaceId)
         };
     }
 
     public async Task<Workspace?> GetBySlugAsync(string slug)
     {
-        return await _context.Workspaces
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Workspaces
             .AsNoTracking()
             .FirstOrDefaultAsync(w => w.Slug == slug && !w.IsDeleted);
     }
 
     public async Task<bool> IsSlugTakenAsync(string slug, int? excludeWorkspaceId = null)
     {
-        return await _context.Workspaces
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Workspaces
             .AnyAsync(w => w.Slug == slug && !w.IsDeleted && (!excludeWorkspaceId.HasValue || w.Id != excludeWorkspaceId.Value));
     }
 }

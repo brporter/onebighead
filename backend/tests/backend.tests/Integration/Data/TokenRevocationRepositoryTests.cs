@@ -16,7 +16,7 @@ public class TokenRevocationRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new TokenRevocationRepository(_context);
+        _repository = new TokenRevocationRepository(new TestDbContextFactory(options));
     }
 
     public void Dispose()

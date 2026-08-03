@@ -20,8 +20,9 @@ public class UserRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new UserRepository(_context);
-        _workspaceUserRepository = new WorkspaceUserRepository(_context);
+        var contextFactory = new TestDbContextFactory(options);
+        _repository = new UserRepository(contextFactory);
+        _workspaceUserRepository = new WorkspaceUserRepository(contextFactory);
     }
 
     public void Dispose()
@@ -430,6 +431,8 @@ public class UserRepositoryTests : IDisposable
         // Act
         var result = await _workspaceUserRepository.UpdateRoleAsync(user.Id, workspace.Id, WorkspaceRole.WorkspaceAdmin);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         Assert.True(result);
         var workspaceUser = await _context.WorkspaceUsers
@@ -513,6 +516,8 @@ public class UserRepositoryTests : IDisposable
         // Act - delete only membership
         var result = await _repository.DeleteByIdAndWorkspaceAsync(userId, workspace.Id);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         Assert.True(result);
 
@@ -576,6 +581,56 @@ public class UserRepositoryTests : IDisposable
 
         // Assert
         Assert.Equal(0, count);
+    }
+
+    #endregion
+
+    #region UpdateAsync Tests
+
+    [Fact]
+    public async Task UpdateAsync_SavesUserChanges()
+    {
+        // Arrange
+        var workspace = await CreateTestWorkspaceAsync();
+        var user = await CreateTestUserAsync(workspace, "update@example.com");
+
+        var fetched = await _repository.GetByIdAsync(user.Id);
+        fetched!.IsDeleted = true;
+        fetched.DeletedAt = DateTime.UtcNow;
+
+        // Act
+        await _repository.UpdateAsync(fetched);
+
+        // Assert
+        _context.ChangeTracker.Clear();
+        var saved = await _context.Users.FindAsync(user.Id);
+        Assert.True(saved!.IsDeleted);
+        Assert.NotNull(saved.DeletedAt);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DoesNotUpdateActiveWorkspace_WhenNavigationIsPopulated()
+    {
+        // Arrange
+        var workspace = await CreateTestWorkspaceAsync();
+        var user = await CreateTestUserAsync(workspace, "graph@example.com");
+
+        // Users fetched from the repository have ActiveWorkspace eagerly loaded
+        var fetched = await _repository.GetByIdAsync(user.Id);
+        Assert.NotNull(fetched!.ActiveWorkspace);
+
+        fetched.IsDeleted = true;
+        fetched.ActiveWorkspace!.Name = "Stale Workspace Name";
+
+        // Act
+        await _repository.UpdateAsync(fetched);
+
+        // Assert - the user row is written but the stale workspace navigation is ignored
+        _context.ChangeTracker.Clear();
+        var savedUser = await _context.Users.FindAsync(user.Id);
+        Assert.True(savedUser!.IsDeleted);
+        var untouchedWorkspace = await _context.Workspaces.FindAsync(workspace.Id);
+        Assert.Equal("test.example.com", untouchedWorkspace!.Name);
     }
 
     #endregion

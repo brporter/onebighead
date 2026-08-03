@@ -17,7 +17,7 @@ public class ThemeRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new ThemeRepository(_context);
+        _repository = new ThemeRepository(new TestDbContextFactory(options));
     }
 
     public void Dispose()

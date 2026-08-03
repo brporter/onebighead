@@ -38,7 +38,7 @@ builder.Services.Configure<RouteOptions>(options =>
 if (!builder.Environment.IsEnvironment("Testing"))
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    builder.Services.AddDbContext<AppDbContext>(options =>
+    builder.Services.AddDbContextFactory<AppDbContext>(options =>
         options.UseNpgsql(connectionString));
 }
 
@@ -73,28 +73,28 @@ if (!builder.Environment.IsEnvironment("Testing"))
 }
 else
 {
-    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-    builder.Services.AddScoped<ICollectionRepository, CollectionRepository>();
-    builder.Services.AddScoped<IItemRepository, ItemRepository>();
-    builder.Services.AddScoped<IUserRepository, UserRepository>();
-    builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
-    builder.Services.AddScoped<IWorkspaceUserRepository, WorkspaceUserRepository>();
-    builder.Services.AddScoped<IPropertySuggestionRepository, PropertySuggestionRepository>();
-    builder.Services.AddScoped<IItemTemplateRepository, ItemTemplateRepository>();
-    builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
-    builder.Services.AddScoped<ISupportRepository, SupportRepository>();
-    builder.Services.AddScoped<IImageProvider, DatabaseImageProvider>();
-    builder.Services.AddScoped<IWorkspaceStatisticsRepository, WorkspaceStatisticsRepository>();
-    builder.Services.AddScoped<ICollectionStatisticsRepository, CollectionStatisticsRepository>();
-    builder.Services.AddScoped<IPublishManagerService, PublishManagerService>();
-    builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
-    builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
+    builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
+    builder.Services.AddSingleton<ICollectionRepository, CollectionRepository>();
+    builder.Services.AddSingleton<IItemRepository, ItemRepository>();
+    builder.Services.AddSingleton<IUserRepository, UserRepository>();
+    builder.Services.AddSingleton<IWorkspaceRepository, WorkspaceRepository>();
+    builder.Services.AddSingleton<IWorkspaceUserRepository, WorkspaceUserRepository>();
+    builder.Services.AddSingleton<IPropertySuggestionRepository, PropertySuggestionRepository>();
+    builder.Services.AddSingleton<IItemTemplateRepository, ItemTemplateRepository>();
+    builder.Services.AddSingleton<IThemeRepository, ThemeRepository>();
+    builder.Services.AddSingleton<ISupportRepository, SupportRepository>();
+    builder.Services.AddSingleton<IImageProvider, DatabaseImageProvider>();
+    builder.Services.AddSingleton<IWorkspaceStatisticsRepository, WorkspaceStatisticsRepository>();
+    builder.Services.AddSingleton<ICollectionStatisticsRepository, CollectionStatisticsRepository>();
+    builder.Services.AddSingleton<IPublishManagerService, PublishManagerService>();
+    builder.Services.AddSingleton<IWorkspaceService, WorkspaceService>();
+    builder.Services.AddSingleton<IUserDeletionService, UserDeletionService>();
     builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
-    builder.Services.AddScoped<IEmailService, AzureEmailService>();
-    builder.Services.AddScoped<IContentScanLogRepository, ContentScanLogRepository>();
-    builder.Services.AddScoped<IContentScanner, NoOpContentScanner>();
-    builder.Services.AddScoped<ICsamReportingService, NoOpCsamReportingService>();
-    builder.Services.AddScoped<ITokenRevocationRepository, TokenRevocationRepository>();
+    builder.Services.AddSingleton<IEmailService, AzureEmailService>();
+    builder.Services.AddSingleton<IContentScanLogRepository, ContentScanLogRepository>();
+    builder.Services.AddSingleton<IContentScanner, NoOpContentScanner>();
+    builder.Services.AddSingleton<ICsamReportingService, NoOpCsamReportingService>();
+    builder.Services.AddSingleton<ITokenRevocationRepository, TokenRevocationRepository>();
 }
 
 // Register image processor (environment-independent, stateless singleton)
@@ -103,7 +103,7 @@ builder.Services.AddSingleton<IImageProcessor, ImageProcessor>();
 builder.Services.AddSingleton<IRouteHelper, RouteHelper>();
 
 // Register bulk update services (environment-independent)
-builder.Services.AddScoped<IPropertyDiffService, PropertyDiffService>();
+builder.Services.AddSingleton<IPropertyDiffService, PropertyDiffService>();
 builder.Services.AddSingleton<IBulkUpdateQueue, BulkUpdateQueue>();
 builder.Services.AddHostedService<BulkUpdateWorker>();
 
@@ -111,9 +111,9 @@ builder.Services.AddHostedService<BulkUpdateWorker>();
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddMemoryCache();
-builder.Services.AddScoped<ITokenRevocationService, TokenRevocationService>();
+builder.Services.AddSingleton<ITokenRevocationService, TokenRevocationService>();
 builder.Services.AddSingleton<IOidcTokenValidator, OidcTokenValidator>();
-builder.Services.AddScoped<IOAuthService, OAuthService>();
+builder.Services.AddSingleton<IOAuthService, OAuthService>();
 builder.Services.AddHttpClient();
 
 builder.Services.AddAuthentication(CookieJwtAuthenticationExtensions.SchemeName)

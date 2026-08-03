@@ -17,7 +17,7 @@ public class ContentScanLogRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new ContentScanLogRepository(_context);
+        _repository = new ContentScanLogRepository(new TestDbContextFactory(options));
     }
 
     public void Dispose()

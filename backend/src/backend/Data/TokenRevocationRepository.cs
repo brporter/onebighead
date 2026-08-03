@@ -5,16 +5,17 @@ namespace OneBigHead.Server.Data;
 
 public class TokenRevocationRepository : ITokenRevocationRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public TokenRevocationRepository(AppDbContext context)
+    public TokenRevocationRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<DateTime?> GetRevokedAtUtcAsync(int userId)
     {
-        return await _context.TokenRevocations
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.TokenRevocations
             .AsNoTracking()
             .Where(r => r.UserId == userId)
             .Select(r => (DateTime?)r.RevokedAtUtc)
@@ -23,12 +24,13 @@ public class TokenRevocationRepository : ITokenRevocationRepository
 
     public async Task UpsertAsync(int userId, DateTime revokedAtUtc)
     {
-        var existing = await _context.TokenRevocations
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existing = await context.TokenRevocations
             .FirstOrDefaultAsync(r => r.UserId == userId);
 
         if (existing == null)
         {
-            _context.TokenRevocations.Add(new TokenRevocation
+            context.TokenRevocations.Add(new TokenRevocation
             {
                 UserId = userId,
                 RevokedAtUtc = revokedAtUtc
@@ -43,6 +45,6 @@ public class TokenRevocationRepository : ITokenRevocationRepository
             return;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }

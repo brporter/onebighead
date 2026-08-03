@@ -5,7 +5,7 @@ namespace OneBigHead.Server.Telemetry;
 public static class TracingServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers TImpl as a scoped service, then registers TInterface as a scoped factory
+    /// Registers TImpl as a singleton service, then registers TInterface as a singleton factory
     /// that wraps TImpl in its generated TracingProxy_{TInterface} decorator.
     /// </summary>
     public static IServiceCollection AddTracingDecorator<TInterface, TImpl>(
@@ -13,8 +13,8 @@ public static class TracingServiceCollectionExtensions
         where TInterface : class
         where TImpl : class, TInterface
     {
-        services.AddScoped<TImpl>();
-        services.AddScoped<TInterface>(sp =>
+        services.AddSingleton<TImpl>();
+        services.AddSingleton<TInterface>(sp =>
         {
             var inner = sp.GetRequiredService<TImpl>();
             var proxyTypeName = $"{typeof(TInterface).Namespace}.TracingProxy_{typeof(TInterface).Name}";

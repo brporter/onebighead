@@ -20,7 +20,7 @@ public class ItemTemplateRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new ItemTemplateRepository(_context);
+        _repository = new ItemTemplateRepository(new TestDbContextFactory(options));
     }
 
     public void Dispose()
@@ -263,6 +263,8 @@ public class ItemTemplateRepositoryTests : IDisposable
 
         // Act
         var result = await _repository.DeleteAsync(1, TestWorkspaceId);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         Assert.True(result);

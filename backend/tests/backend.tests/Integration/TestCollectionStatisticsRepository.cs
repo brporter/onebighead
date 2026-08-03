@@ -6,16 +6,17 @@ namespace OneBigHead.Server.Tests.Integration;
 
 public class TestCollectionStatisticsRepository : ICollectionStatisticsRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public TestCollectionStatisticsRepository(AppDbContext context)
+    public TestCollectionStatisticsRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task IncrementAsync(int collectionId, CollectionStatisticType type, long amount = 1)
     {
-        var stat = await _context.CollectionStatistics
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var stat = await context.CollectionStatistics
             .FirstOrDefaultAsync(s => s.CollectionId == collectionId && s.StatisticType == type);
 
         if (stat != null)
@@ -24,7 +25,7 @@ public class TestCollectionStatisticsRepository : ICollectionStatisticsRepositor
         }
         else
         {
-            _context.CollectionStatistics.Add(new CollectionStatistic
+            context.CollectionStatistics.Add(new CollectionStatistic
             {
                 CollectionId = collectionId,
                 StatisticType = type,
@@ -32,24 +33,26 @@ public class TestCollectionStatisticsRepository : ICollectionStatisticsRepositor
             });
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task DecrementAsync(int collectionId, CollectionStatisticType type, long amount = 1)
     {
-        var stat = await _context.CollectionStatistics
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var stat = await context.CollectionStatistics
             .FirstOrDefaultAsync(s => s.CollectionId == collectionId && s.StatisticType == type);
 
         if (stat != null)
         {
             stat.Value = Math.Max(0, stat.Value - amount);
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 
     public async Task<Dictionary<CollectionStatisticType, long>> GetAggregatesAsync(int collectionId)
     {
-        return await _context.CollectionStatistics
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.CollectionStatistics
             .AsNoTracking()
             .Where(s => s.CollectionId == collectionId)
             .ToDictionaryAsync(s => s.StatisticType, s => s.Value);
@@ -57,7 +60,8 @@ public class TestCollectionStatisticsRepository : ICollectionStatisticsRepositor
 
     public async Task IncrementItemViewAsync(int collectionId, int itemId)
     {
-        var highlight = await _context.CollectionItemHighlights
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var highlight = await context.CollectionItemHighlights
             .FirstOrDefaultAsync(h => h.CollectionId == collectionId && h.ItemId == itemId);
 
         if (highlight != null)
@@ -66,7 +70,7 @@ public class TestCollectionStatisticsRepository : ICollectionStatisticsRepositor
         }
         else
         {
-            _context.CollectionItemHighlights.Add(new CollectionItemHighlight
+            context.CollectionItemHighlights.Add(new CollectionItemHighlight
             {
                 CollectionId = collectionId,
                 ItemId = itemId,
@@ -74,12 +78,13 @@ public class TestCollectionStatisticsRepository : ICollectionStatisticsRepositor
             });
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task<List<CollectionItemHighlight>> GetTopViewedItemsAsync(int collectionId, int count = 10)
     {
-        return await _context.CollectionItemHighlights
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.CollectionItemHighlights
             .AsNoTracking()
             .Include(h => h.Item)
             .Where(h => h.CollectionId == collectionId)
@@ -90,7 +95,8 @@ public class TestCollectionStatisticsRepository : ICollectionStatisticsRepositor
 
     public async Task<List<Item>> GetRecentlyAddedItemsAsync(int collectionId, int workspaceId, int count = 10)
     {
-        return await _context.Items
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Items
             .AsNoTracking()
             .Where(i => i.CollectionId == collectionId && i.WorkspaceId == workspaceId)
             .OrderByDescending(i => i.CreatedAt)
@@ -100,28 +106,30 @@ public class TestCollectionStatisticsRepository : ICollectionStatisticsRepositor
 
     public async Task RemoveItemHighlightAsync(int collectionId, int itemId)
     {
-        var highlight = await _context.CollectionItemHighlights
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var highlight = await context.CollectionItemHighlights
             .FirstOrDefaultAsync(h => h.CollectionId == collectionId && h.ItemId == itemId);
 
         if (highlight != null)
         {
-            _context.CollectionItemHighlights.Remove(highlight);
-            await _context.SaveChangesAsync();
+            context.CollectionItemHighlights.Remove(highlight);
+            await context.SaveChangesAsync();
         }
     }
 
     public async Task DeleteCollectionStatsAsync(int collectionId)
     {
-        var stats = await _context.CollectionStatistics
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var stats = await context.CollectionStatistics
             .Where(s => s.CollectionId == collectionId)
             .ToListAsync();
-        _context.CollectionStatistics.RemoveRange(stats);
+        context.CollectionStatistics.RemoveRange(stats);
 
-        var highlights = await _context.CollectionItemHighlights
+        var highlights = await context.CollectionItemHighlights
             .Where(h => h.CollectionId == collectionId)
             .ToListAsync();
-        _context.CollectionItemHighlights.RemoveRange(highlights);
+        context.CollectionItemHighlights.RemoveRange(highlights);
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }

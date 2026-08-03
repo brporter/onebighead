@@ -17,7 +17,7 @@ public class SupportRepositoryTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new SupportRepository(_context);
+        _repository = new SupportRepository(new TestDbContextFactory(options));
     }
 
     public void Dispose()
@@ -325,6 +325,8 @@ public class SupportRepositoryTests : IDisposable
         // Act
         var result = await _repository.AddReplyAsync(reply);
 
+        _context.ChangeTracker.Clear();
+
         // Assert
         Assert.NotEqual(0, result.Id);
         Assert.NotEqual(default, result.CreatedAt);
@@ -441,6 +443,8 @@ public class SupportRepositoryTests : IDisposable
 
         // Act
         await _repository.MarkRepliesAsReadAsync(request.Id, 1);
+
+        _context.ChangeTracker.Clear();
 
         // Assert
         var updatedReplies = await _context.SupportReplies.Where(r => r.SupportRequestId == request.Id).ToListAsync();

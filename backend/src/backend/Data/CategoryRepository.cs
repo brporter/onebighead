@@ -5,16 +5,17 @@ namespace OneBigHead.Server.Data;
 
 public class CategoryRepository : ICategoryRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public CategoryRepository(AppDbContext context)
+    public CategoryRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<IEnumerable<Category>> GetAllAsync(int workspaceId)
     {
-        return await _context.Categories
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Categories
             .AsNoTracking()
             .Where(c => c.WorkspaceId == workspaceId)
             .OrderBy(c => c.SortOrder)
@@ -24,7 +25,8 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task<IEnumerable<Category>> GetByCollectionAsync(int collectionId, int workspaceId)
     {
-        return await _context.Categories
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Categories
             .AsNoTracking()
             .Where(c => c.WorkspaceId == workspaceId && c.CollectionId == collectionId)
             .OrderBy(c => c.SortOrder)
@@ -34,36 +36,41 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task<Category?> GetByIdAsync(int id, int workspaceId)
     {
-        return await _context.Categories
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Categories
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id && c.WorkspaceId == workspaceId);
     }
 
     public async Task<Category?> GetSystemCategoryAsync(int collectionId, int workspaceId, string name)
     {
-        return await _context.Categories
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Categories
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.WorkspaceId == workspaceId && c.CollectionId == collectionId && c.IsSystem && c.Name == name);
     }
 
     public async Task<Category> CreateAsync(Category category)
     {
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.Categories.Add(category);
+        await context.SaveChangesAsync();
         return category;
     }
 
     public async Task<IEnumerable<Category>> CreateManyAsync(IEnumerable<Category> categories)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var categoryList = categories.ToList();
-        _context.Categories.AddRange(categoryList);
-        await _context.SaveChangesAsync();
+        context.Categories.AddRange(categoryList);
+        await context.SaveChangesAsync();
         return categoryList;
     }
 
     public async Task<Category?> UpdateAsync(int id, Category category, int workspaceId)
     {
-        var existingCategory = await _context.Categories
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existingCategory = await context.Categories
             .FirstOrDefaultAsync(c => c.Id == id && c.WorkspaceId == workspaceId);
 
         if (existingCategory is null)
@@ -76,13 +83,14 @@ public class CategoryRepository : ICategoryRepository
         existingCategory.ParentCategoryId = category.ParentCategoryId;
         existingCategory.Visibility = category.Visibility;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return existingCategory;
     }
 
     public async Task<bool> DeleteAsync(int id, int workspaceId)
     {
-        var category = await _context.Categories
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var category = await context.Categories
             .FirstOrDefaultAsync(c => c.Id == id && c.WorkspaceId == workspaceId);
 
         if (category is null)
@@ -97,7 +105,7 @@ public class CategoryRepository : ICategoryRepository
         }
 
         // Move subcategories to the deleted category's parent (or root if no parent)
-        var subcategories = await _context.Categories
+        var subcategories = await context.Categories
             .Where(c => c.ParentCategoryId == id && c.WorkspaceId == workspaceId)
             .ToListAsync();
 
@@ -110,7 +118,7 @@ public class CategoryRepository : ICategoryRepository
         var unassignedCategory = await GetSystemCategoryAsync(category.CollectionId, workspaceId, "Unassigned Items");
 
         // Move items in the deleted category to "Unassigned Items"
-        var items = await _context.Items
+        var items = await context.Items
             .Where(i => i.CategoryId == id && i.WorkspaceId == workspaceId)
             .ToListAsync();
 
@@ -119,15 +127,16 @@ public class CategoryRepository : ICategoryRepository
             item.CategoryId = unassignedCategory?.Id;
         }
 
-        _context.Categories.Remove(category);
-        await _context.SaveChangesAsync();
+        context.Categories.Remove(category);
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<List<int>> GetTemplateIdsAsync(int categoryId, int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Verify category belongs to workspace
-        var category = await _context.Categories
+        var category = await context.Categories
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == categoryId && c.WorkspaceId == workspaceId);
 
@@ -136,7 +145,7 @@ public class CategoryRepository : ICategoryRepository
             return new List<int>();
         }
 
-        return await _context.CategoryItemTemplates
+        return await context.CategoryItemTemplates
             .AsNoTracking()
             .Where(ct => ct.CategoryId == categoryId)
             .OrderBy(ct => ct.SortOrder)
@@ -146,13 +155,14 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task<Dictionary<int, List<int>>> GetTemplateIdsByCategoryAsync(int collectionId, int workspaceId)
     {
-        var categoryIds = await _context.Categories
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var categoryIds = await context.Categories
             .AsNoTracking()
             .Where(c => c.CollectionId == collectionId && c.WorkspaceId == workspaceId)
             .Select(c => c.Id)
             .ToListAsync();
 
-        var associations = await _context.CategoryItemTemplates
+        var associations = await context.CategoryItemTemplates
             .AsNoTracking()
             .Where(ct => categoryIds.Contains(ct.CategoryId))
             .OrderBy(ct => ct.SortOrder)
@@ -168,8 +178,9 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task SetTemplateIdsAsync(int categoryId, List<int> templateIds, int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Verify category belongs to workspace
-        var category = await _context.Categories
+        var category = await context.Categories
             .FirstOrDefaultAsync(c => c.Id == categoryId && c.WorkspaceId == workspaceId);
 
         if (category is null)
@@ -178,16 +189,16 @@ public class CategoryRepository : ICategoryRepository
         }
 
         // Remove existing associations
-        var existing = await _context.CategoryItemTemplates
+        var existing = await context.CategoryItemTemplates
             .Where(ct => ct.CategoryId == categoryId)
             .ToListAsync();
-        _context.CategoryItemTemplates.RemoveRange(existing);
+        context.CategoryItemTemplates.RemoveRange(existing);
 
         // Add new associations
         var sortOrder = 0;
         foreach (var templateId in templateIds)
         {
-            _context.CategoryItemTemplates.Add(new CategoryItemTemplate
+            context.CategoryItemTemplates.Add(new CategoryItemTemplate
             {
                 CategoryId = categoryId,
                 ItemTemplateId = templateId,
@@ -195,13 +206,14 @@ public class CategoryRepository : ICategoryRepository
             });
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task ReorderAsync(Dictionary<int, int> categoryIdToSortOrder, int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var categoryIds = categoryIdToSortOrder.Keys.ToList();
-        var categories = await _context.Categories
+        var categories = await context.Categories
             .Where(c => c.WorkspaceId == workspaceId && categoryIds.Contains(c.Id))
             .ToListAsync();
 
@@ -210,13 +222,14 @@ public class CategoryRepository : ICategoryRepository
             category.SortOrder = categoryIdToSortOrder[category.Id];
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task<List<int>> GetInheritedTemplateIdsAsync(int categoryId, int workspaceId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // First get the target category to determine its collection
-        var rootCategory = await _context.Categories
+        var rootCategory = await context.Categories
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == categoryId && c.WorkspaceId == workspaceId);
 
@@ -226,7 +239,7 @@ public class CategoryRepository : ICategoryRepository
         }
 
         // Load only categories for this collection to avoid loading unnecessary data
-        var allCategories = await _context.Categories
+        var allCategories = await context.Categories
             .AsNoTracking()
             .Where(c => c.WorkspaceId == workspaceId && c.CollectionId == rootCategory.CollectionId)
             .ToDictionaryAsync(c => c.Id);
@@ -241,7 +254,7 @@ public class CategoryRepository : ICategoryRepository
         }
 
         // Load all template associations for ancestors in single query
-        var templateAssociations = await _context.CategoryItemTemplates
+        var templateAssociations = await context.CategoryItemTemplates
             .AsNoTracking()
             .Where(ct => ancestorIds.Contains(ct.CategoryId))
             .OrderBy(ct => ct.SortOrder)

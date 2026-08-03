@@ -5,16 +5,17 @@ namespace OneBigHead.Server.Data;
 
 public class PropertySuggestionRepository : IPropertySuggestionRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public PropertySuggestionRepository(AppDbContext context)
+    public PropertySuggestionRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<IEnumerable<PropertySuggestion>> GetByCollectionAsync(int collectionId, int workspaceId)
     {
-        return await _context.PropertySuggestions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.PropertySuggestions
             .Where(p => p.CollectionId == collectionId && p.WorkspaceId == workspaceId)
             .OrderBy(p => p.Type)
             .ThenBy(p => p.Value)
@@ -23,7 +24,8 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
 
     public async Task<IEnumerable<string>> GetCategoriesAsync(int collectionId, int workspaceId)
     {
-        return await _context.PropertySuggestions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.PropertySuggestions
             .Where(p => p.CollectionId == collectionId && p.WorkspaceId == workspaceId && p.Type == PropertySuggestionType.Category)
             .OrderBy(p => p.Value)
             .Select(p => p.Value)
@@ -32,7 +34,8 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
 
     public async Task<IEnumerable<string>> GetNamesAsync(int collectionId, int workspaceId)
     {
-        return await _context.PropertySuggestions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.PropertySuggestions
             .Where(p => p.CollectionId == collectionId && p.WorkspaceId == workspaceId && p.Type == PropertySuggestionType.Name)
             .OrderBy(p => p.Value)
             .Select(p => p.Value)
@@ -41,8 +44,9 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
 
     public async Task SyncSuggestionsAsync(int collectionId, int workspaceId, IEnumerable<string> categories, IEnumerable<string> names)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Get all items in the collection to determine which suggestions are still valid
-        var itemsInCollection = await _context.Items
+        var itemsInCollection = await context.Items
             .Where(i => i.CollectionId == collectionId && i.WorkspaceId == workspaceId)
             .ToListAsync();
 
@@ -66,7 +70,7 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
         }
 
         // Get existing suggestions for this collection
-        var existingSuggestions = await _context.PropertySuggestions
+        var existingSuggestions = await context.PropertySuggestions
             .Where(p => p.CollectionId == collectionId && p.WorkspaceId == workspaceId)
             .ToListAsync();
 
@@ -79,7 +83,7 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
 
         if (suggestionsToRemove.Count > 0)
         {
-            _context.PropertySuggestions.RemoveRange(suggestionsToRemove);
+            context.PropertySuggestions.RemoveRange(suggestionsToRemove);
         }
 
         // Add new suggestions that don't exist yet
@@ -125,9 +129,9 @@ public class PropertySuggestionRepository : IPropertySuggestionRepository
 
         if (newSuggestions.Count > 0)
         {
-            await _context.PropertySuggestions.AddRangeAsync(newSuggestions);
+            await context.PropertySuggestions.AddRangeAsync(newSuggestions);
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }
