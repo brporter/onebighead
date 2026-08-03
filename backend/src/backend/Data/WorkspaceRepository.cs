@@ -21,7 +21,10 @@ public class WorkspaceRepository : IWorkspaceRepository
     public async Task UpdateAsync(Workspace workspace)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        context.Workspaces.Update(workspace);
+        // Attach only the root entity: callers pass detached instances whose
+        // navigations may hold stale entities loaded from another context, and
+        // Update() would mark that entire graph as Modified.
+        context.Entry(workspace).State = EntityState.Modified;
         await context.SaveChangesAsync();
     }
 

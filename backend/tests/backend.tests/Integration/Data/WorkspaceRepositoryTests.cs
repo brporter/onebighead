@@ -88,6 +88,42 @@ public class WorkspaceRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateAsync_DoesNotUpdateRelatedEntities_WhenNavigationsArePopulated()
+    {
+        // Arrange
+        var workspace = await CreateTestWorkspaceAsync("Original Name");
+        var collection = new Collection { WorkspaceId = workspace.Id, Name = "Original Collection", Slug = "original" };
+        _context.Collections.Add(collection);
+        await _context.SaveChangesAsync();
+
+        // Simulate a detached workspace whose navigation holds a stale copy
+        // of a related entity loaded from another context
+        var detached = new Workspace
+        {
+            Id = workspace.Id,
+            Name = "Updated Name",
+            CreatedAt = workspace.CreatedAt
+        };
+        detached.Collections.Add(new Collection
+        {
+            Id = collection.Id,
+            WorkspaceId = workspace.Id,
+            Name = "Stale Collection Name",
+            Slug = "original"
+        });
+
+        // Act
+        await _repository.UpdateAsync(detached);
+
+        // Assert - only the workspace row is written; the stale navigation is ignored
+        _context.ChangeTracker.Clear();
+        var updatedWorkspace = await _context.Workspaces.FindAsync(workspace.Id);
+        Assert.Equal("Updated Name", updatedWorkspace!.Name);
+        var untouchedCollection = await _context.Collections.FindAsync(collection.Id);
+        Assert.Equal("Original Collection", untouchedCollection!.Name);
+    }
+
+    [Fact]
     public async Task UpdateAsync_UpdatesHasCompletedWelcome()
     {
         // Arrange

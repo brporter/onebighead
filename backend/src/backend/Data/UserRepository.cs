@@ -246,7 +246,10 @@ public class UserRepository : IUserRepository
     public async Task UpdateAsync(User user)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        context.Users.Update(user);
+        // Attach only the root entity: users fetched from this repository have
+        // ActiveWorkspace eagerly loaded, and Update() would mark that detached
+        // workspace as Modified too, re-writing it with stale values.
+        context.Entry(user).State = EntityState.Modified;
         await context.SaveChangesAsync();
     }
 
