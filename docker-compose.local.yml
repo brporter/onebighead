@@ -7,7 +7,8 @@
 # The site is then available at http://localhost:8080.
 # The backend is built in Debug configuration, so the development-only
 # endpoint POST /api/auth/dev-login {"email": "you@example.com"} signs you in
-# without an OAuth provider.
+# without an OAuth provider. That endpoint is unauthenticated, so the port is
+# bound to loopback only — other machines on the network cannot reach it.
 services:
   app:
     build:
@@ -15,7 +16,7 @@ services:
       dockerfile: deployment/Dockerfile.localhost
     container_name: onebighead-app
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Local
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=onebighead;Username=postgres;Password=DevPassword123!
