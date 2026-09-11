@@ -74,8 +74,7 @@ backend/
 ├── tests/
 │   └── backend.tests/       # xUnit tests
 ├── grafana/                 # Grafana dashboard config
-├── seeds/                   # Database seed JSON files
-└── tools/                   # DB utilities (dbreset, dbseed)
+└── seeds/                   # Database seed JSON files
 ```
 
 **Controllers:**

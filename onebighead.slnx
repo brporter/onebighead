@@ -1,8 +1,4 @@
 <Solution>
-  <Folder Name="/tools/">
-    <Project Path="backend/tools/dbreset/dbreset.csproj" />
-    <Project Path="backend/tools/dbseed/dbseed.csproj" />
-  </Folder>
   <Project Path="backend/src/backend/backend.csproj" />
   <Project Path="backend/src/backend.generators/backend.generators.csproj" />
   <Project Path="backend/tests/backend.tests/backend.tests.csproj" />

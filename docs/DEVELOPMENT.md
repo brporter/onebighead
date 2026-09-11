@@ -111,7 +111,7 @@ npm run dev
 
 ### Development
 
-In Debug builds, migrations run automatically on application startup. The database is created and migrated automatically when you run the backend.
+`dev-start` builds a migration bundle (`efbundle`) and applies pending migrations before starting the backend. To apply migrations manually, run the bundle yourself (see the production section below for the command).
 
 To create a new migration after modifying models:
 
@@ -119,6 +119,19 @@ To create a new migration after modifying models:
 cd backend/src/backend
 dotnet ef migrations add <MigrationName>
 ```
+
+### Seeding
+
+Debug builds of the backend accept a `--seed` flag that seeds the database from the JSON files in `backend/seeds`, then exits without starting the server:
+
+```bash
+cd backend/src/backend
+dotnet run -- --seed
+```
+
+Seeding is idempotent and convergent: the seeder matches rows by the check columns declared in each seed file, inserts missing rows, and updates existing rows to match the files. Edit a seed file and re-run `--seed` to push the change into your database. The whole run executes in one transaction.
+
+`dev-start` and `reset-database` both run this for you. The seeds directory comes from the `Seeding:Path` setting (`appsettings.Development.json` points it at `backend/seeds`). Release builds do not contain the flag.
 
 ### Resetting the Database
 
@@ -136,7 +149,7 @@ To reset the local development database (drop all data and start fresh):
 ./scripts/reset-database.sh --force   # Skip confirmation
 ```
 
-After resetting, run the backend to recreate the database with fresh migrations:
+The reset script drops all tables, reapplies migrations, and reseeds. Afterwards, start the backend normally:
 
 ```bash
 cd backend/src/backend

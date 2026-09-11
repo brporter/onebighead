@@ -108,17 +108,11 @@ else
     exit 1
 fi
 
-# Seed database
+# Seed database via the backend's Debug-only --seed flag
 CONNECTION_STRING="Host=localhost;Port=5432;Database=$DATABASE_NAME;Username=postgres;Password=$POSTGRES_PASSWORD"
-SEEDS_PATH="$REPO_ROOT/backend/seeds"
-DBSEED_PROJECT="$REPO_ROOT/backend/tools/dbseed/dbseed.csproj"
-if [ -f "$DBSEED_PROJECT" ]; then
-    echo -e "${CYAN}Seeding database...${NC}"
-    ConnectionStrings__DefaultConnection="$CONNECTION_STRING" dotnet run --project "$DBSEED_PROJECT" -- "$SEEDS_PATH" --force
-    echo -e "${GREEN}Database seeded successfully.${NC}"
-else
-    echo -e "${YELLOW}Warning: dbseed project not found at $DBSEED_PROJECT${NC}"
-fi
+echo -e "${CYAN}Seeding database...${NC}"
+ConnectionStrings__DefaultConnection="$CONNECTION_STRING" dotnet run --project "$BACKEND_PROJECT" -- --seed
+echo -e "${GREEN}Database seeded successfully.${NC}"
 
 echo ""
 echo -e "${GREEN}Database reset complete.${NC}"

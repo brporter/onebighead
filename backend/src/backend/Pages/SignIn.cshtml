@@ -73,6 +73,31 @@
                 We use secure federated authentication through trusted identity providers.
                 Your password is never stored on our servers.
             </p>
+
+            @if (Model.DevLoginEnabled)
+            {
+                <div class="landing__sso-divider">
+                    <span>Development sign-in</span>
+                </div>
+
+                <div id="dev-login-error" class="landing__alert landing__alert--error" hidden></div>
+
+                <form id="dev-login-form" class="landing__form">
+                    <div class="landing__form-group">
+                        <label for="dev-login-email">Email address</label>
+                        <input type="email" id="dev-login-email" name="email"
+                               placeholder="you@example.com" required autocomplete="email" />
+                    </div>
+                    <button type="submit" class="landing__sso-button">
+                        <span>Sign in as this email (dev)</span>
+                    </button>
+                </form>
+
+                <p class="landing__sso-info">
+                    Debug builds only. Signs in as the email above without a
+                    password and creates the user on first use.
+                </p>
+            }
         </div>
     </main>
 
@@ -104,5 +129,32 @@
         window.location.href = loginUrl;
     }
 </script>
+@if (Model.DevLoginEnabled)
+{
+<script>
+    document.getElementById('dev-login-form').addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const errorBox = document.getElementById('dev-login-error');
+        errorBox.hidden = true;
+
+        const email = document.getElementById('dev-login-email').value;
+        try {
+            const response = await fetch('/api/auth/dev-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => null);
+                throw new Error((body && body.error) || ('Sign-in failed with HTTP ' + response.status));
+            }
+            window.location.href = @Json.Serialize(Model.SafeReturnUrl);
+        } catch (error) {
+            errorBox.textContent = error.message;
+            errorBox.hidden = false;
+        }
+    });
+</script>
+}
 }
 

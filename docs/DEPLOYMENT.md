@@ -120,15 +120,33 @@ sudo docker compose up -d app
 
 ### Applying migrations
 
-The published image includes a self-contained EF bundle at `/app/efbundle`
-and the seeder at `/app/dbseed`. Run them from the VM against the postgres
-container using the app container's own connection string:
+The published image includes a self-contained EF bundle at `/app/efbundle`.
+Run it from the VM against the postgres container using the app container's
+own connection string:
 
 ```bash
 cd /opt/onebighead
 sudo docker compose exec app sh -c '/app/efbundle --connection "$ConnectionStrings__DefaultConnection"'
-sudo docker compose exec app sh -c 'cd /app && ./dbseed seeds --force'
 ```
+
+### Seeding a brand-new database
+
+Seeding is a development feature: a Debug build of the backend accepts a
+`--seed` flag that converges the database to the JSON files in
+`backend/seeds`, then exits. Release builds (including the production image)
+do not contain the flag. For the rare bootstrap of a brand-new production
+database, run a Debug build from a workstation with the production connection
+string:
+
+```bash
+cd backend/src/backend
+ConnectionStrings__DefaultConnection="<production-connection-string>" \
+  dotnet run -- --seed
+```
+
+The seed files ship in the image at `/app/seeds` for reference, and the
+operation is idempotent: rows are matched by their check columns, inserted
+when missing, and updated to match the files when present.
 
 ## History
 

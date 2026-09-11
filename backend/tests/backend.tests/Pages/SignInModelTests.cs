@@ -62,4 +62,54 @@ public class SignInModelTests
 
         Assert.Equal("/collections/5", model.ReturnUrl);
     }
+
+    [Fact]
+    public void DevLoginEnabled_MatchesBuildConfiguration()
+    {
+        var model = CreateModel();
+
+#if DEBUG
+        Assert.True(model.DevLoginEnabled);
+#else
+        Assert.False(model.DevLoginEnabled);
+#endif
+    }
+
+    [Fact]
+    public void SafeReturnUrl_DefaultsToCollections_WhenReturnUrlIsNull()
+    {
+        var model = CreateModel();
+
+        Assert.Equal("/collections", model.SafeReturnUrl);
+    }
+
+    [Fact]
+    public void SafeReturnUrl_PreservesLocalPaths()
+    {
+        var model = CreateModel();
+
+        model.OnGet(returnUrl: "/collections/5/items/2");
+
+        Assert.Equal("/collections/5/items/2", model.SafeReturnUrl);
+    }
+
+    [Fact]
+    public void SafeReturnUrl_RejectsAbsoluteUrls()
+    {
+        var model = CreateModel();
+
+        model.OnGet(returnUrl: "https://evil.example.com/phish");
+
+        Assert.Equal("/collections", model.SafeReturnUrl);
+    }
+
+    [Fact]
+    public void SafeReturnUrl_RejectsProtocolRelativeUrls()
+    {
+        var model = CreateModel();
+
+        model.OnGet(returnUrl: "//evil.example.com/phish");
+
+        Assert.Equal("/collections", model.SafeReturnUrl);
+    }
 }

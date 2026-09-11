@@ -1,0 +1,40 @@
+# Local hosting image.
+# Builds the frontend, the backend in Debug configuration (keeps the
+# /api/auth/dev-login test endpoint and the --seed flag), and an EF Core
+# migration bundle into a single runnable container.
+#
+# Build and run via the compose overlay from the repository root:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+
+# ---- Frontend build ----
+FROM node:24-alpine AS frontend-build
+WORKDIR /src/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# ---- Backend build ----
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
+WORKDIR /src
+COPY .config/ .config/
+COPY backend/ backend/
+RUN dotnet tool restore
+WORKDIR /src/backend/src/backend
+RUN dotnet publish -c Debug -o /out/app
+RUN dotnet ef migrations bundle --configuration Debug --force -o /out/efbundle
+
+# ---- Runtime ----
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+# SkiaSharp's Linux native library (image processing) requires fontconfig at runtime
+RUN apt-get update && apt-get install -y --no-install-recommends libfontconfig1 && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=backend-build /out/app .
+COPY --from=frontend-build /src/frontend/dist ./wwwroot/collections
+COPY --from=backend-build /out/efbundle /app/efbundle
+COPY backend/seeds /app/seeds
+COPY deployment/docker-entrypoint.local.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh /app/efbundle
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENTRYPOINT ["/app/entrypoint.sh"]

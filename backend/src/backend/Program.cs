@@ -17,6 +17,17 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using OneBigHead.Server.Utilities;
 
+#if DEBUG
+// Development-only: `backend --seed` seeds the database and exits (handled
+// after the host is built). The flag is stripped here so the configuration
+// command-line provider never sees it. Release builds do not recognize it.
+var seedRequested = args.Contains("--seed");
+if (seedRequested)
+{
+    args = args.Where(a => a != "--seed").ToArray();
+}
+#endif
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services for both API controllers and Razor Pages
@@ -238,18 +249,27 @@ if (!builder.Environment.IsEnvironment("Testing"))
 
 var app = builder.Build();
 
-// In Development: seed database with system data (migrations applied via efbundle)
-if (app.Environment.IsDevelopment())
+#if DEBUG
+// Development-only seed mode: `backend --seed` converges the database to the
+// JSON files in the seeds directory, then exits without starting the server.
+// Seeding:Path configures the directory; relative paths resolve against the
+// content root (appsettings.Development.json points it at backend/seeds).
+if (seedRequested)
 {
-    // BaseDirectory is bin/<Config>/<tfm>/ inside backend/src/backend; seeds live in backend/seeds
-    var seedsPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "seeds");
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
-    using var scope = app.Services.CreateScope();
-    var seederLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+    var configuredSeedsPath = app.Configuration["Seeding:Path"] ?? "seeds";
+    var seedsPath = Path.IsPathRooted(configuredSeedsPath)
+        ? configuredSeedsPath
+        : Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, configuredSeedsPath));
+
+    var seederLogger = app.Services.GetRequiredService<ILoggerFactory>()
         .CreateLogger<JsonDatabaseSeeder>();
     var seeder = new JsonDatabaseSeeder(seedsPath, seederLogger);
-    await seeder.SeedAsync(connectionString);
+    var seedConnectionString = app.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
+    await seeder.SeedAsync(seedConnectionString);
+    return;
 }
+#endif
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
@@ -315,7 +335,11 @@ if (!app.Environment.IsDevelopment())
                 path.Equals("/welcome", StringComparison.OrdinalIgnoreCase) ||
                 path.StartsWith("/welcome/", StringComparison.OrdinalIgnoreCase) ||
                 path.Equals("/terms", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/terms/", StringComparison.OrdinalIgnoreCase))
+                path.StartsWith("/terms/", StringComparison.OrdinalIgnoreCase) ||
+                path.Equals("/public", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/public/", StringComparison.OrdinalIgnoreCase) ||
+                path.Equals("/workspaces", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/workspaces/", StringComparison.OrdinalIgnoreCase))
             {
                 context.Request.Path = "/collections/index.html";
             }

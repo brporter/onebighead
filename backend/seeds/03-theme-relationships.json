@@ -21,7 +21,7 @@
     },
     {
       "name": "CollectionThemeCategories",
-      "checkColumn": "Name",
+      "checkColumns": ["ThemeId", "Name"],
       "identityInsert": true,
       "rows": [
         { "Id": 1, "ThemeId": 1, "Name": "Fiction", "Description": "Fictional works", "ParentName": null, "SortOrder": 1 },

@@ -1,0 +1,24 @@
+# Overlay that runs the whole application (frontend + backend + migrations +
+# seeds) in a container next to the local PostgreSQL from docker-compose.yml.
+#
+# Usage (from the repository root):
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#
+# The site is then available at http://localhost:8080.
+# The backend is built in Debug configuration, so the development-only
+# endpoint POST /api/auth/dev-login {"email": "you@example.com"} signs you in
+# without an OAuth provider.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile.localhost
+    container_name: onebighead-app
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Local
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=onebighead;Username=postgres;Password=DevPassword123!
+    depends_on:
+      postgres:
+        condition: service_healthy
