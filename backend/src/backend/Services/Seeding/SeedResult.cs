@@ -1,4 +1,4 @@
-﻿namespace OneBigHead.Server.Services.Seeding;
+namespace OneBigHead.Server.Services.Seeding;
 
 /// <summary>
 /// Result of a seeding operation.
@@ -7,5 +7,6 @@ public class SeedResult
 {
     public string TableName { get; set; } = "";
     public int InsertedCount { get; set; }
+    public int UpdatedCount { get; set; }
     public int SkippedCount { get; set; }
 }

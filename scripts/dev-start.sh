@@ -174,6 +174,11 @@ else
     else
         echo -e "${YELLOW}      Warning: efbundle not found.${NC}"
     fi
+
+    echo -e "${CYAN}      Seeding database...${NC}"
+    cd "$REPO_ROOT/backend/src/backend"
+    dotnet run --no-build -- --seed
+    echo -e "${GREEN}      Database seeded.${NC}"
 fi
 
 # Step 4: Start backend

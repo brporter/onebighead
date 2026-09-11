@@ -132,6 +132,7 @@ public class JsonDatabaseSeederTests : IDisposable
         var result = Assert.Single(results);
         Assert.Equal("ItemTemplates", result.TableName);
         Assert.Equal(2, result.InsertedCount);
+        Assert.Equal(0, result.UpdatedCount);
         Assert.Equal(0, result.SkippedCount);
     }
 

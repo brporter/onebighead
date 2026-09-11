@@ -152,6 +152,17 @@ if ($ResetDatabase) {
     } else {
         Write-Host "      Warning: efbundle.exe not found." -ForegroundColor Yellow
     }
+
+    Write-Host "      Seeding database..." -ForegroundColor Cyan
+    Push-Location "$rootDir\backend\src\backend"
+    dotnet run --no-build -- --seed
+    $seedExitCode = $LASTEXITCODE
+    Pop-Location
+    if ($seedExitCode -ne 0) {
+        Write-Host "      Database seeding failed!" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "      Database seeded." -ForegroundColor Green
 }
 
 # Step 4: Start backend

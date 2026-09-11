@@ -20,6 +20,29 @@ public class SignInModel : PageModel
     public string? ErrorMessage { get; set; }
     public string? ReturnUrl { get; set; }
 
+    /// <summary>
+    /// True when the development sign-in form should render. The backing
+    /// endpoint (POST /api/auth/dev-login) is compiled only into Debug
+    /// builds, so Release builds never show the form.
+    /// </summary>
+#if DEBUG
+    public bool DevLoginEnabled => true;
+#else
+    public bool DevLoginEnabled => false;
+#endif
+
+    /// <summary>
+    /// The return URL restricted to local paths. Absolute and
+    /// protocol-relative URLs fall back to /collections so the dev sign-in
+    /// flow cannot redirect off-site.
+    /// </summary>
+    public string SafeReturnUrl =>
+        ReturnUrl != null
+        && ReturnUrl.StartsWith('/')
+        && !ReturnUrl.StartsWith("//", StringComparison.Ordinal)
+            ? ReturnUrl
+            : "/collections";
+
     public void OnGet(string? error = null, string? returnUrl = null, AuthErrorType errorType = AuthErrorType.None)
     {
         // A typed error code takes precedence over free-text error messages

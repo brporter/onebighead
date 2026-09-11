@@ -9,9 +9,10 @@
 #      recreates the app container (see deploy/vm/docker-compose.yml)
 #
 # Database changes are NOT applied by this pipeline. The image contains a
-# self-contained EF migration bundle (/app/efbundle) and the seeder
-# (/app/dbseed) — run them manually when a release includes schema or seed
-# changes (see docs/DEPLOYMENT.md).
+# self-contained EF migration bundle (/app/efbundle) — run it manually when a
+# release includes schema changes. Seeding is a development concern: a Debug
+# build of the backend run with --seed converges a database to the JSON files
+# in backend/seeds (see docs/DEPLOYMENT.md for the rare production bootstrap).
 #
 # No repository secrets required; ghcr.io push uses the automatic
 # GITHUB_TOKEN. The ghcr.io package must be PUBLIC (the VM pulls anonymously).
@@ -133,12 +134,8 @@ jobs:
           mkdir -p publish/wwwroot/collections
           cp -r frontend/dist/* publish/wwwroot/collections/
 
-      - name: Build database tools
-        run: |
-          dotnet publish backend/tools/dbreset/dbreset.csproj -c Release -r linux-x64 -o publish
-          dotnet publish backend/tools/dbseed/dbseed.csproj -c Release -r linux-x64 -o publish
-          # Copy seed data files from central location
-          cp -r backend/seeds publish/seeds
+      - name: Copy seed data
+        run: cp -r backend/seeds publish/seeds
 
       # Bundled into the image for manual execution on the VM
       - name: Generate migration bundle

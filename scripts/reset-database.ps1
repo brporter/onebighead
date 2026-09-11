@@ -62,22 +62,16 @@ if (Test-Path $efBundle) {
     exit 1
 }
 
-# Seed database
+# Seed database via the backend's Debug-only --seed flag
 $connectionString = "Host=localhost;Port=5432;Database=$databaseName;Username=postgres;Password=$postgresPassword"
-$seedsPath = Join-Path $rootDir "backend\seeds"
-$dbseedProject = Join-Path $rootDir "backend\tools\dbseed\dbseed.csproj"
-if (Test-Path $dbseedProject) {
-    Write-Host "Seeding database..." -ForegroundColor Cyan
-    $env:ConnectionStrings__DefaultConnection = $connectionString
-    dotnet run --project $dbseedProject -- $seedsPath --force
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Database seeding failed!" -ForegroundColor Red
-        exit 1
-    }
-    Write-Host "Database seeded successfully." -ForegroundColor Green
-} else {
-    Write-Host "Warning: dbseed project not found at $dbseedProject" -ForegroundColor Yellow
+Write-Host "Seeding database..." -ForegroundColor Cyan
+$env:ConnectionStrings__DefaultConnection = $connectionString
+dotnet run --project $backendProject -- --seed
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Database seeding failed!" -ForegroundColor Red
+    exit 1
 }
+Write-Host "Database seeded successfully." -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Database reset complete." -ForegroundColor Green

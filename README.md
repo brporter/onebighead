@@ -11,8 +11,7 @@ onebighead/
 │   ├── src/backend.generators/     # Roslyn source generators
 │   ├── tests/backend.tests/        # xUnit tests
 │   ├── grafana/                     # Grafana dashboard config
-│   ├── seeds/                      # Database seed JSON files
-│   └── tools/                      # DB utilities (dbreset, dbseed)
+│   └── seeds/                      # Database seed JSON files
 ├── frontend/                       # React 19 + Vite frontend
 ├── deploy/vm/                      # Production VM compose stack (app + PostgreSQL)
 ├── deployment/                     # Deployment artifacts
@@ -38,5 +37,6 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup instructions.
 ## Documentation
 
 - [Development Setup](docs/DEVELOPMENT.md) - Local development environment and workflow
+- [Local Hosting](docs/LOCAL-HOSTING.md) - Run the full application in containers with `docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build`
 - [Deployment Guide](docs/DEPLOYMENT.md) - Production VM deployment and CI/CD pipeline
 - [Observability](docs/OBSERVABILITY.md) - Monitoring, tracing, and telemetry

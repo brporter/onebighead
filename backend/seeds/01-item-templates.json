@@ -2,7 +2,7 @@
   "tables": [
     {
       "name": "ItemTemplates",
-      "checkColumn": "Name",
+      "checkColumn": "TemplateKey",
       "identityInsert": true,
       "rows": [
         {
@@ -113,7 +113,7 @@
     },
     {
       "name": "ItemTemplateProperties",
-      "checkColumn": "Name",
+      "checkColumns": ["ItemTemplateId", "Name"],
       "identityInsert": true,
       "rows": [
         { "Id": 1, "ItemTemplateId": 1, "Category": "Details", "Name": "Author", "SortOrder": 1 },

@@ -1,0 +1,9 @@
+# Keep build contexts small and host build artifacts out of container builds.
+# Note: publish/ is NOT excluded because deployment/Dockerfile copies it.
+.git
+**/node_modules
+**/bin
+**/obj
+frontend/dist
+frontend/coverage
+backend/tests/**/TestResults
