@@ -34,12 +34,15 @@ public class SignInModel : PageModel
     /// <summary>
     /// The return URL restricted to local paths. Absolute and
     /// protocol-relative URLs fall back to /collections so the dev sign-in
-    /// flow cannot redirect off-site.
+    /// flow cannot redirect off-site. A backslash after the leading slash is
+    /// rejected because browsers normalize "/\" to "//" when it is assigned to
+    /// window.location.href, matching ASP.NET Core's IsLocalUrl.
     /// </summary>
     public string SafeReturnUrl =>
         ReturnUrl != null
         && ReturnUrl.StartsWith('/')
-        && !ReturnUrl.StartsWith("//", StringComparison.Ordinal)
+        && (ReturnUrl.Length == 1
+            || (ReturnUrl[1] != '/' && ReturnUrl[1] != '\\'))
             ? ReturnUrl
             : "/collections";
 

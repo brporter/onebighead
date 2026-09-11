@@ -78,10 +78,15 @@ jobs:
       - name: Restore backend dependencies
         run: dotnet restore backend/tests/backend.tests/backend.tests.csproj
 
-      - name: Run all backend tests
-        # PostgresIntegration tests need a Docker daemon and run separately/locally:
-        #   dotnet test --filter "Category=PostgresIntegration"
+      - name: Run backend unit tests
         run: dotnet test backend/tests/backend.tests/backend.tests.csproj --no-restore --verbosity normal --filter "Category!=PostgresIntegration"
+
+      - name: Run backend PostgreSQL integration tests
+        # These are the only coverage for the seeder's convergent-update and
+        # transactional-rollback behavior. They use Testcontainers, which
+        # starts its own postgres:17 container via the Docker daemon that the
+        # ubuntu-latest runner provides.
+        run: dotnet test backend/tests/backend.tests/backend.tests.csproj --no-restore --verbosity normal --filter "Category=PostgresIntegration"
 
       - name: Install frontend dependencies
         run: |

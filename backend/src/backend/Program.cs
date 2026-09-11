@@ -264,6 +264,16 @@ if (seedRequested)
     var seederLogger = app.Services.GetRequiredService<ILoggerFactory>()
         .CreateLogger<JsonDatabaseSeeder>();
     var seeder = new JsonDatabaseSeeder(seedsPath, seederLogger);
+
+    // Fail loudly on a misconfigured path: an empty result would otherwise
+    // exit 0 and report success while leaving the database unseeded.
+    if (seeder.GetSeedFiles().Count == 0)
+    {
+        seederLogger.LogError("No seed files found in {SeedsPath}. Check the Seeding:Path setting.", seedsPath);
+        Environment.ExitCode = 1;
+        return;
+    }
+
     var seedConnectionString = app.Configuration.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
     await seeder.SeedAsync(seedConnectionString);

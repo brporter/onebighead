@@ -112,4 +112,25 @@ public class SignInModelTests
 
         Assert.Equal("/collections", model.SafeReturnUrl);
     }
+
+    [Fact]
+    public void SafeReturnUrl_RejectsBackslashProtocolRelativeUrls()
+    {
+        var model = CreateModel();
+
+        // Browsers normalize "/\" to "//" on assignment to window.location.href
+        model.OnGet(returnUrl: "/\\evil.example.com/phish");
+
+        Assert.Equal("/collections", model.SafeReturnUrl);
+    }
+
+    [Fact]
+    public void SafeReturnUrl_PreservesRootPath()
+    {
+        var model = CreateModel();
+
+        model.OnGet(returnUrl: "/");
+
+        Assert.Equal("/", model.SafeReturnUrl);
+    }
 }

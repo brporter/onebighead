@@ -71,6 +71,15 @@ public class JsonDatabaseSeederTests : IDisposable
     }
 
     [Fact]
+    public void GetSeedFiles_ReturnsEmpty_ForMissingOrEmptyDirectory()
+    {
+        // The --seed entry point relies on this to fail loudly on a
+        // misconfigured Seeding:Path instead of exiting 0 with no work done.
+        Assert.Empty(new JsonDatabaseSeeder(Path.Combine(_tempDir, "missing")).GetSeedFiles());
+        Assert.Empty(new JsonDatabaseSeeder(_tempDir).GetSeedFiles());
+    }
+
+    [Fact]
     public async Task SeedAsync_ReturnsEmpty_WhenDirectoryDoesNotExist()
     {
         var seeder = new JsonDatabaseSeeder(Path.Combine(_tempDir, "missing"));
