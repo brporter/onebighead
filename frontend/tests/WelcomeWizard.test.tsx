@@ -85,7 +85,7 @@ describe('WelcomeWizard', () => {
       logout: vi.fn(),
     });
 
-    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
       themes: mockThemes,
       themesLoading: false,
       loadThemes: mockLoadThemes,
@@ -240,7 +240,7 @@ describe('WelcomeWizard', () => {
 
   it('should show loading state when themes are loading', async () => {
     const user = userEvent.setup();
-    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
       themes: [],
       themesLoading: true,
       loadThemes: mockLoadThemes,

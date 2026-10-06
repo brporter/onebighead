@@ -328,4 +328,15 @@ describe('ItemCard', () => {
       expect(container.querySelector('.item-card__props')).not.toBeInTheDocument();
     });
   });
+  it('toggles the native checkbox without navigating or activating a nested button', async () => {
+    const onToggleCheck = vi.fn();
+    const onSelect = vi.fn();
+    render(<ItemCard {...defaultProps} onSelect={onSelect} selectionMode onToggleCheck={onToggleCheck} />);
+    await userEvent.click(screen.getByRole('checkbox'));
+    expect(onToggleCheck).toHaveBeenCalledExactlyOnceWith(1);
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(screen.getByRole('checkbox').closest('button')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Publish' }).closest('.item-card__select')).toBeNull();
+  });
+
 });

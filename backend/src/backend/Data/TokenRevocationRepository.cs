@@ -1,4 +1,3 @@
-using OneBigHead.Server.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace OneBigHead.Server.Data;
@@ -25,26 +24,11 @@ public class TokenRevocationRepository : ITokenRevocationRepository
     public async Task UpsertAsync(int userId, DateTime revokedAtUtc)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        var existing = await context.TokenRevocations
-            .FirstOrDefaultAsync(r => r.UserId == userId);
-
-        if (existing == null)
-        {
-            context.TokenRevocations.Add(new TokenRevocation
-            {
-                UserId = userId,
-                RevokedAtUtc = revokedAtUtc
-            });
-        }
-        else if (revokedAtUtc > existing.RevokedAtUtc)
-        {
-            existing.RevokedAtUtc = revokedAtUtc;
-        }
-        else
-        {
-            return;
-        }
-
-        await context.SaveChangesAsync();
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "TokenRevocations" ("UserId", "RevokedAtUtc")
+            VALUES ({userId}, {revokedAtUtc})
+            ON CONFLICT ("UserId") DO UPDATE
+            SET "RevokedAtUtc" = GREATEST("TokenRevocations"."RevokedAtUtc", EXCLUDED."RevokedAtUtc")
+            """);
     }
 }

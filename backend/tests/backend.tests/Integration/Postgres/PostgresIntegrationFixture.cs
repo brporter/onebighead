@@ -10,7 +10,7 @@ namespace OneBigHead.Server.Tests.Integration.Postgres;
 /// application's EF Core migrations, and tears the container down when the
 /// collection completes. Requires a running Docker daemon.
 ///
-/// These tests are excluded from normal CI runs; execute them locally with:
+/// These tests run in CI and in the full local suite. Run only this group with:
 ///   dotnet test --filter "Category=PostgresIntegration"
 /// </summary>
 public sealed class PostgresIntegrationFixture : IAsyncLifetime
@@ -32,6 +32,9 @@ public sealed class PostgresIntegrationFixture : IAsyncLifetime
     {
         await _container.DisposeAsync();
     }
+
+    public IDbContextFactory<AppDbContext> CreateContextFactory() =>
+        new TestDbContextFactory(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(ConnectionString).Options);
 
     public AppDbContext CreateContext()
     {

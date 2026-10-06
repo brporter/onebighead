@@ -51,7 +51,7 @@ const mockTemplates: ItemTemplate[] = [
 ];
 
 function createMockContext(overrides: Record<string, unknown> = {}) {
-  return createMockDataContextValue(vi, {
+  return createMockDataContextValue({
     itemTemplates: mockTemplates,
     loadItemTemplates: vi.fn().mockResolvedValue(mockTemplates),
     loadCollectionTemplates: vi.fn().mockResolvedValue([mockTemplates[0]]),

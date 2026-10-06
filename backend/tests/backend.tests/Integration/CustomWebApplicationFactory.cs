@@ -1,3 +1,4 @@
+using Moq;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Hosting;
@@ -44,13 +45,15 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IEmailService>();
             services.AddSingleton<IEmailService, TestEmailService>();
 
-            // Replace statistics repositories with in-memory-compatible test doubles
-            // (the real implementations use ExecuteUpdateAsync which is unsupported by the in-memory provider)
+            // HTTP tests isolate statistics; repository behavior runs against PostgreSQL.
             services.RemoveAll<IWorkspaceStatisticsRepository>();
-            services.AddSingleton<IWorkspaceStatisticsRepository, TestWorkspaceStatisticsRepository>();
+            services.AddSingleton(Mock.Of<IWorkspaceStatisticsRepository>());
 
             services.RemoveAll<ICollectionStatisticsRepository>();
-            services.AddSingleton<ICollectionStatisticsRepository, TestCollectionStatisticsRepository>();
+            services.AddSingleton(Mock.Of<ICollectionStatisticsRepository>());
+
+            services.RemoveAll<ITokenRevocationRepository>();
+            services.AddSingleton(Mock.Of<ITokenRevocationRepository>());
 
             // Configure test authentication
             services.AddAuthentication(defaultScheme: TestAuthHandler.SchemeName)

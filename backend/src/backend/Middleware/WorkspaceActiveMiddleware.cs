@@ -4,7 +4,6 @@ using System.Text.Json;
 using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Telemetry;
-using OneBigHead.Server.Utilities;
 
 namespace OneBigHead.Server.Middleware;
 
@@ -14,65 +13,16 @@ namespace OneBigHead.Server.Middleware;
 /// Returns 401 Unauthorized with USER_DELETED code if user is soft-deleted or has no active workspaces.
 /// Returns 410 Gone if the workspace is deleted, allowing the client to handle the situation.
 /// </summary>
-public class WorkspaceActiveMiddleware(RequestDelegate next, IRouteHelper routeHelper, ILogger<WorkspaceActiveMiddleware> logger)
+public class WorkspaceActiveMiddleware(RequestDelegate next, ILogger<WorkspaceActiveMiddleware> logger)
 {
-    private readonly struct AllowedPathDefinition
-    {
-        public string RouteTemplate { get; init; }
-        public string Method { get; init; }
-    }
-
-    // Paths that should be accessible even when workspace is deleted
-    private static readonly string[] ExcludedPrefixes =
-    {
-        "/api/auth",
-        "/api/users/me/deletion-info",
-        "/api/users/me/restorable-workspaces",
-        "/api/themes",
-        "/health"
-    };
-
-    private static readonly AllowedPathDefinition[] AllowedPaths =
-    {
-        new() { RouteTemplate = "/api/workspaces", Method = HttpMethod.Get.ToString() }, // List workspaces
-        new() { RouteTemplate = "/api/workspaces", Method = HttpMethod.Post.ToString() }, // Create workspace
-        new() { RouteTemplate = "/api/workspaces/{id}/switch", Method = HttpMethod.Post.ToString() }, // Switch workspace
-        new() { RouteTemplate = "/api/workspaces/setup", Method = HttpMethod.Post.ToString() }, // Setup new workspace
-        new() { RouteTemplate = "/api/workspaces/restore", Method = HttpMethod.Post.ToString() }, // Restore multiple workspaces
-        new() { RouteTemplate = "/api/workspaces/{id}/restore", Method = HttpMethod.Post.ToString() } // Restore single workspace
-    };
-
     public async Task InvokeAsync(HttpContext context, IWorkspaceService workspaceService)
     {
         using var activity = DiagnosticsConfig.AppActivitySource.StartActivity(nameof(WorkspaceActiveMiddleware), ActivityKind.Internal);
         var path = context.Request.Path.Value ?? "";
 
-        // Skip excluded paths (auth endpoints, deletion info, health check, themes)
-        if (ExcludedPrefixes.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+        if (context.GetEndpoint()?.Metadata.GetMetadata<AllowInactiveWorkspaceAttribute>() is not null)
         {
             activity?.SetTag("workspace_check.outcome", "skipped");
-            logger.LogDebug("Path {Path} matched excluded prefix, skipping workspace check", path);
-            await next(context);
-            return;
-        }
-
-        logger.LogDebug("Path {Path} did not match any excluded prefix", path);
-
-        if (AllowedPaths.Any(apd =>
-            {
-                var isMatch = routeHelper.IsMatch(apd.RouteTemplate, path)
-                              && string.Equals(context.Request.Method, apd.Method,
-                                  StringComparison.OrdinalIgnoreCase);
-
-                if (isMatch)
-                {
-                    logger.LogDebug("Path {Path} with method {Method} matched allowed path template {Template}",
-                        path, context.Request.Method, apd.RouteTemplate);
-                }
-
-                return isMatch;
-            }))
-        {
             await next(context);
             return;
         }

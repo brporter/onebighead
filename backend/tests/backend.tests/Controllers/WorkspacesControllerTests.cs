@@ -19,9 +19,7 @@ public class WorkspacesControllerTests
     private readonly Mock<IWorkspaceRepository> _mockWorkspaceRepository;
     private readonly Mock<IWorkspaceUserRepository> _mockWorkspaceUserRepository;
     private readonly Mock<IUserRepository> _mockUserRepository;
-    private readonly Mock<ICollectionRepository> _mockCollectionRepository;
-    private readonly Mock<ICategoryRepository> _mockCategoryRepository;
-    private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
+    private readonly Mock<ICollectionSetupService> _mockSetupService = new();
     private readonly Mock<IThemeRepository> _mockThemeRepository;
     private readonly Mock<ITokenService> _mockTokenService;
     private readonly Mock<ITokenRevocationService> _mockTokenRevocationService;
@@ -36,9 +34,6 @@ public class WorkspacesControllerTests
         _mockWorkspaceRepository = new Mock<IWorkspaceRepository>();
         _mockWorkspaceUserRepository = new Mock<IWorkspaceUserRepository>();
         _mockUserRepository = new Mock<IUserRepository>();
-        _mockCollectionRepository = new Mock<ICollectionRepository>();
-        _mockCategoryRepository = new Mock<ICategoryRepository>();
-        _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
         _mockThemeRepository = new Mock<IThemeRepository>();
         _mockTokenService = new Mock<ITokenService>();
         _mockTokenRevocationService = new Mock<ITokenRevocationService>();
@@ -51,9 +46,7 @@ public class WorkspacesControllerTests
             _mockWorkspaceRepository.Object,
             _mockWorkspaceUserRepository.Object,
             _mockUserRepository.Object,
-            _mockCollectionRepository.Object,
-            _mockCategoryRepository.Object,
-            _mockItemTemplateRepository.Object,
+            _mockSetupService.Object,
             _mockThemeRepository.Object,
             _mockTokenService.Object,
             _mockTokenRevocationService.Object,
@@ -75,6 +68,30 @@ public class WorkspacesControllerTests
         {
             HttpContext = new DefaultHttpContext { User = claimsPrincipal }
         };
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(999)]
+    public async Task SetupWorkspace_UsesDefaultThemeAndReturnsNewContext(int? themeId)
+    {
+        var theme = new CollectionTheme { Id = 1, Name = "General" };
+        _mockThemeRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new[] { theme });
+        _mockSetupService.Setup(s => s.SetupWorkspaceAsync(TestUserId, It.IsAny<Workspace>(), It.IsAny<Collection>(), theme))
+            .ReturnsAsync((int _, Workspace workspace, Collection collection, CollectionTheme _) =>
+            {
+                workspace.Id = 2;
+                collection.Id = 3;
+                return collection;
+            });
+        _mockUserRepository.Setup(r => r.GetByIdAsync(TestUserId)).ReturnsAsync(new User { Id = TestUserId, ActiveWorkspaceId = 2 });
+        _mockTokenService.Setup(s => s.GenerateAppToken(It.IsAny<User>(), WorkspaceRole.WorkspaceAdmin)).Returns("new-token");
+        var result = await _controller.SetupWorkspace(new SetupWorkspaceRequest { WorkspaceName = " New ", ThemeId = themeId });
+        var response = Assert.IsType<SetupWorkspaceResponse>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(2, response.WorkspaceId);
+        Assert.Equal(3, response.CollectionId);
+        Assert.Equal("New", response.WorkspaceName);
+        Assert.Contains(_controller.Response.Headers.SetCookie, cookie => cookie!.Contains("new-token"));
     }
 
     #region UpdateWorkspace Tests

@@ -1,3 +1,4 @@
+using Microsoft.IdentityModel.Validators;
 using System.IdentityModel.Tokens.Jwt;
 using OneBigHead.Server.Models;
 using Microsoft.Extensions.Options;
@@ -24,31 +25,13 @@ public class OidcTokenValidator : IOidcTokenValidator
 
     private void InitializeConfigurationManagers()
     {
-        if (_settings.Providers.Microsoft.Enabled)
+        foreach (var provider in new[] { IdentityProvider.Microsoft, IdentityProvider.Google, IdentityProvider.Apple })
         {
-            var metadataAddress = $"{_settings.Providers.Microsoft.Authority}/.well-known/openid-configuration";
-            _configManagers[IdentityProvider.Microsoft] = new ConfigurationManager<OpenIdConnectConfiguration>(
-                metadataAddress,
-                new OpenIdConnectConfigurationRetriever(),
-                new HttpDocumentRetriever());
-        }
-
-        if (_settings.Providers.Google.Enabled)
-        {
-            var metadataAddress = $"{_settings.Providers.Google.Authority}/.well-known/openid-configuration";
-            _configManagers[IdentityProvider.Google] = new ConfigurationManager<OpenIdConnectConfiguration>(
-                metadataAddress,
-                new OpenIdConnectConfigurationRetriever(),
-                new HttpDocumentRetriever());
-        }
-
-        if (_settings.Providers.Apple.Enabled)
-        {
-            var metadataAddress = $"{_settings.Providers.Apple.Authority}/.well-known/openid-configuration";
-            _configManagers[IdentityProvider.Apple] = new ConfigurationManager<OpenIdConnectConfiguration>(
-                metadataAddress,
-                new OpenIdConnectConfigurationRetriever(),
-                new HttpDocumentRetriever());
+            var configuration = _settings.Providers.Get(provider);
+            if (!configuration.Enabled) continue;
+            _configManagers[provider] = new ConfigurationManager<OpenIdConnectConfiguration>(
+                $"{configuration.Authority}/.well-known/openid-configuration",
+                new OpenIdConnectConfigurationRetriever(), new HttpDocumentRetriever());
         }
     }
 
@@ -66,38 +49,15 @@ public class OidcTokenValidator : IOidcTokenValidator
         try
         {
             var config = await configManager.GetConfigurationAsync(CancellationToken.None);
-            var providerSettings = GetProviderSettings(provider);
+            var providerSettings = _settings.Providers.Get(provider);
 
             var validationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                // Microsoft's OpenID Connect discovery document returns a templated issuer 
-                // (e.g., "https://login.microsoftonline.com/{tenantid}/v2.0") for multi-tenant
-                // and consumer account configurations. The actual token contains the real tenant ID.
-                // We use a custom IssuerValidator to replace the {tenantid} placeholder with the
-                // tenant ID from the token's "tid" claim before comparison, matching the behavior
-                // of Microsoft.Identity.Web's built-in validation.
-                IssuerValidator = (issuer, securityToken, parameters) =>
-                {
-                    var expectedIssuer = config.Issuer;
-                    
-                    if (securityToken is JwtSecurityToken jwt)
-                    {
-                        var tid = jwt.Claims.FirstOrDefault(c => c.Type == "tid")?.Value;
-                        if (!string.IsNullOrEmpty(tid))
-                        {
-                            expectedIssuer = config.Issuer.Replace("{tenantid}", tid);
-                        }
-                    }
-
-                    if (string.Equals(issuer, expectedIssuer, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return issuer;
-                    }
-
-                    throw new SecurityTokenInvalidIssuerException(
-                        $"Issuer validation failed. Expected: '{expectedIssuer}', Actual: '{issuer}'");
-                },
+                ValidIssuer = config.Issuer,
+                IssuerValidator = provider == IdentityProvider.Microsoft
+                    ? AadIssuerValidator.GetAadIssuerValidator(providerSettings.Authority).Validate
+                    : null,
                 ValidateAudience = true,
                 ValidAudience = providerSettings.ClientId,
                 ValidateLifetime = true,
@@ -149,15 +109,4 @@ public class OidcTokenValidator : IOidcTokenValidator
         }
     }
 
-    private OidcProvider GetProviderSettings(IdentityProvider provider)
-    {
-        return provider switch
-        {
-            IdentityProvider.Microsoft => _settings.Providers.Microsoft,
-            IdentityProvider.Google => _settings.Providers.Google,
-            IdentityProvider.Apple => _settings.Providers.Apple,
-            _ => throw new ArgumentOutOfRangeException(nameof(provider))
-        };
-    }
 }
-

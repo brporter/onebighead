@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 # reset-database.ps1
-# Resets the local development database by dropping it, applying migrations via efbundle, and seeding.
+# Resets the local development database by dropping it, applying migrations with dotnet ef, and seeding.
 
 param(
     [switch]$Force
@@ -39,27 +39,16 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "Database dropped successfully." -ForegroundColor Green
 }
 
-# Build and apply migrations via efbundle
-$backendProject = Join-Path $rootDir "backend\src\backend\backend.csproj"
-$efBundle = Join-Path $rootDir "backend\src\backend\efbundle.exe"
-
-Write-Host "Building migration bundle..." -ForegroundColor Cyan
-dotnet ef migrations bundle --project $backendProject --force --output $efBundle --no-build 2>$null
-if ($LASTEXITCODE -ne 0) {
-    dotnet ef migrations bundle --project $backendProject --force --output $efBundle
-}
-
-if (Test-Path $efBundle) {
-    Write-Host "Applying migrations..." -ForegroundColor Cyan
-    & $efBundle --connection "Host=localhost;Port=5432;Database=$databaseName;Username=postgres;Password=$postgresPassword"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Migration bundle failed!" -ForegroundColor Red
-        exit 1
-    }
-    Write-Host "Migrations applied successfully." -ForegroundColor Green
-} else {
-    Write-Host "Error: Failed to create migration bundle." -ForegroundColor Red
-    exit 1
+# Apply local migrations directly; deployment still uses a migration bundle.
+$backendProject = Join-Path $rootDir 'backend/src/backend/backend.csproj'
+Push-Location $rootDir
+try {
+    dotnet tool restore
+    if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed' }
+    dotnet ef database update --project $backendProject --connection "Host=localhost;Port=5432;Database=$databaseName;Username=postgres;Password=$postgresPassword"
+    if ($LASTEXITCODE -ne 0) { throw 'Database migration failed' }
+} finally {
+    Pop-Location
 }
 
 # Seed database via the backend's Debug-only --seed flag

@@ -5,14 +5,16 @@
 
 .workspace-switcher {
   position: relative;
+  anchor-scope: --workspace-switcher;
 }
 
 .workspace-switcher__trigger {
+  anchor-name: --workspace-switcher;
   display: flex;
   align-items: center;
   gap: var(--space-xs);
   padding: var(--space-xs) var(--space-sm);
-  background: var(--color-surface-raised);
+  background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -22,8 +24,8 @@
 }
 
 .workspace-switcher__trigger:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-hover);
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
 }
 
 .workspace-switcher__trigger:disabled {
@@ -44,9 +46,14 @@
 }
 
 .workspace-switcher__dropdown {
-  position: absolute;
-  top: calc(100% + var(--space-xs));
-  left: 0;
+  position: fixed;
+  position-anchor: --workspace-switcher;
+  inset: auto;
+  top: calc(anchor(bottom) + var(--space-xs));
+  left: anchor(left);
+  margin: 0;
+  padding: 0;
+  color: var(--color-text);
   min-width: 200px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -91,7 +98,7 @@
 }
 
 .workspace-switcher__item:hover:not(:disabled) {
-  background: var(--color-surface-hover);
+  background: var(--color-surface-alt);
 }
 
 .workspace-switcher__item:disabled {
@@ -100,12 +107,12 @@
 }
 
 .workspace-switcher__item--active {
-  background: var(--color-surface-raised);
+  background: var(--color-surface-alt);
   cursor: default;
 }
 
 .workspace-switcher__item--active:hover {
-  background: var(--color-surface-raised);
+  background: var(--color-surface-alt);
 }
 
 .workspace-switcher__item-name {
@@ -128,7 +135,11 @@
   }
 
   .workspace-switcher__dropdown {
-    right: 0;
+    right: anchor(right);
     left: auto;
   }
+}
+
+.workspace-switcher:has(:popover-open) .workspace-switcher__icon {
+  transform: rotate(180deg);
 }

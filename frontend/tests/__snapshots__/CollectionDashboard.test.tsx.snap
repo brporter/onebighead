@@ -77,37 +77,39 @@ exports[`CollectionDashboard > snapshots > should match snapshot with stats load
         <ul
           class="collection-dashboard__item-list"
         >
-          <li
-            class="collection-dashboard__item"
-            role="button"
-            tabindex="0"
-          >
-            <span
-              class="collection-dashboard__item-name"
+          <li>
+            <button
+              class="collection-dashboard__item"
+              type="button"
             >
-              New Item
-            </span>
-            <span
-              class="collection-dashboard__item-meta"
-            >
-              just now
-            </span>
+              <span
+                class="collection-dashboard__item-name"
+              >
+                New Item
+              </span>
+              <span
+                class="collection-dashboard__item-meta"
+              >
+                just now
+              </span>
+            </button>
           </li>
-          <li
-            class="collection-dashboard__item"
-            role="button"
-            tabindex="0"
-          >
-            <span
-              class="collection-dashboard__item-name"
+          <li>
+            <button
+              class="collection-dashboard__item"
+              type="button"
             >
-              Older Item
-            </span>
-            <span
-              class="collection-dashboard__item-meta"
-            >
-              5d ago
-            </span>
+              <span
+                class="collection-dashboard__item-name"
+              >
+                Older Item
+              </span>
+              <span
+                class="collection-dashboard__item-meta"
+              >
+                5d ago
+              </span>
+            </button>
           </li>
         </ul>
       </div>
@@ -122,39 +124,41 @@ exports[`CollectionDashboard > snapshots > should match snapshot with stats load
         <ul
           class="collection-dashboard__item-list"
         >
-          <li
-            class="collection-dashboard__item"
-            role="button"
-            tabindex="0"
-          >
-            <span
-              class="collection-dashboard__item-name"
+          <li>
+            <button
+              class="collection-dashboard__item"
+              type="button"
             >
-              Popular Item
-            </span>
-            <span
-              class="collection-dashboard__item-meta"
-            >
-              25
-               views
-            </span>
+              <span
+                class="collection-dashboard__item-name"
+              >
+                Popular Item
+              </span>
+              <span
+                class="collection-dashboard__item-meta"
+              >
+                25
+                 views
+              </span>
+            </button>
           </li>
-          <li
-            class="collection-dashboard__item"
-            role="button"
-            tabindex="0"
-          >
-            <span
-              class="collection-dashboard__item-name"
+          <li>
+            <button
+              class="collection-dashboard__item"
+              type="button"
             >
-              Second Popular
-            </span>
-            <span
-              class="collection-dashboard__item-meta"
-            >
-              10
-               views
-            </span>
+              <span
+                class="collection-dashboard__item-name"
+              >
+                Second Popular
+              </span>
+              <span
+                class="collection-dashboard__item-meta"
+              >
+                10
+                 views
+              </span>
+            </button>
           </li>
         </ul>
       </div>

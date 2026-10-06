@@ -1,16 +1,28 @@
-# React + Vite
+# OneBigHead frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19, TypeScript, React Router, and Vite. Use Node 22+.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+From the repository root, run `./scripts/dev-start.sh` (macOS/Linux) or
+`./scripts/dev-start.ps1` (PowerShell 7.3+). These commands start PostgreSQL,
+verify the project, apply migrations, seed data, and launch both servers.
+The frontend runs at http://localhost:5173 and proxies API and Razor page
+requests to http://localhost:5148. Vite serves client routes directly.
 
-## React Compiler
+To run only the frontend, run `npm ci` and then `npm run dev` here.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Check changes
 
-## Expanding the ESLint configuration
+- `npm run typecheck` — check source and test types.
+- `npm run lint` — run ESLint.
+- `npm run test:run` — run unit tests once.
+- `npm run test:coverage` — produce an Istanbul coverage report.
+- `npm run build` — create the production bundle in `dist`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`../scripts/verify.sh` and `../scripts/verify.ps1` run the full backend and
+frontend checks used in CI. PostgreSQL integration tests require Docker.
+
+Use native forms, buttons, dialogs, and popovers for standard browser behavior.
+The shared `ModalDialog` lets callers retain confirmation and busy-state rules.
+Browser checks complement jsdom tests for focus, Escape, and popover dismissal.

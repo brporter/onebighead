@@ -88,7 +88,7 @@ backend/
 Key patterns:
 - Multi-workspace: All data access is scoped by `WorkspaceId` via repository methods
 - Visibility: Items/categories/collections have `isPublicOverride` and computed `effectiveIsPublic`
-- Migrations run automatically in Debug builds; use migration bundles for production
+- Development startup scripts apply migrations with `dotnet ef database update`; production uses migration bundles
 
 ### Frontend Structure
 

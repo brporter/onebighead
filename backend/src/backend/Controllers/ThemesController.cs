@@ -1,3 +1,4 @@
+using OneBigHead.Server.Middleware;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -5,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace OneBigHead.Server.Controllers;
 
+[AllowInactiveWorkspace]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

@@ -1,29 +1,37 @@
+using OneBigHead.Server.Models;
+using OneBigHead.Server.Tests.Integration.Postgres;
 using OneBigHead.Server.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace OneBigHead.Server.Tests.Integration.Data;
 
-[Trait("Category", "Integration")]
-public class TokenRevocationRepositoryTests : IDisposable
+[Collection(PostgresIntegrationCollection.Name)]
+[Trait("Category", "PostgresIntegration")]
+public class TokenRevocationRepositoryTests : IAsyncLifetime
 {
     private readonly AppDbContext _context;
     private readonly TokenRevocationRepository _repository;
 
-    public TokenRevocationRepositoryTests()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
+    private readonly PostgresIntegrationFixture _fixture;
 
-        _context = new AppDbContext(options);
-        _repository = new TokenRevocationRepository(new TestDbContextFactory(options));
+    public TokenRevocationRepositoryTests(PostgresIntegrationFixture fixture)
+    {
+        _fixture = fixture;
+        _context = fixture.CreateContext();
+        _repository = new TokenRevocationRepository(fixture.CreateContextFactory());
     }
 
-    public void Dispose()
+    public async Task InitializeAsync()
     {
-        _context.Dispose();
-        GC.SuppressFinalize(this);
+        await _fixture.ResetAsync();
+        _context.Workspaces.Add(new Workspace { Id = 1, Name = "Workspace" });
+        _context.Users.AddRange(new User { Id = 1, Email = "one@example.com", ActiveWorkspaceId = 1 },
+            new User { Id = 2, Email = "two@example.com", ActiveWorkspaceId = 1 });
+        await _context.SaveChangesAsync();
     }
+
+    public Task DisposeAsync() => _context.DisposeAsync().AsTask();
+
 
     [Fact]
     public async Task GetRevokedAtUtcAsync_NoEntry_ReturnsNull()

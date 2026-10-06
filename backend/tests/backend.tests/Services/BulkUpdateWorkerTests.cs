@@ -1,7 +1,6 @@
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services.BulkUpdate;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -15,17 +14,8 @@ public class BulkUpdateWorkerTests
     private readonly Mock<IPropertyDiffService> _mockDiffService = new();
     private readonly Mock<ILogger<BulkUpdateWorker>> _mockLogger = new();
 
-    private BulkUpdateWorker CreateWorker()
-    {
-        var services = new ServiceCollection();
-        services.AddSingleton(_mockItemRepo.Object);
-        services.AddSingleton(_mockDiffService.Object);
-        var provider = services.BuildServiceProvider();
-
-        var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
-
-        return new BulkUpdateWorker(_queue, scopeFactory, _mockLogger.Object);
-    }
+    private BulkUpdateWorker CreateWorker() =>
+        new(_queue, _mockItemRepo.Object, _mockDiffService.Object, _mockLogger.Object);
 
     [Fact]
     public async Task ProcessesJob_EndToEnd()
@@ -55,20 +45,8 @@ public class BulkUpdateWorkerTests
             NewPropertyOrder = new List<PropertyIdentifier>(),
         };
 
-        _queue.Enqueue(job);
-
-        var worker = CreateWorker();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var workerTask = worker.StartAsync(cts.Token);
-
-        // Wait for job to complete
-        while (job.Status != BulkUpdateJobStatus.Completed && !cts.IsCancellationRequested)
-        {
-            await Task.Delay(50, cts.Token);
-        }
-
-        await cts.CancelAsync();
-        await worker.StopAsync(CancellationToken.None);
+        using var worker = CreateWorker();
+        await worker.ProcessJobAsync(job, CancellationToken.None);
 
         Assert.Equal(BulkUpdateJobStatus.Completed, job.Status);
         Assert.Equal(2, job.TotalItems);
@@ -105,19 +83,8 @@ public class BulkUpdateWorkerTests
             NewPropertyOrder = new List<PropertyIdentifier>(),
         };
 
-        _queue.Enqueue(job);
-
-        var worker = CreateWorker();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var workerTask = worker.StartAsync(cts.Token);
-
-        while (job.Status != BulkUpdateJobStatus.Completed && !cts.IsCancellationRequested)
-        {
-            await Task.Delay(50, cts.Token);
-        }
-
-        await cts.CancelAsync();
-        await worker.StopAsync(CancellationToken.None);
+        using var worker = CreateWorker();
+        await worker.ProcessJobAsync(job, CancellationToken.None);
 
         Assert.Equal(2, job.TotalItems); // 3 items minus 1 excluded
         Assert.Equal(2, job.ProcessedItems);
@@ -154,19 +121,8 @@ public class BulkUpdateWorkerTests
             NewPropertyOrder = new List<PropertyIdentifier>(),
         };
 
-        _queue.Enqueue(job);
-
-        var worker = CreateWorker();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        await worker.StartAsync(cts.Token);
-
-        while (job.Status != BulkUpdateJobStatus.Completed && !cts.IsCancellationRequested)
-        {
-            await Task.Delay(50, cts.Token);
-        }
-
-        await cts.CancelAsync();
-        await worker.StopAsync(CancellationToken.None);
+        using var worker = CreateWorker();
+        await worker.ProcessJobAsync(job, CancellationToken.None);
 
         Assert.Equal(BulkUpdateJobStatus.Completed, job.Status);
         Assert.Equal(3, job.TotalItems);
@@ -201,23 +157,32 @@ public class BulkUpdateWorkerTests
 
         Assert.Equal(BulkUpdateJobStatus.Queued, job.Status);
 
-        _queue.Enqueue(job);
-
-        var worker = CreateWorker();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        await worker.StartAsync(cts.Token);
-
-        while (job.Status != BulkUpdateJobStatus.Completed && !cts.IsCancellationRequested)
-        {
-            await Task.Delay(50, cts.Token);
-        }
-
-        await cts.CancelAsync();
-        await worker.StopAsync(CancellationToken.None);
+        using var worker = CreateWorker();
+        await worker.ProcessJobAsync(job, CancellationToken.None);
 
         Assert.Equal(BulkUpdateJobStatus.Completed, job.Status);
         Assert.NotNull(job.CompletedAt);
         Assert.Equal(1, job.TotalItems);
         Assert.Equal(1, job.ProcessedItems);
     }
+    [Fact]
+    public async Task StopsWhileWaitingForWork()
+    {
+        var queue = new Mock<IBulkUpdateQueue>();
+        var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        queue.Setup(q => q.DequeueAsync(It.IsAny<CancellationToken>())).Returns((CancellationToken ct) =>
+            new ValueTask<BulkUpdateJob>(WaitForCancellation(ct)));
+        async Task<BulkUpdateJob> WaitForCancellation(CancellationToken ct)
+        {
+            waiting.SetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+            throw new InvalidOperationException("Unreachable");
+        }
+        using var worker = new BulkUpdateWorker(queue.Object, _mockItemRepo.Object, _mockDiffService.Object, _mockLogger.Object);
+        await worker.StartAsync(CancellationToken.None);
+        await waiting.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await worker.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(worker.ExecuteTask!.IsCompletedSuccessfully);
+    }
+
 }

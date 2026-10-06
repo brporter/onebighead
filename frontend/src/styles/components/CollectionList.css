@@ -123,3 +123,13 @@
     padding: var(--space-md);
   }
 }
+
+.collectionList__card {
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+}
+.collectionList__imageWrap, .collectionList__content, .collectionList__name, .collectionList__description {
+  display: block;
+}

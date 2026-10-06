@@ -247,28 +247,21 @@ export function SupportSection({ onNewRequest, refreshKey }: SupportSectionProps
         </div>
       ) : (
         requests.map((request) => (
-          <div
+          <button
+            type="button"
             key={request.supportRequestId}
             className={`support-request-card ${
               request.unreadCount > 0 ? 'support-request-card--unread' : ''
             }`}
             onClick={() => handleSelectRequest(request)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleSelectRequest(request);
-              }
-            }}
-            role="button"
-            tabIndex={0}
             aria-label={`Support request: ${request.subject}, ${request.status}, ${request.replyCount} replies${request.unreadCount > 0 ? `, ${request.unreadCount} unread` : ''}`}
           >
-            <div className="support-request-card__header">
-              <h4 className="support-request-card__subject">{request.subject}</h4>
+            <span className="support-request-card__header">
+              <span className="support-request-card__subject">{request.subject}</span>
               <span className={getStatusClass(request.status)}>{request.status}</span>
-            </div>
-            <p className="support-request-card__preview">{request.description}</p>
-            <div className="support-request-card__footer">
+            </span>
+            <span className="support-request-card__preview">{request.description}</span>
+            <span className="support-request-card__footer">
               <span>{formatDate(request.createdAt)}</span>
               <span className="support-request-card__replies">
                 {request.replyCount} {request.replyCount === 1 ? 'reply' : 'replies'}
@@ -276,8 +269,8 @@ export function SupportSection({ onNewRequest, refreshKey }: SupportSectionProps
                   <span className="support-badge">{request.unreadCount} new</span>
                 )}
               </span>
-            </div>
-          </div>
+            </span>
+          </button>
         ))
       )}
     </div>

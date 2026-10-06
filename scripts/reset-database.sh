@@ -1,11 +1,11 @@
 #!/bin/bash
 # reset-database.sh
-# Resets the local development database by dropping it, applying migrations via efbundle, and seeding.
+# Resets the local development database by dropping it, applying migrations with dotnet ef, and seeding.
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+cd "$(dirname "$0")/.."
+REPO_ROOT="$PWD"
 CONTAINER_NAME="onebighead-postgres"
 DATABASE_NAME="onebighead"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-DevPassword123!}"
@@ -84,29 +84,11 @@ else
     fi
 fi
 
-# Build and apply migrations via efbundle
-EFBUNDLE="$REPO_ROOT/backend/src/backend/efbundle"
+# Apply local migrations directly; deployment still uses a migration bundle.
 BACKEND_PROJECT="$REPO_ROOT/backend/src/backend/backend.csproj"
-
-echo -e "${CYAN}Building migration bundle...${NC}"
-dotnet ef migrations bundle \
-    --project "$BACKEND_PROJECT" \
-    --force \
-    --output "$EFBUNDLE" \
-    --no-build 2>/dev/null || \
-dotnet ef migrations bundle \
-    --project "$BACKEND_PROJECT" \
-    --force \
-    --output "$EFBUNDLE"
-
-if [ -f "$EFBUNDLE" ]; then
-    echo -e "${CYAN}Applying migrations...${NC}"
-    "$EFBUNDLE" --connection "Host=localhost;Port=5432;Database=$DATABASE_NAME;Username=postgres;Password=$POSTGRES_PASSWORD"
-    echo -e "${GREEN}Migrations applied successfully.${NC}"
-else
-    echo -e "${RED}Error: Failed to create migration bundle.${NC}"
-    exit 1
-fi
+dotnet tool restore
+ASPNETCORE_ENVIRONMENT=Development dotnet ef database update --project "$BACKEND_PROJECT" \
+    --connection "Host=localhost;Port=5432;Database=$DATABASE_NAME;Username=postgres;Password=$POSTGRES_PASSWORD"
 
 # Seed database via the backend's Debug-only --seed flag
 CONNECTION_STRING="Host=localhost;Port=5432;Database=$DATABASE_NAME;Username=postgres;Password=$POSTGRES_PASSWORD"

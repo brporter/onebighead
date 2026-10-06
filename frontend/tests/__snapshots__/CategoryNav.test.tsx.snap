@@ -50,17 +50,16 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
       >
         ← Back
       </button>
-      <div
+      <button
         class="categoryNav__row categoryNav__row--active"
-        role="button"
-        tabindex="0"
+        type="button"
       >
         <span
           aria-hidden="true"
           class="categoryNav__dot"
           style="background-color: rgb(199, 125, 74);"
         />
-        <div
+        <span
           class="categoryNav__rowContent"
         >
           <span
@@ -69,19 +68,18 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
             All 
             Rangefinders
           </span>
-        </div>
-      </div>
-      <div
+        </span>
+      </button>
+      <button
         class="categoryNav__row"
-        role="button"
-        tabindex="0"
+        type="button"
       >
         <span
           aria-hidden="true"
           class="categoryNav__dot"
           style="background-color: rgb(199, 125, 74);"
         />
-        <div
+        <span
           class="categoryNav__rowContent"
         >
           <span
@@ -96,25 +94,24 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
             1
             )
           </span>
-        </div>
+        </span>
         <span
           aria-hidden="true"
           class="categoryNav__chevron"
         >
           ›
         </span>
-      </div>
-      <div
+      </button>
+      <button
         class="categoryNav__row"
-        role="button"
-        tabindex="0"
+        type="button"
       >
         <span
           aria-hidden="true"
           class="categoryNav__dot"
           style="background-color: rgb(199, 125, 74);"
         />
-        <div
+        <span
           class="categoryNav__rowContent"
         >
           <span
@@ -122,8 +119,8 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
           >
             Medium Format
           </span>
-        </div>
-      </div>
+        </span>
+      </button>
     </div>
   </aside>
 </div>
@@ -149,17 +146,16 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
     <div
       class="categoryNav__list"
     >
-      <div
+      <button
         class="categoryNav__row"
-        role="button"
-        tabindex="0"
+        type="button"
       >
         <span
           aria-hidden="true"
           class="categoryNav__dot"
           style="background-color: rgb(199, 125, 74);"
         />
-        <div
+        <span
           class="categoryNav__rowContent"
         >
           <span
@@ -174,25 +170,24 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
             2
             )
           </span>
-        </div>
+        </span>
         <span
           aria-hidden="true"
           class="categoryNav__chevron"
         >
           ›
         </span>
-      </div>
-      <div
+      </button>
+      <button
         class="categoryNav__row"
-        role="button"
-        tabindex="0"
+        type="button"
       >
         <span
           aria-hidden="true"
           class="categoryNav__dot"
           style="background-color: rgb(107, 143, 113);"
         />
-        <div
+        <span
           class="categoryNav__rowContent"
         >
           <span
@@ -200,8 +195,8 @@ exports[`CategoryNav > snapshots > root level snapshot 1`] = `
           >
             SLR Cameras
           </span>
-        </div>
-      </div>
+        </span>
+      </button>
     </div>
   </aside>
 </div>

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { publicApi, type PublicItem } from '../api';
+import { publicApi } from '../api';
 import { useAsyncData } from '../utils/useAsyncData';
 import '../styles/components/PublicItem.css';
 

@@ -7,7 +7,7 @@ import type { Category } from '../src/utils/types';
 import { Visibility } from '../src/utils/types';
 
 // Mock @dnd-kit/core
-const mockUseDroppable = vi.fn(() => ({
+const mockUseDroppable = vi.fn<(options: { id: string }) => object>(() => ({
   setNodeRef: vi.fn(),
   isOver: false,
   node: { current: null },
@@ -26,7 +26,7 @@ vi.mock('@dnd-kit/core', () => ({
   useSensors: vi.fn(() => []),
   PointerSensor: vi.fn(),
   KeyboardSensor: vi.fn(),
-  useDroppable: (...args: unknown[]) => mockUseDroppable(...args),
+  useDroppable: (options: { id: string }) => mockUseDroppable(options),
 }));
 
 // Mock @dnd-kit/sortable

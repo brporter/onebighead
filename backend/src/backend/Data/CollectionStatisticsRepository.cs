@@ -15,30 +15,12 @@ public class CollectionStatisticsRepository : ICollectionStatisticsRepository
     public async Task IncrementAsync(int collectionId, CollectionStatisticType type, long amount = 1)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        var updated = await context.CollectionStatistics
-            .Where(s => s.CollectionId == collectionId && s.StatisticType == type)
-            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Value, p => p.Value + amount));
-
-        if (updated == 0)
-        {
-            try
-            {
-                context.CollectionStatistics.Add(new CollectionStatistic
-                {
-                    CollectionId = collectionId,
-                    StatisticType = type,
-                    Value = amount,
-                });
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                context.ChangeTracker.Clear();
-                await context.CollectionStatistics
-                    .Where(s => s.CollectionId == collectionId && s.StatisticType == type)
-                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.Value, p => p.Value + amount));
-            }
-        }
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "CollectionStatistics" ("CollectionId", "StatisticType", "Value")
+            VALUES ({collectionId}, {(int)type}, {amount})
+            ON CONFLICT ("CollectionId", "StatisticType")
+            DO UPDATE SET "Value" = "CollectionStatistics"."Value" + EXCLUDED."Value"
+            """);
     }
 
     public async Task DecrementAsync(int collectionId, CollectionStatisticType type, long amount = 1)
@@ -61,30 +43,12 @@ public class CollectionStatisticsRepository : ICollectionStatisticsRepository
     public async Task IncrementItemViewAsync(int collectionId, int itemId)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        var updated = await context.CollectionItemHighlights
-            .Where(h => h.CollectionId == collectionId && h.ItemId == itemId)
-            .ExecuteUpdateAsync(h => h.SetProperty(p => p.ViewCount, p => p.ViewCount + 1));
-
-        if (updated == 0)
-        {
-            try
-            {
-                context.CollectionItemHighlights.Add(new CollectionItemHighlight
-                {
-                    CollectionId = collectionId,
-                    ItemId = itemId,
-                    ViewCount = 1,
-                });
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                context.ChangeTracker.Clear();
-                await context.CollectionItemHighlights
-                    .Where(h => h.CollectionId == collectionId && h.ItemId == itemId)
-                    .ExecuteUpdateAsync(h => h.SetProperty(p => p.ViewCount, p => p.ViewCount + 1));
-            }
-        }
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "CollectionItemHighlights" ("CollectionId", "ItemId", "ViewCount")
+            VALUES ({collectionId}, {itemId}, 1)
+            ON CONFLICT ("CollectionId", "ItemId")
+            DO UPDATE SET "ViewCount" = "CollectionItemHighlights"."ViewCount" + 1
+            """);
     }
 
     public async Task<List<CollectionItemHighlight>> GetTopViewedItemsAsync(int collectionId, int count = 10)

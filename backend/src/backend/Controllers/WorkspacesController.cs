@@ -1,3 +1,4 @@
+using OneBigHead.Server.Middleware;
 using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
@@ -18,9 +19,7 @@ public class WorkspacesController : ApiControllerBase
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
     private readonly IUserRepository _userRepository;
-    private readonly ICollectionRepository _collectionRepository;
-    private readonly ICategoryRepository _categoryRepository;
-    private readonly IItemTemplateRepository _itemTemplateRepository;
+    private readonly ICollectionSetupService _setupService;
     private readonly IThemeRepository _themeRepository;
     private readonly ITokenService _tokenService;
     private readonly ITokenRevocationService _tokenRevocationService;
@@ -32,9 +31,7 @@ public class WorkspacesController : ApiControllerBase
         IWorkspaceRepository workspaceRepository,
         IWorkspaceUserRepository workspaceUserRepository,
         IUserRepository userRepository,
-        ICollectionRepository collectionRepository,
-        ICategoryRepository categoryRepository,
-        IItemTemplateRepository itemTemplateRepository,
+        ICollectionSetupService setupService,
         IThemeRepository themeRepository,
         ITokenService tokenService,
         ITokenRevocationService tokenRevocationService,
@@ -45,9 +42,7 @@ public class WorkspacesController : ApiControllerBase
         _workspaceRepository = workspaceRepository;
         _workspaceUserRepository = workspaceUserRepository;
         _userRepository = userRepository;
-        _collectionRepository = collectionRepository;
-        _categoryRepository = categoryRepository;
-        _itemTemplateRepository = itemTemplateRepository;
+        _setupService = setupService;
         _themeRepository = themeRepository;
         _tokenService = tokenService;
         _tokenRevocationService = tokenRevocationService;
@@ -59,6 +54,7 @@ public class WorkspacesController : ApiControllerBase
     /// <summary>
     /// List all workspace memberships for the current user
     /// </summary>
+    [AllowInactiveWorkspace]
     [HttpGet]
     public async Task<IActionResult> GetWorkspaces()
     {
@@ -83,6 +79,7 @@ public class WorkspacesController : ApiControllerBase
     /// Create a new workspace and add the current user as WorkspaceAdmin.
     /// Note: This creates a workspace without a collection. For full setup with collection, use SetupWorkspace.
     /// </summary>
+    [AllowInactiveWorkspace]
     [HttpPost]
     public async Task<IActionResult> CreateWorkspace([FromBody] CreateWorkspaceRequest request)
     {
@@ -121,6 +118,7 @@ public class WorkspacesController : ApiControllerBase
     /// Set up a new workspace with an initial collection.
     /// This is the recommended way to create a new workspace as it includes all necessary setup.
     /// </summary>
+    [AllowInactiveWorkspace]
     [HttpPost("setup")]
     public async Task<IActionResult> SetupWorkspace([FromBody] SetupWorkspaceRequest request)
     {
@@ -138,13 +136,6 @@ public class WorkspacesController : ApiControllerBase
             HasCompletedWelcome = true, // Mark as complete since we're setting up fully
             CreatedAt = DateTime.UtcNow
         };
-
-        await _workspaceRepository.CreateAsync(workspace);
-
-        // Add user as WorkspaceAdmin of the new workspace
-        await _workspaceUserRepository.CreateAsync(userId, workspace.Id, WorkspaceRole.WorkspaceAdmin);
-
-        _logger.LogInformation("User {UserId} created new workspace {WorkspaceId} ({WorkspaceName}) via setup", userId, workspace.Id, workspace.Name);
 
         // Determine collection name (default if not provided)
         var collectionName = string.IsNullOrWhiteSpace(request.CollectionName)
@@ -164,54 +155,14 @@ public class WorkspacesController : ApiControllerBase
             theme = themes.FirstOrDefault(t => t.Name == Constants.ThemeNames.General) ?? themes.FirstOrDefault();
         }
 
-        // Create the collection
-        var slug = SlugHelper.GenerateSlug(collectionName);
-        var existing = await _collectionRepository.GetBySlugAsync(slug, workspace.Id);
-        if (existing != null)
+        var createdCollection = await _setupService.SetupWorkspaceAsync(userId, workspace, new Collection
         {
-            slug = $"{slug}-{DateTime.UtcNow.Ticks}";
-        }
-
-        var collection = new Collection
-        {
-            WorkspaceId = workspace.Id,
             Name = collectionName,
-            Description = request.CollectionDescription?.Trim() ?? string.Empty,
-            Slug = slug,
-            Visibility = Visibility.Private
-        };
+            Description = request.CollectionDescription?.Trim() ?? string.Empty
+        }, theme);
 
-        var createdCollection = await _collectionRepository.CreateAsync(collection);
-
-        // Create "Unassigned Items" system category
-        var unassignedCategory = new Category
-        {
-            WorkspaceId = workspace.Id,
-            CollectionId = createdCollection.Id,
-            Name = Constants.CategoryNames.UnassignedItems,
-            Description = Constants.CategoryNames.UnassignedItemsDescription,
-            IsSystem = true
-        };
-        await _categoryRepository.CreateAsync(unassignedCategory);
-
-        // Apply theme if available
-        if (theme != null)
-        {
-            // Associate theme templates with collection
-            foreach (var themeTemplate in theme.ThemeTemplates)
-            {
-                await _itemTemplateRepository.AssociateWithCollectionAsync(themeTemplate.ItemTemplateId, createdCollection.Id);
-            }
-
-            // Create categories from theme
-            await CreateThemeCategoriesAsync(theme, workspace.Id, createdCollection.Id);
-        }
-
-        _logger.LogInformation("Created collection {CollectionId} ({CollectionName}) for new workspace {WorkspaceId}",
-            createdCollection.Id, createdCollection.Name, workspace.Id);
-
-        // Switch user to the new workspace
-        await _userRepository.UpdateActiveWorkspaceAsync(userId, workspace.Id);
+        _logger.LogInformation("User {UserId} created workspace {WorkspaceId} with collection {CollectionId}",
+            userId, workspace.Id, createdCollection.Id);
 
         // Generate new JWT with the new workspace
         var user = await _userRepository.GetByIdAsync(userId);
@@ -229,58 +180,6 @@ public class WorkspacesController : ApiControllerBase
             CollectionId = createdCollection.Id,
             CollectionName = createdCollection.Name
         });
-    }
-
-    private async Task CreateThemeCategoriesAsync(CollectionTheme theme, int workspaceId, int collectionId)
-    {
-        if (theme.ThemeCategories == null || !theme.ThemeCategories.Any())
-            return;
-
-        // Map theme category names to created category IDs
-        var categoryNameToIdMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
-        // Sort by parent to ensure parents are created first
-        // Use iterative approach to handle arbitrary nesting depth
-        var pendingCategories = theme.ThemeCategories.OrderBy(c => c.SortOrder).ToList();
-        var maxIterations = pendingCategories.Count * 2; // Safety limit
-        var iterations = 0;
-
-        while (pendingCategories.Count > 0 && iterations < maxIterations)
-        {
-            iterations++;
-            var categoriesToProcess = pendingCategories
-                .Where(tc => string.IsNullOrEmpty(tc.ParentName) || categoryNameToIdMap.ContainsKey(tc.ParentName))
-                .ToList();
-
-            if (!categoriesToProcess.Any())
-            {
-                _logger.LogWarning("Theme {ThemeId} has orphaned categories that couldn't be created", theme.Id);
-                break;
-            }
-
-            foreach (var themeCategory in categoriesToProcess)
-            {
-                int? parentCategoryId = null;
-                if (!string.IsNullOrEmpty(themeCategory.ParentName) && categoryNameToIdMap.TryGetValue(themeCategory.ParentName, out var parentId))
-                {
-                    parentCategoryId = parentId;
-                }
-
-                var category = new Category
-                {
-                    WorkspaceId = workspaceId,
-                    CollectionId = collectionId,
-                    ParentCategoryId = parentCategoryId,
-                    Name = themeCategory.Name,
-                    Description = themeCategory.Description ?? string.Empty,
-                    IsSystem = false
-                };
-
-                var created = await _categoryRepository.CreateAsync(category);
-                categoryNameToIdMap[themeCategory.Name] = created.Id;
-                pendingCategories.Remove(themeCategory);
-            }
-        }
     }
 
     /// <summary>
@@ -343,6 +242,7 @@ public class WorkspacesController : ApiControllerBase
     /// <summary>
     /// Switch the current user's active workspace
     /// </summary>
+    [AllowInactiveWorkspace]
     [HttpPost("{workspaceId}/switch")]
     public async Task<IActionResult> SwitchWorkspace(int workspaceId)
     {
@@ -521,6 +421,7 @@ public class WorkspacesController : ApiControllerBase
     /// Restore multiple soft-deleted workspaces (requires user was WorkspaceAdmin of each).
     /// User identity is determined from JWT claims only.
     /// </summary>
+    [AllowInactiveWorkspace]
     [HttpPost("restore")]
     public async Task<IActionResult> RestoreWorkspaces([FromBody] RestoreWorkspacesRequest request)
     {
@@ -589,6 +490,7 @@ public class WorkspacesController : ApiControllerBase
     /// <summary>
     /// Restore a single soft-deleted workspace (requires user was WorkspaceAdmin).
     /// </summary>
+    [AllowInactiveWorkspace]
     [HttpPost("{workspaceId}/restore")]
     public async Task<IActionResult> RestoreWorkspace(int workspaceId)
     {

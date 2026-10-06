@@ -551,7 +551,7 @@ exports[`ItemEditor > snapshots > should render edit mode 1`] = `
       >
         <button
           class="detail__btn detail__btn--primary"
-          type="button"
+          type="submit"
         >
           Save Changes
         </button>
@@ -780,7 +780,7 @@ exports[`ItemEditor > snapshots > should render new item mode 1`] = `
         <button
           class="detail__btn detail__btn--primary"
           disabled=""
-          type="button"
+          type="submit"
         >
           Create Item
         </button>
@@ -1009,7 +1009,7 @@ exports[`ItemEditor > user flag selector > should render snapshot for new item w
         <button
           class="detail__btn detail__btn--primary"
           disabled=""
-          type="button"
+          type="submit"
         >
           Create Item
         </button>
@@ -1576,7 +1576,7 @@ exports[`ItemEditor > user flag selector > should render snapshot with Have flag
       >
         <button
           class="detail__btn detail__btn--primary"
-          type="button"
+          type="submit"
         >
           Save Changes
         </button>
@@ -2143,7 +2143,7 @@ exports[`ItemEditor > user flag selector > should render snapshot with Want flag
       >
         <button
           class="detail__btn detail__btn--primary"
-          type="button"
+          type="submit"
         >
           Save Changes
         </button>
@@ -2710,7 +2710,7 @@ exports[`ItemEditor > user flag selector > should render snapshot with user flag
       >
         <button
           class="detail__btn detail__btn--primary"
-          type="button"
+          type="submit"
         >
           Save Changes
         </button>

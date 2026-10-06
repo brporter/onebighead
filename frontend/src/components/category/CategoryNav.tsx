@@ -196,22 +196,20 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse, onE
         )}
 
         {isDrilled && currentDrilledCategory && (
-          <div
+          <button
+            type="button"
             className={`categoryNav__row${selectedCategoryId === currentDrilledCategory.categoryId ? ' categoryNav__row--active' : ''}`}
             onClick={() => onSelect(currentDrilledCategory.categoryId)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onSelect(currentDrilledCategory.categoryId); } }}
           >
             <span
               className="categoryNav__dot"
               style={{ backgroundColor: getAccentColor(rootColorIndex >= 0 ? rootColorIndex : 0).start }}
               aria-hidden="true"
             />
-            <div className="categoryNav__rowContent">
+            <span className="categoryNav__rowContent">
               <span className="categoryNav__name">All {currentDrilledCategory.name}</span>
-            </div>
-          </div>
+            </span>
+          </button>
         )}
 
         {displayedCategories.map((cat) => {
@@ -221,30 +219,28 @@ function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse, onE
           const isActive = cat.categoryId === selectedCategoryId;
 
           return (
-            <div
+            <button
+              type="button"
               key={cat.categoryId}
               className={`categoryNav__row${isActive ? ' categoryNav__row--active' : ''}`}
               onClick={() => onSelect(cat.categoryId)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onSelect(cat.categoryId); } }}
             >
               <span
                 className="categoryNav__dot"
                 style={{ backgroundColor: getAccentColor(colorIdx >= 0 ? colorIdx : 0).start }}
                 aria-hidden="true"
               />
-              <div className="categoryNav__rowContent">
+              <span className="categoryNav__rowContent">
                 <span className="categoryNav__name">{cat.name}</span>
                 {childCount > 0 && (
                   <span className="categoryNav__count">({childCount})</span>
                 )}
-              </div>
+              </span>
 
               {hasChildren && (
                 <span className="categoryNav__chevron" aria-hidden="true">&rsaquo;</span>
               )}
-            </div>
+            </button>
           );
         })}
 

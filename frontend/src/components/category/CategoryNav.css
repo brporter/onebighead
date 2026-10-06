@@ -130,6 +130,11 @@
 }
 
 .categoryNav__row {
+  width: 100%;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 10px;

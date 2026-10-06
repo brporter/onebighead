@@ -90,19 +90,11 @@ function SortableRow({ row, onEditCategory, dropIntent, isDisabledTarget }: Sort
       className={className}
       data-category-id={String(row.category.categoryId)}
       data-depth={String(row.depth)}
-      onClick={() => onEditCategory(row.category.categoryId)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onEditCategory(row.category.categoryId);
-        }
-      }}
     >
       {!row.category.isSystem && (
         <DragHandle listeners={listeners} attributes={attributes} />
       )}
+      <button type="button" className="catTree__edit" onClick={() => onEditCategory(row.category.categoryId)}>
       <span
         className="catTree__dot"
         style={{ backgroundColor: accentColor.start }}
@@ -112,6 +104,7 @@ function SortableRow({ row, onEditCategory, dropIntent, isDisabledTarget }: Sort
       {row.hasChildren && (
         <span className="catTree__chevron" aria-hidden="true">&rsaquo;</span>
       )}
+      </button>
     </div>
   );
 }

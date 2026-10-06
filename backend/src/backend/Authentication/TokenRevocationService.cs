@@ -9,12 +9,15 @@ public class TokenRevocationService : ITokenRevocationService
     private readonly ITokenRevocationRepository _repository;
     private readonly IMemoryCache _cache;
     private readonly TimeSpan _cacheTtl;
+    private readonly TimeProvider _timeProvider;
 
     public TokenRevocationService(
         ITokenRevocationRepository repository,
         IMemoryCache cache,
-        IOptions<AuthenticationSettings> settings)
+        IOptions<AuthenticationSettings> settings,
+        TimeProvider timeProvider)
     {
+        _timeProvider = timeProvider;
         _repository = repository;
         _cache = cache;
         _cacheTtl = TimeSpan.FromSeconds(settings.Value.Jwt.RevocationCacheSeconds);
@@ -25,7 +28,7 @@ public class TokenRevocationService : ITokenRevocationService
         // Floor to whole seconds to match the granularity of the JWT "iat" claim.
         // A token minted in the same second as the revocation (i.e., the re-login
         // that follows it) compares as not-revoked.
-        var revokedAt = FloorToSeconds(DateTime.UtcNow);
+        var revokedAt = FloorToSeconds(_timeProvider.GetUtcNow().UtcDateTime);
 
         await _repository.UpsertAsync(userId, revokedAt);
 

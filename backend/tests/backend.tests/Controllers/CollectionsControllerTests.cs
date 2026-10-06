@@ -1,3 +1,4 @@
+using OneBigHead.Server.Services;
 using OneBigHead.Server.Controllers;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
@@ -14,11 +15,10 @@ namespace OneBigHead.Server.Tests.Controllers;
 public class CollectionsControllerTests
 {
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
-    private readonly Mock<ICategoryRepository> _mockCategoryRepository;
-    private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
+    private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository = new();
+    private readonly Mock<ICollectionSetupService> _mockSetupService = new();
     private readonly Mock<IThemeRepository> _mockThemeRepository;
     private readonly Mock<ICollectionStatisticsRepository> _mockCollectionStatisticsRepository;
-    private readonly Mock<ILogger<CollectionsController>> _mockLogger;
     private readonly CollectionsController _controller;
     private const int TestWorkspaceId = 1;
     private const int TestUserId = 1;
@@ -26,18 +26,14 @@ public class CollectionsControllerTests
     public CollectionsControllerTests()
     {
         _mockCollectionRepository = new Mock<ICollectionRepository>();
-        _mockCategoryRepository = new Mock<ICategoryRepository>();
-        _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
         _mockThemeRepository = new Mock<IThemeRepository>();
         _mockCollectionStatisticsRepository = new Mock<ICollectionStatisticsRepository>();
-        _mockLogger = new Mock<ILogger<CollectionsController>>();
         _controller = new CollectionsController(
             _mockCollectionRepository.Object,
-            _mockCategoryRepository.Object,
             _mockItemTemplateRepository.Object,
+            _mockSetupService.Object,
             _mockThemeRepository.Object,
-            _mockCollectionStatisticsRepository.Object,
-            _mockLogger.Object);
+            _mockCollectionStatisticsRepository.Object);
 
         var claims = new List<Claim>
         {
@@ -166,122 +162,18 @@ public class CollectionsControllerTests
 
     #endregion
 
-    #region CreateCollection Tests
-
     [Fact]
-    public async Task CreateCollection_ReturnsCreatedAtAction_WithNewCollection()
+    public async Task CreateCollection_DelegatesSetupAndReturnsCreatedResource()
     {
-        // Arrange
-        var request = new CreateCollectionRequest
-        {
-            Name = "New Collection",
-            Description = "Description"
-        };
-        var createdCollection = new Collection
-        {
-            Id = 1,
-            WorkspaceId = TestWorkspaceId,
-            Name = "New Collection",
-            Description = "Description",
-            Slug = "new-collection"
-        };
-
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("new-collection", TestWorkspaceId))
-            .ReturnsAsync((Collection?)null);
-        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
-            .ReturnsAsync(createdCollection);
-        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync(new Category { Id = 1, Name = "Unassigned Items" });
-
-        // Act
-        var result = await _controller.CreateCollection(request);
-
-        // Assert
-        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-        Assert.Equal(nameof(_controller.GetCollection), createdResult.ActionName);
-        var returnedCollection = Assert.IsType<Collection>(createdResult.Value);
-        Assert.Equal("New Collection", returnedCollection.Name);
+        var created = new Collection { Id = 42, WorkspaceId = TestWorkspaceId, Name = "New" };
+        _mockSetupService.Setup(s => s.CreateAsync(It.IsAny<Collection>(), null)).ReturnsAsync(created);
+        var result = await _controller.CreateCollection(new CreateCollectionRequest { Name = "New", Description = "Details", HeroImageUrl = "/hero.jpg" });
+        var response = Assert.IsType<CreatedAtActionResult>(result.Result);
+        Assert.Same(created, response.Value);
+        Assert.Equal(42, response.RouteValues!["id"]);
+        _mockSetupService.Verify(s => s.CreateAsync(It.Is<Collection>(c => c.WorkspaceId == TestWorkspaceId && c.Name == "New" && c.Description == "Details" && c.HeroImageUrl == "/hero.jpg"), null), Times.Once);
     }
 
-    [Fact]
-    public async Task CreateCollection_GeneratesUniqueSlug_WhenSlugExists()
-    {
-        // Arrange
-        var request = new CreateCollectionRequest
-        {
-            Name = "Test Collection"
-        };
-        var existingCollection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Test", Slug = "test-collection" };
-        var createdCollection = new Collection
-        {
-            Id = 2,
-            WorkspaceId = TestWorkspaceId,
-            Name = "Test Collection",
-            Slug = "test-collection-123"
-        };
-
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("test-collection", TestWorkspaceId))
-            .ReturnsAsync(existingCollection);
-        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
-            .ReturnsAsync(createdCollection);
-        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync(new Category { Id = 1, Name = "Unassigned Items" });
-
-        // Act
-        var result = await _controller.CreateCollection(request);
-
-        // Assert
-        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-        _mockCollectionRepository.Verify(repo => repo.CreateAsync(
-            It.Is<Collection>(c => c.Slug.StartsWith("test-collection-"))), Times.Once);
-    }
-
-    [Fact]
-    public async Task CreateCollection_CreatesUnassignedCategory()
-    {
-        // Arrange
-        var request = new CreateCollectionRequest { Name = "New Collection" };
-        var createdCollection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "New Collection", Slug = "new-collection" };
-
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync(It.IsAny<string>(), TestWorkspaceId))
-            .ReturnsAsync((Collection?)null);
-        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
-            .ReturnsAsync(createdCollection);
-        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync(new Category { Id = 1, Name = "Unassigned Items" });
-
-        // Act
-        await _controller.CreateCollection(request);
-
-        // Assert
-        _mockCategoryRepository.Verify(repo => repo.CreateAsync(
-            It.Is<Category>(c => c.Name == "Unassigned Items" && c.IsSystem && c.CollectionId == 1)), Times.Once);
-    }
-
-    [Fact]
-    public async Task CreateCollection_DefaultsVisibilityToPrivate()
-    {
-        // Arrange
-        var request = new CreateCollectionRequest { Name = "New Collection" };
-
-        Collection? capturedCollection = null;
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync(It.IsAny<string>(), TestWorkspaceId))
-            .ReturnsAsync((Collection?)null);
-        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
-            .Callback<Collection>(c => capturedCollection = c)
-            .ReturnsAsync((Collection c) => new Collection { Id = 1, WorkspaceId = c.WorkspaceId, Name = c.Name, Slug = "new-collection", Visibility = c.Visibility });
-        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync(new Category { Id = 1, Name = "Unassigned Items" });
-
-        // Act
-        await _controller.CreateCollection(request);
-
-        // Assert
-        Assert.NotNull(capturedCollection);
-        Assert.Equal(Visibility.Private, capturedCollection!.Visibility);
-    }
-
-    #endregion
 
     #region UpdateCollection Tests
 
@@ -435,159 +327,15 @@ public class CollectionsControllerTests
     }
 
     [Fact]
-    public async Task SetupCollection_CreatesCollectionWithUnassignedCategory()
+    public async Task SetupCollection_DelegatesThemeAndDefaultsDescription()
     {
-        // Arrange
-        var theme = new CollectionTheme
-        {
-            Id = 1,
-            Name = "General",
-            ThemeTemplates = new List<CollectionThemeTemplate>(),
-            ThemeCategories = new List<CollectionThemeCategory>()
-        };
-
-        var createdCollection = new Collection
-        {
-            Id = 1,
-            WorkspaceId = TestWorkspaceId,
-            Name = "Test Collection",
-            Slug = "test-collection"
-        };
-
-        var request = new SetupCollectionRequest { Name = "Test Collection", ThemeId = 1 };
-
-        _mockThemeRepository.Setup(repo => repo.GetByIdAsync(1))
-            .ReturnsAsync(theme);
-        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
-            .ReturnsAsync(createdCollection);
-        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync((Category c) => c);
-
-        // Act
-        var result = await _controller.SetupCollection(request);
-
-        // Assert
-        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-        
-        // Verify Unassigned category was created
-        _mockCategoryRepository.Verify(
-            repo => repo.CreateAsync(It.Is<Category>(c => 
-                c.Name == "Unassigned Items" && 
-                c.IsSystem == true && 
-                c.CollectionId == 1)),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task SetupCollection_AssociatesThemeTemplates()
-    {
-        // Arrange
-        var theme = new CollectionTheme
-        {
-            Id = 1,
-            Name = "Books",
-            ThemeTemplates = new List<CollectionThemeTemplate>
-            {
-                new() { ThemeId = 1, ItemTemplateId = 10, SortOrder = 1 },
-                new() { ThemeId = 1, ItemTemplateId = 11, SortOrder = 2 }
-            },
-            ThemeCategories = new List<CollectionThemeCategory>()
-        };
-
-        var createdCollection = new Collection
-        {
-            Id = 5,
-            WorkspaceId = TestWorkspaceId,
-            Name = "My Books",
-            Slug = "my-books"
-        };
-
-        var request = new SetupCollectionRequest { Name = "My Books", ThemeId = 1 };
-
-        _mockThemeRepository.Setup(repo => repo.GetByIdAsync(1))
-            .ReturnsAsync(theme);
-        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
-            .ReturnsAsync(createdCollection);
-        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync((Category c) => c);
-
-        // Act
-        var result = await _controller.SetupCollection(request);
-
-        // Assert - now uses batch association
-        _mockItemTemplateRepository.Verify(
-            repo => repo.AssociateMultipleWithCollectionAsync(
-                It.Is<IEnumerable<int>>(ids => ids.Count() == 2 && ids.Contains(10) && ids.Contains(11)),
-                5),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task SetupCollection_CreatesCategoriesWithParentLinkage()
-    {
-        // Arrange
-        var theme = new CollectionTheme
-        {
-            Id = 1,
-            Name = "Books",
-            ThemeTemplates = new List<CollectionThemeTemplate>(),
-            ThemeCategories = new List<CollectionThemeCategory>
-            {
-                new() { ThemeId = 1, Name = "Fiction", Description = "Fiction books", ParentName = null, SortOrder = 1 },
-                new() { ThemeId = 1, Name = "Sci-Fi", Description = "Science fiction", ParentName = "Fiction", SortOrder = 1 }
-            }
-        };
-
-        var createdCollection = new Collection
-        {
-            Id = 5,
-            WorkspaceId = TestWorkspaceId,
-            Name = "My Books",
-            Slug = "my-books"
-        };
-
-        var request = new SetupCollectionRequest { Name = "My Books", ThemeId = 1 };
-        var categoryIdCounter = 100;
-        var createdCategories = new List<Category>();
-
-        _mockThemeRepository.Setup(repo => repo.GetByIdAsync(1))
-            .ReturnsAsync(theme);
-        _mockCollectionRepository.Setup(repo => repo.CreateAsync(It.IsAny<Collection>()))
-            .ReturnsAsync(createdCollection);
-        // Unassigned category gets ID 100
-        _mockCategoryRepository.Setup(repo => repo.CreateAsync(It.IsAny<Category>()))
-            .ReturnsAsync((Category c) =>
-            {
-                c.Id = categoryIdCounter++;
-                return c;
-            });
-        // Iterative batch creation - track what gets created
-        _mockCategoryRepository.Setup(repo => repo.CreateManyAsync(It.IsAny<IEnumerable<Category>>()))
-            .ReturnsAsync((IEnumerable<Category> cats) =>
-            {
-                var result = new List<Category>();
-                foreach (var c in cats)
-                {
-                    c.Id = categoryIdCounter++;
-                    result.Add(c);
-                    createdCategories.Add(c);
-                }
-                return result;
-            });
-
-        // Act
-        var result = await _controller.SetupCollection(request);
-
-        // Assert - verify categories were created with proper parent linkage
-        // Fiction should be created as root (no parent)
-        var fiction = createdCategories.FirstOrDefault(c => c.Name == "Fiction");
-        Assert.NotNull(fiction);
-        Assert.Null(fiction.ParentCategoryId);
-        
-        // Sci-Fi should be created with Fiction as parent
-        var sciFi = createdCategories.FirstOrDefault(c => c.Name == "Sci-Fi");
-        Assert.NotNull(sciFi);
-        Assert.Equal(fiction.Id, sciFi.ParentCategoryId);
+        var theme = new CollectionTheme { Id = 1, Name = "Theme" };
+        _mockThemeRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(theme);
+        var created = new Collection { Id = 42, Name = "New" };
+        _mockSetupService.Setup(s => s.CreateAsync(It.IsAny<Collection>(), theme)).ReturnsAsync(created);
+        var result = await _controller.SetupCollection(new SetupCollectionRequest { Name = "New", ThemeId = 1 });
+        Assert.Same(created, Assert.IsType<CreatedAtActionResult>(result.Result).Value);
+        _mockSetupService.Verify(s => s.CreateAsync(It.Is<Collection>(c => c.WorkspaceId == TestWorkspaceId && c.Name == "New" && c.Description == ""), theme), Times.Once);
     }
 
     #endregion

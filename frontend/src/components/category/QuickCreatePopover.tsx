@@ -44,17 +44,15 @@ function QuickCreatePopover({ isVisible, onSave, onMoreDetails, onCancel }: Quic
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      validateAndSave();
-    } else if (e.key === 'Escape') {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
       e.preventDefault();
       onCancel();
     }
   };
 
   return (
-    <div className="quickCreatePopover">
+    <form className="quickCreatePopover" aria-label="Create category" onSubmit={(event) => { event.preventDefault(); validateAndSave(); }}>
       <input
         ref={inputRef}
         type="text"
@@ -88,14 +86,13 @@ function QuickCreatePopover({ isVisible, onSave, onMoreDetails, onCancel }: Quic
           Cancel
         </button>
         <button
-          type="button"
+          type="submit"
           className="modal__button modal__button--primary"
-          onClick={validateAndSave}
         >
           Save
         </button>
       </div>
-    </div>
+    </form>
   );
 }
 

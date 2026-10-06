@@ -337,12 +337,12 @@ function CategoryView() {
               <p className="bulk-update-banner__text">
                 Updating item properties...
               </p>
-              <div className="bulk-update-banner__bar-container">
-                <div
-                  className="bulk-update-banner__bar-fill"
-                  style={{ width: `${activeBulkJob.totalItems > 0 ? Math.round(((activeBulkJob.processedItems + activeBulkJob.failedItems) / activeBulkJob.totalItems) * 100) : 0}%` }}
-                />
-              </div>
+              <progress
+                className="bulk-update-modal__bar"
+                aria-label="Items updated"
+                value={activeBulkJob.totalItems > 0 ? activeBulkJob.processedItems + activeBulkJob.failedItems : undefined}
+                max={activeBulkJob.totalItems || 1}
+              />
               <p className="bulk-update-banner__detail">
                 {activeBulkJob.processedItems + activeBulkJob.failedItems} / {activeBulkJob.totalItems} items
                 {activeBulkJob.status === 'Queued' && ' (queued)'}

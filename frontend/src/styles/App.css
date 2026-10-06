@@ -1452,17 +1452,6 @@ body {
   padding: var(--space-lg);
 }
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--overlay-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1001;
-  padding: var(--space-lg);
-}
-
 .modal {
   background: var(--color-surface);
   border-radius: 10px;
@@ -2615,8 +2604,15 @@ body {
 }
 
 @media (max-width: 640px) {
+  .site-header {
+    height: auto;
+    min-height: 58px;
+  }
+
   .site-header__content {
     flex-wrap: wrap;
+    gap: var(--space-sm);
+    padding-block: var(--space-sm);
   }
 
   .site-header__brand {
@@ -2625,6 +2621,13 @@ body {
 
   .site-header__actions {
     order: 2;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+  }
+
+  .site-header__spacer {
+    display: none;
   }
 
   .site-header__title-area {

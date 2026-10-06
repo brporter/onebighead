@@ -3,10 +3,7 @@
 exports[`ItemCard > snapshots > should render image card 1`] = `
 <div>
   <div
-    aria-label="Select Leica M3"
     class="item-card"
-    role="button"
-    tabindex="0"
   >
     <div
       class="item-card__ribbon"
@@ -36,11 +33,13 @@ exports[`ItemCard > snapshots > should render image card 1`] = `
     <div
       class="item-card__body"
     >
-      <div
-        class="item-card__name"
+      <button
+        aria-label="Select Leica M3"
+        class="item-card__name item-card__select"
+        type="button"
       >
         Leica M3
-      </div>
+      </button>
       <div
         class="item-card__meta"
       >
@@ -54,10 +53,7 @@ exports[`ItemCard > snapshots > should render image card 1`] = `
 exports[`ItemCard > snapshots > should render selected card 1`] = `
 <div>
   <div
-    aria-label="Select Leica M3"
     class="item-card item-card--selected"
-    role="button"
-    tabindex="0"
   >
     <div
       class="item-card__ribbon"
@@ -87,11 +83,13 @@ exports[`ItemCard > snapshots > should render selected card 1`] = `
     <div
       class="item-card__body"
     >
-      <div
-        class="item-card__name"
+      <button
+        aria-label="Select Leica M3"
+        class="item-card__name item-card__select"
+        type="button"
       >
         Leica M3
-      </div>
+      </button>
       <div
         class="item-card__meta"
       >
@@ -105,10 +103,7 @@ exports[`ItemCard > snapshots > should render selected card 1`] = `
 exports[`ItemCard > snapshots > should render text-only card 1`] = `
 <div>
   <div
-    aria-label="Select Nikon FM2"
     class="item-card item-card--textonly"
-    role="button"
-    tabindex="0"
   >
     <div
       class="item-card__ribbon"
@@ -132,11 +127,13 @@ exports[`ItemCard > snapshots > should render text-only card 1`] = `
     <div
       class="item-card__body"
     >
-      <div
-        class="item-card__name"
+      <button
+        aria-label="Select Nikon FM2"
+        class="item-card__name item-card__select"
+        type="button"
       >
         Nikon FM2
-      </div>
+      </button>
       <div
         class="item-card__meta"
       >

@@ -1,3 +1,4 @@
+using OneBigHead.Server.Tests.Integration.Postgres;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Tests.Integration;
@@ -7,45 +8,37 @@ using Moq;
 
 namespace OneBigHead.Server.Tests.Integration.Data;
 
-[Trait("Category", "Integration")]
-public class ItemRepositoryImageStatsTests : IDisposable
+[Collection(PostgresIntegrationCollection.Name)]
+[Trait("Category", "PostgresIntegration")]
+public class ItemRepositoryImageStatsTests : IAsyncLifetime
 {
     private readonly AppDbContext _context;
     private readonly ItemRepository _repository;
-    private readonly TestCollectionStatisticsRepository _collectionStatsRepo;
+    private readonly CollectionStatisticsRepository _collectionStatsRepo;
     private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 10;
 
-    public ItemRepositoryImageStatsTests()
+    private readonly PostgresIntegrationFixture _fixture;
+
+    public ItemRepositoryImageStatsTests(PostgresIntegrationFixture fixture)
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        _context = new AppDbContext(options);
-        var contextFactory = new TestDbContextFactory(options);
-        _collectionStatsRepo = new TestCollectionStatisticsRepository(contextFactory);
-        _repository = new ItemRepository(
-            contextFactory,
-            new Mock<IWorkspaceStatisticsRepository>().Object,
-            _collectionStatsRepo,
-            new Mock<ILogger<ItemRepository>>().Object);
-
-        // Seed a collection so FK is valid
-        _context.Collections.Add(new Collection
-        {
-            Id = TestCollectionId,
-            WorkspaceId = TestWorkspaceId,
-            Name = "Test Collection",
-            Slug = "test-collection"
-        });
-        _context.SaveChanges();
+        _fixture = fixture;
+        _context = fixture.CreateContext();
+        _collectionStatsRepo = new CollectionStatisticsRepository(fixture.CreateContextFactory());
+        _repository = new ItemRepository(fixture.CreateContextFactory(), new Mock<IWorkspaceStatisticsRepository>().Object,
+            _collectionStatsRepo, new Mock<ILogger<ItemRepository>>().Object);
     }
 
-    public void Dispose()
+    public async Task InitializeAsync()
     {
-        _context.Dispose();
+        await _fixture.ResetAsync();
+        _context.Workspaces.Add(new Workspace { Id = 1, Name = "Workspace" });
+        _context.Collections.AddRange(new Collection { Id = TestCollectionId, WorkspaceId = 1, Name = "Collection", Slug = "collection" },
+            new Collection { Id = 99, WorkspaceId = 1, Name = "Other", Slug = "other" });
+        await _context.SaveChangesAsync();
     }
+
+    public Task DisposeAsync() => _context.DisposeAsync().AsTask();
 
     private Guid SeedStoredImage(int sizeBytes)
     {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useImperativeHandle } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Category } from '../../utils/types';
 import { Visibility } from '../../utils/types';
 import CategoryTemplateSelector from './CategoryTemplateSelector';
@@ -14,12 +14,17 @@ interface CategoryManagerFormProps {
   onPublish: (category: Category) => void;
   onUnpublish: (category: Category) => void;
   onHasChanges?: (hasChanges: boolean) => void;
-  formRef?: React.RefObject<{ submit: () => void } | null>;
+  formId?: string;
 }
 
 const RESERVED_NAMES = ['unassigned items'];
 
-function CategoryManagerForm({
+function CategoryManagerForm(props: CategoryManagerFormProps) {
+  const key = props.isNew ? `new:${props.initialName ?? ''}` : props.category?.categoryId ?? 'empty';
+  return <CategoryForm key={key} {...props} />;
+}
+
+function CategoryForm({
   category,
   categories,
   collectionId,
@@ -30,12 +35,12 @@ function CategoryManagerForm({
   onPublish,
   onUnpublish,
   onHasChanges,
-  formRef,
+  formId,
 }: CategoryManagerFormProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [parentCategoryId, setParentCategoryId] = useState<number | null>(null);
-  const [itemTemplateIds, setItemTemplateIds] = useState<number[]>([]);
+  const [name, setName] = useState(isNew ? initialName : category?.name ?? '');
+  const [description, setDescription] = useState(isNew ? '' : category?.description ?? '');
+  const [parentCategoryId, setParentCategoryId] = useState<number | null>(isNew ? null : category?.parentCategoryId ?? null);
+  const [itemTemplateIds, setItemTemplateIds] = useState<number[]>(isNew ? [] : category?.itemTemplateIds ?? []);
   const [error, setError] = useState<string | null>(null);
 
   const isSystem = category?.isSystem ?? false;
@@ -62,42 +67,6 @@ function CategoryManagerForm({
     }
     return null;
   };
-
-  // Expose submit method to parent via ref
-  useImperativeHandle(formRef, () => ({
-    submit: () => {
-      const nameError = validateName(name);
-      if (nameError) {
-        setError(nameError);
-        return;
-      }
-      onSave({
-        name: name.trim(),
-        description: description.trim(),
-        parentCategoryId,
-        itemTemplateIds,
-      });
-    },
-  }), [name, description, parentCategoryId, itemTemplateIds, onSave]);
-
-  // Reset form when category changes or switching to create mode
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- Synchronizing form state with selected category prop */
-    if (isNew) {
-      setName(initialName);
-      setDescription('');
-      setParentCategoryId(null);
-      setItemTemplateIds([]);
-      setError(null);
-    } else if (category) {
-      setName(category.name);
-      setDescription(category.description);
-      setParentCategoryId(category.parentCategoryId);
-      setItemTemplateIds(category.itemTemplateIds);
-      setError(null);
-    }
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [category, isNew, initialName]);
 
   // Get available parent categories (exclude self and descendants to prevent circular references)
   const getAvailableParents = (): Category[] => {
@@ -201,7 +170,7 @@ function CategoryManagerForm({
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form id={formId} aria-label="Category details" onSubmit={handleSubmit}>
         {error && (
           <div className="modal__error" role="alert">
             {error}

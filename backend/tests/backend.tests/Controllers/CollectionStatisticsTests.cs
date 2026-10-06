@@ -1,3 +1,4 @@
+using OneBigHead.Server.Services;
 using OneBigHead.Server.Controllers;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
@@ -14,11 +15,10 @@ namespace OneBigHead.Server.Tests.Controllers;
 public class CollectionStatisticsTests
 {
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
-    private readonly Mock<ICategoryRepository> _mockCategoryRepository;
-    private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository;
+    private readonly Mock<IItemTemplateRepository> _mockItemTemplateRepository = new();
+    private readonly Mock<ICollectionSetupService> _mockSetupService = new();
     private readonly Mock<IThemeRepository> _mockThemeRepository;
     private readonly Mock<ICollectionStatisticsRepository> _mockCollectionStatisticsRepository;
-    private readonly Mock<ILogger<CollectionsController>> _mockLogger;
     private readonly CollectionsController _controller;
     private const int TestWorkspaceId = 1;
     private const int TestCollectionId = 10;
@@ -26,18 +26,14 @@ public class CollectionStatisticsTests
     public CollectionStatisticsTests()
     {
         _mockCollectionRepository = new Mock<ICollectionRepository>();
-        _mockCategoryRepository = new Mock<ICategoryRepository>();
-        _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
         _mockThemeRepository = new Mock<IThemeRepository>();
         _mockCollectionStatisticsRepository = new Mock<ICollectionStatisticsRepository>();
-        _mockLogger = new Mock<ILogger<CollectionsController>>();
         _controller = new CollectionsController(
             _mockCollectionRepository.Object,
-            _mockCategoryRepository.Object,
             _mockItemTemplateRepository.Object,
+            _mockSetupService.Object,
             _mockThemeRepository.Object,
-            _mockCollectionStatisticsRepository.Object,
-            _mockLogger.Object);
+            _mockCollectionStatisticsRepository.Object);
 
         var claims = new List<Claim>
         {

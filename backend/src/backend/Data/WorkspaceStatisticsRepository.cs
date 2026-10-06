@@ -17,32 +17,12 @@ public class WorkspaceStatisticsRepository : IWorkspaceStatisticsRepository
         await using var context = await _contextFactory.CreateDbContextAsync();
         var effectiveDate = date ?? DateOnly.MinValue;
 
-        var updated = await context.WorkspaceStatistics
-            .Where(s => s.WorkspaceId == workspaceId && s.StatisticType == type && s.Date == effectiveDate)
-            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Value, p => p.Value + amount));
-
-        if (updated == 0)
-        {
-            try
-            {
-                context.WorkspaceStatistics.Add(new WorkspaceStatistic
-                {
-                    WorkspaceId = workspaceId,
-                    StatisticType = type,
-                    Date = effectiveDate,
-                    Value = amount,
-                });
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                // Concurrent insert — retry the update
-                context.ChangeTracker.Clear();
-                await context.WorkspaceStatistics
-                    .Where(s => s.WorkspaceId == workspaceId && s.StatisticType == type && s.Date == effectiveDate)
-                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.Value, p => p.Value + amount));
-            }
-        }
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "WorkspaceStatistics" ("WorkspaceId", "StatisticType", "Date", "Value")
+            VALUES ({workspaceId}, {(int)type}, {effectiveDate}, {amount})
+            ON CONFLICT ("WorkspaceId", "StatisticType", "Date")
+            DO UPDATE SET "Value" = "WorkspaceStatistics"."Value" + EXCLUDED."Value"
+            """);
     }
 
     public async Task DecrementAsync(int workspaceId, StatisticType type, long amount = 1)

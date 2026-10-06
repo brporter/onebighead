@@ -1,29 +1,9 @@
-import { defineConfig, type Plugin } from 'vitest/config';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-
-// SPA fallback middleware - serves index.html for client-side routes
-function spaFallback(): Plugin {
-  return {
-    name: 'spa-fallback',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const url = req.url || '';
-        // Client-side routes that should serve index.html
-        const spaRoutes = ['/collections', '/settings', '/setup', '/welcome', '/terms'];
-        const isSpaRoute = spaRoutes.some(route => url === route || url.startsWith(route + '/') || url.startsWith(route + '?'));
-
-        if (isSpaRoute && !url.includes('.')) {
-          req.url = '/index.html';
-        }
-        next();
-      });
-    },
-  };
-}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), spaFallback()],
+  plugins: [react()],
   base: '/',
   server: {
     proxy: {
@@ -31,24 +11,6 @@ export default defineConfig({
         target: 'http://localhost:5148/',
         changeOrigin: true,
         secure: false,
-        // Ensure cookies are properly forwarded through the proxy
-        cookieDomainRewrite: '',
-        cookiePathRewrite: '/',
-        configure: (proxy) => {
-          proxy.on('proxyRes', (proxyRes, req, res) => {
-            // Forward Set-Cookie headers from backend to browser
-            const setCookie = proxyRes.headers['set-cookie'];
-            if (setCookie) {
-              res.setHeader('set-cookie', setCookie);
-            }
-          });
-        },
-      },
-      '/api/auth': {
-        target: 'http://localhost:5148/',
-        changeOrigin: true,
-        secure: false,
-        cookieDomainRewrite: '',
       },
       '^/$': {
         target: 'http://localhost:5148',

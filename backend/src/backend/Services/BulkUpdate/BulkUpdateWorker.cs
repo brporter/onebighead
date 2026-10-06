@@ -6,16 +6,19 @@ namespace OneBigHead.Server.Services.BulkUpdate;
 public class BulkUpdateWorker : BackgroundService
 {
     private readonly IBulkUpdateQueue _queue;
-    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IItemRepository _itemRepository;
+    private readonly IPropertyDiffService _diffService;
     private readonly ILogger<BulkUpdateWorker> _logger;
 
     public BulkUpdateWorker(
         IBulkUpdateQueue queue,
-        IServiceScopeFactory scopeFactory,
+        IItemRepository itemRepository,
+        IPropertyDiffService diffService,
         ILogger<BulkUpdateWorker> logger)
     {
         _queue = queue;
-        _scopeFactory = scopeFactory;
+        _itemRepository = itemRepository;
+        _diffService = diffService;
         _logger = logger;
     }
 
@@ -43,16 +46,12 @@ public class BulkUpdateWorker : BackgroundService
         _logger.LogInformation("BulkUpdateWorker stopped");
     }
 
-    private async Task ProcessJobAsync(BulkUpdateJob job, CancellationToken stoppingToken)
+    internal async Task ProcessJobAsync(BulkUpdateJob job, CancellationToken stoppingToken)
     {
         using var activity = DiagnosticsConfig.AppActivitySource.StartActivity("BulkUpdate.ProcessJob");
         activity?.SetTag("job.id", job.JobId.ToString());
         activity?.SetTag("job.scope", job.Scope.ToString());
         activity?.SetTag("job.workspaceId", job.WorkspaceId);
-
-        using var scope = _scopeFactory.CreateScope();
-        var itemRepository = scope.ServiceProvider.GetRequiredService<IItemRepository>();
-        var diffService = scope.ServiceProvider.GetRequiredService<IPropertyDiffService>();
 
         int? collectionId = null;
 
@@ -61,7 +60,7 @@ public class BulkUpdateWorker : BackgroundService
             job.Status = BulkUpdateJobStatus.Running;
 
             // Fetch target items based on scope
-            var items = await GetTargetItemsAsync(job, itemRepository);
+            var items = await GetTargetItemsAsync(job, _itemRepository);
             var itemList = items.ToList();
 
             // Exclude the source item if specified
@@ -89,11 +88,11 @@ public class BulkUpdateWorker : BackgroundService
 
                 try
                 {
-                    var updatedProperties = diffService.ApplyDiff(
+                    var updatedProperties = _diffService.ApplyDiff(
                         item.Properties, job.Diff, job.NewPropertyOrder);
 
                     item.Properties = updatedProperties;
-                    await itemRepository.UpdateAsync(item.Id!.Value, item, job.WorkspaceId);
+                    await _itemRepository.UpdateAsync(item.Id!.Value, item, job.WorkspaceId);
 
                     job.ProcessedItems++;
                 }
