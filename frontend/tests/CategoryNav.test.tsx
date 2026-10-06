@@ -30,7 +30,7 @@ describe('CategoryNav', () => {
   ];
 
   beforeEach(() => {
-    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
       categories: mockCategories,
       addCategory: vi.fn(async () => 6),
       addCollection: vi.fn(async () => createMockCollection()),
@@ -315,7 +315,7 @@ describe('CategoryNav', () => {
         createMockCategory({ categoryId: 1, name: 'Rangefinders', parentCategoryId: null, effectiveIsPublic: false }),
         createMockCategory({ categoryId: 5, name: 'SLR Cameras', parentCategoryId: null, effectiveIsPublic: false }),
       ];
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
         categories: publicCategories,
       }));
 
@@ -341,7 +341,7 @@ describe('CategoryNav', () => {
         createMockCategory({ categoryId: 10, name: 'System Cat', parentCategoryId: null, isSystem: true }),
       ];
 
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
         categories: categoriesWithSystem,
         items: [],
       }));
@@ -358,7 +358,7 @@ describe('CategoryNav', () => {
         createMockCategory({ categoryId: 10, name: 'System Cat', parentCategoryId: null, isSystem: true }),
       ];
 
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
         categories: categoriesWithSystem,
         items: [createMockItem({ id: 100, categoryId: 10 })],
       }));
@@ -372,7 +372,7 @@ describe('CategoryNav', () => {
 
   describe('loading/error states', () => {
     it('shows loading message when categoriesLoading', () => {
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
         categoriesLoading: true,
       }));
 
@@ -383,7 +383,7 @@ describe('CategoryNav', () => {
     });
 
     it('shows error message when categoriesError', () => {
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
         categoriesError: 'Failed to fetch categories: Internal Server Error',
       }));
 

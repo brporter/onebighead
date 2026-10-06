@@ -13,11 +13,16 @@ public class TokenRevocationServiceTests
 
     private readonly Mock<ITokenRevocationRepository> _mockRepository;
     private readonly MemoryCache _cache;
+    private DateTimeOffset _now = new(2026, 10, 5, 12, 0, 0, TimeSpan.Zero);
+    private readonly Mock<TimeProvider> _timeProvider = new();
 
     public TokenRevocationServiceTests()
     {
         _mockRepository = new Mock<ITokenRevocationRepository>();
-        _cache = new MemoryCache(new MemoryCacheOptions());
+                var clock = new Mock<Microsoft.Extensions.Internal.ISystemClock>();
+        clock.SetupGet(c => c.UtcNow).Returns(() => _now);
+        _timeProvider.Setup(c => c.GetUtcNow()).Returns(() => _now);
+        _cache = new MemoryCache(new MemoryCacheOptions { Clock = clock.Object });
     }
 
     private TokenRevocationService CreateService(int cacheTtlSeconds = 30)
@@ -27,7 +32,7 @@ public class TokenRevocationServiceTests
             Jwt = new JwtSettings { RevocationCacheSeconds = cacheTtlSeconds }
         };
 
-        return new TokenRevocationService(_mockRepository.Object, _cache, Options.Create(settings));
+        return new TokenRevocationService(_mockRepository.Object, _cache, Options.Create(settings), _timeProvider.Object);
     }
 
     [Fact]
@@ -37,7 +42,7 @@ public class TokenRevocationServiceTests
             .ReturnsAsync((DateTime?)null);
         var service = CreateService();
 
-        var revoked = await service.IsTokenRevokedAsync(TestUserId, DateTime.UtcNow);
+        var revoked = await service.IsTokenRevokedAsync(TestUserId, _now.UtcDateTime);
 
         Assert.False(revoked);
         _mockRepository.Verify(r => r.GetRevokedAtUtcAsync(TestUserId), Times.Once);
@@ -46,7 +51,7 @@ public class TokenRevocationServiceTests
     [Fact]
     public async Task IsTokenRevokedAsync_TokenIssuedBeforeRevocation_ReturnsTrue()
     {
-        var revokedAt = DateTime.UtcNow;
+        var revokedAt = _now.UtcDateTime;
         _mockRepository.Setup(r => r.GetRevokedAtUtcAsync(TestUserId))
             .ReturnsAsync(revokedAt);
         var service = CreateService();
@@ -59,7 +64,7 @@ public class TokenRevocationServiceTests
     [Fact]
     public async Task IsTokenRevokedAsync_TokenIssuedAfterRevocation_ReturnsFalse()
     {
-        var revokedAt = DateTime.UtcNow;
+        var revokedAt = _now.UtcDateTime;
         _mockRepository.Setup(r => r.GetRevokedAtUtcAsync(TestUserId))
             .ReturnsAsync(revokedAt);
         var service = CreateService();
@@ -72,7 +77,7 @@ public class TokenRevocationServiceTests
     [Fact]
     public async Task IsTokenRevokedAsync_TokenIssuedAtExactRevocationInstant_ReturnsFalse()
     {
-        var revokedAt = DateTime.UtcNow;
+        var revokedAt = _now.UtcDateTime;
         _mockRepository.Setup(r => r.GetRevokedAtUtcAsync(TestUserId))
             .ReturnsAsync(revokedAt);
         var service = CreateService();
@@ -89,9 +94,9 @@ public class TokenRevocationServiceTests
             .ReturnsAsync((DateTime?)null);
         var service = CreateService();
 
-        await service.IsTokenRevokedAsync(TestUserId, DateTime.UtcNow);
-        await service.IsTokenRevokedAsync(TestUserId, DateTime.UtcNow);
-        await service.IsTokenRevokedAsync(TestUserId, DateTime.UtcNow);
+        await service.IsTokenRevokedAsync(TestUserId, _now.UtcDateTime);
+        await service.IsTokenRevokedAsync(TestUserId, _now.UtcDateTime);
+        await service.IsTokenRevokedAsync(TestUserId, _now.UtcDateTime);
 
         _mockRepository.Verify(r => r.GetRevokedAtUtcAsync(TestUserId), Times.Once);
     }
@@ -103,10 +108,10 @@ public class TokenRevocationServiceTests
             .ReturnsAsync((DateTime?)null);
         var service = CreateService();
 
-        await service.IsTokenRevokedAsync(1, DateTime.UtcNow);
-        await service.IsTokenRevokedAsync(2, DateTime.UtcNow);
-        await service.IsTokenRevokedAsync(1, DateTime.UtcNow);
-        await service.IsTokenRevokedAsync(2, DateTime.UtcNow);
+        await service.IsTokenRevokedAsync(1, _now.UtcDateTime);
+        await service.IsTokenRevokedAsync(2, _now.UtcDateTime);
+        await service.IsTokenRevokedAsync(1, _now.UtcDateTime);
+        await service.IsTokenRevokedAsync(2, _now.UtcDateTime);
 
         _mockRepository.Verify(r => r.GetRevokedAtUtcAsync(1), Times.Once);
         _mockRepository.Verify(r => r.GetRevokedAtUtcAsync(2), Times.Once);
@@ -119,9 +124,9 @@ public class TokenRevocationServiceTests
             .ReturnsAsync((DateTime?)null);
         var service = CreateService(cacheTtlSeconds: 1);
 
-        await service.IsTokenRevokedAsync(TestUserId, DateTime.UtcNow);
-        await Task.Delay(TimeSpan.FromSeconds(1.5));
-        await service.IsTokenRevokedAsync(TestUserId, DateTime.UtcNow);
+        await service.IsTokenRevokedAsync(TestUserId, _now.UtcDateTime);
+        _now = _now.AddSeconds(1.5);
+        await service.IsTokenRevokedAsync(TestUserId, _now.UtcDateTime);
 
         _mockRepository.Verify(r => r.GetRevokedAtUtcAsync(TestUserId), Times.Exactly(2));
     }
@@ -130,11 +135,11 @@ public class TokenRevocationServiceTests
     public async Task RevokeAsync_PersistsFlooredTimestamp()
     {
         var service = CreateService();
-        var before = DateTime.UtcNow;
+        var before = _now.UtcDateTime;
 
         await service.RevokeAsync(TestUserId);
 
-        var after = DateTime.UtcNow;
+        var after = _now.UtcDateTime;
         _mockRepository.Verify(r => r.UpsertAsync(TestUserId, It.Is<DateTime>(t =>
             t.Ticks % TimeSpan.TicksPerSecond == 0 &&
             t >= before.AddSeconds(-1) &&
@@ -148,7 +153,7 @@ public class TokenRevocationServiceTests
         var service = CreateService();
 
         await service.RevokeAsync(TestUserId);
-        var revoked = await service.IsTokenRevokedAsync(TestUserId, DateTime.UtcNow.AddMinutes(-5));
+        var revoked = await service.IsTokenRevokedAsync(TestUserId, _now.UtcDateTime.AddMinutes(-5));
 
         Assert.True(revoked);
         // The cache was primed by RevokeAsync, so no read-side lookup occurred
@@ -163,10 +168,10 @@ public class TokenRevocationServiceTests
         var service = CreateService();
 
         // Prime the cache with "not revoked"
-        Assert.False(await service.IsTokenRevokedAsync(TestUserId, DateTime.UtcNow.AddMinutes(-5)));
+        Assert.False(await service.IsTokenRevokedAsync(TestUserId, _now.UtcDateTime.AddMinutes(-5)));
 
         await service.RevokeAsync(TestUserId);
 
-        Assert.True(await service.IsTokenRevokedAsync(TestUserId, DateTime.UtcNow.AddMinutes(-5)));
+        Assert.True(await service.IsTokenRevokedAsync(TestUserId, _now.UtcDateTime.AddMinutes(-5)));
     }
 }

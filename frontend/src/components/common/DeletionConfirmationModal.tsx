@@ -1,3 +1,4 @@
+import { ModalDialog } from './ModalDialog';
 import { useState } from 'react';
 import { DeletionStatsGrid, type DeletionStatsGridProps } from './DeletionStatsGrid';
 import { DeletionBlockerReason, WorkspaceActionType, type UserBasicInfo } from '../../api/account';
@@ -166,8 +167,8 @@ export function DeletionConfirmationModal({
   };
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal deletion-modal" onClick={e => e.stopPropagation()}>
+    <ModalDialog label={title} onClose={handleClose}>
+      <div className="modal deletion-modal">
         <div className="modal__header">
           <h2 className="modal__title">{title}</h2>
           <button className="modal__close" onClick={handleClose} disabled={isDeleting}>
@@ -279,7 +280,7 @@ export function DeletionConfirmationModal({
           </button>
         </div>
       </div>
-    </div>
+    </ModalDialog>
   );
 }
 

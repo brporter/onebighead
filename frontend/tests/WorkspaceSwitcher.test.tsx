@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WorkspaceSwitcher from '../src/components/common/WorkspaceSwitcher';
 import { useUser } from '../src/contexts/useUser';
@@ -84,10 +84,10 @@ describe('WorkspaceSwitcher', () => {
     });
 
     render(<WorkspaceSwitcher />);
-    expect(screen.getByText('Primary Workspace')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /primary workspace/i })).toBeInTheDocument();
   });
 
-  it('opens dropdown when trigger is clicked', async () => {
+  it('renders the native popover contents', async () => {
     const user = userEvent.setup();
     (useUser as ReturnType<typeof vi.fn>).mockReturnValue({
       user: mockUserWithMultipleWorkspaces,
@@ -98,7 +98,7 @@ describe('WorkspaceSwitcher', () => {
 
     await user.click(screen.getByRole('button', { name: /primary workspace/i }));
 
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(document.querySelector('[popover=auto]')).toBeInTheDocument();
     expect(screen.getByText('Current')).toBeInTheDocument();
     expect(screen.getByText('Switch to')).toBeInTheDocument();
   });
@@ -140,35 +140,17 @@ describe('WorkspaceSwitcher', () => {
     render(<WorkspaceSwitcher />);
 
     await user.click(screen.getByRole('button', { name: /primary workspace/i }));
-    await user.click(screen.getByRole('option', { name: /secondary workspace/i }));
+    await user.click(screen.getByRole('button', { name: /secondary workspace/i, hidden: true }));
 
     expect(workspacesApi.switch).toHaveBeenCalledWith(2);
   });
 
-  it('closes dropdown when clicking outside', async () => {
-    const user = userEvent.setup();
-    (useUser as ReturnType<typeof vi.fn>).mockReturnValue({
-      user: mockUserWithMultipleWorkspaces,
-      refetch: mockRefetch,
-    });
-
-    render(
-      <div>
-        <div data-testid="outside">Outside</div>
-        <WorkspaceSwitcher />
-      </div>
-    );
-
-    // Open dropdown
-    await user.click(screen.getByRole('button', { name: /primary workspace/i }));
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
-
-    // Click outside
-    fireEvent.mouseDown(screen.getByTestId('outside'));
-
-    await waitFor(() => {
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    });
+  it('associates the trigger with an automatically dismissed native popover', () => {
+    vi.mocked(useUser).mockReturnValue({ user: mockUserWithMultipleWorkspaces, refetch: mockRefetch } as unknown as ReturnType<typeof useUser>);
+    render(<WorkspaceSwitcher />);
+    const trigger = screen.getByRole('button', { name: /primary workspace/i });
+    const popover = document.getElementById(trigger.getAttribute('popovertarget')!);
+    expect(popover).toHaveAttribute('popover', 'auto');
   });
 
   it('handles switch error gracefully', async () => {
@@ -183,7 +165,7 @@ describe('WorkspaceSwitcher', () => {
     render(<WorkspaceSwitcher />);
 
     await user.click(screen.getByRole('button', { name: /primary workspace/i }));
-    await user.click(screen.getByRole('option', { name: /secondary workspace/i }));
+    await user.click(screen.getByRole('button', { name: /secondary workspace/i, hidden: true }));
 
     await waitFor(() => {
       expect(consoleError).toHaveBeenCalled();

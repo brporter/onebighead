@@ -18,46 +18,44 @@ exports[`CollectionView > snapshots > should match snapshot with collections 1`]
     <div
       class="collectionList__grid"
     >
-      <div
+      <button
         class="collectionList__card"
-        role="button"
-        tabindex="0"
+        type="button"
       >
-        <div
+        <span
           class="collectionList__content"
         >
-          <h3
+          <span
             class="collectionList__name"
           >
             Collection One
-          </h3>
-          <p
+          </span>
+          <span
             class="collectionList__description"
           >
             First collection
-          </p>
-        </div>
-      </div>
-      <div
+          </span>
+        </span>
+      </button>
+      <button
         class="collectionList__card"
-        role="button"
-        tabindex="0"
+        type="button"
       >
-        <div
+        <span
           class="collectionList__content"
         >
-          <h3
+          <span
             class="collectionList__name"
           >
             Collection Two
-          </h3>
-          <p
+          </span>
+          <span
             class="collectionList__description"
           >
             Second collection
-          </p>
-        </div>
-      </div>
+          </span>
+        </span>
+      </button>
     </div>
   </div>
 </div>

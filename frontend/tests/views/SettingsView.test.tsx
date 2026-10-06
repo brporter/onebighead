@@ -239,7 +239,7 @@ describe('SettingsView', () => {
       logout: vi.fn(),
     });
 
-    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
       collections: mockCollections,
       addCollection: mockAddCollection,
       updateCollection: mockUpdateCollection,
@@ -439,7 +439,7 @@ describe('SettingsView', () => {
     });
 
     it('should hide Delete button when only one collection exists', () => {
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue(vi, {
+      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
         collections: [mockCollections[0]],
         addCollection: mockAddCollection,
         updateCollection: mockUpdateCollection,

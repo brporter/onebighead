@@ -1,6 +1,5 @@
 import type { Item } from '../../utils/types';
 import type { AccentColor } from '../../utils/accentColors';
-import type { KeyboardEvent } from 'react';
 import { PublishButton, PublicBadge } from '../common';
 import { usePublish } from '../../contexts/usePublish';
 import './ItemCard.css';
@@ -32,19 +31,6 @@ function ItemCard({ item, accentColor, isSelected, onSelect, selectionMode, isCh
     }
   }
 
-  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (selectionMode && onToggleCheck && item.id !== null) {
-        onToggleCheck(item.id);
-        return;
-      }
-      if (item.id !== null) {
-        onSelect(item.id);
-      }
-    }
-  }
-
   function handlePublish() {
     if (item.id === null) return;
     requestPublish([{ type: 'item', id: item.id }]);
@@ -61,19 +47,13 @@ function ItemCard({ item, accentColor, isSelected, onSelect, selectionMode, isCh
   return (
     <div
       className={`item-card${isTextOnly ? ' item-card--textonly' : ''}${isSelected ? ' item-card--selected' : ''}${selectionMode ? ' item-card--selectable' : ''}`}
-      role="button"
-      tabIndex={0}
-      aria-label={`Select ${item.name}`}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
     >
       {selectionMode && (
         <div className="item-card__checkbox">
           <input
             type="checkbox"
             checked={isChecked ?? false}
-            readOnly
-            tabIndex={-1}
+            onChange={() => { if (item.id !== null) onToggleCheck?.(item.id); }}
             aria-label={`Select ${item.name}`}
           />
         </div>
@@ -107,7 +87,14 @@ function ItemCard({ item, accentColor, isSelected, onSelect, selectionMode, isCh
       )}
 
       <div className="item-card__body">
-        <div className="item-card__name">{item.name}</div>
+        <button
+          type="button"
+          className="item-card__name item-card__select"
+          aria-label={`Select ${item.name}`}
+          aria-pressed={selectionMode ? (isChecked ?? false) : undefined}
+          onClick={handleClick}
+        >{item.name}</button>
+
         {item.summary && (
           <div className="item-card__meta">{item.summary}</div>
         )}

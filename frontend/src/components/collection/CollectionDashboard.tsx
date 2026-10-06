@@ -83,14 +83,13 @@ function CollectionDashboard({ collectionId, onSelectItem }: CollectionDashboard
               {stats.recentlyAddedItems.map((item) => (
                 <li
                   key={item.itemId}
-                  className="collection-dashboard__item"
+                >
+                  <button type="button" className="collection-dashboard__item"
                   onClick={() => onSelectItem(item.itemId)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectItem(item.itemId); }}
                 >
                   <span className="collection-dashboard__item-name">{item.itemName}</span>
                   <span className="collection-dashboard__item-meta">{formatRelativeTime(item.createdAt)}</span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -104,14 +103,13 @@ function CollectionDashboard({ collectionId, onSelectItem }: CollectionDashboard
               {stats.topViewedItems.map((item) => (
                 <li
                   key={item.itemId}
-                  className="collection-dashboard__item"
+                >
+                  <button type="button" className="collection-dashboard__item"
                   onClick={() => onSelectItem(item.itemId)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectItem(item.itemId); }}
                 >
                   <span className="collection-dashboard__item-name">{item.itemName}</span>
                   <span className="collection-dashboard__item-meta">{item.viewCount} views</span>
+                  </button>
                 </li>
               ))}
             </ul>

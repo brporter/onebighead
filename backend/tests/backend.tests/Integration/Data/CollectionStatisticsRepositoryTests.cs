@@ -1,3 +1,4 @@
+using OneBigHead.Server.Tests.Integration.Postgres;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Tests.Integration;
@@ -5,28 +6,35 @@ using Microsoft.EntityFrameworkCore;
 
 namespace OneBigHead.Server.Tests.Integration.Data;
 
-[Trait("Category", "Integration")]
-public class CollectionStatisticsRepositoryTests : IDisposable
+[Collection(PostgresIntegrationCollection.Name)]
+[Trait("Category", "PostgresIntegration")]
+public class CollectionStatisticsRepositoryTests : IAsyncLifetime
 {
     private readonly AppDbContext _context;
-    private readonly TestCollectionStatisticsRepository _repository;
+    private readonly CollectionStatisticsRepository _repository;
     private const int TestCollectionId = 1;
     private const int TestWorkspaceId = 1;
 
-    public CollectionStatisticsRepositoryTests()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
+    private readonly PostgresIntegrationFixture _fixture;
 
-        _context = new AppDbContext(options);
-        _repository = new TestCollectionStatisticsRepository(new TestDbContextFactory(options));
+    public CollectionStatisticsRepositoryTests(PostgresIntegrationFixture fixture)
+    {
+        _fixture = fixture;
+        _context = fixture.CreateContext();
+        _repository = new CollectionStatisticsRepository(fixture.CreateContextFactory());
     }
 
-    public void Dispose()
+    public async Task InitializeAsync()
     {
-        _context.Dispose();
+        await _fixture.ResetAsync();
+        _context.Workspaces.Add(new Workspace { Id = 1, Name = "Workspace" });
+        _context.Collections.AddRange(new Collection { Id = TestCollectionId, WorkspaceId = 1, Name = "Collection", Slug = "collection" },
+            new Collection { Id = 99, WorkspaceId = 1, Name = "Other", Slug = "other" });
+        await _context.SaveChangesAsync();
     }
+
+    public Task DisposeAsync() => _context.DisposeAsync().AsTask();
+
 
     #region IncrementAsync Tests
 

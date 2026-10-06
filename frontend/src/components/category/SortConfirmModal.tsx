@@ -1,3 +1,4 @@
+import { ModalDialog } from '../common/ModalDialog';
 interface SortConfirmModalProps {
   onConfirm: (scope: 'level' | 'all') => void;
   onCancel: () => void;
@@ -5,7 +6,7 @@ interface SortConfirmModalProps {
 
 function SortConfirmModal({ onConfirm, onCancel }: SortConfirmModalProps) {
   return (
-    <div className="modal-overlay">
+    <ModalDialog label="Sort Categories Alphabetically" onClose={onCancel}>
       <div className="modal" style={{ maxWidth: '420px' }}>
         <div className="modal__header">
           <h2 className="modal__title">Sort Categories Alphabetically</h2>
@@ -44,7 +45,7 @@ function SortConfirmModal({ onConfirm, onCancel }: SortConfirmModalProps) {
           </button>
         </div>
       </div>
-    </div>
+    </ModalDialog>
   );
 }
 

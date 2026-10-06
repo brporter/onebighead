@@ -92,7 +92,7 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  z-index: 1;
+  z-index: 2;
 }
 
 .item-card__publish-btn {
@@ -108,7 +108,7 @@
   position: absolute;
   top: 8px;
   left: 8px;
-  z-index: 1;
+  z-index: 2;
 }
 
 .item-card--selectable {
@@ -118,4 +118,26 @@
 /* Hidden class for filtered items */
 .item-card--hidden {
   display: none;
+}
+
+.item-card__select {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.item-card__select::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.item-card:has(:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.item-card:focus-within .item-card__publish-btn {
+  opacity: 1;
 }

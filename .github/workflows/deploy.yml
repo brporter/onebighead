@@ -32,7 +32,7 @@ concurrency:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/onebighead
 
 permissions:
@@ -55,53 +55,10 @@ jobs:
             echo "merged=${{ github.event.pull_request.merged }}" >> $GITHUB_OUTPUT
           fi
 
-  # Run tests before deployment
   test:
     needs: check-merge
     if: needs.check-merge.outputs.should-deploy == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Restore backend dependencies
-        run: dotnet restore backend/tests/backend.tests/backend.tests.csproj
-
-      - name: Run backend unit tests
-        run: dotnet test backend/tests/backend.tests/backend.tests.csproj --no-restore --verbosity normal --filter "Category!=PostgresIntegration"
-
-      - name: Run backend PostgreSQL integration tests
-        # These are the only coverage for the seeder's convergent-update and
-        # transactional-rollback behavior. They use Testcontainers, which
-        # starts its own postgres:17 container via the Docker daemon that the
-        # ubuntu-latest runner provides.
-        run: dotnet test backend/tests/backend.tests/backend.tests.csproj --no-restore --verbosity normal --filter "Category=PostgresIntegration"
-
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci
-
-      - name: Lint frontend
-        run: |
-          cd frontend
-          npm run lint
-
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
+    uses: ./.github/workflows/verify.yml
 
   # Build the image and publish it; watchtower on the VM deploys it
   deploy:

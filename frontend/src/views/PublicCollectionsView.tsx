@@ -1,12 +1,11 @@
 import { useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { publicApi, type PublicCollection } from '../api';
 import { useAsyncData } from '../utils/useAsyncData';
 import '../styles/components/PublicCollections.css';
 
 function PublicCollectionsView() {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
 
   const fetchCollections = useCallback(
     () => publicApi.getCollections(slug!),
@@ -37,10 +36,10 @@ function PublicCollectionsView() {
       <h1 className="publicCollections__title">Collections</h1>
       <div className="publicCollections__grid">
         {collections.map((collection: PublicCollection) => (
-          <button
+          <Link
             key={collection.id}
             className="publicCollections__card"
-            onClick={() => navigate(`/public/${slug}/collections/${collection.id}`)}
+            to={`/public/${slug}/collections/${collection.id}`}
           >
             {collection.heroImageUrl && (
               <div className="publicCollections__imageWrap">
@@ -53,7 +52,7 @@ function PublicCollectionsView() {
                 <p className="publicCollections__description">{collection.description}</p>
               )}
             </div>
-          </button>
+          </Link>
         ))}
       </div>
     </div>

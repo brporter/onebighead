@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useId } from 'react';
 import { useUser } from '../../contexts/useUser';
 import { workspacesApi } from '../../api';
 import { WorkspaceRole, type WorkspaceMembership } from '../../utils/types';
@@ -7,23 +7,8 @@ import './WorkspaceSwitcher.css';
 
 export function WorkspaceSwitcher() {
   const { user, refetch } = useUser();
-  const [isOpen, setIsOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
+  const popoverId = useId();
 
   // Don't render if user has only one workspace
   if (!user || user.workspaces.length <= 1) {
@@ -49,53 +34,50 @@ export function WorkspaceSwitcher() {
   };
 
   return (
-    <div className="workspace-switcher" ref={dropdownRef}>
+    <div className="workspace-switcher">
       <button
         className="workspace-switcher__trigger"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
+        type="button"
+        popoverTarget={popoverId}
         disabled={isSwitching}
       >
         <span className="workspace-switcher__name">{activeWorkspace.workspaceName}</span>
         <span className="workspace-switcher__icon" aria-hidden="true">
-          {isOpen ? '\u25B2' : '\u25BC'}
+          ▾
         </span>
       </button>
 
-      {isOpen && (
-        <div className="workspace-switcher__dropdown" role="listbox">
-          <div className="workspace-switcher__current">
-            <span className="workspace-switcher__label">Current</span>
-            <div className="workspace-switcher__item workspace-switcher__item--active">
-              <span className="workspace-switcher__item-name">{activeWorkspace.workspaceName}</span>
-              <span className="workspace-switcher__item-role">
-                {activeWorkspace.workspaceRole === WorkspaceRole.WorkspaceAdmin ? 'Admin' : 'Member'}
-              </span>
-            </div>
+      <div id={popoverId} popover="auto" className="workspace-switcher__dropdown">
+        <div className="workspace-switcher__current">
+          <span className="workspace-switcher__label">Current</span>
+          <div className="workspace-switcher__item workspace-switcher__item--active">
+            <span className="workspace-switcher__item-name">{activeWorkspace.workspaceName}</span>
+            <span className="workspace-switcher__item-role">
+              {activeWorkspace.workspaceRole === WorkspaceRole.WorkspaceAdmin ? 'Admin' : 'Member'}
+            </span>
           </div>
-
-          {otherWorkspaces.length > 0 && (
-            <div className="workspace-switcher__others">
-              <span className="workspace-switcher__label">Switch to</span>
-              {otherWorkspaces.map(workspace => (
-                <button
-                  key={workspace.workspaceId}
-                  className="workspace-switcher__item"
-                  onClick={() => handleSwitch(workspace)}
-                  disabled={isSwitching}
-                  role="option"
-                >
-                  <span className="workspace-switcher__item-name">{workspace.workspaceName}</span>
-                  <span className="workspace-switcher__item-role">
-                    {workspace.workspaceRole === WorkspaceRole.WorkspaceAdmin ? 'Admin' : 'Member'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
-      )}
+
+        {otherWorkspaces.length > 0 && (
+          <div className="workspace-switcher__others">
+            <span className="workspace-switcher__label">Switch to</span>
+            {otherWorkspaces.map(workspace => (
+              <button
+                key={workspace.workspaceId}
+                className="workspace-switcher__item"
+                onClick={() => handleSwitch(workspace)}
+                disabled={isSwitching}
+                type="button"
+              >
+                <span className="workspace-switcher__item-name">{workspace.workspaceName}</span>
+                <span className="workspace-switcher__item-role">
+                  {workspace.workspaceRole === WorkspaceRole.WorkspaceAdmin ? 'Admin' : 'Member'}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

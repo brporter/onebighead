@@ -54,10 +54,6 @@ function ItemEditor({
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleSave() {
-    onSave(formData);
-  }
-
   function handleDelete() {
     if (item && window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
       if (onDelete && item.id !== null) onDelete(item.id);
@@ -66,7 +62,7 @@ function ItemEditor({
 
   return (
     <section className="detail detail--editing">
-      <form className="detail__form" onSubmit={(e) => e.preventDefault()}>
+      <form className="detail__form" onSubmit={(e) => { e.preventDefault(); if (formData.name.trim()) onSave(formData); }}>
         <div className="detail__header">
           <h2 className="detail__title">
             {isNew ? 'Add New Item' : `Edit: ${item?.name}`}
@@ -165,9 +161,8 @@ function ItemEditor({
 
         <div className="detail__actions">
           <button
-            type="button"
+            type="submit"
             className="detail__btn detail__btn--primary"
-            onClick={handleSave}
             disabled={!formData.name?.trim()}
           >
             {isNew ? 'Create Item' : 'Save Changes'}

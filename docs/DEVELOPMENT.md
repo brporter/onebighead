@@ -111,7 +111,7 @@ npm run dev
 
 ### Development
 
-`dev-start` builds a migration bundle (`efbundle`) and applies pending migrations before starting the backend. To apply migrations manually, run the bundle yourself (see the production section below for the command).
+`dev-start` runs `dotnet ef database update` before starting the backend. To apply migrations manually, run that command from `backend/src/backend` with `ASPNETCORE_ENVIRONMENT=Development`. Production continues to use a migration bundle.
 
 To create a new migration after modifying models:
 
@@ -266,7 +266,7 @@ Coverage report is generated in `backend/tests/backend.tests/TestResults/`.
 
 ### PostgreSQL Integration Tests
 
-Tests tagged `Category=PostgresIntegration` (in `Integration/Postgres/`) run
+Tests tagged `Category=PostgresIntegration` run
 against a real PostgreSQL 17 instance. Testcontainers starts a throwaway
 container for the test run and removes it afterwards — a running Docker
 daemon is the only prerequisite; no manual setup or teardown is needed, and
@@ -275,12 +275,11 @@ the local dev database is not touched.
 ```bash
 cd backend/tests/backend.tests
 dotnet test --filter "Category=PostgresIntegration"   # integration tests only
-dotnet test --filter "Category!=PostgresIntegration"  # what CI runs
-dotnet test                                           # everything
+dotnet test                       # all tests, including PostgreSQL
 ```
 
-These tests are excluded from the CI pipeline and from `dev-start` — run them
-locally after changing migrations, the seeder, seed JSON files, or anything
+These tests run in CI and in `dev-start`. Run them directly after changing
+migrations, the seeder, seed JSON files, or anything
 provider-specific.
 
 ### Frontend Tests
@@ -291,3 +290,12 @@ npm run test        # Watch mode
 npm run test:run    # Single run
 npm run test:coverage  # With coverage
 ```
+
+## Shared verification
+
+Run `./scripts/verify.sh` on macOS/Linux or `./scripts/verify.ps1` with PowerShell 7.3+.
+Docker must be running. The command restores the solution, runs all backend tests
+(including the disposable PostgreSQL container), installs frontend dependencies,
+and runs TypeScript, ESLint, Vitest, and the frontend build. Pull requests and
+pre-deployment checks use the same script. `dev-start` runs verification unless
+`--skip-tests` / `-SkipTests` is supplied, and stops both servers on exit.

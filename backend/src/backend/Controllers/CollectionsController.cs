@@ -1,3 +1,4 @@
+using OneBigHead.Server.Services;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
@@ -13,26 +14,23 @@ namespace OneBigHead.Server.Controllers;
 public class CollectionsController : ApiControllerBase
 {
     private readonly ICollectionRepository _collectionRepository;
-    private readonly ICategoryRepository _categoryRepository;
     private readonly IItemTemplateRepository _itemTemplateRepository;
+    private readonly ICollectionSetupService _setupService;
     private readonly IThemeRepository _themeRepository;
     private readonly ICollectionStatisticsRepository _collectionStatisticsRepository;
-    private readonly ILogger<CollectionsController> _logger;
 
     public CollectionsController(
         ICollectionRepository collectionRepository,
-        ICategoryRepository categoryRepository,
         IItemTemplateRepository itemTemplateRepository,
+        ICollectionSetupService setupService,
         IThemeRepository themeRepository,
-        ICollectionStatisticsRepository collectionStatisticsRepository,
-        ILogger<CollectionsController> logger)
+        ICollectionStatisticsRepository collectionStatisticsRepository)
     {
         _collectionRepository = collectionRepository;
-        _categoryRepository = categoryRepository;
         _itemTemplateRepository = itemTemplateRepository;
+        _setupService = setupService;
         _themeRepository = themeRepository;
         _collectionStatisticsRepository = collectionStatisticsRepository;
-        _logger = logger;
     }
 
     [HttpGet]
@@ -73,37 +71,13 @@ public class CollectionsController : ApiControllerBase
     {
         var workspaceId = GetWorkspaceId();
 
-        var slug = SlugHelper.GenerateSlug(request.Name);
-        
-        // Ensure slug is unique within workspace
-        var existing = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
-        if (existing is not null)
-        {
-            slug = $"{slug}-{DateTime.UtcNow.Ticks}";
-        }
-
-        var collection = new Collection
+        var created = await _setupService.CreateAsync(new Collection
         {
             WorkspaceId = workspaceId,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
-            HeroImageUrl = request.HeroImageUrl,
-            Slug = slug,
-            Visibility = Visibility.Private
-        };
-
-        var created = await _collectionRepository.CreateAsync(collection);
-
-        // Create default "Unassigned Items" category for the new collection
-        var unassignedCategory = new Category
-        {
-            WorkspaceId = workspaceId,
-            CollectionId = created.Id,
-            Name = Constants.CategoryNames.UnassignedItems,
-            Description = Constants.CategoryNames.UnassignedItemsDescription,
-            IsSystem = true
-        };
-        await _categoryRepository.CreateAsync(unassignedCategory);
+            HeroImageUrl = request.HeroImageUrl
+        }, null);
 
         return CreatedAtAction(nameof(GetCollection), new { id = created.Id }, created);
     }
@@ -125,115 +99,13 @@ public class CollectionsController : ApiControllerBase
             return BadRequest("Invalid theme");
         }
 
-        var slug = SlugHelper.GenerateSlug(request.Name);
-        
-        // Ensure slug is unique within workspace
-        var existing = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
-        if (existing is not null)
-        {
-            slug = $"{slug}-{DateTime.UtcNow.Ticks}";
-        }
-
-        var collection = new Collection
+        var created = await _setupService.CreateAsync(new Collection
         {
             WorkspaceId = workspaceId,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
-            HeroImageUrl = request.HeroImageUrl,
-            Slug = slug,
-            Visibility = Visibility.Private
-        };
-
-        var created = await _collectionRepository.CreateAsync(collection);
-
-        // Create "Unassigned Items" system category
-        var unassignedCategory = new Category
-        {
-            WorkspaceId = workspaceId,
-            CollectionId = created.Id,
-            Name = Constants.CategoryNames.UnassignedItems,
-            Description = Constants.CategoryNames.UnassignedItemsDescription,
-            IsSystem = true
-        };
-        await _categoryRepository.CreateAsync(unassignedCategory);
-
-        // Apply theme templates to collection in batch
-        var templateIds = theme.ThemeTemplates
-            .Where(t => t.ItemTemplateId > 0)
-            .OrderBy(t => t.SortOrder)
-            .Select(t => t.ItemTemplateId)
-            .ToList();
-        
-        if (templateIds.Count > 0)
-        {
-            await _itemTemplateRepository.AssociateMultipleWithCollectionAsync(templateIds, created.Id);
-        }
-
-        // Create categories from theme in batch
-        // Use iterative approach to handle arbitrary nesting depth
-        var categoryMap = new Dictionary<string, int>(); // name -> categoryId
-        var remainingCategories = theme.ThemeCategories.OrderBy(c => c.SortOrder).ToList();
-        var maxIterations = remainingCategories.Count + 1; // Prevent infinite loops
-        var iteration = 0;
-        
-        while (remainingCategories.Count > 0 && iteration < maxIterations)
-        {
-            iteration++;
-            var categoriesToCreate = new List<(CollectionThemeCategory theme, Category entity)>();
-            var stillRemaining = new List<CollectionThemeCategory>();
-            
-            foreach (var tc in remainingCategories)
-            {
-                int? parentId = null;
-                
-                if (tc.ParentName == null)
-                {
-                    // Root category - can create immediately
-                }
-                else if (categoryMap.TryGetValue(tc.ParentName, out var id))
-                {
-                    // Parent exists - can create
-                    parentId = id;
-                }
-                else
-                {
-                    // Parent not yet created - defer to next iteration
-                    stillRemaining.Add(tc);
-                    continue;
-                }
-                
-                categoriesToCreate.Add((tc, new Category
-                {
-                    WorkspaceId = workspaceId,
-                    CollectionId = created.Id,
-                    Name = tc.Name,
-                    Description = tc.Description,
-                    ParentCategoryId = parentId,
-                    IsSystem = false
-                }));
-            }
-            
-            if (categoriesToCreate.Count > 0)
-            {
-                var createdCategories = await _categoryRepository.CreateManyAsync(
-                    categoriesToCreate.Select(c => c.entity));
-                
-                // Add created categories to map for next iteration
-                foreach (var cat in createdCategories)
-                {
-                    categoryMap[cat.Name] = cat.Id;
-                }
-            }
-            
-            remainingCategories = stillRemaining;
-        }
-        
-        // Log warning for any categories that couldn't be created (circular references or missing parents)
-        foreach (var orphan in remainingCategories)
-        {
-            _logger.LogWarning("Theme category '{CategoryName}' could not be created - parent '{ParentName}' not found or circular reference detected", 
-                orphan.Name, orphan.ParentName);
-        }
+            HeroImageUrl = request.HeroImageUrl
+        }, theme);
 
         return CreatedAtAction(nameof(GetCollection), new { id = created.Id }, created);
     }

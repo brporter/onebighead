@@ -15,7 +15,6 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
-using OneBigHead.Server.Utilities;
 
 #if DEBUG
 // Development-only: `backend --seed` seeds the database and exits (handled
@@ -53,65 +52,38 @@ if (!builder.Environment.IsEnvironment("Testing"))
         options.UseNpgsql(connectionString));
 }
 
-// Register repositories and services with tracing decorators (skip in Testing environment)
-if (!builder.Environment.IsEnvironment("Testing"))
-{
-    var repoSource = DiagnosticsConfig.RepositoryActivitySource;
-    var appSource = DiagnosticsConfig.AppActivitySource;
+// A single registration list keeps test and production dependency graphs aligned.
+var repoSource = DiagnosticsConfig.RepositoryActivitySource;
+var appSource = DiagnosticsConfig.AppActivitySource;
 
-    builder.Services.AddTracingDecorator<ICategoryRepository, CategoryRepository>(repoSource);
-    builder.Services.AddTracingDecorator<ICollectionRepository, CollectionRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IItemRepository, ItemRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IUserRepository, UserRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IWorkspaceRepository, WorkspaceRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IWorkspaceUserRepository, WorkspaceUserRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IPropertySuggestionRepository, PropertySuggestionRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IItemTemplateRepository, ItemTemplateRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IThemeRepository, ThemeRepository>(repoSource);
-    builder.Services.AddTracingDecorator<ISupportRepository, SupportRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IImageProvider, DatabaseImageProvider>(repoSource);
-    builder.Services.AddTracingDecorator<IWorkspaceStatisticsRepository, WorkspaceStatisticsRepository>(repoSource);
-    builder.Services.AddTracingDecorator<ICollectionStatisticsRepository, CollectionStatisticsRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IPublishManagerService, PublishManagerService>(appSource);
-    builder.Services.AddTracingDecorator<IWorkspaceService, WorkspaceService>(appSource);
-    builder.Services.AddTracingDecorator<IUserDeletionService, UserDeletionService>(appSource);
-    builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
-    builder.Services.AddTracingDecorator<IEmailService, AzureEmailService>(appSource);
-    builder.Services.AddTracingDecorator<IContentScanLogRepository, ContentScanLogRepository>(repoSource);
-    builder.Services.AddTracingDecorator<IContentScanner, NoOpContentScanner>(appSource);
-    builder.Services.AddTracingDecorator<ICsamReportingService, NoOpCsamReportingService>(appSource);
-    builder.Services.AddTracingDecorator<ITokenRevocationRepository, TokenRevocationRepository>(repoSource);
-}
-else
-{
-    builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
-    builder.Services.AddSingleton<ICollectionRepository, CollectionRepository>();
-    builder.Services.AddSingleton<IItemRepository, ItemRepository>();
-    builder.Services.AddSingleton<IUserRepository, UserRepository>();
-    builder.Services.AddSingleton<IWorkspaceRepository, WorkspaceRepository>();
-    builder.Services.AddSingleton<IWorkspaceUserRepository, WorkspaceUserRepository>();
-    builder.Services.AddSingleton<IPropertySuggestionRepository, PropertySuggestionRepository>();
-    builder.Services.AddSingleton<IItemTemplateRepository, ItemTemplateRepository>();
-    builder.Services.AddSingleton<IThemeRepository, ThemeRepository>();
-    builder.Services.AddSingleton<ISupportRepository, SupportRepository>();
-    builder.Services.AddSingleton<IImageProvider, DatabaseImageProvider>();
-    builder.Services.AddSingleton<IWorkspaceStatisticsRepository, WorkspaceStatisticsRepository>();
-    builder.Services.AddSingleton<ICollectionStatisticsRepository, CollectionStatisticsRepository>();
-    builder.Services.AddSingleton<IPublishManagerService, PublishManagerService>();
-    builder.Services.AddSingleton<IWorkspaceService, WorkspaceService>();
-    builder.Services.AddSingleton<IUserDeletionService, UserDeletionService>();
-    builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
-    builder.Services.AddSingleton<IEmailService, AzureEmailService>();
-    builder.Services.AddSingleton<IContentScanLogRepository, ContentScanLogRepository>();
-    builder.Services.AddSingleton<IContentScanner, NoOpContentScanner>();
-    builder.Services.AddSingleton<ICsamReportingService, NoOpCsamReportingService>();
-    builder.Services.AddSingleton<ITokenRevocationRepository, TokenRevocationRepository>();
-}
+builder.Services.AddTracingDecorator<ICategoryRepository, CategoryRepository>(repoSource);
+builder.Services.AddTracingDecorator<ICollectionRepository, CollectionRepository>(repoSource);
+builder.Services.AddTracingDecorator<IItemRepository, ItemRepository>(repoSource);
+builder.Services.AddTracingDecorator<IUserRepository, UserRepository>(repoSource);
+builder.Services.AddTracingDecorator<IWorkspaceRepository, WorkspaceRepository>(repoSource);
+builder.Services.AddTracingDecorator<IWorkspaceUserRepository, WorkspaceUserRepository>(repoSource);
+builder.Services.AddTracingDecorator<IPropertySuggestionRepository, PropertySuggestionRepository>(repoSource);
+builder.Services.AddTracingDecorator<IItemTemplateRepository, ItemTemplateRepository>(repoSource);
+builder.Services.AddTracingDecorator<IThemeRepository, ThemeRepository>(repoSource);
+builder.Services.AddTracingDecorator<ISupportRepository, SupportRepository>(repoSource);
+builder.Services.AddTracingDecorator<IImageProvider, DatabaseImageProvider>(repoSource);
+builder.Services.AddTracingDecorator<IWorkspaceStatisticsRepository, WorkspaceStatisticsRepository>(repoSource);
+builder.Services.AddTracingDecorator<ICollectionStatisticsRepository, CollectionStatisticsRepository>(repoSource);
+builder.Services.AddTracingDecorator<IPublishManagerService, PublishManagerService>(appSource);
+builder.Services.AddTracingDecorator<IWorkspaceService, WorkspaceService>(appSource);
+builder.Services.AddTracingDecorator<IUserDeletionService, UserDeletionService>(appSource);
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddTracingDecorator<IEmailService, AzureEmailService>(appSource);
+builder.Services.AddTracingDecorator<IContentScanLogRepository, ContentScanLogRepository>(repoSource);
+builder.Services.AddTracingDecorator<IContentScanner, NoOpContentScanner>(appSource);
+builder.Services.AddTracingDecorator<ICsamReportingService, NoOpCsamReportingService>(appSource);
+builder.Services.AddTracingDecorator<ITokenRevocationRepository, TokenRevocationRepository>(repoSource);
+
+builder.Services.AddSingleton<ICollectionSetupService, CollectionSetupService>();
 
 // Register image processor (environment-independent, stateless singleton)
 builder.Services.AddSingleton<IImageProcessor, ImageProcessor>();
 
-builder.Services.AddSingleton<IRouteHelper, RouteHelper>();
 
 // Register bulk update services (environment-independent)
 builder.Services.AddSingleton<IPropertyDiffService, PropertyDiffService>();
@@ -122,13 +94,15 @@ builder.Services.AddHostedService<BulkUpdateWorker>();
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ITokenRevocationService, TokenRevocationService>();
 builder.Services.AddSingleton<IOidcTokenValidator, OidcTokenValidator>();
-builder.Services.AddSingleton<IOAuthService, OAuthService>();
+builder.Services.AddSingleton<IExternalUserService, ExternalUserService>();
 builder.Services.AddHttpClient();
 
 builder.Services.AddAuthentication(CookieJwtAuthenticationExtensions.SchemeName)
-    .AddCookieJwtAuthentication();
+    .AddCookieJwtAuthentication()
+    .AddExternalProviders(builder.Configuration.GetSection("Authentication").Get<AuthenticationSettings>() ?? new());
 
 builder.Services.AddAuthorization(options =>
 {
@@ -317,83 +291,19 @@ if (!app.Environment.IsDevelopment())
     {
         var fileProvider = new PhysicalFileProvider(collectionsPath);
 
-        // Rewrite /assets/* to /collections/assets/* for frontend build compatibility
-        // (allows frontend to use base: '/' for better dev experience while still serving from /collections in prod)
-        app.Use(async (context, next) =>
-        {
-            var path = context.Request.Path.Value ?? "";
-            if (path.StartsWith("/assets/", StringComparison.OrdinalIgnoreCase))
-            {
-                context.Request.Path = "/collections" + path;
-            }
-            await next();
-        });
-
-        // SPA fallback for top-level routes: rewrite /settings, /setup, /admin, /welcome to index.html
-        app.Use(async (context, next) =>
-        {
-            var path = context.Request.Path.Value ?? "";
-
-            // Top-level SPA routes that need fallback to index.html
-            if (path.Equals("/", StringComparison.Ordinal) ||
-                path.Equals("/settings", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/settings/", StringComparison.OrdinalIgnoreCase) ||
-                path.Equals("/setup", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/setup/", StringComparison.OrdinalIgnoreCase) ||
-                path.Equals("/admin", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/admin/", StringComparison.OrdinalIgnoreCase) ||
-                path.Equals("/welcome", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/welcome/", StringComparison.OrdinalIgnoreCase) ||
-                path.Equals("/terms", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/terms/", StringComparison.OrdinalIgnoreCase) ||
-                path.Equals("/public", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/public/", StringComparison.OrdinalIgnoreCase) ||
-                path.Equals("/workspaces", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("/workspaces/", StringComparison.OrdinalIgnoreCase))
-            {
-                context.Request.Path = "/collections/index.html";
-            }
-
-            await next();
-        });
-
-        // SPA fallback middleware: rewrite /collections/* requests to index.html
-        // if the requested file doesn't exist (allows React Router to handle routing)
-        app.Use(async (context, next) =>
-        {
-            if (context.Request.Path.StartsWithSegments("/collections", out var remaining))
-            {
-                // Get the file path relative to collections folder
-                var relativePath = remaining.Value?.TrimStart('/') ?? "";
-                
-                if (!string.IsNullOrEmpty(relativePath))
-                {
-                    var filePath = Path.GetFullPath(Path.Combine(collectionsPath, relativePath));
-                    
-                    // Security: ensure the path stays within collectionsPath
-                    if (filePath.StartsWith(collectionsPath, StringComparison.OrdinalIgnoreCase) &&
-                        !File.Exists(filePath) && 
-                        !Directory.Exists(filePath))
-                    {
-                        context.Request.Path = "/collections/index.html";
-                    }
-                }
-            }
-            await next();
-        });
-        
-        app.UseDefaultFiles(new DefaultFilesOptions()
-        {
-            FileProvider = fileProvider,
-            RequestPath = "/collections",
-            DefaultFileNames = { "index.html" }
-        });
-        
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = fileProvider,
             RequestPath = "/collections"
         });
+        app.UseStaticFiles(new StaticFileOptions { FileProvider = fileProvider });
+
+        // Only application routes receive the SPA; APIs and missing files remain 404s.
+        foreach (var route in new[] { "collections", "settings", "setup", "admin", "welcome", "terms", "public", "workspaces" })
+        {
+            app.MapFallbackToFile($"/{route}/{{*path:nonfile}}", "index.html",
+                new StaticFileOptions { FileProvider = fileProvider });
+        }
     }
 }
 
@@ -403,7 +313,8 @@ app.MapRazorPages()
 app.MapControllers();
 
 // Simple health check endpoint for deployment verification
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+    .WithMetadata(new AllowInactiveWorkspaceAttribute());
 
 // Prometheus metrics scrape endpoint
 if (!app.Environment.IsEnvironment("Testing"))

@@ -15,46 +15,38 @@ public class DtoValidationTests
         return validationResults;
     }
 
+    public static IEnumerable<object[]> NameValidationCases()
+    {
+        foreach (var name in new[] { "", new string('A', 201), "A valid name" })
+        {
+            object[] requests = [
+                new CreateWorkspaceRequest { Name = name },
+                new SystemTemplateRequest { Name = name },
+                new CreateCollectionRequest { Name = name },
+                new UpdateCollectionRequest { Name = name },
+                new CreateCategoryRequest { Name = name },
+                new UpdateCategoryRequest { Name = name },
+                new CreateItemRequest { Name = name, CollectionId = 1 },
+                new UpdateItemRequest { Name = name, CollectionId = 1 },
+                new CreateItemTemplateRequest { Name = name },
+                new UpdateItemTemplateRequest { Name = name }];
+            foreach (var request in requests) yield return [request, name.Length is > 0 and <= 200];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NameValidationCases))]
+    public void Names_AreRequiredAndLimitedTo200Characters(object request, bool valid)
+    {
+        var results = ValidateModel(request);
+        Assert.Equal(!valid, results.Any(r => r.MemberNames.Contains("Name")));
+        if (valid) Assert.Empty(results);
+    }
+
     #region WorkspaceRequests Tests
 
-    [Fact]
-    public void CreateWorkspaceRequest_RequiresName()
-    {
-        // Arrange
-        var request = new CreateWorkspaceRequest { Name = "" };
 
-        // Act
-        var results = ValidateModel(request);
 
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
-
-    [Fact]
-    public void CreateWorkspaceRequest_ValidatesMaxLength()
-    {
-        // Arrange
-        var request = new CreateWorkspaceRequest { Name = new string('A', 201) };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
-
-    [Fact]
-    public void CreateWorkspaceRequest_ValidWithProperName()
-    {
-        // Arrange
-        var request = new CreateWorkspaceRequest { Name = "My Workspace" };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Empty(results);
-    }
 
     [Fact]
     public void WorkspaceMembershipResponse_SetsDefaultValues()
@@ -146,31 +138,7 @@ public class DtoValidationTests
         Assert.False(request.IsSystemAdministrator);
     }
 
-    [Fact]
-    public void SystemTemplateRequest_RequiresName()
-    {
-        // Arrange
-        var request = new SystemTemplateRequest { Name = "" };
 
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
-
-    [Fact]
-    public void SystemTemplateRequest_ValidatesNameMaxLength()
-    {
-        // Arrange
-        var request = new SystemTemplateRequest { Name = new string('A', 201) };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
 
     [Fact]
     public void SystemTemplateRequest_ValidatesDescriptionMaxLength()
@@ -345,113 +313,17 @@ public class DtoValidationTests
 
     #region CollectionRequests Tests
 
-    [Fact]
-    public void CreateCollectionRequest_RequiresName()
-    {
-        // Arrange
-        var request = new CreateCollectionRequest { Name = "" };
 
-        // Act
-        var results = ValidateModel(request);
 
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
 
-    [Fact]
-    public void CreateCollectionRequest_ValidatesNameMaxLength()
-    {
-        // Arrange
-        var request = new CreateCollectionRequest { Name = new string('A', 201) };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
-
-    [Fact]
-    public void CreateCollectionRequest_ValidWithProperName()
-    {
-        // Arrange
-        var request = new CreateCollectionRequest { Name = "My Collection" };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Empty(results);
-    }
-
-    [Fact]
-    public void UpdateCollectionRequest_RequiresName()
-    {
-        // Arrange
-        var request = new UpdateCollectionRequest { Name = "" };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
 
     #endregion
 
     #region CategoryRequests Tests
 
-    [Fact]
-    public void CreateCategoryRequest_RequiresName()
-    {
-        // Arrange
-        var request = new CreateCategoryRequest { Name = "" };
 
-        // Act
-        var results = ValidateModel(request);
 
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
 
-    [Fact]
-    public void CreateCategoryRequest_ValidatesNameMaxLength()
-    {
-        // Arrange
-        var request = new CreateCategoryRequest { Name = new string('A', 201) };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
-
-    [Fact]
-    public void CreateCategoryRequest_ValidWithProperName()
-    {
-        // Arrange
-        var request = new CreateCategoryRequest { Name = "My Category" };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Empty(results);
-    }
-
-    [Fact]
-    public void UpdateCategoryRequest_RequiresName()
-    {
-        // Arrange
-        var request = new UpdateCategoryRequest { Name = "" };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
 
     #endregion
 
@@ -500,116 +372,16 @@ public class DtoValidationTests
 
     #region ItemRequests Tests
 
-    [Fact]
-    public void CreateItemRequest_RequiresName()
-    {
-        // Arrange
-        var request = new CreateItemRequest
-        {
-            Name = "",
-            CollectionId = 1
-        };
 
-        // Act
-        var results = ValidateModel(request);
 
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
 
-    [Fact]
-    public void CreateItemRequest_ValidatesNameMaxLength()
-    {
-        // Arrange
-        var request = new CreateItemRequest
-        {
-            Name = new string('A', 201),
-            CollectionId = 1
-        };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
-
-    [Fact]
-    public void CreateItemRequest_ValidWithProperName()
-    {
-        // Arrange
-        var request = new CreateItemRequest
-        {
-            Name = "My Item",
-            CollectionId = 1
-        };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Empty(results);
-    }
-
-    [Fact]
-    public void UpdateItemRequest_RequiresName()
-    {
-        // Arrange
-        var request = new UpdateItemRequest
-        {
-            Name = "",
-            CollectionId = 1
-        };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
 
     #endregion
 
     #region ItemTemplateRequests Tests
 
-    [Fact]
-    public void CreateItemTemplateRequest_RequiresName()
-    {
-        // Arrange
-        var request = new CreateItemTemplateRequest { Name = "" };
 
-        // Act
-        var results = ValidateModel(request);
 
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
-
-    [Fact]
-    public void CreateItemTemplateRequest_ValidatesNameMaxLength()
-    {
-        // Arrange
-        var request = new CreateItemTemplateRequest { Name = new string('A', 201) };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
-
-    [Fact]
-    public void UpdateItemTemplateRequest_RequiresName()
-    {
-        // Arrange
-        var request = new UpdateItemTemplateRequest { Name = "" };
-
-        // Act
-        var results = ValidateModel(request);
-
-        // Assert
-        Assert.Contains(results, r => r.MemberNames.Contains("Name"));
-    }
 
     #endregion
 }

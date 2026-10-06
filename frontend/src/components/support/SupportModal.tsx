@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { ModalDialog } from '../common/ModalDialog';
+import React, { useState, useId } from 'react';
 import { createSupportRequest, type CreateSupportRequest } from '../../api';
 import '../../styles/Support.css';
 
@@ -15,30 +16,16 @@ export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportM
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [emailError, setEmailError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const validateEmail = (email: string): boolean => {
-    if (!email) return false;
-    // RFC 5322 simplified email regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const fieldId = useId();
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setEmailError(null);
     setIsSubmitting(true);
-
-    // Validate email for anonymous users
-    if (!userEmail && !validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
-      setIsSubmitting(false);
-      return;
-    }
 
     try {
       const request: CreateSupportRequest = {
@@ -66,19 +53,12 @@ export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportM
     setDescription('');
     setEmail('');
     setError(null);
-    setEmailError(null);
     setIsSuccess(false);
     onClose();
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  };
-
   return (
-    <div className="support-modal" onClick={handleOverlayClick}>
+    <ModalDialog label="Contact Support" onClose={handleClose}>
       <div className="support-modal__container">
         <div className="support-modal__header">
           <h2 className="support-modal__title">
@@ -120,32 +100,30 @@ export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportM
 
               {!userEmail && (
                 <div className="support-modal__field">
-                  <label className="support-modal__label">
+                  <label className="support-modal__label" htmlFor={`${fieldId}-email`}>
                     Email <span className="support-modal__required">*</span>
                   </label>
                   <input
                     type="email"
-                    className={`support-modal__input${emailError ? ' support-modal__input--error' : ''}`}
+                    id={`${fieldId}-email`}
+                    pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                    className="support-modal__input"
                     value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (emailError) setEmailError(null);
-                    }}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
                     required
                   />
-                  {emailError && (
-                    <span className="support-modal__field-error">{emailError}</span>
-                  )}
+
                 </div>
               )}
 
               <div className="support-modal__field">
-                <label className="support-modal__label">
+                <label className="support-modal__label" htmlFor={`${fieldId}-subject`}>
                   Subject <span className="support-modal__required">*</span>
                 </label>
                 <input
                   type="text"
+                  id={`${fieldId}-subject`}
                   className="support-modal__input"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
@@ -155,10 +133,11 @@ export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportM
               </div>
 
               <div className="support-modal__field">
-                <label className="support-modal__label">
+                <label className="support-modal__label" htmlFor={`${fieldId}-description`}>
                   Description <span className="support-modal__required">*</span>
                 </label>
                 <textarea
+                  id={`${fieldId}-description`}
                   className="support-modal__textarea"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -187,6 +166,6 @@ export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportM
           )}
         </div>
       </div>
-    </div>
+    </ModalDialog>
   );
 }

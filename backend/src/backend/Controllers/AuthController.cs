@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication;
+using OneBigHead.Server.Middleware;
 using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
@@ -9,6 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace OneBigHead.Server.Controllers;
 
+[AllowInactiveWorkspace]
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
@@ -18,11 +21,10 @@ public class AuthController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
-    private readonly IOAuthService _oauthService;
+    private readonly IExternalUserService _externalUsers;
     private readonly AuthenticationSettings _settings;
     private readonly ILogger<AuthController> _logger;
 
-    private const string OAuthStateCookieName = "oauth_state";
 
     public AuthController(
         IOidcTokenValidator tokenValidator,
@@ -30,7 +32,7 @@ public class AuthController : ControllerBase
         IUserRepository userRepository,
         IWorkspaceRepository workspaceRepository,
         IWorkspaceUserRepository workspaceUserRepository,
-        IOAuthService oauthService,
+        IExternalUserService externalUsers,
         IOptions<AuthenticationSettings> settings,
         ILogger<AuthController> logger)
     {
@@ -39,7 +41,7 @@ public class AuthController : ControllerBase
         _userRepository = userRepository;
         _workspaceRepository = workspaceRepository;
         _workspaceUserRepository = workspaceUserRepository;
-        _oauthService = oauthService;
+        _externalUsers = externalUsers;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -51,221 +53,26 @@ public class AuthController : ControllerBase
     [EnableRateLimiting("auth-login")]
     public IActionResult Login(string provider, [FromQuery] string? returnUrl = null)
     {
-        if (!Enum.TryParse<IdentityProvider>(provider, true, out var identityProvider))
-        {
+        if (!Enum.TryParse<IdentityProvider>(provider, true, out var identityProvider) ||
+            !Enum.IsDefined(identityProvider) || identityProvider == IdentityProvider.None)
             return BadRequest(new { error = "Invalid identity provider" });
-        }
 
-        try
+        if (!_settings.Providers.Get(identityProvider).IsConfigured)
+            return RedirectToError($"Provider {identityProvider} is not enabled");
+
+        // AuthenticationProperties are protected by the OIDC handler along with correlation and nonce.
+        return Challenge(new AuthenticationProperties
         {
-            // Generate and store state for CSRF protection
-            var state = _oauthService.GenerateSecureState();
-            
-            // Store state in an HTTP-only cookie for validation on callback
-            Response.Cookies.Append(OAuthStateCookieName, state, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = _settings.Cookie.Secure,
-                SameSite = SameSiteMode.Lax, // Lax is required for OAuth redirects
-                MaxAge = TimeSpan.FromMinutes(10),
-                Path = "/"
-            });
-
-            // Store return URL in state cookie if provided
-            if (!string.IsNullOrEmpty(returnUrl))
-            {
-                Response.Cookies.Append("oauth_return_url", returnUrl, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = _settings.Cookie.Secure,
-                    SameSite = SameSiteMode.Lax,
-                    MaxAge = TimeSpan.FromMinutes(10),
-                    Path = "/"
-                });
-            }
-
-            var authUrl = _oauthService.GenerateAuthorizationUrl(identityProvider, state);
-            return Redirect(authUrl);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning("Login attempt for disabled provider: {Provider}", provider);
-            return Redirect($"{_settings.OAuth.PostLoginErrorUrl}?error={Uri.EscapeDataString(ex.Message)}");
-        }
+            RedirectUri = Url.IsLocalUrl(returnUrl) ? returnUrl : _settings.OAuth.PostLoginRedirectUrl
+        }, identityProvider.ToString());
     }
 
-    /// <summary>
-    /// Handles the OAuth callback from identity providers (GET for Google/Microsoft)
-    /// </summary>
-    [HttpGet("callback/{provider}")]
+    // Enabled providers are handled by the OIDC middleware before this action.
+    // Keeping an endpoint supplies routing metadata for the callback rate limiter.
+    [AcceptVerbs("GET", "POST")]
+    [Route("callback/{provider}")]
     [EnableRateLimiting("auth-callback")]
-    public async Task<IActionResult> CallbackGet(
-        string provider,
-        [FromQuery] string? code = null,
-        [FromQuery] string? state = null,
-        [FromQuery] string? error = null,
-        [FromQuery] string? error_description = null)
-    {
-        return await HandleOAuthCallback(provider, code, state, error, error_description);
-    }
-
-    /// <summary>
-    /// Handles the OAuth callback from identity providers (POST for Apple)
-    /// </summary>
-    [HttpPost("callback/{provider}")]
-    [EnableRateLimiting("auth-callback")]
-    public async Task<IActionResult> CallbackPost(
-        string provider,
-        [FromForm] string? code = null,
-        [FromForm] string? state = null,
-        [FromForm] string? error = null,
-        [FromForm] string? error_description = null)
-    {
-        return await HandleOAuthCallback(provider, code, state, error, error_description);
-    }
-
-    private async Task<IActionResult> HandleOAuthCallback(
-        string provider,
-        string? code,
-        string? state,
-        string? error,
-        string? errorDescription)
-    {
-        // Check for errors from the provider
-        if (!string.IsNullOrEmpty(error))
-        {
-            _logger.LogWarning("OAuth error from {Provider}: {Error} - {Description}", 
-                provider, error, errorDescription);
-            return RedirectToError($"Authentication failed: {errorDescription ?? error}");
-        }
-
-        if (!Enum.TryParse<IdentityProvider>(provider, true, out var identityProvider))
-        {
-            return RedirectToError("Invalid identity provider");
-        }
-
-        // Validate state to prevent CSRF attacks
-        var storedState = Request.Cookies[OAuthStateCookieName];
-        if (!_oauthService.ValidateState(state ?? string.Empty, storedState ?? string.Empty))
-        {
-            _logger.LogWarning("OAuth state mismatch for {Provider}", provider);
-            return RedirectToError("Invalid authentication state. Please try again.");
-        }
-
-        // Clear the state cookie
-        Response.Cookies.Delete(OAuthStateCookieName);
-
-        if (string.IsNullOrEmpty(code))
-        {
-            return RedirectToError("No authorization code received");
-        }
-
-        // Exchange code for tokens
-        var tokenResponse = await _oauthService.ExchangeCodeForTokensAsync(code, identityProvider);
-        if (!tokenResponse.Success || string.IsNullOrEmpty(tokenResponse.IdToken))
-        {
-            _logger.LogWarning("Token exchange failed for {Provider}: {Error}", provider, tokenResponse.Error);
-            return RedirectToError(tokenResponse.Error ?? "Failed to authenticate");
-        }
-
-        // Validate the ID token using OIDC discovery
-        var validationResult = await _tokenValidator.ValidateTokenAsync(tokenResponse.IdToken, identityProvider);
-        if (!validationResult.IsValid)
-        {
-            _logger.LogWarning("Token validation failed for {Provider}: {Error}", provider, validationResult.Error);
-            return RedirectToError(validationResult.Error ?? "Token validation failed");
-        }
-
-        // Look up or create user
-        var (user, workspaceRole) = await GetOrCreateUser(identityProvider, validationResult);
-        if (user == null)
-        {
-            return RedirectToError("Failed to create user account");
-        }
-
-        // Generate app-specific JWT and set HTTP-only cookie
-        var appToken = _tokenService.GenerateAppToken(user, workspaceRole);
-        Response.SetAuthCookie(appToken, _settings);
-
-        // Get return URL and redirect
-        var returnUrl = Request.Cookies["oauth_return_url"] ?? _settings.OAuth.PostLoginRedirectUrl;
-        Response.Cookies.Delete("oauth_return_url");
-
-        _logger.LogInformation("User {Email} successfully authenticated via {Provider}", user.Email, provider);
-        return Redirect(returnUrl);
-    }
-
-    private async Task<(User? user, WorkspaceRole workspaceRole)> GetOrCreateUser(IdentityProvider provider, OidcValidationResult validationResult)
-    {
-        // 1. Check for existing linked user by provider ID
-        var user = await _userRepository.GetByProviderIdAsync(provider, validationResult.Subject!);
-        if (user != null)
-        {
-            // Restore soft-deleted user
-            if (user.IsDeleted)
-            {
-                user.IsDeleted = false;
-                user.DeletedAt = null;
-                await _userRepository.UpdateAsync(user);
-                _logger.LogInformation("Restored soft-deleted user {UserId} ({Email}) on sign-in",
-                    user.Id, user.Email);
-            }
-
-            var membership = await _workspaceUserRepository.GetMembershipAsync(user.Id, user.ActiveWorkspaceId);
-            return (user, membership?.WorkspaceRole ?? WorkspaceRole.Normal);
-        }
-
-        // 2. Check for pending user by email (email linking)
-        var pendingUser = await _userRepository.GetByEmailAsync(validationResult.Email!);
-        if (pendingUser != null && !pendingUser.IsLinked)
-        {
-            // Restore if soft-deleted
-            if (pendingUser.IsDeleted)
-            {
-                pendingUser.IsDeleted = false;
-                pendingUser.DeletedAt = null;
-                await _userRepository.UpdateAsync(pendingUser);
-                _logger.LogInformation("Restored soft-deleted pending user {UserId} on link", pendingUser.Id);
-            }
-
-            // Link pending user to this OAuth identity
-            _logger.LogInformation("Linking pending user {Email} to {Provider}", validationResult.Email, provider);
-            var linkedUser = await _userRepository.LinkUserAsync(
-                pendingUser.Id, provider, validationResult.Subject!);
-            if (linkedUser != null)
-            {
-                var membership = await _workspaceUserRepository.GetMembershipAsync(linkedUser.Id, linkedUser.ActiveWorkspaceId);
-                return (linkedUser, membership?.WorkspaceRole ?? WorkspaceRole.Normal);
-            }
-            return (null, WorkspaceRole.Normal);
-        }
-
-        if (pendingUser != null)
-        {
-            // User exists with same email but different provider (already linked)
-            // Restore if soft-deleted
-            if (pendingUser.IsDeleted)
-            {
-                pendingUser.IsDeleted = false;
-                pendingUser.DeletedAt = null;
-                await _userRepository.UpdateAsync(pendingUser);
-                _logger.LogInformation("Restored soft-deleted user {UserId} ({Email}) on sign-in with different provider",
-                    pendingUser.Id, pendingUser.Email);
-            }
-            _logger.LogInformation("User {Email} authenticated with different provider", validationResult.Email);
-            var membership = await _workspaceUserRepository.GetMembershipAsync(pendingUser.Id, pendingUser.ActiveWorkspaceId);
-            return (pendingUser, membership?.WorkspaceRole ?? WorkspaceRole.Normal);
-        }
-
-        // 3. Auto-provision new user with new workspace (first-time signup)
-        _logger.LogInformation("Auto-provisioning new user with email {Email}", validationResult.Email);
-        var newUser = await _userRepository.CreateWithNewWorkspaceAsync(
-            validationResult.Email!,
-            provider,
-            validationResult.Subject!);
-        // New users are WorkspaceAdmin of their own workspace
-        return (newUser, WorkspaceRole.WorkspaceAdmin);
-    }
+    public IActionResult UnavailableCallback() => RedirectToError("Invalid or disabled identity provider");
 
     private IActionResult RedirectToError(string message)
     {
@@ -296,7 +103,7 @@ public class AuthController : ControllerBase
         }
 
         // Look up or create user
-        var (user, workspaceRole) = await GetOrCreateUser(provider, validationResult);
+        var (user, workspaceRole) = await _externalUsers.GetOrCreateAsync(provider, validationResult);
         if (user == null)
         {
             return StatusCode(500, new { error = "Failed to create user account" });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CategoryManagerModal from '../src/components/category/CategoryManagerModal';
 import type { Category } from '../src/utils/types';
@@ -108,8 +108,6 @@ vi.mock('../src/contexts/usePublish', () => ({
 // Track props passed to child components
 let lastTreeProps: Record<string, unknown> = {};
 let lastFormProps: Record<string, unknown> = {};
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-let lastPopoverProps: Record<string, unknown> = {};
 
 // Mock CategoryManagerTree
 vi.mock('../src/components/category/CategoryManagerTree', () => ({
@@ -132,19 +130,13 @@ vi.mock('../src/components/category/CategoryManagerTree', () => ({
 vi.mock('../src/components/category/CategoryManagerForm', () => ({
   default: (props: Record<string, unknown>) => {
     lastFormProps = props;
-    const formRef = props.formRef as React.RefObject<{ submit: () => void } | null> | undefined;
-    if (formRef && 'current' in formRef) {
-      (formRef as React.MutableRefObject<{ submit: () => void } | null>).current = {
-        submit: () => (props.onSave as (u: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] }),
-      };
-    }
     return (
-      <div data-testid="category-manager-form">
-        <button data-testid="form-save" onClick={() => (props.onSave as (u: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] })}>Save</button>
-        <button data-testid="form-back" onClick={props.onBack as () => void}>Back</button>
-        <button data-testid="form-publish" onClick={() => (props.onPublish as (c: Category) => void)(mockCategories[0])}>Publish</button>
-        <button data-testid="form-unpublish" onClick={() => (props.onUnpublish as (c: Category) => void)(mockCategories[2])}>Unpublish</button>
-      </div>
+      <form id={props.formId as string} data-testid="category-manager-form" onSubmit={event => { event.preventDefault(); (props.onSave as (value: object) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] }); }}>
+        <button type="button" data-testid="form-save" onClick={() => (props.onSave as (u: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] })}>Save</button>
+        <button type="button" data-testid="form-back" onClick={props.onBack as () => void}>Back</button>
+        <button type="button" data-testid="form-publish" onClick={() => (props.onPublish as (c: Category) => void)(mockCategories[0])}>Publish</button>
+        <button type="button" data-testid="form-unpublish" onClick={() => (props.onUnpublish as (c: Category) => void)(mockCategories[2])}>Unpublish</button>
+      </form>
     );
   },
 }));
@@ -152,7 +144,6 @@ vi.mock('../src/components/category/CategoryManagerForm', () => ({
 // Mock QuickCreatePopover
 vi.mock('../src/components/category/QuickCreatePopover', () => ({
   default: (props: Record<string, unknown>) => {
-    lastPopoverProps = props;
     if (!props.isVisible) return null;
     return (
       <div data-testid="quick-create-popover">
@@ -175,7 +166,6 @@ describe('CategoryManagerModal', () => {
     vi.clearAllMocks();
     lastTreeProps = {};
     lastFormProps = {};
-    lastPopoverProps = {};
     // Mock dialog methods
     HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
       this.setAttribute('open', '');
@@ -671,4 +661,21 @@ describe('CategoryManagerModal', () => {
       consoleSpy.mockRestore();
     });
   });
+  it('preserves edits when Escape dismisses a nested confirmation', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(<CategoryManagerModal isOpen collectionId={1} onClose={onClose} />);
+    await user.click(screen.getByTestId('tree-edit-1'));
+    act(() => (lastFormProps.onHasChanges as (changed: boolean) => void)(true));
+    fireEvent(screen.getByRole('dialog', { name: 'Category Manager' }), new Event('cancel', { cancelable: true }));
+    const discard = screen.getByRole('dialog', { name: 'Discard Changes' });
+    fireEvent(discard, new Event('cancel', { cancelable: true, bubbles: true }));
+    expect(screen.queryByRole('dialog', { name: 'Discard Changes' })).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent(screen.getByRole('dialog', { name: 'Delete Category' }), new Event('cancel', { cancelable: true }));
+    expect(screen.queryByRole('dialog', { name: 'Delete Category' })).not.toBeInTheDocument();
+    expect(mockDeleteCategory).not.toHaveBeenCalled();
+  });
+
 });

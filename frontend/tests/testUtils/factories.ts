@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+import type { DataContextValue } from '../../src/contexts/DataContext';
 /**
  * Test factories for creating properly typed mock objects.
  * Use these to ensure all required properties are present in test mocks.
@@ -223,9 +225,8 @@ export function createMockItemImage(overrides: Partial<ItemImage> = {}): ItemIma
 
 /**
  * Mock DataContext value for testing components that use useData().
- * Import vi from vitest and pass it to get properly typed mocks.
  */
-export function createMockDataContextValue(vi: { fn: () => ReturnType<typeof import('vitest').vi.fn> }, overrides: Record<string, unknown> = {}): import('../../src/contexts/DataContext').DataContextValue {
+export function createMockDataContextValue(overrides: Partial<DataContextValue> = {}): DataContextValue {
   return {
     currentCollection: null,
     setCurrentCollection: vi.fn(),
@@ -277,5 +278,5 @@ export function createMockDataContextValue(vi: { fn: () => ReturnType<typeof imp
     disassociateTemplateFromCollection: vi.fn(),
     invalidateItemCache: vi.fn(),
     ...overrides,
-  } as import('../../src/contexts/DataContext').DataContextValue;
+  };
 }

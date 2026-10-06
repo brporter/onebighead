@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useId, useCallback } from 'react';
 import type { Category } from '../../utils/types';
 import { useData } from '../../contexts/useData';
 import { usePublish } from '../../contexts/usePublish';
-import { useDialog } from '../../utils/useDialog';
+import { ModalDialog } from '../common/ModalDialog';
 import CategoryManagerTree from './CategoryManagerTree';
 import CategoryManagerForm from './CategoryManagerForm';
 import QuickCreatePopover from './QuickCreatePopover';
@@ -25,8 +25,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   } = useData();
   const { requestPublish, requestUnpublish } = usePublish();
 
-  const [dialogRef] = useDialog(isOpen, onClose);
-  const formRef = useRef<{ submit: () => void } | null>(null);
+  const formId = useId();
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [formHasChanges, setFormHasChanges] = useState(false);
@@ -69,12 +68,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
       setSelectedCategoryId(null);
     }
   }, [view, formHasChanges, onClose]);
-
-  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDialogElement>) => {
-    if (e.target === dialogRef.current) {
-      handleCloseAttempt();
-    }
-  }, [dialogRef, handleCloseAttempt]);
 
   const handleEditCategory = useCallback((categoryId: number) => {
     setSelectedCategoryId(categoryId);
@@ -133,10 +126,6 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
       setShowCancelConfirm(true);
     }
   }, [formHasChanges]);
-
-  const handleSaveClick = useCallback(() => {
-    formRef.current?.submit();
-  }, []);
 
   const handleDiscardConfirm = useCallback(() => {
     setShowCancelConfirm(false);
@@ -264,7 +253,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
   }, [requestUnpublish]);
 
   return (
-    <dialog ref={dialogRef} className="modal-dialog modal-dialog--wide" onClick={handleBackdropClick}>
+    <ModalDialog isOpen={isOpen} onClose={handleCloseAttempt} className="modal-dialog--wide" label="Category Manager">
       <div className="modal modal--wide">
         <div className="modal__header">
           <h2 className="modal__title categoryManager__title">Category Manager</h2>
@@ -308,7 +297,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
                 onPublish={handlePublish}
                 onUnpublish={handleUnpublish}
                 onHasChanges={setFormHasChanges}
-                formRef={formRef}
+                formId={formId}
               />
             </div>
           </div>
@@ -327,7 +316,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
                 <button type="button" className="modal__button modal__button--secondary" onClick={handleCancelClick} disabled={!isNew && !formHasChanges}>
                   Cancel
                 </button>
-                <button type="button" className="modal__button modal__button--primary" onClick={handleSaveClick}>
+                <button type="submit" form={formId} className="modal__button modal__button--primary" disabled={selectedCategory?.isSystem}>
                   {isNew ? 'Create' : 'Save Changes'}
                 </button>
               </div>
@@ -346,7 +335,7 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
       </div>
 
       {showDeleteConfirm && selectedCategory && (
-        <div className="modal-overlay">
+        <ModalDialog label="Delete Category" onClose={() => setShowDeleteConfirm(false)}>
           <div className="modal" style={{ maxWidth: '420px' }}>
             <div className="modal__header">
               <h2 className="modal__title categoryManager__title">Delete Category</h2>
@@ -373,11 +362,11 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
               </button>
             </div>
           </div>
-        </div>
+        </ModalDialog>
       )}
 
       {showCancelConfirm && (
-        <div className="modal-overlay">
+        <ModalDialog label="Discard Changes" onClose={() => setShowCancelConfirm(false)}>
           <div className="modal" style={{ maxWidth: '420px' }}>
             <div className="modal__header">
               <h2 className="modal__title categoryManager__title">Discard Changes</h2>
@@ -404,9 +393,9 @@ function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManager
               </button>
             </div>
           </div>
-        </div>
+        </ModalDialog>
       )}
-    </dialog>
+    </ModalDialog>
   );
 }
 

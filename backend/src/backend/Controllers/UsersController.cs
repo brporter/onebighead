@@ -1,3 +1,4 @@
+using OneBigHead.Server.Middleware;
 using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
@@ -179,6 +180,7 @@ public class UsersController : ApiControllerBase
     /// Gets deletion info for the current user's account.
     /// Returns information about workspaces that require action before account can be deleted.
     /// </summary>
+    [AllowInactiveWorkspace]
     [HttpGet("me/deletion-info")]
     public async Task<ActionResult<UserDeletionInfoResponse>> GetDeletionInfo()
     {
@@ -197,6 +199,7 @@ public class UsersController : ApiControllerBase
     /// Get soft-deleted workspaces that the current user can restore.
     /// Only returns workspaces where user was WorkspaceAdmin.
     /// </summary>
+    [AllowInactiveWorkspace]
     [HttpGet("me/restorable-workspaces")]
     public async Task<IActionResult> GetRestorableWorkspaces()
     {

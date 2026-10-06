@@ -128,7 +128,7 @@ describe('CollectionDashboard', () => {
       expect(screen.getByText('Popular Item')).toBeInTheDocument();
     });
 
-    const item = screen.getByText('Popular Item').closest('.collection-dashboard__item')!;
+    const item = screen.getByText('Popular Item').closest<HTMLButtonElement>('.collection-dashboard__item')!;
     item.focus();
     await user.keyboard('{Enter}');
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CategoryManagerForm from '../src/components/category/CategoryManagerForm';
 import type { Category } from '../src/utils/types';
@@ -19,7 +19,7 @@ vi.mock('../src/components/category/CategoryTemplateSelector', () => ({
   default: ({ selectedTemplateIds, onChange, disabled }: { selectedTemplateIds: number[]; onChange: (ids: number[]) => void; disabled?: boolean }) => (
     <div data-testid="category-template-selector">
       Template Selector (selected: {selectedTemplateIds.length})
-      <button onClick={() => onChange([1, 2])} disabled={disabled}>Select Templates</button>
+      <button type="button" onClick={() => onChange([1, 2])} disabled={disabled}>Select Templates</button>
     </div>
   ),
 }));
@@ -148,61 +148,49 @@ describe('CategoryManagerForm', () => {
   });
 
   describe('validation', () => {
-    it('should show error for reserved name "Unassigned Items" via formRef submit', async () => {
+    it('should show error for reserved name "Unassigned Items" on submit', async () => {
       const user = userEvent.setup();
-      const formRef = { current: null as { submit: () => void } | null };
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} formRef={formRef} />);
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} formId="category-form" />);
 
       await user.type(screen.getByLabelText(/Name/), 'Unassigned Items');
-      act(() => {
-        formRef.current?.submit();
-      });
+      fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
 
       expect(screen.getByRole('alert')).toHaveTextContent('"Unassigned Items" is a reserved name and cannot be used');
       expect(defaultProps.onSave).not.toHaveBeenCalled();
     });
 
-    it('should validate reserved name case-insensitively via formRef submit', async () => {
+    it('should validate reserved name case-insensitively on submit', async () => {
       const user = userEvent.setup();
-      const formRef = { current: null as { submit: () => void } | null };
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} formRef={formRef} />);
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} formId="category-form" />);
 
       await user.type(screen.getByLabelText(/Name/), 'UNASSIGNED ITEMS');
-      act(() => {
-        formRef.current?.submit();
-      });
+      fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
 
       expect(screen.getByRole('alert')).toHaveTextContent('reserved name');
       expect(defaultProps.onSave).not.toHaveBeenCalled();
     });
 
-    it('should show error for empty name via formRef submit', () => {
-      const formRef = { current: null as { submit: () => void } | null };
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} formRef={formRef} />);
+    it('should show error for empty name on submit', () => {
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} formId="category-form" />);
 
-      act(() => {
-        formRef.current?.submit();
-      });
+      fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
 
       expect(screen.getByRole('alert')).toHaveTextContent('Name is required');
       expect(defaultProps.onSave).not.toHaveBeenCalled();
     });
   });
 
-  describe('save via formRef', () => {
-    it('should call onSave with updated fields when formRef.submit() is called', async () => {
+  describe('form submission', () => {
+    it('should call onSave with updated fields when submitted', async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
       const existingCategory = makeCategory({ categoryId: 1, name: 'Category 1', description: 'Description 1' });
-      const formRef = { current: null as { submit: () => void } | null };
 
-      render(<CategoryManagerForm {...defaultProps} category={existingCategory} onSave={onSave} formRef={formRef} />);
+      render(<CategoryManagerForm {...defaultProps} category={existingCategory} onSave={onSave} formId="category-form" />);
 
       await user.clear(screen.getByLabelText(/Name/));
       await user.type(screen.getByLabelText(/Name/), 'Updated Name');
-      act(() => {
-        formRef.current?.submit();
-      });
+      fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
 
       expect(onSave).toHaveBeenCalledWith({
         name: 'Updated Name',
@@ -215,15 +203,12 @@ describe('CategoryManagerForm', () => {
     it('should call onSave with selected parent category', async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
-      const formRef = { current: null as { submit: () => void } | null };
 
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} formRef={formRef} />);
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} formId="category-form" />);
 
       await user.type(screen.getByLabelText(/Name/), 'New Category');
       await user.selectOptions(screen.getByLabelText(/Parent Category/), '2');
-      act(() => {
-        formRef.current?.submit();
-      });
+      fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
 
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({ parentCategoryId: 2 })
@@ -233,15 +218,12 @@ describe('CategoryManagerForm', () => {
     it('should call onSave with selected template ids', async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
-      const formRef = { current: null as { submit: () => void } | null };
 
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} formRef={formRef} />);
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} formId="category-form" />);
 
       await user.type(screen.getByLabelText(/Name/), 'New Category');
       await user.click(screen.getByText('Select Templates'));
-      act(() => {
-        formRef.current?.submit();
-      });
+      fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
 
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({ itemTemplateIds: [1, 2] })
@@ -251,15 +233,12 @@ describe('CategoryManagerForm', () => {
     it('should trim name and description before saving', async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
-      const formRef = { current: null as { submit: () => void } | null };
 
-      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} formRef={formRef} />);
+      render(<CategoryManagerForm {...defaultProps} category={null} isNew={true} onSave={onSave} formId="category-form" />);
 
       await user.type(screen.getByLabelText(/Name/), '  New Category  ');
       await user.type(screen.getByLabelText(/Description/), '  Some description  ');
-      act(() => {
-        formRef.current?.submit();
-      });
+      fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
 
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -401,6 +380,19 @@ describe('CategoryManagerForm', () => {
   });
 
   describe('form reset on category change', () => {
+    it('preserves edits when the same category is refreshed', async () => {
+      const user = userEvent.setup();
+      const category = makeCategory();
+      const { rerender } = render(<CategoryManagerForm {...defaultProps} category={category} />);
+
+      await user.clear(screen.getByLabelText(/Name/));
+      await user.type(screen.getByLabelText(/Description/), ' draft');
+      rerender(<CategoryManagerForm {...defaultProps} category={{ ...category }} />);
+
+      expect(screen.getByLabelText(/Name/)).toHaveValue('');
+      expect(screen.getByLabelText(/Description/)).toHaveValue('Description 1 draft');
+    });
+
     it('should update form fields when category prop changes', () => {
       const category1 = makeCategory({ categoryId: 1, name: 'Category 1', description: 'Desc 1' });
       const category2 = makeCategory({ categoryId: 2, name: 'Category 2', description: 'Desc 2' });

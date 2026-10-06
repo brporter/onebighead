@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { bulkUpdatesApi } from '../../api/bulkUpdates';
 import type { BulkUpdateJobResponse, EnqueueBulkUpdateRequest } from '../../api/bulkUpdates';
-import { useDialog } from '../../utils/useDialog';
+import { ModalDialog } from './ModalDialog';
 import '../../styles/components/BulkUpdateModal.css';
 
 type ModalPhase = 'prompt' | 'progress' | 'complete';
@@ -48,13 +48,6 @@ function BulkUpdateModal({
       pollRef.current = null;
     }
   }, []);
-
-  const nativeClose = useCallback(() => {
-    stopPolling();
-    onClose();
-  }, [stopPolling, onClose]);
-
-  const [dialogRef] = useDialog(isOpen, nativeClose);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -125,6 +118,7 @@ function BulkUpdateModal({
   };
 
   const handleClose = () => {
+    if (phase === 'progress') return;
     stopPolling();
     if (phase === 'complete') {
       onComplete?.();
@@ -132,18 +126,8 @@ function BulkUpdateModal({
     onClose();
   };
 
-  const handleBackdropClick = (e: MouseEvent<HTMLDialogElement>) => {
-    if (e.target === e.currentTarget && phase !== 'progress') {
-      handleClose();
-    }
-  };
-
-  const progressPercent = job && job.totalItems > 0
-    ? Math.round((job.processedItems / job.totalItems) * 100)
-    : 0;
-
   return (
-    <dialog ref={dialogRef} className="modal-dialog" onClick={handleBackdropClick}>
+    <ModalDialog isOpen={isOpen} onClose={handleClose} label="Bulk property update">
       <div className="modal bulk-update-modal">
         <div className="modal__header">
           <h3 className="modal__title">
@@ -209,12 +193,12 @@ function BulkUpdateModal({
 
           {phase === 'progress' && job && (
             <div className="bulk-update-modal__progress">
-              <div className="bulk-update-modal__bar-container">
-                <div
-                  className="bulk-update-modal__bar-fill"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
+              <progress
+                className="bulk-update-modal__bar"
+                aria-label="Items updated"
+                value={job.totalItems > 0 ? job.processedItems + job.failedItems : undefined}
+                max={job.totalItems || 1}
+              />
               <p className="bulk-update-modal__progress-text">
                 {job.processedItems + job.failedItems} / {job.totalItems} items
               </p>
@@ -249,7 +233,7 @@ function BulkUpdateModal({
           )}
         </div>
       </div>
-    </dialog>
+    </ModalDialog>
   );
 }
 

@@ -190,10 +190,7 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
       class="list__masonry"
     >
       <div
-        aria-label="Select Item 1"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -217,11 +214,13 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 1"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 1
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -230,10 +229,7 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
         </div>
       </div>
       <div
-        aria-label="Select Item 2"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -257,11 +253,13 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 2"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 2
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -270,10 +268,7 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
         </div>
       </div>
       <div
-        aria-label="Select Item 3"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -297,11 +292,13 @@ exports[`ItemList > snapshots > should render list with items 1`] = `
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 3"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 3
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -424,10 +421,7 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
       class="list__masonry"
     >
       <div
-        aria-label="Select Item 1"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -451,11 +445,13 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 1"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 1
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -464,10 +460,7 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
         </div>
       </div>
       <div
-        aria-label="Select Item 2"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -491,11 +484,13 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 2"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 2
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -504,10 +499,7 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
         </div>
       </div>
       <div
-        aria-label="Select Item 3"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -531,11 +523,13 @@ exports[`ItemList > snapshots > should render with add button 1`] = `
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 3"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 3
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -652,10 +646,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
       class="list__masonry"
     >
       <div
-        aria-label="Select Item 26"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -679,11 +670,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 26"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 26
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -692,10 +685,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 27"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -719,11 +709,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 27"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 27
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -732,10 +724,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 28"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -759,11 +748,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 28"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 28
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -772,10 +763,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 29"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -799,11 +787,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 29"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 29
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -812,10 +802,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 30"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -839,11 +826,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 30"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 30
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -852,10 +841,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 31"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -879,11 +865,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 31"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 31
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -892,10 +880,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 32"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -919,11 +904,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 32"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 32
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -932,10 +919,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 33"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -959,11 +943,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 33"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 33
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -972,10 +958,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 34"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -999,11 +982,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 34"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 34
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1012,10 +997,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 35"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1039,11 +1021,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 35"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 35
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1052,10 +1036,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 36"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1079,11 +1060,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 36"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 36
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1092,10 +1075,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 37"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1119,11 +1099,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 37"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 37
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1132,10 +1114,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 38"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1159,11 +1138,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 38"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 38
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1172,10 +1153,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 39"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1199,11 +1177,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 39"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 39
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1212,10 +1192,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 40"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1239,11 +1216,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 40"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 40
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1252,10 +1231,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 41"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1279,11 +1255,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 41"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 41
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1292,10 +1270,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 42"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1319,11 +1294,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 42"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 42
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1332,10 +1309,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 43"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1359,11 +1333,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 43"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 43
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1372,10 +1348,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 44"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1399,11 +1372,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 44"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 44
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1412,10 +1387,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 45"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1439,11 +1411,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 45"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 45
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1452,10 +1426,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 46"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1479,11 +1450,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 46"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 46
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1492,10 +1465,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 47"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1519,11 +1489,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 47"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 47
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1532,10 +1504,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 48"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1559,11 +1528,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 48"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 48
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1572,10 +1543,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 49"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1599,11 +1567,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 49"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 49
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1612,10 +1582,7 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         </div>
       </div>
       <div
-        aria-label="Select Item 50"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1639,11 +1606,13 @@ exports[`ItemList > snapshots > should render with pagination on multiple pages 
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 50"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 50
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1759,10 +1728,7 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
       class="list__masonry"
     >
       <div
-        aria-label="Select Item 1"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1786,11 +1752,13 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 1"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 1
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1799,10 +1767,7 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
         </div>
       </div>
       <div
-        aria-label="Select Item 2"
         class="item-card item-card--textonly item-card--selected"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1826,11 +1791,13 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 2"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 2
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >
@@ -1839,10 +1806,7 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
         </div>
       </div>
       <div
-        aria-label="Select Item 3"
         class="item-card item-card--textonly"
-        role="button"
-        tabindex="0"
       >
         <div
           class="item-card__ribbon"
@@ -1866,11 +1830,13 @@ exports[`ItemList > snapshots > should render with selected item 1`] = `
         <div
           class="item-card__body"
         >
-          <div
-            class="item-card__name"
+          <button
+            aria-label="Select Item 3"
+            class="item-card__name item-card__select"
+            type="button"
           >
             Item 3
-          </div>
+          </button>
           <div
             class="item-card__meta"
           >

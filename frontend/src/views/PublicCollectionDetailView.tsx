@@ -1,12 +1,11 @@
 import { useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { publicApi, type PublicCollectionDetail, type PublicItemSummary, type PublicCategory } from '../api';
+import { useParams, Link } from 'react-router-dom';
+import { publicApi, type PublicItemSummary, type PublicCategory } from '../api';
 import { useAsyncData } from '../utils/useAsyncData';
 import '../styles/components/PublicCollectionDetail.css';
 
 function PublicCollectionDetailView() {
   const { slug, collectionId } = useParams<{ slug: string; collectionId: string }>();
-  const navigate = useNavigate();
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
   const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
@@ -60,9 +59,9 @@ function PublicCollectionDetailView() {
   return (
     <div className="publicDetail">
       <div className="publicDetail__header">
-        <button className="publicDetail__back" onClick={() => navigate(`/public/${slug}`)}>
+        <Link className="publicDetail__back" to={`/public/${slug}`}>
           &larr; All Collections
-        </button>
+        </Link>
         <h1 className="publicDetail__title">{detail.collection.name}</h1>
         {detail.collection.description && (
           <p className="publicDetail__description">{detail.collection.description}</p>
@@ -91,10 +90,10 @@ function PublicCollectionDetailView() {
           ) : (
             <div className="publicDetail__itemGrid">
               {displayItems.map(item => (
-                <button
+                <Link
                   key={item.id}
                   className="publicDetail__itemCard"
-                  onClick={() => navigate(`/public/${slug}/items/${item.id}`)}
+                  to={`/public/${slug}/items/${item.id}`}
                 >
                   {item.primaryImageUrl && (
                     <div className="publicDetail__itemImageWrap">
@@ -105,7 +104,7 @@ function PublicCollectionDetailView() {
                     <h3 className="publicDetail__itemName">{item.name}</h3>
                     {item.summary && <p className="publicDetail__itemSummary">{item.summary}</p>}
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           )}

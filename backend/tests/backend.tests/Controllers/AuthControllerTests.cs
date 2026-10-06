@@ -20,7 +20,6 @@ public class AuthControllerTests
     private readonly Mock<IUserRepository> _mockUserRepository;
     private readonly Mock<IWorkspaceRepository> _mockWorkspaceRepository;
     private readonly Mock<IWorkspaceUserRepository> _mockWorkspaceUserRepository;
-    private readonly Mock<IOAuthService> _mockOAuthService;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
     private readonly AuthenticationSettings _settings;
     private readonly AuthController _controller;
@@ -32,7 +31,6 @@ public class AuthControllerTests
         _mockUserRepository = new Mock<IUserRepository>();
         _mockWorkspaceRepository = new Mock<IWorkspaceRepository>();
         _mockWorkspaceUserRepository = new Mock<IWorkspaceUserRepository>();
-        _mockOAuthService = new Mock<IOAuthService>();
         _mockLogger = new Mock<ILogger<AuthController>>();
 
         _settings = new AuthenticationSettings
@@ -74,11 +72,14 @@ public class AuthControllerTests
             _mockUserRepository.Object,
             _mockWorkspaceRepository.Object,
             _mockWorkspaceUserRepository.Object,
-            _mockOAuthService.Object,
+            new ExternalUserService(_mockUserRepository.Object, _mockWorkspaceUserRepository.Object, Microsoft.Extensions.Logging.Abstractions.NullLogger<ExternalUserService>.Instance),
             options,
             _mockLogger.Object);
 
         SetupHttpContext();
+        var url = new Mock<IUrlHelper>();
+        url.Setup(u => u.IsLocalUrl(It.IsAny<string>())).Returns((string value) => value.StartsWith("/") && !value.StartsWith("//"));
+        _controller.Url = url.Object;
     }
 
     private void SetupHttpContext(bool authenticated = false, int workspaceId = 1, string email = "test@example.com")
@@ -107,238 +108,34 @@ public class AuthControllerTests
         };
     }
 
-    #region Login Tests
+    [Theory]
+    [InlineData("invalid")]
+    [InlineData("None")]
+    [InlineData("99")]
+    public void Login_RejectsUnsupportedProvider(string provider) => Assert.IsType<BadRequestObjectResult>(_controller.Login(provider));
 
-    [Fact]
-    public void Login_ReturnsBadRequest_WhenProviderIsInvalid()
+    [Theory]
+    [InlineData("google", "Google")]
+    [InlineData("MICROSOFT", "Microsoft")]
+    public void Login_ChallengesNamedProvider(string provider, string scheme)
     {
-        // Act
-        var result = _controller.Login("invalid-provider");
-
-        // Assert
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Contains("Invalid identity provider", badRequest.Value?.ToString());
+        var result = Assert.IsType<ChallengeResult>(_controller.Login(provider, "/collections/42"));
+        Assert.Equal(scheme, Assert.Single(result.AuthenticationSchemes));
+        Assert.Equal("/collections/42", result.Properties!.RedirectUri);
     }
 
     [Fact]
-    public void Login_RedirectsToAuthUrl_WhenProviderIsValid()
+    public void Login_UsesDefaultReturnUrlForExternalUrl()
     {
-        // Arrange
-        _mockOAuthService.Setup(s => s.GenerateSecureState()).Returns("test-state");
-        _mockOAuthService.Setup(s => s.GenerateAuthorizationUrl(IdentityProvider.Google, "test-state", null))
-            .Returns("https://accounts.google.com/auth?state=test-state");
-
-        // Act
-        var result = _controller.Login("google");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Contains("accounts.google.com", redirectResult.Url);
+        var result = Assert.IsType<ChallengeResult>(_controller.Login("google", "https://other.example"));
+        Assert.Equal("/collections", result.Properties!.RedirectUri);
     }
 
     [Fact]
-    public void Login_SetsStateCookie()
-    {
-        // Arrange
-        _mockOAuthService.Setup(s => s.GenerateSecureState()).Returns("test-state");
-        _mockOAuthService.Setup(s => s.GenerateAuthorizationUrl(IdentityProvider.Microsoft, "test-state", null))
-            .Returns("https://login.microsoftonline.com/auth");
-
-        // Act
-        _controller.Login("microsoft");
-
-        // Assert
-        Assert.True(_controller.Response.Headers.ContainsKey("Set-Cookie"));
-    }
+    public void Login_ReportsDisabledProvider() => Assert.Contains("not%20enabled", Assert.IsType<RedirectResult>(_controller.Login("apple")).Url);
 
     [Fact]
-    public void Login_RedirectsToError_WhenProviderDisabled()
-    {
-        // Arrange
-        _mockOAuthService.Setup(s => s.GenerateSecureState()).Returns("test-state");
-        _mockOAuthService.Setup(s => s.GenerateAuthorizationUrl(IdentityProvider.Apple, "test-state", null))
-            .Throws(new InvalidOperationException("Provider Apple is not enabled"));
-
-        // Act
-        var result = _controller.Login("apple");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Contains("error", redirectResult.Url);
-    }
-
-    [Fact]
-    public void Login_StoresReturnUrl_WhenProvided()
-    {
-        // Arrange
-        _mockOAuthService.Setup(s => s.GenerateSecureState()).Returns("test-state");
-        _mockOAuthService.Setup(s => s.GenerateAuthorizationUrl(IdentityProvider.Google, "test-state", null))
-            .Returns("https://accounts.google.com/auth");
-
-        // Act
-        _controller.Login("google", returnUrl: "/dashboard");
-
-        // Assert
-        var cookies = _controller.Response.Headers["Set-Cookie"].ToString();
-        Assert.Contains("oauth_return_url", cookies);
-    }
-
-    #endregion
-
-    #region Callback Tests
-
-    [Fact]
-    public async Task CallbackGet_RedirectsToError_WhenOAuthError()
-    {
-        // Act
-        var result = await _controller.CallbackGet("google", error: "access_denied", error_description: "User cancelled");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Contains("error", redirectResult.Url);
-    }
-
-    [Fact]
-    public async Task CallbackGet_RedirectsToError_WhenProviderInvalid()
-    {
-        // Act
-        var result = await _controller.CallbackGet("invalid");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Contains("error", redirectResult.Url);
-    }
-
-    [Fact]
-    public async Task CallbackGet_RedirectsToError_WhenStateMismatch()
-    {
-        // Arrange
-        _mockOAuthService.Setup(s => s.ValidateState("state1", "state2")).Returns(false);
-
-        // Act
-        var result = await _controller.CallbackGet("google", code: "auth-code", state: "state1");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Contains("error", redirectResult.Url);
-    }
-
-    [Fact]
-    public async Task CallbackGet_RedirectsToError_WhenNoCode()
-    {
-        // Arrange
-        _mockOAuthService.Setup(s => s.ValidateState("state", "state")).Returns(true);
-        _controller.HttpContext.Request.Headers.Cookie = "oauth_state=state";
-
-        // Act
-        var result = await _controller.CallbackGet("google", state: "state");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Contains("error", redirectResult.Url);
-    }
-
-    [Fact]
-    public async Task CallbackGet_RedirectsToError_WhenTokenExchangeFails()
-    {
-        // Arrange
-        _mockOAuthService.Setup(s => s.ValidateState(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
-        _mockOAuthService.Setup(s => s.ExchangeCodeForTokensAsync("code", IdentityProvider.Google))
-            .ReturnsAsync(new OAuthTokenResponse { Success = false, Error = "Token exchange failed" });
-
-        // Act
-        var result = await _controller.CallbackGet("google", code: "code", state: "state");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Contains("error", redirectResult.Url);
-    }
-
-    [Fact]
-    public async Task CallbackGet_RedirectsToError_WhenTokenValidationFails()
-    {
-        // Arrange
-        _mockOAuthService.Setup(s => s.ValidateState(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
-        _mockOAuthService.Setup(s => s.ExchangeCodeForTokensAsync("code", IdentityProvider.Google))
-            .ReturnsAsync(new OAuthTokenResponse { Success = true, IdToken = "id-token" });
-        _mockTokenValidator.Setup(v => v.ValidateTokenAsync("id-token", IdentityProvider.Google))
-            .ReturnsAsync(new OidcValidationResult { IsValid = false, Error = "Invalid token" });
-
-        // Act
-        var result = await _controller.CallbackGet("google", code: "code", state: "state");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Contains("error", redirectResult.Url);
-    }
-
-    [Fact]
-    public async Task CallbackGet_RedirectsToApp_WhenSuccessful()
-    {
-        // Arrange
-        var user = new User { Id = 1, ActiveWorkspaceId = 1, Email = "test@example.com" };
-        var membership = new WorkspaceUser { UserId = 1, WorkspaceId = 1, WorkspaceRole = WorkspaceRole.Normal };
-
-        _mockOAuthService.Setup(s => s.ValidateState(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
-        _mockOAuthService.Setup(s => s.ExchangeCodeForTokensAsync("code", IdentityProvider.Google))
-            .ReturnsAsync(new OAuthTokenResponse { Success = true, IdToken = "id-token" });
-        _mockTokenValidator.Setup(v => v.ValidateTokenAsync("id-token", IdentityProvider.Google))
-            .ReturnsAsync(new OidcValidationResult { IsValid = true, Email = "test@example.com", Subject = "sub123" });
-        _mockUserRepository.Setup(r => r.GetByProviderIdAsync(IdentityProvider.Google, "sub123"))
-            .ReturnsAsync(user);
-        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(1, 1))
-            .ReturnsAsync(membership);
-        _mockTokenService.Setup(t => t.GenerateAppToken(user, WorkspaceRole.Normal)).Returns("app-token");
-
-        // Act
-        var result = await _controller.CallbackGet("google", code: "code", state: "state");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Equal("/collections", redirectResult.Url);
-    }
-
-    [Fact]
-    public async Task CallbackGet_CreatesNewUser_WhenNotFound()
-    {
-        // Arrange
-        var newUser = new User { Id = 1, ActiveWorkspaceId = 1, Email = "new@example.com" };
-
-        _mockOAuthService.Setup(s => s.ValidateState(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
-        _mockOAuthService.Setup(s => s.ExchangeCodeForTokensAsync("code", IdentityProvider.Google))
-            .ReturnsAsync(new OAuthTokenResponse { Success = true, IdToken = "id-token" });
-        _mockTokenValidator.Setup(v => v.ValidateTokenAsync("id-token", IdentityProvider.Google))
-            .ReturnsAsync(new OidcValidationResult { IsValid = true, Email = "new@example.com", Subject = "sub123" });
-        _mockUserRepository.Setup(r => r.GetByProviderIdAsync(IdentityProvider.Google, "sub123"))
-            .ReturnsAsync((User?)null);
-        _mockUserRepository.Setup(r => r.GetByEmailAsync("new@example.com"))
-            .ReturnsAsync((User?)null);
-        _mockUserRepository.Setup(r => r.CreateWithNewWorkspaceAsync("new@example.com", IdentityProvider.Google, "sub123"))
-            .ReturnsAsync(newUser);
-        _mockTokenService.Setup(t => t.GenerateAppToken(newUser, WorkspaceRole.WorkspaceAdmin)).Returns("app-token");
-
-        // Act
-        var result = await _controller.CallbackGet("google", code: "code", state: "state");
-
-        // Assert
-        _mockUserRepository.Verify(r => r.CreateWithNewWorkspaceAsync("new@example.com", IdentityProvider.Google, "sub123"), Times.Once);
-    }
-
-    [Fact]
-    public async Task CallbackPost_HandlesAppleCallback()
-    {
-        // Arrange
-        _mockOAuthService.Setup(s => s.ValidateState(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
-
-        // Act - Apple uses POST callbacks
-        var result = await _controller.CallbackPost("apple", code: "code", state: "state");
-
-        // Assert
-        var redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Contains("error", redirectResult.Url);
-    }
-
-    #endregion
+    public void UnavailableCallback_ReportsError() => Assert.StartsWith("/error?error=", Assert.IsType<RedirectResult>(_controller.UnavailableCallback()).Url);
 
     #region Callback (JSON) Tests
 

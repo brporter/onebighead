@@ -171,7 +171,7 @@ describe('ItemList', () => {
 
       const selectedCard = screen.getByRole('button', { name: 'Select Item 2' });
 
-      expect(selectedCard).toHaveClass('item-card--selected');
+      expect(selectedCard.closest('.item-card')).toHaveClass('item-card--selected');
     });
 
     it('should show add button when onAddItem is provided', () => {

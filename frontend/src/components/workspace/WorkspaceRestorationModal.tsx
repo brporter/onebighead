@@ -1,3 +1,4 @@
+import { ModalDialog } from '../common/ModalDialog';
 import { useState, useEffect } from 'react';
 import { workspacesApi } from '../../api';
 import type { RestorableWorkspace } from '../../api/workspaces';
@@ -80,10 +81,9 @@ export function WorkspaceRestorationModal({
 
   if (!isOpen) return null;
 
-  console.log('[WorkspaceRestorationModal] Rendering modal, isLoading:', isLoading, 'workspaces:', restorableWorkspaces.length);
 
   return (
-    <div className="restoration-modal-overlay">
+    <ModalDialog label="Restore workspace" onClose={() => {}}>
       <div className="restoration-modal">
         <h2 className="restoration-modal__title">Welcome Back</h2>
         <p className="restoration-modal__description">
@@ -151,7 +151,7 @@ export function WorkspaceRestorationModal({
           </>
         )}
       </div>
-    </div>
+    </ModalDialog>
   );
 }
 
