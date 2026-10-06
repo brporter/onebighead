@@ -3,8 +3,9 @@
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem;
-  background: #2d3748;
-  border-radius: 8px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 .filter-btn {
@@ -13,9 +14,9 @@
   gap: 0.35em;
   padding: 0.35em 0.85em;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
-  color: #a0aec0;
+  color: var(--color-text-secondary);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -24,14 +25,15 @@
 }
 
 .filter-btn:hover {
-  background: #4a5568;
-  color: #e2e8f0;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .filter-btn.active {
-  background: #4a5568;
-  color: #f7fafc;
+  background: var(--color-surface);
+  color: var(--color-primary);
   font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
 .filter-btn svg {
@@ -42,7 +44,7 @@
 
 .filter-count {
   font-size: 0.8rem;
-  color: #718096;
+  color: var(--color-text-muted);
   margin-left: 0.5rem;
   white-space: nowrap;
 }
