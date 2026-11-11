@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace OneBigHead.Server.Models;
 
@@ -8,11 +9,15 @@ public class User
     [Key]
     public int Id { get; set; }
 
+    /// <summary>Identifies the authorization snapshot accepted by current sessions.</summary>
+    [JsonIgnore]
+    public Guid AuthenticationStamp { get; set; } = Guid.NewGuid();
+
     /// <summary>
     /// The user's currently active workspace. This determines which workspace's data
-    /// they see and work with in the application.
+    /// they see and work with in the application. Null when no workspace remains.
     /// </summary>
-    public int ActiveWorkspaceId { get; set; }
+    public int? ActiveWorkspaceId { get; set; }
 
     [Required]
     [MaxLength(320)]

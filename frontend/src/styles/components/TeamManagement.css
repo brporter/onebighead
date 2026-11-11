@@ -1,0 +1,41 @@
+.team-panel { display: flex; flex-direction: column; gap: var(--space-lg); min-width: 0; }
+.team-panel__link { display: grid; gap: var(--space-sm); min-width: 0; padding: var(--space-lg); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-alt); }
+.team-panel__link p { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
+.team-panel__link .team-panel__button { justify-self: start; }
+.team-panel__title { margin: 0 0 var(--space-sm); color: var(--color-text); font-size: 1.1rem; }
+.team-panel__description, .team-panel__hint { color: var(--color-text-secondary); line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
+.team-panel__description { margin-bottom: var(--space-md); }
+.team-panel__hint { font-size: 0.85rem; }
+.team-panel__invitation { padding: var(--space-lg); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-alt); }
+.team-panel__inviteFields { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-md); border: none; padding: 0; margin: 0; min-width: 0; }
+.team-panel__field { display: flex; flex-direction: column; gap: var(--space-xs); min-width: 0; }
+.team-panel__field label { font-size: 0.85rem; color: var(--color-text-secondary); font-weight: 600; }
+.team-panel__field--email { flex: 1 1 16rem; }
+.team-panel__input, .team-panel__select { min-height: 44px; min-width: 0; max-width: 100%; box-sizing: border-box; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); padding: var(--space-sm) var(--space-md); font: inherit; }
+.team-panel__button { min-height: 44px; min-width: 44px; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font: inherit; font-weight: 600; cursor: pointer; }
+.team-panel__button--primary { background: var(--color-primary); color: var(--color-primary-text); border-color: var(--color-primary); }
+.team-panel__button--primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+.team-panel__button--danger { color: var(--color-danger); border-color: var(--color-danger-border); }
+.team-panel__button--danger:hover:not(:disabled) { background: var(--color-danger-bg); }
+.team-panel__button:disabled, .team-panel__select:disabled, .team-panel__input:disabled { opacity: 0.6; cursor: not-allowed; }
+.team-panel__button:focus-visible, .team-panel__input:focus-visible, .team-panel__select:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.team-panel__count { font-family: inherit; font-size: 0.85rem; font-weight: 400; margin-left: var(--space-xs); }
+.team-panel__members { display: flex; flex-direction: column; gap: var(--space-sm); padding: 0; margin: var(--space-md) 0 0; list-style: none; }
+.team-panel__member { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-md); padding: var(--space-lg); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.team-panel__member--pending { border-style: dashed; background: var(--color-surface-alt); }
+.team-panel__memberInfo { flex: 1 1 14rem; min-width: 0; }
+.team-panel__email { color: var(--color-text); font: inherit; font-weight: 600; overflow-wrap: anywhere; margin: 0 0 var(--space-xs); }
+.team-panel__badges { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); color: var(--color-text-secondary); font-size: 0.8rem; margin-bottom: var(--space-xs); }
+.team-panel__badge { background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 2px var(--space-sm); }
+.team-panel__memberActions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); width: 20rem; max-width: 100%; align-items: end; gap: var(--space-sm); }
+.team-panel__error, .team-panel__notice { padding: var(--space-md); margin: 0; overflow-wrap: anywhere; border-radius: var(--radius-md); }
+.team-panel__error { background: var(--color-danger-bg); color: var(--color-danger); }
+.team-panel__notice { background: var(--color-surface-alt); color: var(--color-text); }
+.team-panel__legend { border-top: 1px solid var(--color-border); padding-top: var(--space-md); color: var(--color-text-secondary); font-size: 0.85rem; }
+.team-panel__legend p { margin: 0 0 var(--space-xs); }
+.team-panel__srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.team-panel .content-state { min-height: 0; padding: var(--space-lg); }
+@media (max-width: 480px) {
+  .team-panel__invitation, .team-panel__member { padding: var(--space-md); }
+  .team-panel__inviteFields, .team-panel__memberActions { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
+}

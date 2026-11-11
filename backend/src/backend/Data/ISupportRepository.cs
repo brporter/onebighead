@@ -36,11 +36,6 @@ public interface ISupportRepository
     Task<int> GetRequestCountAsync(SupportRequestStatus? status = null, bool includeDeleted = false);
 
     /// <summary>
-    /// Add a reply to a support request.
-    /// </summary>
-    Task<SupportReply> AddReplyAsync(SupportReply reply);
-
-    /// <summary>
     /// Update the status of a support request.
     /// </summary>
     Task<SupportRequest?> UpdateStatusAsync(int requestId, SupportRequestStatus status);

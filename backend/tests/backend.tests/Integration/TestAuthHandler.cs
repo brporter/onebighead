@@ -16,6 +16,7 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthSchemeOptions>
     public const string UserIdHeader = "X-Test-UserId";
     public const string EmailHeader = "X-Test-Email";
     public const string WorkspaceRoleHeader = "X-Test-WorkspaceRole";
+    public const string SystemAdministratorHeader = "X-Test-SystemAdministrator";
 
     public TestAuthHandler(
         IOptionsMonitor<TestAuthSchemeOptions> options,
@@ -51,6 +52,10 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthSchemeOptions>
             new("sub", userId),
             new("workspace_role", workspaceRole)
         };
+        if (Request.Headers[SystemAdministratorHeader] == "true")
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "SystemAdministrator"));
+        }
 
         var identity = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);

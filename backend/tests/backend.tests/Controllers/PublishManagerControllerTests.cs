@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using OneBigHead.Server.Controllers;
-using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.Publishing;
 using System.Security.Claims;
 
 namespace backend.tests.Controllers;
@@ -14,7 +14,7 @@ public class PublishManagerControllerTests
     private const int TestWorkspaceId = 1;
     private const int TestUserId = 100;
 
-    private readonly Mock<IPublishManagerService> _mockService = new();
+    private readonly Mock<IPublicationService> _mockService = new();
     private readonly PublishManagerController _controller;
 
     public PublishManagerControllerTests()
@@ -49,8 +49,8 @@ public class PublishManagerControllerTests
             Entities = new List<EntityRef> { new() { Type = "item", Id = 1 } }
         };
 
-        _mockService.Setup(s => s.PreflightAsync(TestWorkspaceId, request))
-            .ReturnsAsync(new PreflightResponse { Ready = true });
+        _mockService.Setup(s => s.PreflightAsync(TestWorkspaceId, request, default))
+            .ReturnsAsync(PublicationResult<PreflightResponse>.Success(new() { Ready = true }));
 
         var result = await _controller.Preflight(TestWorkspaceId, request);
 
@@ -83,8 +83,8 @@ public class PublishManagerControllerTests
             Resolutions = new List<PublishResolution>()
         };
 
-        _mockService.Setup(s => s.ExecuteAsync(TestWorkspaceId, request))
-            .ReturnsAsync(new ExecuteResponse { Success = true });
+        _mockService.Setup(s => s.ExecuteAsync(TestWorkspaceId, request, default))
+            .ReturnsAsync(PublicationResult<ExecuteResponse>.Success(new() { Success = true }));
 
         var result = await _controller.Execute(TestWorkspaceId, request);
 
@@ -106,5 +106,35 @@ public class PublishManagerControllerTests
         var result = await _controller.Execute(999, request);
 
         Assert.IsType<ForbidResult>(result);
+    }
+
+    [Theory]
+    [InlineData(PublicationFailure.Invalid, 400)]
+    [InlineData(PublicationFailure.NotFound, 404)]
+    [InlineData(PublicationFailure.Conflict, 409)]
+    public async Task Failures_MapToConsistentHttpResults(PublicationFailure failure, int status)
+    {
+        var preflight = new PreflightRequest { Entities = [] };
+        var execute = new ExecuteRequest { Entities = [] };
+        var error = new PublicationError(failure, "Rejected");
+        _mockService.Setup(service => service.PreflightAsync(1, preflight, default)).ReturnsAsync(PublicationResult<PreflightResponse>.Failure(error));
+        _mockService.Setup(service => service.ExecuteAsync(1, execute, default)).ReturnsAsync(PublicationResult<ExecuteResponse>.Failure(error));
+        Assert.Equal(status, Assert.IsAssignableFrom<ObjectResult>(await _controller.Preflight(1, preflight)).StatusCode);
+        Assert.Equal(status, Assert.IsAssignableFrom<ObjectResult>(await _controller.Execute(1, execute)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Actions_ForwardCancellationAndDoNotMaskUnknownFailures()
+    {
+        var token = new CancellationToken(true);
+        var preflight = new PreflightRequest { Entities = [] };
+        var execute = new ExecuteRequest { Entities = [] };
+        _mockService.Setup(service => service.PreflightAsync(1, preflight, token)).ReturnsAsync(PublicationResult<PreflightResponse>.Success(new()));
+        _mockService.Setup(service => service.ExecuteAsync(1, execute, token)).ReturnsAsync(PublicationResult<ExecuteResponse>.Success(new()));
+        Assert.IsType<OkObjectResult>(await _controller.Preflight(1, preflight, token));
+        Assert.IsType<OkObjectResult>(await _controller.Execute(1, execute, token));
+        _mockService.VerifyAll();
+        _mockService.Setup(service => service.PreflightAsync(1, preflight, default)).ReturnsAsync(PublicationResult<PreflightResponse>.Failure(new((PublicationFailure)999, "Invalid contract")));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => _controller.Preflight(1, preflight));
     }
 }

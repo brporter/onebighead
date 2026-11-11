@@ -6,6 +6,35 @@ namespace OneBigHead.Server.Tests.DTOs;
 [Trait("Category", "Unit")]
 public class DtoMappingTests
 {
+    [Fact]
+    public void ThemeTemplateDto_HandlesAnUnloadedTemplateWithoutInventingDetails()
+    {
+        var result = ThemeTemplateDto.FromEntity(new CollectionThemeTemplate { ItemTemplateId = 7 });
+        Assert.Equal(0, result.ItemTemplateId);
+        Assert.Empty(result.Name);
+        Assert.Empty(result.Description);
+        Assert.Empty(result.Properties);
+    }
+
+    [Fact]
+    public void ThemeTemplateDto_OrdersPropertiesByTheirDefinedOrder()
+    {
+        var result = ThemeTemplateDto.FromEntity(new CollectionThemeTemplate
+        {
+            ItemTemplate = new ItemTemplate
+            {
+                Id = 7, Name = "Books", Description = "Book details",
+                Properties = [new ItemTemplateProperty { Category = "Details", Name = "Year", SortOrder = 2 },
+                    new ItemTemplateProperty { Category = "Details", Name = "Title", SortOrder = 1 }]
+            }
+        });
+        Assert.Equal(7, result.ItemTemplateId);
+        Assert.Equal("Books", result.Name);
+        Assert.Equal("Book details", result.Description);
+        Assert.Equal(new[] { ("Details", "Title"), ("Details", "Year") },
+            result.Properties.Select(property => (property.Category, property.Name)));
+    }
+
     #region SupportRequestDto Tests
 
     [Fact]
@@ -219,55 +248,6 @@ public class DtoMappingTests
     #endregion
 
     #region WorkspaceUserResponse Tests
-
-    [Fact]
-    public void WorkspaceUserResponse_FromUser_MapsLinkedUser()
-    {
-        // Arrange
-        var user = new User
-        {
-            Id = 100,
-            Email = "user@example.com",
-            IdentityProvider = IdentityProvider.Microsoft,
-            ProviderSubjectId = "sub-123",
-            CreatedAt = new DateTime(2024, 3, 10)
-        };
-
-        // Act
-        var response = WorkspaceUserResponse.FromUser(user, WorkspaceRole.WorkspaceAdmin);
-
-        // Assert
-        Assert.Equal(100, response.UserId);
-        Assert.Equal("user@example.com", response.Email);
-        Assert.Equal(WorkspaceRole.WorkspaceAdmin, response.WorkspaceRole);
-        Assert.True(response.IsLinked);
-        Assert.Equal("Microsoft", response.IdentityProvider);
-        Assert.Equal(new DateTime(2024, 3, 10), response.CreatedAt);
-    }
-
-    [Fact]
-    public void WorkspaceUserResponse_FromUser_MapsUnlinkedUser()
-    {
-        // Arrange
-        var user = new User
-        {
-            Id = 101,
-            Email = "invited@example.com",
-            IdentityProvider = IdentityProvider.None,
-            ProviderSubjectId = "",
-            CreatedAt = new DateTime(2024, 4, 15)
-        };
-
-        // Act
-        var response = WorkspaceUserResponse.FromUser(user, WorkspaceRole.Normal);
-
-        // Assert
-        Assert.Equal(101, response.UserId);
-        Assert.Equal("invited@example.com", response.Email);
-        Assert.Equal(WorkspaceRole.Normal, response.WorkspaceRole);
-        Assert.False(response.IsLinked);
-        Assert.Null(response.IdentityProvider);
-    }
 
     [Fact]
     public void WorkspaceUserResponse_FromWorkspaceUser_MapsAllFields()

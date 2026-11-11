@@ -1,100 +1,66 @@
-import { useState, useCallback } from 'react';
-import { DeletionConfirmationModal } from '../common';
-import { workspacesApi, exportApi, authApi } from '../../api';
-import type { WorkspaceStats } from '../../api/workspaces';
+import { useCallback, useState } from 'react';
+import { DeletionConfirmationModal } from '../common/DeletionConfirmationModal';
+import { ModalDialog } from '../common/ModalDialog';
+import { ContentState } from '../common/ContentState';
+import { SessionChangeFeedback } from '../common/SessionChangeFeedback';
+import { workspacesApi, exportApi } from '../../api';
 import type { WorkspaceMembership } from '../../utils/types';
+import { useAsyncData } from '../../utils/useAsyncData';
+import { saveDownload } from '../../utils/saveDownload';
+import { removeWorkspace } from '../../data/workspaces/removeWorkspace';
+import { useSessionChanges } from '../../data/auth/useSessionChanges';
+import { useEditorStatus, type EditorStatusListener } from '../../data/shared/useEditorStatus';
 
 interface WorkspaceDeletionSectionProps {
   workspace: WorkspaceMembership;
-  onDeleted: () => void;
+  exportAvailable: boolean;
+  onClose: () => void;
+  refresh: () => Promise<void>;
+  onStatusChange?: EditorStatusListener;
 }
 
-export function WorkspaceDeletionSection({ workspace, onDeleted }: WorkspaceDeletionSectionProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [stats, setStats] = useState<WorkspaceStats | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+/** One mounted confirmation owns its statistics, export and session recovery. */
+export function WorkspaceDeletionSection({ workspace, exportAvailable, onClose, refresh, onStatusChange }: WorkspaceDeletionSectionProps) {
+  const fetchStats = useCallback((signal: AbortSignal) => workspacesApi.getStats(workspace.workspaceId, { signal }), [workspace.workspaceId]);
+  const stats = useAsyncData(fetchStats);
+  const [exporting, setExporting] = useState(false);
+  const { changes, state, managed } = useSessionChanges();
+  const busy = state.pending || state.recovery || state.leaving;
+  useEditorStatus(false, stats.loading || exporting || busy, onStatusChange);
 
-  const handleDeleteClick = async () => {
-    setIsLoadingStats(true);
-    setError(null);
-    try {
-      const workspaceStats = await workspacesApi.getStats(workspace.workspaceId);
-      setStats(workspaceStats);
-      setIsModalOpen(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load workspace statistics');
-    } finally {
-      setIsLoadingStats(false);
-    }
-  };
+  async function handleExport() {
+    setExporting(true);
+    try { saveDownload(await exportApi.downloadExport()); }
+    finally { setExporting(false); }
+  }
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      const { blob, filename } = await exportApi.downloadExport();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } finally {
-      setIsExporting(false);
-    }
-  };
+  async function confirm() {
+    const outcome = await removeWorkspace(workspace.workspaceId, workspacesApi, {
+      changes, refresh, confirmDiscard: () => window.confirm('You have unsaved changes. Discard them?'),
+    });
+    if (outcome === 'signed-out') window.location.href = '/';
+  }
 
-  const handleConfirmDelete = useCallback(async () => {
-    const result = await workspacesApi.deleteWorkspace(workspace.workspaceId);
-    if (!result.success) {
-      throw new Error('Failed to delete workspace');
-    }
-
-    if (result.userSoftDeleted) {
-      // User account was soft-deleted - log out and redirect to homepage
-      await authApi.logout();
-      window.location.href = '/';
-      return;
-    }
-
-    onDeleted();
-  }, [workspace.workspaceId, onDeleted]);
-
-  return (
-    <>
-      {error && <div className="settings-section__error">{error}</div>}
-      <button
-        className="settings-workspace-card__button settings-workspace-card__button--danger"
-        onClick={handleDeleteClick}
-        disabled={isLoadingStats}
-      >
-        {isLoadingStats ? 'Loading...' : 'Delete'}
-      </button>
-
-      <DeletionConfirmationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onConfirm={handleConfirmDelete}
-        title={`Delete "${workspace.workspaceName}"`}
-        entityType="workspace"
-        entityName={workspace.workspaceName}
-        stats={stats ? {
-          collections: stats.collectionCount,
-          categories: stats.categoryCount,
-          items: stats.itemCount,
-          images: stats.imageCount,
-          users: stats.userCount,
-        } : undefined}
-        showExportOption={true}
-        onExport={handleExport}
-        isExporting={isExporting}
-        confirmationType="checkbox"
-      />
-    </>
-  );
+  const title = `Delete "${workspace.workspaceName}"`;
+  return <>
+    {stats.data ? <DeletionConfirmationModal
+      isOpen onClose={onClose} onConfirm={confirm} title={title} entityType="workspace" entityName={workspace.workspaceName}
+      stats={{ collections: stats.data.collectionCount, categories: stats.data.categoryCount, items: stats.data.itemCount, images: stats.data.imageCount, users: stats.data.userCount }}
+      showExportOption={exportAvailable}
+      exportUnavailableReason={exportAvailable ? undefined : 'To back up this workspace before deleting it, cancel and switch to it first. Data Export downloads the active workspace.'}
+      onExport={handleExport} isExporting={exporting} confirmationType="checkbox"
+      errorAction={{ label: 'Review deletion information', onClick: stats.retry }}
+    /> : <ModalDialog label={title} onClose={onClose}>
+      <section className="modal">
+        <div className="modal__header"><h2 className="modal__title">{title}</h2></div>
+        <div className="modal__body">{stats.error
+          ? <ContentState kind="error" title="Unable to load deletion information" action={<button type="button" className="content-state__button" onClick={stats.retry}>Try again</button>}>{stats.error}</ContentState>
+          : <ContentState kind="loading" title="Loading deletion information…" />}</div>
+        <div className="modal__footer"><button type="button" className="modal__button modal__button--secondary" onClick={onClose}>Cancel</button></div>
+      </section>
+    </ModalDialog>}
+    {!managed && <SessionChangeFeedback changes={changes} />}
+  </>;
 }
 
 export default WorkspaceDeletionSection;

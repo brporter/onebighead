@@ -1,13 +1,20 @@
 /**
  * Auth API
  */
-import { api } from './client';
-import type { CurrentUser } from '../utils/types';
+import { api, type RequestOptions } from './client';
+import type { CurrentUser, SetupCollectionRequest } from '../utils/types';
+
+export interface CompleteWelcomeRequest {
+  workspaceName?: string;
+  collection?: SetupCollectionRequest;
+}
 
 export interface CompleteWelcomeResponse {
   workspaceId: number;
   workspaceName: string;
   hasCompletedWelcome: boolean;
+  collectionId: number | null;
+  collectionName: string | null;
 }
 
 export interface AcceptTermsResponse {
@@ -16,8 +23,8 @@ export interface AcceptTermsResponse {
 }
 
 export const authApi = {
-  getCurrentUser(): Promise<CurrentUser | null> {
-    return api.get<CurrentUser>('/auth/me').catch((error) => {
+  getCurrentUser(options?: RequestOptions): Promise<CurrentUser | null> {
+    return api.get<CurrentUser>('/auth/me', options).catch((error) => {
       if (error.status === 401) {
         return null;
       }
@@ -33,8 +40,8 @@ export const authApi = {
     return `/api/auth/login/${provider}`;
   },
 
-  completeWelcome(workspaceName?: string): Promise<CompleteWelcomeResponse> {
-    return api.post<CompleteWelcomeResponse>('/auth/complete-welcome', { workspaceName });
+  completeWelcome(request: CompleteWelcomeRequest): Promise<CompleteWelcomeResponse> {
+    return api.post<CompleteWelcomeResponse>('/auth/complete-welcome', request);
   },
 
   acceptTerms(): Promise<AcceptTermsResponse> {

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TermsAcceptance from '../src/components/common/TermsAcceptance';
 import { authApi } from '../src/api';
+import { deferred } from './testUtils/deferred';
 
 vi.mock('../src/api', () => ({
   authApi: {
@@ -15,7 +16,7 @@ describe('TermsAcceptance', () => {
   const mockOnSkip = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it('renders title and documents', () => {
@@ -97,7 +98,7 @@ describe('TermsAcceptance', () => {
     expect(screen.getByRole('button', { name: /accepting/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /accepting/i })).toBeDisabled();
 
-    resolveAccept!();
+    await act(async () => resolveAccept!());
   });
 
   it('displays error when API call fails', async () => {
@@ -139,6 +140,10 @@ describe('TermsAcceptance', () => {
   });
 
   describe('with skip button', () => {
+    it('omits sign-out when no callback is supplied', () => {
+      render(<TermsAcceptance onAccepted={mockOnAccepted} showSkip />);
+      expect(screen.queryByRole('button', { name: /sign out/i })).not.toBeInTheDocument();
+    });
     it('renders skip button when showSkip is true', () => {
       render(
         <TermsAcceptance
@@ -171,6 +176,51 @@ describe('TermsAcceptance', () => {
 
       expect(mockOnSkip).toHaveBeenCalled();
     });
+  });
+
+  it('reports sign-out failure and locks all actions during a retry', async () => {
+    const user = userEvent.setup();
+    const retry = deferred<void>();
+    const skip = vi.fn().mockRejectedValueOnce(new Error('Unable to reach server')).mockReturnValueOnce(retry.promise);
+    render(<TermsAcceptance onAccepted={mockOnAccepted} showSkip onSkip={skip} />);
+    await user.click(screen.getByRole('button', { name: 'Sign Out' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Unable to reach server');
+    for (const checkbox of screen.getAllByRole('checkbox')) await user.click(checkbox);
+    await user.click(screen.getByRole('button', { name: 'Sign Out' }));
+    expect(screen.getByRole('button', { name: 'Signing out…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Accept and Continue' })).toBeDisabled();
+    for (const checkbox of screen.getAllByRole('checkbox')) expect(checkbox).toBeDisabled();
+    await act(async () => retry.resolve());
+    expect(screen.getByRole('button', { name: 'Sign Out' })).toBeEnabled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('awaits the acceptance continuation and shows its failure without an unhandled rejection', async () => {
+    const user = userEvent.setup();
+    const completion = deferred<void>();
+    vi.mocked(authApi.acceptTerms).mockResolvedValue({ hasAcceptedTerms: true, acceptedTermsAt: '2026-11-10' });
+    render(<TermsAcceptance onAccepted={() => completion.promise} showSkip onSkip={mockOnSkip} />);
+    for (const checkbox of screen.getAllByRole('checkbox')) await user.click(checkbox);
+    await user.click(screen.getByRole('button', { name: 'Accept and Continue' }));
+    expect(screen.getByRole('button', { name: 'Accepting...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Sign Out' })).toBeDisabled();
+    await act(async () => completion.reject(new Error('Session refresh failed')));
+    expect(screen.getByRole('alert')).toHaveTextContent('Session refresh failed');
+    expect(screen.getByRole('button', { name: 'Accept and Continue' })).toBeEnabled();
+  });
+
+  it('retries only the continuation after terms acceptance has been confirmed', async () => {
+    const user = userEvent.setup();
+    vi.mocked(authApi.acceptTerms).mockResolvedValue({ hasAcceptedTerms: true, acceptedTermsAt: '2026-11-10' });
+    const accepted = vi.fn().mockRejectedValueOnce(new Error('Refresh failed')).mockResolvedValue(undefined);
+    render(<TermsAcceptance onAccepted={accepted} />);
+    for (const checkbox of screen.getAllByRole('checkbox')) await user.click(checkbox);
+    await user.click(screen.getByRole('button', { name: 'Accept and Continue' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Refresh failed');
+    await user.click(screen.getByRole('button', { name: 'Accept and Continue' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    expect(authApi.acceptTerms).toHaveBeenCalledOnce();
+    expect(accepted).toHaveBeenCalledTimes(2);
   });
 
   describe('checkbox interactions', () => {

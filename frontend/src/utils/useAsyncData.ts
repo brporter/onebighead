@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { getErrorMessage } from './errorUtils';
 
 interface AsyncDataResult<T> {
   data: T | null;
@@ -6,11 +7,7 @@ interface AsyncDataResult<T> {
   error: string | null;
 }
 
-type FetchState<T> =
-  | { status: 'loading' }
-  | { status: 'success'; data: T }
-  | { status: 'error'; error: string }
-  | { status: 'idle' };
+type Fetcher<T> = (signal: AbortSignal) => Promise<T>;
 
 /**
  * Hook for fetching async data with loading/error state management.
@@ -18,7 +15,9 @@ type FetchState<T> =
  * @param fetcher - A stable (useCallback-wrapped) async function that returns
  *   data. When its identity changes, a new fetch is triggered automatically.
  *   Pass `null` to skip fetching (e.g. when required params aren't ready).
- * @returns `{ data, loading, error }`
+ *   Forward the supplied signal to the API adapter to cancel network work on
+ *   navigation. Results are ignored after cleanup even if the adapter cannot abort.
+ * @returns `{ data, loading, error, retry }`; retry cancels the previous request.
  *
  * @example
  * ```ts
@@ -30,45 +29,37 @@ type FetchState<T> =
  * ```
  */
 export function useAsyncData<T>(
-  fetcher: (() => Promise<T>) | null,
-): AsyncDataResult<T> {
-  const [state, setState] = useState<FetchState<T>>(
-    fetcher === null ? { status: 'idle' } : { status: 'loading' },
-  );
+  fetcher: Fetcher<T> | null,
+): AsyncDataResult<T> & { retry: () => void } {
+  const [revision, setRevision] = useState(0);
+  const retry = useCallback(() => setRevision(previous => previous + 1), []);
+  const pending: AsyncDataResult<T> = { data: null, loading: fetcher !== null, error: null };
+  const [state, setState] = useState({ fetcher, revision, result: pending });
+
+  // Reset before committing a new route, including returning to the same fetcher
+  // after an idle state. An effect-only reset can expose the previous entity.
+  if (state.fetcher !== fetcher || state.revision !== revision) setState({ fetcher, revision, result: pending });
 
   useEffect(() => {
-    if (fetcher === null) {
-      // Schedule state reset as a microtask to avoid synchronous setState in effect
-      void Promise.resolve().then(() => setState({ status: 'idle' }));
-      return;
-    }
+    if (fetcher === null) return;
+    const controller = new AbortController();
 
-    let cancelled = false;
-
-    // Signal loading via microtask
-    void Promise.resolve().then(() => {
-      if (!cancelled) setState({ status: 'loading' });
-    });
-
-    fetcher()
-      .then((data) => {
-        if (!cancelled) setState({ status: 'success', data });
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setState({
-            status: 'error',
-            error: err instanceof Error ? err.message : 'An error occurred',
-          });
+    const load = async () => {
+      try {
+        const data = await fetcher(controller.signal);
+        if (!controller.signal.aborted) {
+          setState({ fetcher, revision, result: { data, loading: false, error: null } });
         }
-      });
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setState({ fetcher, revision, result: { data: null, loading: false, error: getErrorMessage(cause, 'An error occurred') } });
+        }
+      }
+    };
+    void load();
 
-    return () => { cancelled = true; };
-  }, [fetcher]);
+    return () => controller.abort();
+  }, [fetcher, revision]);
 
-  return {
-    data: state.status === 'success' ? state.data : null,
-    loading: state.status === 'loading',
-    error: state.status === 'error' ? state.error : null,
-  };
+  return { ...state.result, retry };
 }

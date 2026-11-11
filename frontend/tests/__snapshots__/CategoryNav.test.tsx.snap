@@ -3,6 +3,7 @@
 exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
 <div>
   <aside
+    aria-label="Categories"
     class="categoryNav"
   >
     <div
@@ -51,6 +52,7 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
         ← Back
       </button>
       <button
+        aria-current="page"
         class="categoryNav__row categoryNav__row--active"
         type="button"
       >
@@ -65,8 +67,7 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
           <span
             class="categoryNav__name"
           >
-            All 
-            Rangefinders
+            All Rangefinders
           </span>
         </span>
       </button>
@@ -129,6 +130,7 @@ exports[`CategoryNav > snapshots > drilled level snapshot 1`] = `
 exports[`CategoryNav > snapshots > root level snapshot 1`] = `
 <div>
   <aside
+    aria-label="Categories"
     class="categoryNav"
   >
     <div

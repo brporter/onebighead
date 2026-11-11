@@ -1,7 +1,7 @@
 /**
  * Images API
  */
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 
 export interface UploadImageResult {
   key: string;
@@ -9,10 +9,10 @@ export interface UploadImageResult {
 }
 
 export const imagesApi = {
-  upload(file: File): Promise<UploadImageResult> {
+  upload(file: File, options?: RequestOptions): Promise<UploadImageResult> {
     const formData = new FormData();
     formData.append('file', file);
-    return api.upload<UploadImageResult>('/images', formData);
+    return api.upload<UploadImageResult>('/images', formData, options);
   },
 
   delete(key: string): Promise<void> {

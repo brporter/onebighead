@@ -4,6 +4,7 @@ using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Services.BulkUpdate;
+using OneBigHead.Server.Services.Items;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -14,11 +15,12 @@ namespace OneBigHead.Server.Tests.Controllers;
 [Trait("Category", "Unit")]
 public class ItemsControllerTests
 {
+    private readonly Mock<IItemReadService> _mockItemReads = new();
     private readonly Mock<IItemRepository> _mockItemRepository;
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
     private readonly Mock<ICollectionRepository> _mockCollectionRepository;
-    private readonly Mock<IPublishManagerService> _mockVisibilityService;
-    private readonly Mock<IBulkUpdateQueue> _mockBulkUpdateQueue;
+    private readonly Mock<IVisibilityService> _mockVisibilityService;
+    private readonly Mock<IBulkUpdateJobs> _mockBulkUpdateJobs;
     private readonly Mock<IWorkspaceStatisticsRepository> _mockStatisticsRepository;
     private readonly Mock<ICollectionStatisticsRepository> _mockCollectionStatisticsRepository;
     private readonly ItemsController _controller;
@@ -31,18 +33,18 @@ public class ItemsControllerTests
         _mockItemRepository = new Mock<IItemRepository>();
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockCollectionRepository = new Mock<ICollectionRepository>();
-        _mockVisibilityService = new Mock<IPublishManagerService>();
-        _mockBulkUpdateQueue = new Mock<IBulkUpdateQueue>();
+        _mockVisibilityService = new Mock<IVisibilityService>();
+        _mockBulkUpdateJobs = new Mock<IBulkUpdateJobs>();
         _mockStatisticsRepository = new Mock<IWorkspaceStatisticsRepository>();
         _mockCollectionStatisticsRepository = new Mock<ICollectionStatisticsRepository>();
+        _mockItemRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
+            .ReturnsAsync(new Item { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId });
         _controller = new ItemsController(
-            _mockItemRepository.Object,
-            _mockCategoryRepository.Object,
-            _mockCollectionRepository.Object,
-            _mockVisibilityService.Object,
-            _mockBulkUpdateQueue.Object,
-            _mockStatisticsRepository.Object,
-            _mockCollectionStatisticsRepository.Object);
+            _mockItemReads.Object,
+            new ItemWriteService(_mockItemRepository.Object, _mockCategoryRepository.Object,
+                _mockCollectionRepository.Object, _mockVisibilityService.Object, _mockBulkUpdateJobs.Object),
+            new ItemViewRecorder(_mockItemRepository.Object, _mockStatisticsRepository.Object,
+                _mockCollectionStatisticsRepository.Object, TimeProvider.System));
 
         var claims = new List<Claim>
         {
@@ -59,157 +61,147 @@ public class ItemsControllerTests
         };
     }
 
-    #region GetItems Tests
-
-    [Fact]
-    public async Task GetItems_ReturnsOkResult_WithListOfItems()
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData(10, false)]
+    [InlineData(10, true)]
+    public async Task GetItems_ForwardsScopeAndFilter(int? categoryId, bool descendants)
     {
-        // Arrange
-        var items = new List<Item>
-        {
-            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = TestCategoryId },
-            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 2", CategoryId = TestCategoryId }
-        };
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
-            .ReturnsAsync(items);
+        Item[] items = [new() { Id = 1 }, new() { Id = 2 }];
+        _mockItemReads.Setup(reads => reads.GetAllAsync(TestWorkspaceId, categoryId, descendants)).ReturnsAsync(items);
+        var response = Assert.IsType<OkObjectResult>((await _controller.GetItems(categoryId, descendants)).Result);
+        Assert.Equal(items, Assert.IsAssignableFrom<IEnumerable<Item>>(response.Value));
+        Assert.False(_controller.Response.Headers.ContainsKey("X-Total-Count"));
+    }
 
-        // Act
-        var result = await _controller.GetItems();
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedItems = Assert.IsAssignableFrom<IEnumerable<Item>>(okResult.Value);
-        Assert.Equal(2, returnedItems.Count());
+    [Theory]
+    [InlineData(null, null, 3)]
+    [InlineData(0, null, 3)]
+    [InlineData(1, null, 2)]
+    [InlineData(null, 0, 0)]
+    [InlineData(null, 2, 2)]
+    [InlineData(1, 1, 1)]
+    [InlineData(10, 2, 0)]
+    public async Task GetItems_PaginatesAndReturnsTotal(int? skip, int? take, int count)
+    {
+        Item[] items = [new() { Id = 1 }, new() { Id = 2 }, new() { Id = 3 }];
+        _mockItemReads.Setup(reads => reads.GetAllAsync(TestWorkspaceId, null, false)).ReturnsAsync(items);
+        var response = Assert.IsType<OkObjectResult>((await _controller.GetItems(skip: skip, take: take)).Result);
+        Assert.Equal(count, Assert.IsAssignableFrom<IEnumerable<Item>>(response.Value).Count());
+        if (skip.HasValue || take.HasValue) Assert.Equal("3", _controller.Response.Headers["X-Total-Count"]);
     }
 
     [Fact]
-    public async Task GetItems_ReturnsOkResult_WithEmptyList_WhenNoItems()
+    public async Task GetItems_CacheValidatorDescribesThePageAndItsTotal()
     {
-        // Arrange
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
-            .ReturnsAsync(new List<Item>());
-
-        // Act
-        var result = await _controller.GetItems();
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedItems = Assert.IsAssignableFrom<IEnumerable<Item>>(okResult.Value);
-        Assert.Empty(returnedItems);
+        var items = new List<Item> { new() { Id = 1 }, new() { Id = 2 }, new() { Id = 3 } };
+        _mockItemReads.Setup(reads => reads.GetAllAsync(TestWorkspaceId, null, false)).ReturnsAsync(items);
+        await _controller.GetItems(take: 1);
+        var firstTag = _controller.Response.Headers.ETag.ToString();
+        _controller.Request.Headers.IfNoneMatch = firstTag;
+        Assert.Equal(304, Assert.IsType<StatusCodeResult>((await _controller.GetItems(take: 1)).Result).StatusCode);
+        Assert.Equal("3", _controller.Response.Headers["X-Total-Count"]);
+        Assert.IsType<OkObjectResult>((await _controller.GetItems(skip: 1, take: 1)).Result);
+        Assert.NotEqual(firstTag, _controller.Response.Headers.ETag.ToString());
+        items.Add(new Item { Id = 4 });
+        Assert.IsType<OkObjectResult>((await _controller.GetItems(take: 1)).Result);
+        Assert.NotEqual(firstTag, _controller.Response.Headers.ETag.ToString());
     }
 
     [Fact]
-    public async Task GetItems_FiltersByCategory_WhenCategoryIdProvided()
+    public async Task GetItems_ReturnsEmptyList()
     {
-        // Arrange
-        var items = new List<Item>
-        {
-            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = TestCategoryId }
-        };
-        _mockItemRepository.Setup(repo => repo.GetByCategoryIdsAsync(It.IsAny<IEnumerable<int>>(), TestWorkspaceId))
-            .ReturnsAsync(items);
+        _mockItemReads.Setup(reads => reads.GetAllAsync(TestWorkspaceId, null, false)).ReturnsAsync(Array.Empty<Item>());
+        var response = Assert.IsType<OkObjectResult>((await _controller.GetItems()).Result);
+        Assert.Empty(Assert.IsAssignableFrom<IEnumerable<Item>>(response.Value));
+    }
 
-        // Act
-        var result = await _controller.GetItems(categoryId: TestCategoryId);
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetItem_MapsTheScopedProjection(bool exists)
+    {
+        var item = exists ? new Item { Id = 10, Name = "Dune" } : null;
+        _mockItemReads.Setup(reads => reads.GetByIdAsync(10, TestWorkspaceId)).ReturnsAsync(item);
+        var response = (await _controller.GetItem(10)).Result;
+        if (exists) Assert.Same(item, Assert.IsType<OkObjectResult>(response).Value);
+        else Assert.IsType<NotFoundResult>(response);
+    }
 
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedItems = Assert.IsAssignableFrom<IEnumerable<Item>>(okResult.Value);
-        Assert.Single(returnedItems);
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Write_RejectsActiveCollectionBulkUpdate(bool update)
+    {
+        _mockBulkUpdateJobs.Setup(queue => queue.GetActiveJobForCollection(TestCollectionId, TestWorkspaceId))
+            .Returns(new BulkUpdateJob());
+        var result = update
+            ? await _controller.UpdateItem(1, new UpdateItemRequest { CollectionId = TestCollectionId })
+            : await _controller.CreateItem(new CreateItemRequest { CollectionId = TestCollectionId });
+        Assert.IsType<ConflictObjectResult>(result.Result);
+        _mockItemRepository.Verify(repo => repo.CreateAsync(It.IsAny<Item>()), Times.Never);
+        _mockItemRepository.Verify(repo => repo.UpdateAsync(It.IsAny<int>(), It.IsAny<Item>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
-    public async Task GetItems_IncludesDescendants_WhenFlagIsTrue()
+    public async Task UpdateItem_RejectsChangingCollectionBeforeAnyWrite()
     {
-        // Arrange
-        var categories = new List<Category>
-        {
-            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Parent", ParentCategoryId = null },
-            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Child", ParentCategoryId = 1 }
-        };
-        var items = new List<Item>
-        {
-            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = 1 },
-            new() { Id = 2, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 2", CategoryId = 2 }
-        };
-
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
-            .ReturnsAsync(categories);
-        _mockItemRepository.Setup(repo => repo.GetByCategoryIdsAsync(It.IsAny<IEnumerable<int>>(), TestWorkspaceId))
-            .ReturnsAsync(items);
-
-        // Act
-        var result = await _controller.GetItems(categoryId: 1, includeDescendants: true);
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        _mockItemRepository.Verify(repo => repo.GetByCategoryIdsAsync(
-            It.Is<IEnumerable<int>>(ids => ids.Contains(1) && ids.Contains(2)),
-            TestWorkspaceId), Times.Once);
+        var result = await _controller.UpdateItem(1, new UpdateItemRequest { CollectionId = 2, CategoryId = 20 });
+        Assert.Equal("An item cannot be moved to a different collection.", Assert.IsType<BadRequestObjectResult>(result.Result).Value);
+        _mockItemRepository.Verify(repo => repo.UpdateAsync(It.IsAny<int>(), It.IsAny<Item>(), It.IsAny<int>()), Times.Never);
+        _mockCollectionRepository.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task GetItems_Returns304_WhenETagMatches()
+    public async Task UpdateItem_RejectsUnavailableOwningCollection()
     {
-        // Arrange
-        var items = new List<Item>
-        {
-            new() { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Item 1", CategoryId = TestCategoryId }
-        };
-        _mockItemRepository.Setup(repo => repo.GetAllAsync(TestWorkspaceId))
-            .ReturnsAsync(items);
-
-        // First call to get the ETag
-        var firstResult = await _controller.GetItems();
-        var etag = _controller.Response.Headers.ETag.ToString();
-
-        // Set up request with If-None-Match header
-        _controller.ControllerContext.HttpContext.Request.Headers.IfNoneMatch = etag;
-
-        // Act - second call with matching ETag
-        var result = await _controller.GetItems();
-
-        // Assert
-        var statusResult = Assert.IsType<StatusCodeResult>(result.Result);
-        Assert.Equal(304, statusResult.StatusCode);
-    }
-
-    #endregion
-
-    #region GetItem Tests
-
-    [Fact]
-    public async Task GetItem_ReturnsOkResult_WhenItemExists()
-    {
-        // Arrange
-        var item = new Item { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Test Item" };
-        _mockItemRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
-            .ReturnsAsync(item);
-
-        // Act
-        var result = await _controller.GetItem(1);
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedItem = Assert.IsType<Item>(okResult.Value);
-        Assert.Equal("Test Item", returnedItem.Name);
+        Assert.IsType<BadRequestObjectResult>((await _controller.UpdateItem(1, new UpdateItemRequest { CollectionId = TestCollectionId })).Result);
+        _mockItemRepository.Verify(repo => repo.UpdateAsync(It.IsAny<int>(), It.IsAny<Item>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
-    public async Task GetItem_ReturnsNotFound_WhenItemDoesNotExist()
+    public async Task UpdateItem_RejectsCategoryOutsideOwningCollection()
     {
-        // Arrange
-        _mockItemRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
-            .ReturnsAsync((Item?)null);
-
-        // Act
-        var result = await _controller.GetItem(999);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result.Result);
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId });
+        Assert.IsType<BadRequestObjectResult>((await _controller.UpdateItem(1,
+            new UpdateItemRequest { CollectionId = TestCollectionId, CategoryId = 99 })).Result);
+        _mockItemRepository.Verify(repo => repo.UpdateAsync(It.IsAny<int>(), It.IsAny<Item>(), It.IsAny<int>()), Times.Never);
     }
 
-    #endregion
+    [Fact]
+    public async Task UpdateItem_ReturnsNotFoundIfDeletedAfterValidation()
+    {
+        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(TestCollectionId, TestWorkspaceId))
+            .ReturnsAsync(new Collection { Id = TestCollectionId, WorkspaceId = TestWorkspaceId });
+        Assert.IsType<NotFoundResult>((await _controller.UpdateItem(1, new UpdateItemRequest { CollectionId = TestCollectionId })).Result);
+        _mockItemRepository.Verify(repo => repo.UpdateAsync(1, It.IsAny<Item>(), TestWorkspaceId), Times.Once);
+    }
+
+    [Fact]
+    public async Task RecordView_CountsOnlyExistingWorkspaceItems()
+    {
+        Assert.IsType<NoContentResult>(await _controller.RecordItemView(1));
+        _mockStatisticsRepository.Verify(repo => repo.IncrementAsync(TestWorkspaceId, StatisticType.DailyItemView, 1,
+            It.Is<DateOnly?>(date => date != null)), Times.Once);
+        _mockCollectionStatisticsRepository.Verify(repo => repo.IncrementItemViewAsync(TestCollectionId, 1), Times.Once);
+        Assert.IsType<NoContentResult>(await _controller.RecordItemView(99));
+        _mockStatisticsRepository.VerifyNoOtherCalls();
+        _mockCollectionStatisticsRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RecordView_ToleratesStatisticsFailures(bool collectionFailure)
+    {
+        if (collectionFailure)
+            _mockCollectionStatisticsRepository.Setup(repo => repo.IncrementItemViewAsync(TestCollectionId, 1)).ThrowsAsync(new InvalidOperationException());
+        else
+            _mockStatisticsRepository.Setup(repo => repo.IncrementAsync(TestWorkspaceId, StatisticType.DailyItemView, 1, It.IsAny<DateOnly?>()))
+                .ThrowsAsync(new InvalidOperationException());
+        Assert.IsType<NoContentResult>(await _controller.RecordItemView(1));
+    }
 
     #region CreateItem Tests
 
@@ -651,9 +643,9 @@ public class ItemsControllerTests
     }
 
     [Fact]
-    public async Task UpdateItem_DefaultsVisibility_WhenExistingItemNotFound()
+    public async Task UpdateItem_DoesNotWrite_WhenExistingItemNotFound()
     {
-        // Arrange - race condition where item is deleted between get and update
+        // Missing items cannot be recreated by an update.
         var request = new UpdateItemRequest
         {
             Name = "Updated Item",

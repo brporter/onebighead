@@ -1,9 +1,7 @@
+import { Loading } from './Loading';
+
 function LoadingFallback() {
-  return (
-    <div className="loading">
-      <p className="loading__text">Loading...</p>
-    </div>
-  );
+  return <Loading />;
 }
 
 export default LoadingFallback;

@@ -58,6 +58,41 @@ public class ItemRepositoryImageStatsTests : IAsyncLifetime
 
     #region CreateAsync Image Stats
 
+    [Theory]
+    [InlineData("not-an-image-url")]
+    [InlineData("/api/images/not-a-guid")]
+    public async Task CreateAsync_DoesNotInventStoredImageStatisticsForUnrecognizedUrls(string url)
+    {
+        var created = await _repository.CreateAsync(new Item
+        {
+            WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Unrecognized image",
+            Images = [new(url, "Image")]
+        });
+        Assert.Equal(url, created.Images.Single().Url);
+        var totals = await _collectionStatsRepo.GetAggregatesAsync(TestCollectionId);
+        Assert.False(totals.ContainsKey(CollectionStatisticType.ImageCount));
+        Assert.False(totals.ContainsKey(CollectionStatisticType.TotalImageSizeBytes));
+    }
+
+    [Theory]
+    [InlineData(1, 2)]
+    [InlineData(999, 1)]
+    public async Task UpdateAsync_MissingOrForeignItem_DoesNotWriteOrAdjustStatistics(int itemId, int workspaceId)
+    {
+        _context.Items.Add(new Item { Id = 1, WorkspaceId = TestWorkspaceId, CollectionId = TestCollectionId, Name = "Original" });
+        await _context.SaveChangesAsync();
+        Assert.Null(await _repository.UpdateAsync(itemId, new Item
+        {
+            Name = "Unexpected edit", WorkspaceId = workspaceId, CollectionId = TestCollectionId,
+            Images = [new($"/api/images/{Guid.NewGuid()}", "Unexpected image")]
+        }, workspaceId));
+        await using var check = _fixture.CreateContext();
+        var saved = await check.Items.SingleAsync();
+        Assert.Equal("Original", saved.Name);
+        Assert.Empty(saved.Images);
+        Assert.Empty(await _collectionStatsRepo.GetAggregatesAsync(TestCollectionId));
+    }
+
     [Fact]
     public async Task CreateAsync_IncrementsImageCount_WhenItemHasImages()
     {
@@ -130,6 +165,28 @@ public class ItemRepositoryImageStatsTests : IAsyncLifetime
     #endregion
 
     #region UpdateAsync Image Stats
+
+    [Theory]
+    [InlineData(Visibility.Private, Visibility.Public)]
+    [InlineData(Visibility.Public, Visibility.Private)]
+    public async Task UpdateAsync_PreservesPublicationMadeAfterAnEditWasLoaded(Visibility original, Visibility published)
+    {
+        var item = new Item { WorkspaceId = 1, CollectionId = TestCollectionId, Name = "Before", Visibility = original };
+        _context.Items.Add(item);
+        await _context.SaveChangesAsync();
+        var draft = (await _repository.GetByIdAsync(item.Id!.Value, 1))!;
+        item.Visibility = published;
+        await _context.SaveChangesAsync();
+        draft.Name = "After";
+
+        var result = await _repository.UpdateAsync(item.Id.Value, draft, 1);
+
+        Assert.Equal(published, result!.Visibility);
+        Assert.Equal("After", result.Name);
+        await _context.Entry(item).ReloadAsync();
+        Assert.Equal(published, item.Visibility);
+        Assert.Equal("After", item.Name);
+    }
 
     [Fact]
     public async Task UpdateAsync_IncrementsImageCount_WhenImageAdded()

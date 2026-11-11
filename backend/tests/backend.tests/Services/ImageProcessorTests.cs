@@ -1,4 +1,4 @@
-using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.Images;
 using SkiaSharp;
 
 namespace OneBigHead.Server.Tests.Services;
@@ -6,7 +6,58 @@ namespace OneBigHead.Server.Tests.Services;
 [Trait("Category", "Unit")]
 public class ImageProcessorTests
 {
-    private readonly ImageProcessor _processor = new();
+    private readonly ImageProcessor _processor = new(new SkiaRasterImageCodec());
+
+    [Theory]
+    [InlineData(4000, 1, 1920, 1)]
+    [InlineData(1, 4000, 1, 1920)]
+    public void ResizeIfNeeded_ThinImagesKeepAtLeastOnePixelOnTheShortSide(int width, int height, int expectedWidth, int expectedHeight)
+    {
+        var input = CreateTestImage(width, height, SKEncodedImageFormat.Png);
+        var (result, type) = _processor.ResizeIfNeeded(input, "image/png");
+        using var bitmap = SKBitmap.Decode(result);
+        Assert.Equal((expectedWidth, expectedHeight), (bitmap.Width, bitmap.Height));
+        Assert.Equal("image/png", type);
+    }
+
+    [Fact]
+    public void ResizeIfNeeded_FallbackEncodingReportsTheActualOutputContentType()
+    {
+        // A real 24-bit BMP exercises a decodable format without an output encoder.
+        const int width = 2400;
+        const int height = 3;
+        const int pixelBytes = width * height * 3;
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write((ushort)0x4d42);
+            writer.Write(54 + pixelBytes);
+            writer.Write(0);
+            writer.Write(54);
+            writer.Write(40);
+            writer.Write(width);
+            writer.Write(height);
+            writer.Write((ushort)1);
+            writer.Write((ushort)24);
+            writer.Write(0);
+            writer.Write(pixelBytes);
+            writer.Write(new byte[16 + pixelBytes]);
+        }
+        var (result, type) = _processor.ResizeIfNeeded(stream.ToArray(), "image/bmp");
+        using var data = SKData.CreateCopy(result);
+        using var codec = SKCodec.Create(data);
+        Assert.Equal(SKEncodedImageFormat.Jpeg, codec.EncodedFormat);
+        Assert.Equal("image/jpeg", type);
+    }
+
+    [Fact]
+    public void ResizeIfNeeded_UnreadableDataIsReturnedUnchanged()
+    {
+        byte[] input = [0, 1, 2, 3];
+        var (result, type) = _processor.ResizeIfNeeded(input, "image/png");
+        Assert.Same(input, result);
+        Assert.Equal("image/png", type);
+    }
 
     private static byte[] CreateTestImage(int width, int height, SKEncodedImageFormat format = SKEncodedImageFormat.Jpeg)
     {

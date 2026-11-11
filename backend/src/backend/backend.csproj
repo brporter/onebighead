@@ -33,6 +33,7 @@
     <PackageReference Include="SkiaSharp" Version="3.119.*" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.*" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.1" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +42,11 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="backend.tests" />
+  </ItemGroup>
+
+  <!-- Match the Debug-only development sign-in endpoint; do not ship its UI in Release. -->
+  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+    <Content Remove="Pages/Shared/_DevelopmentSignIn.cshtml" />
   </ItemGroup>
 
 </Project>

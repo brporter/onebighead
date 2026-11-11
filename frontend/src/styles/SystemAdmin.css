@@ -1,451 +1,66 @@
-.systemAdmin {
-  min-height: 100vh;
+.system-admin {
+  min-height: 100dvh;
   background: var(--color-bg);
   color: var(--color-text);
 }
 
-.systemAdmin__header {
+.system-admin__header {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
-  padding: var(--space-md) var(--space-lg);
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-xl) clamp(1rem, 4vw, 3rem);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 
-.systemAdmin__title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.systemAdmin__backButton {
-  background: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.systemAdmin__backButton:hover {
-  background: var(--color-surface-alt);
-}
-
-.systemAdmin__headerActions {
-  display: flex;
-  gap: var(--space-md);
-  align-items: center;
-}
-
-.systemAdmin__signOutButton {
-  background: transparent;
-  border: none;
+.system-admin__eyebrow {
+  margin: 0 0 var(--space-xs);
   color: var(--color-text-muted);
-  padding: var(--space-sm) var(--space-md);
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.systemAdmin__signOutButton:hover {
-  color: var(--color-text);
-  background: var(--color-surface-alt);
-  border-radius: var(--radius-md);
-}
-
-.systemAdmin__tabs {
-  display: flex;
-  gap: var(--space-sm);
-  padding: var(--space-md) var(--space-lg);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.systemAdmin__tab {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  padding: var(--space-sm) var(--space-lg);
-  font-size: 1rem;
-  cursor: pointer;
-  border-radius: var(--radius-md);
-  transition: all 0.15s ease;
-}
-
-.systemAdmin__tab:hover {
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-}
-
-.systemAdmin__tab--active {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-}
-
-.systemAdmin__tab--active:hover {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-}
-
-.systemAdmin__error {
-  background: var(--color-danger-bg, #fee);
-  color: var(--color-danger, #c00);
-  padding: var(--space-md) var(--space-xl);
-  border-bottom: 1px solid var(--color-danger, #c00);
-}
-
-.systemAdmin__content {
-  padding: var(--space-xl);
-}
-
-.systemAdmin__loading {
-  color: var(--color-text-secondary);
-  text-align: center;
-  padding: var(--space-xl);
-}
-
-.systemAdmin__section {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
-}
-
-.systemAdmin__sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-lg);
-}
-
-.systemAdmin__sectionTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0 0 var(--space-lg) 0;
-}
-
-.systemAdmin__sectionHeader .systemAdmin__sectionTitle {
-  margin-bottom: 0;
-}
-
-.systemAdmin__searchForm {
-  display: flex;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-lg);
-}
-
-.systemAdmin__searchInput {
-  flex: 1;
-  max-width: 400px;
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 0.95rem;
-}
-
-.systemAdmin__searchButton {
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.systemAdmin__searchButton:hover {
-  opacity: 0.9;
-}
-
-.systemAdmin__table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.systemAdmin__table th,
-.systemAdmin__table td {
-  padding: var(--space-md);
-  text-align: left;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.systemAdmin__table th {
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-.systemAdmin__table tbody tr:hover {
-  background: var(--color-surface-alt);
+.system-admin__header h1 {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  overflow-wrap: anywhere;
 }
 
-.systemAdmin__actionButton {
-  background: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 0.85rem;
-  margin-right: var(--space-xs);
-}
-
-.systemAdmin__actionButton:hover {
-  background: var(--color-surface-alt);
-}
-
-.systemAdmin__actionButton--danger {
-  border-color: var(--color-danger, #c00);
-  color: var(--color-danger, #c00);
-}
-
-.systemAdmin__actionButton--danger:hover {
-  background: var(--color-danger, #c00);
-  color: var(--color-primary-text);
-}
-
-.systemAdmin__addButton {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-  border: none;
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.systemAdmin__addButton:hover {
-  opacity: 0.9;
-}
-
-.systemAdmin__templateForm {
-  background: var(--color-surface-alt);
-  padding: var(--space-lg);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-lg);
-}
-
-.systemAdmin__field {
-  margin-bottom: var(--space-md);
-}
-
-.systemAdmin__label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: var(--space-xs);
-  color: var(--color-text);
-}
-
-.systemAdmin__input {
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 0.95rem;
-}
-
-.systemAdmin__textarea {
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 0.95rem;
-  resize: vertical;
-}
-
-.systemAdmin__properties {
+.system-admin__actions, .system-admin__navigation {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: var(--space-sm);
 }
 
-.systemAdmin__propertyRow {
-  display: flex;
-  gap: var(--space-sm);
-  align-items: center;
-}
-
-.systemAdmin__propertyRow .systemAdmin__input {
-  flex: 1;
-}
-
-.systemAdmin__removeButton {
-  background: none;
-  border: none;
-  color: var(--color-danger, #c00);
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0 var(--space-sm);
-  line-height: 1;
-}
-
-.systemAdmin__addPropertyButton {
-  background: none;
-  border: 1px dashed var(--color-border);
-  color: var(--color-text-secondary);
-  padding: var(--space-sm);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin-top: var(--space-sm);
-}
-
-.systemAdmin__addPropertyButton:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.systemAdmin__formActions {
-  display: flex;
-  gap: var(--space-sm);
-  margin-top: var(--space-lg);
-}
-
-.systemAdmin__button {
-  padding: var(--space-sm) var(--space-lg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 0.95rem;
+.system-admin__navigation {
+  padding: var(--space-md) clamp(1rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
-  color: var(--color-text);
 }
 
-.systemAdmin__button:hover {
-  background: var(--color-surface-alt);
-}
-
-.systemAdmin__button--primary {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-  border-color: var(--color-primary);
-}
-
-.systemAdmin__button--primary:hover {
-  opacity: 0.9;
-  background: var(--color-primary);
-}
-
-.systemAdmin__emptyMessage {
-  text-align: center;
+.system-admin__section-button {
+  min-height: 44px;
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
   color: var(--color-text-secondary);
-  padding: var(--space-xl) !important;
-}
-
-/* Mobile responsive styles */
-@media (max-width: 768px) {
-  .systemAdmin__header {
-    flex-direction: column;
-    gap: var(--space-md);
-    text-align: center;
-  }
-
-  .systemAdmin__headerActions {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .systemAdmin__tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: var(--space-sm) var(--space-md);
-  }
-
-  .systemAdmin__tab {
-    white-space: nowrap;
-    padding: var(--space-sm) var(--space-md);
-    font-size: 0.9rem;
-  }
-
-  .systemAdmin__content {
-    padding: var(--space-md);
-  }
-
-  .systemAdmin__table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .systemAdmin__templateForm {
-    flex-direction: column;
-  }
-
-  .systemAdmin__templateFormLeft,
-  .systemAdmin__templateFormRight {
-    width: 100%;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   Admin Support Section
-   -------------------------------------------------------------------------- */
-
-.systemAdmin__filterRow {
-  display: flex;
-  gap: var(--space-md);
-  margin-bottom: var(--space-md);
-  align-items: center;
-}
-
-.systemAdmin__filterRow .systemAdmin__input {
-  width: auto;
-}
-
-.systemAdmin__filterLabel {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.systemAdmin__filterSummary {
-  margin-left: auto;
-  color: var(--color-text-muted);
-}
-
-.systemAdmin__deletedTag {
-  color: var(--color-text-muted);
-  margin-left: var(--space-sm);
-}
-
-.systemAdmin__linkButton {
-  background: none;
-  border: none;
-  color: var(--color-primary);
-  cursor: pointer;
-  text-align: left;
-  padding: 0;
   font: inherit;
+  cursor: pointer;
 }
 
-.systemAdmin__linkButton:hover {
-  color: var(--color-primary-hover);
-  text-decoration: underline;
-}
+.system-admin__section-button:hover { background: var(--color-surface-alt); }
+.system-admin__section-button[aria-pressed="true"] { background: var(--color-primary); color: var(--color-primary-text); }
+.system-admin__section-button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.system-admin__section-button:disabled { opacity: 0.6; cursor: wait; }
+.system-admin__content { max-width: 1400px; margin: 0 auto; padding: clamp(1rem, 4vw, 3rem); }
 
-.systemAdmin__pagination {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin-top: var(--space-md);
-}
-
-.systemAdmin__paginationInfo {
-  padding: var(--space-sm);
-}
-
-.systemAdmin__statusSelect {
-  width: auto;
-  padding: var(--space-xs) var(--space-sm);
+@media (max-width: 600px) {
+  .system-admin__actions { width: 100%; }
+  .system-admin__actions > button { flex: 1; }
+  .system-admin__section-button { flex: 1 1 40%; padding-inline: var(--space-sm); }
 }

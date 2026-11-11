@@ -1,13 +1,16 @@
-import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, type ReactNode } from 'react';
 import type { CurrentUser } from '../utils/types';
 import { authApi } from '../api';
-import { getErrorMessage, logError } from '../utils/errorUtils';
+import { useUserSession, type SessionRefreshOptions } from '../data/auth/useUserSession';
+import { SessionChangesProvider } from './SessionChangesProvider';
 
 export interface UserContextValue {
   user: CurrentUser | null;
   loading: boolean;
   error: string | null;
-  refetch: () => Promise<void>;
+  /** Distinguishes an intentional sign-out from an anonymous/expired session. */
+  signedOut: boolean;
+  refetch: (options?: SessionRefreshOptions) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -18,39 +21,11 @@ interface UserProviderProps {
 }
 
 export function UserProvider({ children }: UserProviderProps) {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchUser = useCallback(async () => {
-    try {
-      setError(null);
-      const data = await authApi.getCurrentUser();
-      setUser(data);
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to fetch user'));
-      setUser(null);
-    }
-  }, []);
-
-  const logout = useCallback(async () => {
-    try {
-      await authApi.logout();
-      setUser(null);
-    } catch (err) {
-      logError('Logout failed', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    void Promise.resolve().then(() => {
-      fetchUser().finally(() => setLoading(false));
-    });
-  }, [fetchUser]);
+  const session = useUserSession(authApi);
 
   return (
-    <UserContext.Provider value={{ user, loading, error, refetch: fetchUser, logout }}>
-      {children}
+    <UserContext.Provider value={session}>
+      <SessionChangesProvider>{children}</SessionChangesProvider>
     </UserContext.Provider>
   );
 }

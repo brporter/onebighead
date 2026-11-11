@@ -1,361 +1,128 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useData } from '../contexts/useData';
+import { useCollectionsData, useCategoriesData, useItemsData, useSuggestionsData } from '../contexts/useData';
+import type { CollectionsData, CategoriesData, ItemsData, SuggestionsData } from '../contexts/dataContexts';
 import ItemDetail from '../components/item/ItemDetail';
 import ItemEditor from '../components/item/ItemEditor';
-import { BackNav, Loading, BulkUpdateModal, type ScopeOption } from '../components/common';
+import { BackNav, BulkUpdateModal, ContentState } from '../components/common';
+import { CollectionHeader, CollectionLayout } from '../components/collection';
 import CategoryNav from '../components/category/CategoryNav';
 import TemplateSelector from '../components/template/TemplateSelector';
 import { bulkUpdatesApi } from '../api/bulkUpdates';
 import { itemsApi } from '../api/items';
+import { useCollectionRoute } from '../data/routes/useCollectionRoute';
+import { useItemDetails } from '../data/items/useItemDetails';
+import { useItemWorkflow } from '../data/items/useItemWorkflow';
 import { createEmptyItem } from '../utils/itemUtils';
-import type { Item, ItemProperty } from '../utils/types';
+import { parseRouteId } from '../utils/routeIds';
+import { useUnsavedNavigation } from '../data/shared/useUnsavedNavigation';
+import type { Category, Collection, Item, ItemProperty } from '../utils/types';
+
+function parentPath(collectionId: number, categoryId: number | null) {
+  const home = `/collections/${collectionId}`;
+  return categoryId === null ? home : `${home}/categories/${categoryId}`;
+}
 
 function ItemView() {
-  const { collectionId, itemId } = useParams<{ collectionId: string; itemId: string }>();
-  const [searchParams] = useSearchParams();
+  const params = useParams<{ collectionId: string; itemId: string }>();
+  const [search] = useSearchParams();
+  const collectionId = parseRouteId(params.collectionId);
+  const itemId = params.itemId === 'new' ? 'new' : parseRouteId(params.itemId);
+  const categoryQuery = itemId === 'new' ? search.get('categoryId') : null;
+  const categoryId = parseRouteId(categoryQuery ?? undefined);
+  if (collectionId === null || itemId === null || (categoryQuery !== null && categoryId === null)) {
+    return <ContentState kind="error" title="Invalid item link" action={<Link to="/collections">All Collections</Link>} />;
+  }
+  return <ItemRoute key={`${collectionId}/${itemId}/${categoryId}`} collectionId={collectionId} itemId={itemId} categoryId={categoryId} />;
+}
+
+function ItemRoute({ collectionId, itemId, categoryId }: { collectionId: number; itemId: number | 'new'; categoryId: number | null }) {
+  const collectionsData = useCollectionsData();
+  const categoriesData = useCategoriesData();
+  const itemsData = useItemsData();
+  const { loadPropertySuggestions } = useSuggestionsData();
+  const data = { ...collectionsData, ...categoriesData, ...itemsData, loadPropertySuggestions };
+  const { collection, categories, categoriesPending } = useCollectionRoute(collectionId, data);
+  if (data.collectionsError) return <ContentState kind="error" title="Unable to load collections"
+    action={<button type="button" onClick={() => void data.loadCollections()}>Try again</button>}>{data.collectionsError}</ContentState>;
+  if (data.collectionsLoading) return <ContentState kind="loading" title="Loading..." />;
+  if (!collection) return <ContentState kind="error" title="Collection not found"
+    action={<Link to="/collections">All Collections</Link>} />;
+  if (data.categoriesError) return <ContentState kind="error" title="Unable to load categories"
+    action={<button type="button" onClick={() => void data.loadCategoriesForCollection(collectionId)}>Try again</button>}>{data.categoriesError}</ContentState>;
+  const page = { collection, categories, categoriesPending, data };
+  return itemId === 'new' ? <NewItem categoryId={categoryId} {...page} /> : <ExistingItem itemId={itemId} {...page} />;
+}
+
+interface ItemPageProps {
+  collection: Collection;
+  categories: Category[];
+  categoriesPending: boolean;
+  data: CollectionsData & CategoriesData & ItemsData & Pick<SuggestionsData, 'loadPropertySuggestions'>;
+}
+
+function ExistingItem({ itemId, ...page }: ItemPageProps & { itemId: number }) {
+  const details = useItemDetails(page.collection.collectionId, itemId, page.data, itemsApi.recordView);
+  // This route owner outlives a disappearing detail while deletion finishes navigating.
+  const workflow = useItemPageWorkflow(details.item, page);
+  if (details.loading) return <ContentState kind="loading" title="Loading item…" />;
+  if (details.error) return <ContentState kind="error" title="Unable to load item"
+    action={<button type="button" onClick={details.retry}>Try again</button>}>{details.error}</ContentState>;
+  if (!details.item) return <ContentState kind="error" title="Item not found"
+    action={<Link to={`/collections/${page.collection.collectionId}`}>View collection</Link>} />;
+  return <ItemPage workflow={workflow} {...page} />;
+}
+
+function NewItem({ categoryId, ...page }: ItemPageProps & { categoryId: number | null }) {
   const navigate = useNavigate();
-  
-  const {
-    collections,
-    collectionsLoading,
-    loadCollections,
-    currentCollection,
-    setCurrentCollection,
-    categories,
-    loadCategoriesForCollection,
-    items,
-    loadItemsForCategory,
-    loadItemById,
-    addItem,
-    updateItem,
-    deleteItem,
-    loadPropertySuggestions,
-    invalidateItemCache,
-  } = useData();
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [deepLinkedItem, setDeepLinkedItem] = useState<Item | null>(null);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-  const [selectedTemplateProperties, setSelectedTemplateProperties] = useState<ItemProperty[] | null>(null);
-  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
-
-  // Bulk update state
-  const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
-  const [bulkUpdateScopeOptions, setBulkUpdateScopeOptions] = useState<ScopeOption[]>([]);
-  const [bulkUpdateOldProps, setBulkUpdateOldProps] = useState<{ category: string; name: string }[]>([]);
-  const [bulkUpdateNewProps, setBulkUpdateNewProps] = useState<{ category: string; name: string }[]>([]);
-  const originalItemPropsRef = useRef<ItemProperty[]>([]);
-
-  const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
-  const isNewItem = itemId === 'new';
-  const itemIdNum = !isNewItem && itemId ? parseInt(itemId, 10) : null;
-  const categoryIdFromUrl = searchParams.get('categoryId');
-  const categoryIdNum = categoryIdFromUrl ? parseInt(categoryIdFromUrl, 10) : null;
-
-  // Deep linking: Load collection data if needed
-  useEffect(() => {
-    if (!collectionsLoading && collections.length === 0) {
-      loadCollections();
-    }
-  }, [collectionsLoading, collections.length, loadCollections]);
-
-  // Set current collection once collections are loaded
-  useEffect(() => {
-    if (collectionIdNum && collections.length > 0 && currentCollection?.collectionId !== collectionIdNum) {
-      const collection = collections.find(c => c.collectionId === collectionIdNum);
-      if (collection) {
-        setCurrentCollection(collection);
-        loadCategoriesForCollection(collectionIdNum);
-        loadPropertySuggestions(collectionIdNum);
-      } else {
-        navigate('/collections', { replace: true });
-      }
-    }
-  }, [collectionIdNum, collections, currentCollection, setCurrentCollection, loadCategoriesForCollection, loadPropertySuggestions, navigate]);
-
-  // Load items for the category if we have one (for deep linking)
-  useEffect(() => {
-    if (categoryIdNum && currentCollection) {
-      loadItemsForCategory(categoryIdNum);
-    }
-  }, [categoryIdNum, currentCollection, loadItemsForCategory]);
-
-  // For existing items, fetch the item directly if we don't have it (deep linking)
-  useEffect(() => {
-    async function fetchItemForDeepLink() {
-      if (itemIdNum && currentCollection && categories.length > 0) {
-        // Check if we already have the item
-        const existingItem = items.find(i => i.id === itemIdNum);
-        if (existingItem) {
-          setDeepLinkedItem(null); // Clear deep linked item, use from items array
-          if (existingItem.categoryId) {
-            loadItemsForCategory(existingItem.categoryId);
-          }
-          setIsLoading(false);
-        } else {
-          // Fetch the item directly for deep linking
-          const item = await loadItemById(itemIdNum);
-          if (item) {
-            setDeepLinkedItem(item);
-            if (item.categoryId) {
-              loadItemsForCategory(item.categoryId);
-            }
-          }
-          setIsLoading(false);
-        }
-      } else if (!itemIdNum) {
-        setIsLoading(false);
-      }
-    }
-    fetchItemForDeepLink();
-  }, [itemIdNum, currentCollection, categories.length, items, loadItemsForCategory, loadItemById]);
-
-  // Show template selector for new items - computed from state, no effect needed
-  // This is a derived state that should show selector when conditions are met
-  const shouldShowTemplateSelector = isNewItem && currentCollection && selectedTemplateProperties === null && !showTemplateSelector;
-  if (shouldShowTemplateSelector) {
-    setShowTemplateSelector(true);
+  const [selection, setSelection] = useState<{ properties: ItemProperty[]; templateKey: string | null } | null>(null);
+  const home = `/collections/${page.collection.collectionId}`;
+  if (page.categoriesPending) return <ContentState kind="loading" title="Loading categories…" />;
+  if (categoryId !== null && !page.categories.some(category => category.categoryId === categoryId)) {
+    return <ContentState kind="error" title="Category not found" action={<Link to={home}>View collection</Link>} />;
   }
+  if (selection === null) return <TemplateSelector collectionId={page.collection.collectionId} categoryId={categoryId}
+    isOpen onClose={() => navigate(parentPath(page.collection.collectionId, categoryId))} onSelect={setSelection} />;
+  const item = { ...createEmptyItem(categoryId, page.collection.collectionId, page.collection.workspaceId, selection.templateKey),
+    properties: selection.properties };
+  return <NewItemSession item={item} {...page} />;
+}
 
-  const selectedItem = useMemo(() => {
-    if (itemIdNum == null) return null;
-    // First check items array, then fall back to deep linked item
-    return items.find((item) => item.id === itemIdNum) ?? deepLinkedItem;
-  }, [items, itemIdNum, deepLinkedItem]);
+function useItemPageWorkflow(item: Item | null, { collection, categories, data }: ItemPageProps) {
+  const navigate = useNavigate();
+  const [status, reportStatus] = useState({ dirty: false, pending: false });
+  const completeNavigation = useUnsavedNavigation(status.dirty, status.pending);
+  const leave = (value: Item) => completeNavigation(() => { void navigate(parentPath(collection.collectionId, value.categoryId)); });
+  const workflow = useItemWorkflow(item, categories, data, bulkUpdatesApi, leave);
+  return { ...workflow, reportStatus };
+}
 
-  // Fire-and-forget view tracking (ref guards against StrictMode double-invoke)
-  const lastViewedItemId = useRef<number | null>(null);
-  useEffect(() => {
-    if (selectedItem?.id && selectedItem.id !== lastViewedItemId.current) {
-      lastViewedItemId.current = selectedItem.id;
-      itemsApi.recordView(selectedItem.id).catch(() => {});
-    }
-  }, [selectedItem?.id]);
+function NewItemSession({ item, ...page }: ItemPageProps & { item: Item }) {
+  const workflow = useItemPageWorkflow(item, page);
+  return <ItemPage workflow={workflow} {...page} />;
+}
 
-  const newItemTemplate = useMemo(() => {
-    if (!isNewItem || categoryIdNum == null || !currentCollection) return null;
-    const emptyItem = createEmptyItem(categoryIdNum, currentCollection.collectionId, currentCollection.workspaceId, selectedTemplateKey);
-    // Apply selected template properties if available
-    if (selectedTemplateProperties && selectedTemplateProperties.length > 0) {
-      emptyItem.properties = selectedTemplateProperties;
-    }
-    return emptyItem;
-  }, [isNewItem, categoryIdNum, currentCollection, selectedTemplateProperties, selectedTemplateKey]);
-
-  const detailItem = isNewItem ? newItemTemplate : selectedItem;
-
-  function handleBackToItems() {
-    const catId = detailItem?.categoryId ?? categoryIdNum;
-    if (catId) {
-      navigate(`/collections/${collectionIdNum}/categories/${catId}`);
-    } else {
-      navigate(`/collections/${collectionIdNum}`);
-    }
-  }
-
-  function handleTemplateSelected(selection: { properties: ItemProperty[]; templateKey: string | null }) {
-    setSelectedTemplateProperties(selection.properties);
-    setSelectedTemplateKey(selection.templateKey);
-    setShowTemplateSelector(false);
-  }
-
-  function handleTemplateSelectorClose() {
-    // If user closes without selecting, go back to items list
-    handleBackToItems();
-  }
-
-  function handleEditItem() {
-    // Capture original properties for bulk update comparison
-    if (selectedItem) {
-      originalItemPropsRef.current = [...selectedItem.properties];
-    }
-    setIsEditing(true);
-  }
-
-  function handleCancelEdit() {
-    if (isNewItem) {
-      handleBackToItems();
-    } else {
-      setIsEditing(false);
-    }
-  }
-
-  async function handleSaveItem(itemData: Item) {
-    if (isNewItem) {
-      await addItem(itemData);
-      handleBackToItems();
-    } else if (itemIdNum != null) {
-      await updateItem(itemIdNum, itemData);
-      setIsEditing(false);
-
-      // Check if properties changed - offer bulk update for siblings
-      const oldProps = originalItemPropsRef.current;
-      const newProps = itemData.properties;
-      const propsChanged = oldProps.length !== newProps.length ||
-        oldProps.some((op, i) => op.category !== newProps[i]?.category || op.name !== newProps[i]?.name);
-
-      if (propsChanged && itemData.categoryId) {
-        try {
-          const scopeOptions: ScopeOption[] = [];
-
-          const categoryPreview = await bulkUpdatesApi.preview({
-            scope: 'category',
-            categoryId: itemData.categoryId,
-            excludeItemId: itemIdNum,
-          });
-          if (categoryPreview.affectedItemCount > 0) {
-            const cat = categories.find(c => c.categoryId === itemData.categoryId);
-            scopeOptions.push({
-              scope: 'category',
-              label: `in "${cat?.name ?? 'this category'}"`,
-              count: categoryPreview.affectedItemCount,
-              categoryId: itemData.categoryId,
-            });
-          }
-
-          const collectionPreview = await bulkUpdatesApi.preview({
-            scope: 'collection',
-            collectionId: itemData.collectionId,
-            excludeItemId: itemIdNum,
-          });
-          if (collectionPreview.affectedItemCount > 0) {
-            scopeOptions.push({
-              scope: 'collection',
-              label: 'in this collection',
-              count: collectionPreview.affectedItemCount,
-              collectionId: itemData.collectionId,
-            });
-          }
-
-          if (scopeOptions.length > 0) {
-            setBulkUpdateOldProps(oldProps.map(p => ({ category: p.category, name: p.name })));
-            setBulkUpdateNewProps(newProps.map(p => ({ category: p.category, name: p.name })));
-            setBulkUpdateScopeOptions(scopeOptions);
-            setShowBulkUpdateModal(true);
-          }
-        } catch {
-          // Preview failed - skip bulk update offer
-        }
-      }
-    }
-  }
-
-  function handleBulkUpdateClose() {
-    setShowBulkUpdateModal(false);
-  }
-
-  function handleBulkUpdateComplete() {
-    setShowBulkUpdateModal(false);
-    // Invalidate item cache so next navigation shows updated data
-    invalidateItemCache();
-    if (detailItem?.categoryId) {
-      loadItemsForCategory(detailItem.categoryId);
-    }
-  }
-
-  async function handleDeleteItem(id: number) {
-    await deleteItem(id);
-    handleBackToItems();
-  }
-
-  function handleSelectCategory(catId: number | null) {
-    if (catId === null) {
-      navigate(`/collections/${collectionIdNum}`);
-    } else {
-      navigate(`/collections/${collectionIdNum}/categories/${catId}`);
-    }
-  }
-
-  function handleBackToCollections() {
-    navigate('/collections');
-  }
-
-  const showBackToCollections = collections.length > 1;
-
-  if (isLoading || collectionsLoading) {
-    return <Loading message="Loading..." />;
-  }
-
-  if (!currentCollection) {
-    return <Loading message="Collection not found" />;
-  }
-
-  if (!isNewItem && !selectedItem) {
-    return <Loading message="Item not found" />;
-  }
-
-  // For new items, show template selector first
-  if (isNewItem && showTemplateSelector && collectionIdNum) {
-    return (
-      <TemplateSelector
-        collectionId={collectionIdNum}
-        categoryId={categoryIdNum}
-        isOpen={true}
-        onClose={handleTemplateSelectorClose}
-        onSelect={handleTemplateSelected}
-      />
-    );
-  }
-
-  // For new items, wait until template is selected (or skipped)
-  if (isNewItem && selectedTemplateProperties === null) {
-    return <Loading message="Loading..." />;
-  }
-
-  return (
-    <div className="app__layout">
-      <nav className="app__sidebar" aria-label="Category navigation">
-        <CategoryNav
-          categories={categories}
-          selectedCategoryId={detailItem?.categoryId ?? null}
-          onSelect={handleSelectCategory}
-        />
-      </nav>
-      <main className="app__content">
-        <div className="collection-title-bar">
-          {showBackToCollections && (
-            <button className="collection-title-bar__back" onClick={handleBackToCollections}>
-              ← All Collections
-            </button>
-          )}
-          <Link to={`/collections/${collectionIdNum}`} className="collection-title-bar__title-link">
-            <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
-          </Link>
-        </div>
-        <article className="app__detail">
-          <BackNav label="Back to items" onClick={handleBackToItems} />
-          {isEditing || isNewItem ? (
-            <ItemEditor
-              item={detailItem}
-              categories={categories}
-              collection={currentCollection}
-              onSave={handleSaveItem}
-              onCancel={handleCancelEdit}
-              onDelete={isNewItem ? undefined : handleDeleteItem}
-              initialProperties={isNewItem ? (selectedTemplateProperties ?? undefined) : undefined}
-            />
-          ) : (
-            <ItemDetail
-              item={detailItem}
-              onEdit={handleEditItem}
-              onClose={handleBackToItems}
-            />
-          )}
-        </article>
-        <BulkUpdateModal
-          isOpen={showBulkUpdateModal}
-          onClose={handleBulkUpdateClose}
-          onComplete={handleBulkUpdateComplete}
-          scopeOptions={bulkUpdateScopeOptions}
-          oldProperties={bulkUpdateOldProps}
-          newProperties={bulkUpdateNewProps}
-          excludeItemId={itemIdNum ?? undefined}
-        />
-      </main>
-    </div>
-  );
+function ItemPage({ workflow, collection, categories, categoriesPending, data }: ItemPageProps & { workflow: ReturnType<typeof useItemPageWorkflow> }) {
+  const navigate = useNavigate();
+  const home = `/collections/${collection.collectionId}`;
+  const item = workflow.item!;
+  const back = () => navigate(parentPath(collection.collectionId, item.categoryId));
+  return <CollectionLayout
+    header={<CollectionHeader collection={collection} homeHref={home} showAllCollections={data.collections.length > 1} />}
+    sidebar={categoriesPending ? <ContentState kind="loading" title="Loading categories…" /> :
+      <CategoryNav categories={categories} selectedCategoryId={item.categoryId}
+        onSelect={id => navigate(parentPath(collection.collectionId, id))} />}>
+    <article className="app__detail">
+      <BackNav label="Back to items" onClick={back} />
+      {workflow.editing ? <ItemEditor item={item} categories={categories} collection={collection}
+        onStatusChange={workflow.reportStatus}
+        onSave={workflow.save} onCancel={workflow.cancelEdit} onDelete={item.id === null ? undefined : workflow.remove} /> :
+        <ItemDetail item={item} onEdit={workflow.beginEdit} onClose={back} />}
+      {workflow.previewIssue && <ContentState kind="error" title="Item saved; related items could not be checked"
+        action={<button type="button" onClick={workflow.previewIssue.retry}>Try again</button>}>{workflow.previewIssue.message}</ContentState>}
+    </article>
+    {workflow.offer && <BulkUpdateModal isOpen onClose={workflow.closeOffer} onComplete={workflow.completeBulkUpdate} {...workflow.offer} />}
+  </CollectionLayout>;
 }
 
 export default ItemView;

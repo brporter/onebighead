@@ -15,7 +15,7 @@ describe('SupportSection', () => {
     expect(button.tagName).toBe('BUTTON');
     button.focus();
     await userEvent.keyboard('{Enter}');
-    expect(getSupportRequest).toHaveBeenCalledExactlyOnceWith(1);
+    expect(getSupportRequest).toHaveBeenCalledExactlyOnceWith(1, { signal: expect.any(AbortSignal) });
     expect(await screen.findByText('Details')).toBeInTheDocument();
   });
 });

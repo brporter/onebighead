@@ -1,99 +1,47 @@
-import type { CollectionTheme, ThemeCategory } from '../../utils/types';
+import { useId, useMemo, type CSSProperties } from 'react';
+import type { CollectionTheme } from '../../utils/types';
+import { themeCategoryPreview } from '../../data/themes/themeCategoryPreview';
+import '../../styles/components/ThemePreview.css';
 
 interface ThemePreviewProps {
   theme: CollectionTheme;
 }
 
-interface CategoryNode extends ThemeCategory {
-  children: CategoryNode[];
-}
-
-function buildCategoryTree(categories: ThemeCategory[]): CategoryNode[] {
-  const rootCategories: CategoryNode[] = [];
-  const childMap = new Map<string, CategoryNode[]>();
-
-  // First pass: organize children by parent name
-  for (const cat of categories) {
-    const node: CategoryNode = { ...cat, children: [] };
-    if (cat.parentName) {
-      const siblings = childMap.get(cat.parentName) || [];
-      siblings.push(node);
-      childMap.set(cat.parentName, siblings);
-    } else {
-      rootCategories.push(node);
-    }
-  }
-
-  // Second pass: attach children to parents
-  const attachChildren = (nodes: CategoryNode[]) => {
-    for (const node of nodes) {
-      const children = childMap.get(node.name) || [];
-      children.sort((a, b) => a.sortOrder - b.sortOrder);
-      node.children = children;
-      attachChildren(children);
-    }
-  };
-
-  rootCategories.sort((a, b) => a.sortOrder - b.sortOrder);
-  attachChildren(rootCategories);
-
-  return rootCategories;
-}
-
-function CategoryTreePreview({ categories }: { categories: CategoryNode[] }) {
-  if (categories.length === 0) return null;
-
-  return (
-    <ul className="themePreview__categoryList">
-      {categories.map((cat) => (
-        <li key={cat.name} className="themePreview__categoryItem">
-          {cat.name}
-          {cat.children.length > 0 && (
-            <CategoryTreePreview categories={cat.children} />
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function ThemePreview({ theme }: ThemePreviewProps) {
-  const categoryTree = buildCategoryTree(theme.categories);
+  const id = useId();
+  const { rows, hierarchyAvailable } = useMemo(() => themeCategoryPreview(theme.categories), [theme.categories]);
 
-  return (
-    <div className="themePreview">
-      <div className="themePreview__section">
-        <h4 className="themePreview__sectionTitle">Templates</h4>
-        {theme.templates.length === 0 ? (
-          <p className="themePreview__empty">No templates included</p>
-        ) : (
-          <div className="themePreview__templates">
-            {theme.templates.map((template) => (
-              <div key={template.itemTemplateId} className="themePreview__template">
-                <span className="themePreview__templateName">{template.name}</span>
-                <div className="themePreview__templateProperties">
-                  {template.properties.map((prop, i) => (
-                    <span key={i} className="themePreview__propertyTag">
-                      {prop.category}: {prop.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="themePreview__section">
-        <h4 className="themePreview__sectionTitle">Categories</h4>
-        {categoryTree.length === 0 ? (
-          <p className="themePreview__empty">No categories included</p>
-        ) : (
-          <CategoryTreePreview categories={categoryTree} />
-        )}
-      </div>
-    </div>
-  );
+  return <div className="themePreview">
+    <section className="themePreview__section" aria-labelledby={`${id}-templates`}>
+      <h4 id={`${id}-templates`} className="themePreview__sectionTitle">Templates <span className="themePreview__count">{theme.templates.length}</span></h4>
+      {theme.templates.length === 0 ? <p className="themePreview__empty">No templates included</p> :
+        <ul className="themePreview__templates">
+          {theme.templates.map(template => <li key={template.itemTemplateId} className="themePreview__template">
+            <h5 className="themePreview__templateName">{template.name}</h5>
+            {template.description && <p className="themePreview__description">{template.description}</p>}
+            {template.properties.length === 0 ? <p className="themePreview__empty">No preset properties</p> :
+              <ul className="themePreview__templateProperties" aria-label={`${template.name} properties`}>
+                {template.properties.map((property, index) => <li key={index} className="themePreview__propertyTag">
+                  {property.category ? `${property.category}: ${property.name}` : property.name}
+                </li>)}
+              </ul>}
+          </li>)}
+        </ul>}
+    </section>
+    <section className="themePreview__section" aria-labelledby={`${id}-categories`}>
+      <h4 id={`${id}-categories`} className="themePreview__sectionTitle">Categories <span className="themePreview__count">{rows.length}</span></h4>
+      {!hierarchyAvailable && <p className="themePreview__notice" role="status">Category hierarchy unavailable. All category names are listed below.</p>}
+      {rows.length === 0 ? <p className="themePreview__empty">No categories included</p> :
+        <ul className="themePreview__categoryList">
+          {rows.map(({ category, sourceIndex, depth }) => <li key={sourceIndex} className="themePreview__categoryItem"
+            style={{ '--theme-depth': Math.min(depth, 4) } as CSSProperties}>
+            <span className="themePreview__categoryName">{category.name}</span>
+            {category.parentName && <span className="themePreview__parent">Parent: {category.parentName}</span>}
+            {category.description && <p className="themePreview__description">{category.description}</p>}
+          </li>)}
+        </ul>}
+    </section>
+  </div>;
 }
 
 export default ThemePreview;

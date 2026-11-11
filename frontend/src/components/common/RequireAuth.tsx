@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useUser } from '../../contexts/useUser';
+import { ContentState } from './ContentState';
 
 interface RequireAuthProps {
   children: React.ReactNode;
@@ -17,34 +18,25 @@ interface RequireAuthProps {
  * Preserves the original URL so users can be redirected back after login.
  */
 function RequireAuth({ children, skipWelcomeCheck = false, skipTermsCheck = false }: RequireAuthProps) {
-  const { user, loading } = useUser();
+  const { user, loading, signedOut, error, refetch } = useUser();
   const location = useLocation();
 
-  console.log('[RequireAuth] State:', {
-    loading,
-    hasUser: !!user,
-    path: location.pathname,
-    skipWelcomeCheck,
-    skipTermsCheck,
-    hasCompletedWelcome: user?.hasCompletedWelcome,
-    workspacesCount: user?.workspaces?.length
-  });
-
-  const signinReturnUrl = !loading && !user
-    ? encodeURIComponent(location.pathname + location.search)
+  const redirectUrl = !loading && !user && !error
+    ? signedOut ? '/' : `/signin?returnUrl=${encodeURIComponent(location.pathname + location.search)}`
     : null;
 
   useEffect(() => {
-    if (signinReturnUrl !== null) {
-      globalThis.location.href = `/signin?returnUrl=${signinReturnUrl}`;
+    if (redirectUrl !== null) {
+      globalThis.location.href = redirectUrl;
     }
-  }, [signinReturnUrl]);
+  }, [redirectUrl]);
 
   if (loading) {
     return <div className="app__loading">Loading...</div>;
   }
 
   if (!user) {
+    if (error) return <ContentState kind="error" title="Unable to check your session" action={<button type="button" className="content-state__button" onClick={() => { void refetch(); }}>Try again</button>}>{error}</ContentState>;
     return null;
   }
 
@@ -57,14 +49,14 @@ function RequireAuth({ children, skipWelcomeCheck = false, skipTermsCheck = fals
     return <>{children}</>;
   }
 
-  // Redirect to terms acceptance if user hasn't accepted terms
-  // (but skip for users who haven't completed welcome - they'll accept terms in the wizard)
-  if (!skipTermsCheck && !user.hasAcceptedTerms && user.hasCompletedWelcome) {
+  // Only administrators complete workspace setup. Other members still accept
+  // their own terms and can use an existing workspace while setup is pending.
+  const needsWelcome = user.isWorkspaceAdmin && !user.hasCompletedWelcome;
+  if (!skipTermsCheck && !user.hasAcceptedTerms && !needsWelcome) {
     return <Navigate to="/terms" replace />;
   }
 
-  // Redirect to welcome wizard if user hasn't completed welcome
-  if (!skipWelcomeCheck && !user.hasCompletedWelcome) {
+  if (!skipWelcomeCheck && needsWelcome) {
     return <Navigate to="/welcome" replace />;
   }
 

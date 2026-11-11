@@ -8,6 +8,9 @@ namespace OneBigHead.Server.DTOs;
 public class SetupWorkspaceRequest
 {
     [Required]
+    public Guid? RequestId { get; set; }
+
+    [Required]
     [MaxLength(200)]
     public string WorkspaceName { get; set; } = string.Empty;
 
@@ -20,7 +23,7 @@ public class SetupWorkspaceRequest
     /// <summary>
     /// Optional collection description
     /// </summary>
-    [MaxLength(2000)]
+    [MaxLength(1000)]
     public string? CollectionDescription { get; set; }
 
     /// <summary>

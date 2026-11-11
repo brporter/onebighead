@@ -1,158 +1,52 @@
-import { ModalDialog } from '../common/ModalDialog';
-import { useState, useEffect } from 'react';
-import { workspacesApi } from '../../api';
+import { useId } from 'react';
 import type { RestorableWorkspace } from '../../api/workspaces';
+import { ModalDialog } from '../common/ModalDialog';
 import '../../styles/components/WorkspaceRestorationModal.css';
 
 interface WorkspaceRestorationModalProps {
-  isOpen: boolean;
-  onRestoreComplete: () => void;
+  workspaces: RestorableWorkspace[];
+  selectedIds: number[];
+  toggle: (id: number) => void;
+  restore: () => Promise<void>;
+  confirmed: boolean;
+  pending: boolean;
+  error: string | null;
   onCreateNew: () => void;
+  onReload: () => void;
 }
 
-export function WorkspaceRestorationModal({
-  isOpen,
-  onRestoreComplete,
-  onCreateNew
-}: WorkspaceRestorationModalProps) {
-  const [restorableWorkspaces, setRestorableWorkspaces] = useState<RestorableWorkspace[]>([]);
-  const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<Set<number>>(new Set());
-  const [choice, setChoice] = useState<'restore' | 'create'>('restore');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      loadRestorableWorkspaces();
-    }
-  }, [isOpen]);
-
-  const loadRestorableWorkspaces = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const workspaces = await workspacesApi.getRestorableWorkspaces();
-      setRestorableWorkspaces(workspaces);
-      if (workspaces.length > 0) {
-        setSelectedWorkspaceIds(new Set([workspaces[0].workspaceId]));
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load workspaces');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const toggleWorkspace = (workspaceId: number) => {
-    const newSet = new Set(selectedWorkspaceIds);
-    if (newSet.has(workspaceId)) {
-      newSet.delete(workspaceId);
-    } else {
-      newSet.add(workspaceId);
-    }
-    setSelectedWorkspaceIds(newSet);
-  };
-
-  const handleContinue = async () => {
-    if (choice === 'create') {
-      onCreateNew();
-      return;
-    }
-
-    if (selectedWorkspaceIds.size === 0) {
-      setError('Please select at least one workspace to restore');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      await workspacesApi.restoreWorkspaces({
-        workspaceIds: Array.from(selectedWorkspaceIds)
-      });
-      onRestoreComplete();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to restore workspaces');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-
-  return (
-    <ModalDialog label="Restore workspace" onClose={() => {}}>
-      <div className="restoration-modal">
-        <h2 className="restoration-modal__title">Welcome Back</h2>
-        <p className="restoration-modal__description">
-          Your account has been restored. Choose how you'd like to continue:
-        </p>
-
-        {error && <div className="restoration-modal__error">{error}</div>}
-
-        {isLoading ? (
-          <div className="restoration-modal__loading">Loading...</div>
-        ) : (
-          <>
-            <div className="restoration-modal__options">
-              <label className="restoration-modal__option">
-                <input
-                  type="radio"
-                  name="choice"
-                  checked={choice === 'restore'}
-                  onChange={() => setChoice('restore')}
-                />
-                <span>Restore existing workspace(s)</span>
-              </label>
-
-              {choice === 'restore' && restorableWorkspaces.length > 0 && (
-                <div className="restoration-modal__workspaces">
-                  {restorableWorkspaces.map(workspace => (
-                    <label key={workspace.workspaceId} className="restoration-modal__workspace">
-                      <input
-                        type="checkbox"
-                        checked={selectedWorkspaceIds.has(workspace.workspaceId)}
-                        onChange={() => toggleWorkspace(workspace.workspaceId)}
-                      />
-                      <div className="restoration-modal__workspace-info">
-                        <span className="restoration-modal__workspace-name">{workspace.name}</span>
-                        <span className="restoration-modal__workspace-stats">
-                          {workspace.stats.collectionCount} collections, {workspace.stats.itemCount} items
-                        </span>
-                        <span className="restoration-modal__workspace-countdown">
-                          {workspace.daysRemaining} days until permanent deletion
-                        </span>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              <label className="restoration-modal__option">
-                <input
-                  type="radio"
-                  name="choice"
-                  checked={choice === 'create'}
-                  onChange={() => setChoice('create')}
-                />
-                <span>Create a new workspace</span>
-              </label>
-            </div>
-
-            <button
-              className="restoration-modal__button"
-              onClick={handleContinue}
-              disabled={isSubmitting || (choice === 'restore' && selectedWorkspaceIds.size === 0)}
-            >
-              {isSubmitting ? 'Processing...' : 'Continue'}
-            </button>
-          </>
-        )}
+/** Recovery choices are explicit; Escape/backdrop cannot reveal workspace routes. */
+export function WorkspaceRestorationModal({ workspaces, selectedIds, toggle, restore, confirmed, pending, error, onCreateNew, onReload }: WorkspaceRestorationModalProps) {
+  const id = useId();
+  const locked = pending || confirmed;
+  return <ModalDialog label="Restore workspace" onClose={() => {}}>
+    <section className="restoration-modal" aria-labelledby={`${id}-title`} aria-busy={pending}>
+      <h2 id={`${id}-title`} className="restoration-modal__title">Welcome Back</h2>
+      <p className="restoration-modal__description">Choose the workspaces you'd like to restore, or start with a new workspace.</p>
+      {error && <div className="restoration-modal__error" role="alert">{error}</div>}
+      {confirmed && <p role="status">Your workspaces have been restored. Continue to refresh your session.</p>}
+      <fieldset className="restoration-modal__fields" disabled={locked}>
+        <legend>Workspaces to restore</legend>
+        <div className="restoration-modal__workspaces">
+          {workspaces.map(workspace => <label key={workspace.workspaceId} className="restoration-modal__workspace">
+            <input type="checkbox" checked={selectedIds.includes(workspace.workspaceId)} onChange={() => toggle(workspace.workspaceId)} />
+            <span className="restoration-modal__workspace-info">
+              <span className="restoration-modal__workspace-name">{workspace.name}</span>
+              <span className="restoration-modal__workspace-stats">{workspace.stats.collectionCount} collections, {workspace.stats.itemCount} items</span>
+              <span className="restoration-modal__workspace-countdown">{workspace.daysRemaining} days until permanent deletion</span>
+            </span>
+          </label>)}
+        </div>
+      </fieldset>
+      <div className="restoration-modal__actions">
+        <button type="button" className="restoration-modal__button" disabled={pending || (!confirmed && selectedIds.length === 0)} onClick={() => { void restore(); }}>
+          {pending ? confirmed ? 'Refreshing session…' : 'Restoring…' : confirmed ? 'Continue to workspace' : 'Restore selected workspaces'}
+        </button>
+        <button type="button" className="restoration-modal__button restoration-modal__button--secondary" disabled={locked} onClick={onCreateNew}>Create a new workspace</button>
+        {error && !confirmed && <button type="button" className="restoration-modal__button restoration-modal__button--secondary" disabled={pending} onClick={onReload}>Reload recovery list</button>}
       </div>
-    </ModalDialog>
-  );
+    </section>
+  </ModalDialog>;
 }
 
 export default WorkspaceRestorationModal;

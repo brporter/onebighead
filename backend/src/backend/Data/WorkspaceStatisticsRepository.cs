@@ -6,32 +6,26 @@ namespace OneBigHead.Server.Data;
 public class WorkspaceStatisticsRepository : IWorkspaceStatisticsRepository
 {
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
+    private readonly IWorkspaceStatisticsWriter _writer;
+    private readonly IWorkspaceStatisticsDecrementer _decrementer;
 
-    public WorkspaceStatisticsRepository(IDbContextFactory<AppDbContext> contextFactory)
+    public WorkspaceStatisticsRepository(IDbContextFactory<AppDbContext> contextFactory, IWorkspaceStatisticsWriter writer, IWorkspaceStatisticsDecrementer decrementer)
     {
         _contextFactory = contextFactory;
+        _writer = writer;
+        _decrementer = decrementer;
     }
 
     public async Task IncrementAsync(int workspaceId, StatisticType type, long amount = 1, DateOnly? date = null)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        var effectiveDate = date ?? DateOnly.MinValue;
-
-        await context.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO "WorkspaceStatistics" ("WorkspaceId", "StatisticType", "Date", "Value")
-            VALUES ({workspaceId}, {(int)type}, {effectiveDate}, {amount})
-            ON CONFLICT ("WorkspaceId", "StatisticType", "Date")
-            DO UPDATE SET "Value" = "WorkspaceStatistics"."Value" + EXCLUDED."Value"
-            """);
+        await _writer.IncrementAsync(context, workspaceId, type, amount, date);
     }
 
     public async Task DecrementAsync(int workspaceId, StatisticType type, long amount = 1)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        // Decrement aggregate stats only (sentinel date), floor at 0
-        await context.WorkspaceStatistics
-            .Where(s => s.WorkspaceId == workspaceId && s.StatisticType == type && s.Date == DateOnly.MinValue)
-            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Value, p => p.Value - amount < 0 ? 0 : p.Value - amount));
+        await _decrementer.DecrementAsync(context, workspaceId, type, amount);
     }
 
     public async Task<Dictionary<StatisticType, long>> GetAggregatesAsync(int workspaceId)

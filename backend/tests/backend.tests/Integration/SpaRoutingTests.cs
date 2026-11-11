@@ -28,6 +28,7 @@ public class SpaRoutingTests : IDisposable
     [InlineData("/welcome")]
     [InlineData("/public/library/collections/1")]
     [InlineData("/workspaces/new")]
+    [InlineData("/join/a1234567-1234-1234-1234-123456789abc")]
     public async Task ClientRoutes_ServeSpaShell(string path)
     {
         using var client = _app.CreateClient();

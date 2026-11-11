@@ -11,7 +11,7 @@ try {
     npm ci
     npm run typecheck
     npm run lint
-    npm run test:run
+    npm run test:coverage
     npm run build
 }
 finally {

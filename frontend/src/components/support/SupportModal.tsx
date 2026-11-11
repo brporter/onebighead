@@ -1,7 +1,10 @@
+import { useEffect, useRef } from 'react';
 import { ModalDialog } from '../common/ModalDialog';
-import React, { useState, useId } from 'react';
-import { createSupportRequest, type CreateSupportRequest } from '../../api';
-import '../../styles/Support.css';
+import { createSupportRequest } from '../../api';
+import type { SupportSubmissionPort } from '../../data/support/ports';
+import { useSupportSubmission } from '../../data/support/useSupportSubmission';
+import { SupportRequestForm } from './SupportRequestForm';
+import '../../styles/components/SupportModal.css';
 
 interface SupportModalProps {
   isOpen: boolean;
@@ -9,163 +12,47 @@ interface SupportModalProps {
   onSuccess?: () => void;
   userEmail?: string | null;
 }
+const gateway: SupportSubmissionPort = { create: createSupportRequest };
 
-export function SupportModal({ isOpen, onClose, onSuccess, userEmail }: SupportModalProps) {
-  const [subject, setSubject] = useState('');
-  const [description, setDescription] = useState('');
-  const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
+export function SupportModal({ isOpen, ...props }: SupportModalProps) {
+  return isOpen ? <SupportComposer key={props.userEmail ?? 'anonymous'} {...props} /> : null;
+}
 
-  const fieldId = useId();
+function SupportComposer({ onClose, onSuccess, userEmail }: Omit<SupportModalProps, 'isOpen'>) {
+  const form = useSupportSubmission(Boolean(userEmail), gateway);
+  const notified = useRef(false);
+  useEffect(() => {
+    if (!form.submitted || notified.current) return;
+    notified.current = true;
+    onSuccess?.();
+  }, [form.submitted, onSuccess]);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    try {
-      const request: CreateSupportRequest = {
-        subject,
-        description,
-      };
-
-      // Include email only for non-logged-in users
-      if (!userEmail) {
-        request.email = email;
-      }
-
-      await createSupportRequest(request);
-      setIsSuccess(true);
-      onSuccess?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit support request');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleClose = () => {
-    setSubject('');
-    setDescription('');
-    setEmail('');
-    setError(null);
-    setIsSuccess(false);
+  const close = () => {
+    if (form.pending) return;
+    if (form.dirty && !window.confirm('Discard your unsent support request?')) return;
     onClose();
   };
+  const title = form.submitted ? 'Request Submitted' : 'Contact Support';
 
-  return (
-    <ModalDialog label="Contact Support" onClose={handleClose}>
-      <div className="support-modal__container">
-        <div className="support-modal__header">
-          <h2 className="support-modal__title">
-            {isSuccess ? 'Request Submitted' : 'Contact Support'}
-          </h2>
-          <button
-            className="support-modal__close"
-            onClick={handleClose}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="support-modal__body">
-          {isSuccess ? (
-            <div className="support-modal__success">
-              <div className="support-modal__success-icon">✓</div>
-              <h3 className="support-modal__success-title">
-                Thank you for reaching out!
-              </h3>
-              <p className="support-modal__success-message">
-                {userEmail
-                  ? "We've received your support request. You can track its status and any replies in your Settings under Support Requests."
-                  : "We've received your support request. We'll respond to the email address you provided."}
-              </p>
-              <button
-                className="support-modal__button support-modal__button--primary"
-                onClick={handleClose}
-              >
-                Close
-              </button>
-            </div>
-          ) : (
-            <form className="support-modal__form" onSubmit={handleSubmit}>
-              {error && (
-                <div className="support-modal__error">{error}</div>
-              )}
-
-              {!userEmail && (
-                <div className="support-modal__field">
-                  <label className="support-modal__label" htmlFor={`${fieldId}-email`}>
-                    Email <span className="support-modal__required">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    id={`${fieldId}-email`}
-                    pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
-                    className="support-modal__input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    required
-                  />
-
-                </div>
-              )}
-
-              <div className="support-modal__field">
-                <label className="support-modal__label" htmlFor={`${fieldId}-subject`}>
-                  Subject <span className="support-modal__required">*</span>
-                </label>
-                <input
-                  type="text"
-                  id={`${fieldId}-subject`}
-                  className="support-modal__input"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Brief summary of your issue"
-                  required
-                />
-              </div>
-
-              <div className="support-modal__field">
-                <label className="support-modal__label" htmlFor={`${fieldId}-description`}>
-                  Description <span className="support-modal__required">*</span>
-                </label>
-                <textarea
-                  id={`${fieldId}-description`}
-                  className="support-modal__textarea"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Please describe your issue in detail..."
-                  required
-                />
-              </div>
-
-              <div className="support-modal__actions">
-                <button
-                  type="button"
-                  className="support-modal__button support-modal__button--secondary"
-                  onClick={handleClose}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="support-modal__button support-modal__button--primary"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit Request'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+  return <ModalDialog label={title} onClose={close}>
+    <div className="support-modal__container">
+      <header className="support-modal__header">
+        <h2 className="support-modal__title">{title}</h2>
+        <button type="button" className="support-modal__close" onClick={close} disabled={form.pending} aria-label="Close">×</button>
+      </header>
+      <div className="support-modal__body">
+        {form.submitted ? <div className="support-modal__success">
+          <div role="status">
+            <div className="support-modal__success-icon" aria-hidden="true">✓</div>
+            <h3 className="support-modal__success-title">Thank you for reaching out!</h3>
+            <p className="support-modal__success-message">{userEmail
+              ? "We've received your support request. You can track its status and any replies in your Settings under Support Requests."
+              : "We've received your support request. We'll respond to the email address you provided."}</p>
+          </div>
+          <button type="button" className="support-modal__button support-modal__button--primary" onClick={close}>Close</button>
+        </div> : <SupportRequestForm draft={form.draft} setDraft={form.setDraft} authenticated={Boolean(userEmail)}
+          pending={form.pending} error={form.error} onSubmit={form.submit} onCancel={close} />}
       </div>
-    </ModalDialog>
-  );
+    </div>
+  </ModalDialog>;
 }

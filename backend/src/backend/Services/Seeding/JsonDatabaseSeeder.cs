@@ -174,12 +174,10 @@ public class JsonDatabaseSeeder
             await ResyncIdentitySequenceAsync(connection, transaction, table);
         }
 
-        if (result.InsertedCount > 0 || result.UpdatedCount > 0 || result.SkippedCount > 0)
-        {
-            _logger?.LogInformation(
-                "Table {TableName}: Inserted {InsertedCount}, updated {UpdatedCount}, skipped {SkippedCount}",
-                table.Name, result.InsertedCount, result.UpdatedCount, result.SkippedCount);
-        }
+        // Empty tables returned above; every processed row contributes one outcome.
+        _logger?.LogInformation(
+            "Table {TableName}: Inserted {InsertedCount}, updated {UpdatedCount}, skipped {SkippedCount}",
+            table.Name, result.InsertedCount, result.UpdatedCount, result.SkippedCount);
 
         return result;
     }
@@ -252,7 +250,7 @@ public class JsonDatabaseSeeder
         Dictionary<string, object?> row)
     {
         var whereClauses = checkColumns.Select((c, i) => $"{QuoteIdentifier(c)} = @check{i}");
-        var existsSql = $"SELECT COUNT(*) FROM {QuoteIdentifier(tableName)} WHERE {string.Join(" AND ", whereClauses)}";
+        var existsSql = $"SELECT EXISTS (SELECT 1 FROM {QuoteIdentifier(tableName)} WHERE {string.Join(" AND ", whereClauses)})";
 
         using var cmd = new NpgsqlCommand(existsSql, connection, transaction);
         for (int i = 0; i < checkColumns.Count; i++)
@@ -260,8 +258,8 @@ public class JsonDatabaseSeeder
             AddParameter(cmd, $"check{i}", row[checkColumns[i]]);
         }
 
-        var result = await cmd.ExecuteScalarAsync();
-        return result != null && Convert.ToInt64(result) > 0;
+        // EXISTS always returns one non-null boolean and stops at the first match.
+        return (bool)(await cmd.ExecuteScalarAsync())!;
     }
 
     private static async Task ResyncIdentitySequenceAsync(

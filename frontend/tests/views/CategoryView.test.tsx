@@ -1,15 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import CategoryView from '../../src/views/CategoryView';
-import { useData } from '../../src/contexts/useData';
+import { useCollectionsData as useDataHook } from '../../src/contexts/useData';
 import type { Collection, Category, Item } from '../../src/utils/types';
 import { Visibility, UserFlag } from '../../src/utils/types';
 
-vi.mock('../../src/contexts/useData', () => ({
+const useData = useDataHook as () => import('../testUtils/dataTypes').DataContextValue;
+
+vi.mock('../../src/contexts/useData', async () => {
+  const { mockDataHooks } = await import('../testUtils/mockDataHooks');
+  return mockDataHooks({
   useData: vi.fn(),
-}));
+});
+});
 
 const mockRequestPublish = vi.fn();
 const mockRequestUnpublish = vi.fn();
@@ -41,6 +46,10 @@ vi.mock('../../src/components/category', () => ({
   ),
 }));
 
+vi.mock('../../src/api/bulkUpdates', () => ({
+  bulkUpdatesApi: { getCollectionStatus: vi.fn().mockResolvedValue(null), getStatus: vi.fn() },
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -50,8 +59,8 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-function renderWithRouter(initialRoute: string) {
-  return render(
+function routeElement(initialRoute: string) {
+  return (
     <MemoryRouter initialEntries={[initialRoute]}>
       <Routes>
         <Route path="/collections/:collectionId" element={<CategoryView />} />
@@ -59,6 +68,10 @@ function renderWithRouter(initialRoute: string) {
       </Routes>
     </MemoryRouter>
   );
+}
+
+function renderWithRouter(initialRoute: string) {
+  return render(routeElement(initialRoute));
 }
 
 describe('CategoryView', () => {
@@ -107,6 +120,7 @@ describe('CategoryView', () => {
   const mockDataContext = {
     collections: mockCollections,
     collectionsLoading: false,
+    collectionsError: null,
     loadCollections: vi.fn(),
     currentCollection: mockCollections[0],
     setCurrentCollection: vi.fn(),
@@ -119,10 +133,7 @@ describe('CategoryView', () => {
     itemsError: null,
     loadItemsForCategory: vi.fn(),
     loadPropertySuggestions: vi.fn(),
-    itemTemplates: [],
-    itemTemplatesLoading: false,
-    itemTemplatesError: null,
-    loadItemTemplates: vi.fn(async () => []),
+    fetchItemTemplates: vi.fn(async () => []),
     loadCollectionTemplates: vi.fn(async () => []),
     getCategoryTemplates: vi.fn(async () => []),
   };
@@ -171,7 +182,7 @@ describe('CategoryView', () => {
       });
     });
 
-    it('should redirect to collections if collection not found', async () => {
+    it('should show a recovery link if the collection is not found', async () => {
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({
         ...mockDataContext,
         currentCollection: null,
@@ -180,9 +191,8 @@ describe('CategoryView', () => {
 
       renderWithRouter('/collections/999');
 
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/collections', { replace: true });
-      });
+      expect(screen.getByText('Collection not found')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /All Collections/ })).toHaveAttribute('href', '/collections');
     });
   });
 
@@ -215,10 +225,14 @@ describe('CategoryView', () => {
   });
 
   describe('category view with selection', () => {
-    it('should load items when category is selected', () => {
-      renderWithRouter('/collections/1/categories/1');
+    it('loads items when a category is selected and aborts the read on exit', () => {
+      const { unmount } = renderWithRouter('/collections/1/categories/1');
 
-      expect(mockDataContext.loadItemsForCategory).toHaveBeenCalledWith(1);
+      expect(mockDataContext.loadItemsForCategory).toHaveBeenCalledWith(1, { signal: expect.any(AbortSignal) });
+      const signal = mockDataContext.loadItemsForCategory.mock.calls[0][1].signal as AbortSignal;
+      expect(signal.aborted).toBe(false);
+      unmount();
+      expect(signal.aborted).toBe(true);
     });
 
     it('should show item list', () => {
@@ -266,7 +280,7 @@ describe('CategoryView', () => {
 
       const titleLink = screen.getByRole('link', { name: 'Test Collection' });
       expect(titleLink).toHaveAttribute('href', '/collections/1');
-      expect(titleLink).toHaveClass('collection-title-bar__title-link');
+      expect(titleLink.closest('h1')).toHaveClass('collection-header__title');
     });
   });
 
@@ -296,7 +310,7 @@ describe('CategoryView', () => {
       expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
-    it('should show collection not found when no current collection', () => {
+    it('should resolve the collection from the route before context selection catches up', () => {
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({
         ...mockDataContext,
         currentCollection: null,
@@ -304,7 +318,8 @@ describe('CategoryView', () => {
 
       renderWithRouter('/collections/1');
 
-      expect(screen.getByText('Collection not found')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Test Collection' })).toBeInTheDocument();
+      expect(screen.getByText('Loading categories…')).toBeInTheDocument();
     });
   });
 
@@ -344,7 +359,7 @@ describe('CategoryView', () => {
       const { container } = renderWithRouter('/collections/1');
 
       await user.click(screen.getByLabelText('Collapse categories'));
-      expect(container.querySelector('.app__layout--sidebar-collapsed')).toBeInTheDocument();
+      expect(container.querySelector('.collection-layout--collapsed')).toBeInTheDocument();
     });
 
     it('should start collapsed on small viewports', () => {
@@ -485,8 +500,8 @@ describe('CategoryView', () => {
       const { container } = renderWithRouter('/collections/1');
 
       // Target the Public badge inside the collection-title-bar specifically
-      const titleBar = container.querySelector('.collection-title-bar');
-      const badge = titleBar!.querySelector('.collection-title-bar__badge');
+      const titleBar = container.querySelector('.collection-header');
+      const badge = titleBar!.querySelector('.public-badge');
       await user.click(badge!);
 
       expect(mockRequestUnpublish).toHaveBeenCalledWith([{ type: 'collection', id: 1 }]);
@@ -496,7 +511,88 @@ describe('CategoryView', () => {
   describe('snapshots', () => {
     it('should match snapshot with category selected', () => {
       const { container } = renderWithRouter('/collections/1/categories/1');
-      expect(container).toMatchSnapshot();
+      expect({
+        title: screen.getByRole('heading', { level: 1 }).textContent,
+        sidebarExpanded: screen.getByRole('button', { name: 'Collapse categories' }).getAttribute('aria-expanded'),
+        landmarks: Array.from(container.querySelectorAll('main, nav, section')).map(element => ({
+          tag: element.tagName.toLowerCase(), label: element.getAttribute('aria-label'),
+        })),
+      }).toMatchSnapshot();
+    });
+  });
+
+  describe('route and request recovery', () => {
+    it.each(['/collections/12junk', '/collections/0', '/collections/1/categories/2junk'])('rejects malformed route IDs: %s', route => {
+      renderWithRouter(route);
+      expect(screen.getByRole('alert')).toHaveTextContent('Invalid collection link');
+      expect(useData).not.toHaveBeenCalled();
+    });
+
+    it('does not reload endlessly after receiving an empty collection list', () => {
+      vi.mocked(useData).mockReturnValue({ ...mockDataContext, collections: [], currentCollection: null } as unknown as ReturnType<typeof useData>);
+      const { rerender } = renderWithRouter('/collections/1');
+      expect(mockDataContext.loadCollections).toHaveBeenCalledOnce();
+      vi.mocked(useData).mockReturnValue({ ...mockDataContext, collections: [], currentCollection: null, collectionsLoading: true } as unknown as ReturnType<typeof useData>);
+      rerender(routeElement('/collections/1'));
+      vi.mocked(useData).mockReturnValue({ ...mockDataContext, collections: [], currentCollection: null } as unknown as ReturnType<typeof useData>);
+      rerender(routeElement('/collections/1'));
+      expect(mockDataContext.loadCollections).toHaveBeenCalledOnce();
+      expect(screen.getByText('Collection not found')).toBeInTheDocument();
+    });
+
+    it('offers a collection retry without automatically retrying a failed request', async () => {
+      vi.mocked(useData).mockReturnValue({ ...mockDataContext, collections: [], collectionsError: 'Offline' } as unknown as ReturnType<typeof useData>);
+      renderWithRouter('/collections/1');
+      expect(screen.getByRole('alert')).toHaveTextContent('Offline');
+      expect(mockDataContext.loadCollections).not.toHaveBeenCalled();
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+      expect(mockDataContext.loadCollections).toHaveBeenCalledOnce();
+    });
+
+    it('offers a category retry inside the normal page layout', async () => {
+      vi.mocked(useData).mockReturnValue({ ...mockDataContext, categoriesError: 'No connection' } as unknown as ReturnType<typeof useData>);
+      renderWithRouter('/collections/1');
+      expect(within(screen.getByRole('main')).getByRole('alert')).toHaveTextContent('No connection');
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+      expect(mockDataContext.loadCategoriesForCollection).toHaveBeenCalledWith(1);
+    });
+
+    it('waits for categories before treating a deep link as missing', () => {
+      vi.mocked(useData).mockReturnValue({ ...mockDataContext, categoriesLoading: true, categories: [] } as unknown as ReturnType<typeof useData>);
+      renderWithRouter('/collections/1/categories/1');
+      expect(within(screen.getByRole('main')).getByRole('status')).toHaveTextContent('Loading categories');
+      expect(screen.queryByText('Category not found')).not.toBeInTheDocument();
+    });
+
+    it('shows a recovery link for a missing category', () => {
+      renderWithRouter('/collections/1/categories/999');
+      expect(screen.getByText('Category not found')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'View collection' })).toHaveAttribute('href', '/collections/1');
+    });
+
+    it('keeps items from another collection out of the current view', () => {
+      vi.mocked(useData).mockReturnValue({ ...mockDataContext, items: [...mockItems, { ...mockItems[0], id: 99, collectionId: 2, name: 'Other collection item' }] } as unknown as ReturnType<typeof useData>);
+      renderWithRouter('/collections/1/categories/1');
+      expect(screen.queryByText('Other collection item')).not.toBeInTheDocument();
+      expect(screen.getByText('Test Item 1')).toBeInTheDocument();
+    });
+
+    it('returns to the collection dashboard from the category navigation', async () => {
+      renderWithRouter('/collections/1/categories/1');
+      await userEvent.click(screen.getByRole('button', { name: 'Go back' }));
+      expect(mockNavigate).toHaveBeenCalledWith('/collections/1');
+    });
+
+    it('links back to the collection list when several collections exist', () => {
+      vi.mocked(useData).mockReturnValue({ ...mockDataContext, collections: [...mockCollections, { ...mockCollections[0], collectionId: 2, name: 'Another collection' }] } as unknown as ReturnType<typeof useData>);
+      renderWithRouter('/collections/1');
+      expect(screen.getByRole('link', { name: /All Collections/ })).toHaveAttribute('href', '/collections');
+    });
+
+    it('does not load category items for a missing collection', () => {
+      renderWithRouter('/collections/999/categories/1');
+      expect(screen.getByText('Collection not found')).toBeInTheDocument();
+      expect(mockDataContext.loadItemsForCategory).not.toHaveBeenCalled();
     });
   });
 });

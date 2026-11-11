@@ -1,19 +1,13 @@
 import { useCallback } from 'react';
 import { collectionsApi, type CollectionStatisticsResponse } from '../../api/collections';
 import { useAsyncData } from '../../utils/useAsyncData';
+import { formatBytes } from '../../utils/formatBytes';
 import { Loading } from '../common';
 import '../../styles/components/CollectionDashboard.css';
 
 interface CollectionDashboardProps {
   collectionId: number;
   onSelectItem: (itemId: number) => void;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -33,7 +27,7 @@ function formatRelativeTime(dateString: string): string {
 
 function CollectionDashboard({ collectionId, onSelectItem }: CollectionDashboardProps) {
   const fetchStats = useCallback(
-    () => collectionsApi.getStatistics(collectionId),
+    (signal: AbortSignal) => collectionsApi.getStatistics(collectionId, { signal }),
     [collectionId],
   );
   const { data: stats, loading, error } = useAsyncData<CollectionStatisticsResponse>(fetchStats);

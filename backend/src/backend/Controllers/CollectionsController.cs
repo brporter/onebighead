@@ -1,8 +1,8 @@
+using OneBigHead.Server.Services.Collections;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
-using OneBigHead.Server.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,6 +16,8 @@ public class CollectionsController : ApiControllerBase
     private readonly ICollectionRepository _collectionRepository;
     private readonly IItemTemplateRepository _itemTemplateRepository;
     private readonly ICollectionSetupService _setupService;
+    private readonly ICollectionDetails _details;
+    private readonly ICollectionDeletion _deletion;
     private readonly IThemeRepository _themeRepository;
     private readonly ICollectionStatisticsRepository _collectionStatisticsRepository;
 
@@ -24,13 +26,16 @@ public class CollectionsController : ApiControllerBase
         IItemTemplateRepository itemTemplateRepository,
         ICollectionSetupService setupService,
         IThemeRepository themeRepository,
-        ICollectionStatisticsRepository collectionStatisticsRepository)
+        ICollectionStatisticsRepository collectionStatisticsRepository,
+        ICollectionDetails details, ICollectionDeletion deletion)
     {
         _collectionRepository = collectionRepository;
         _itemTemplateRepository = itemTemplateRepository;
         _setupService = setupService;
         _themeRepository = themeRepository;
         _collectionStatisticsRepository = collectionStatisticsRepository;
+        _details = details;
+        _deletion = deletion;
     }
 
     [HttpGet]
@@ -99,13 +104,21 @@ public class CollectionsController : ApiControllerBase
             return BadRequest("Invalid theme");
         }
 
-        var created = await _setupService.CreateAsync(new Collection
+        Collection created;
+        try
         {
-            WorkspaceId = workspaceId,
-            Name = request.Name,
-            Description = request.Description ?? string.Empty,
-            HeroImageUrl = request.HeroImageUrl
-        }, theme);
+            created = await _setupService.CreateAsync(new Collection
+            {
+                WorkspaceId = workspaceId,
+                Name = request.Name,
+                Description = request.Description ?? string.Empty,
+                HeroImageUrl = request.HeroImageUrl
+            }, theme);
+        }
+        catch (InvalidCollectionThemeException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
 
         return CreatedAtAction(nameof(GetCollection), new { id = created.Id }, created);
     }
@@ -113,56 +126,26 @@ public class CollectionsController : ApiControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<Collection>> UpdateCollection(int id, UpdateCollectionRequest request)
     {
-        var workspaceId = GetWorkspaceId();
-
-        var existing = await _collectionRepository.GetByIdAsync(id, workspaceId);
-        if (existing is null)
-        {
-            return NotFound();
-        }
-
-        var slug = SlugHelper.GenerateSlug(request.Name);
-        
-        // Check if slug is taken by another collection
-        var slugCollection = await _collectionRepository.GetBySlugAsync(slug, workspaceId);
-        if (slugCollection is not null && slugCollection.Id != id)
-        {
-            slug = $"{slug}-{DateTime.UtcNow.Ticks}";
-        }
-
-        var collection = new Collection
-        {
-            Name = request.Name,
-            Description = request.Description ?? string.Empty,
-            HeroImageUrl = request.HeroImageUrl,
-            Slug = slug,
-            Visibility = existing.Visibility
-        };
-
-        var updated = await _collectionRepository.UpdateAsync(id, collection, workspaceId);
-        return Ok(updated);
+        var result = await _details.UpdateAsync(GetUserId(), GetWorkspaceId(), id, request, HttpContext.RequestAborted);
+        return result.Status == CollectionWriteStatus.Success ? Ok(result.Collection) : WriteFailure(result);
     }
 
     [HttpDelete("{id}")]
     [Authorize(Policy = "WorkspaceAdmin")]
     public async Task<IActionResult> DeleteCollection(int id)
     {
-        var workspaceId = GetWorkspaceId();
-
-        // Check if this is the last collection
-        var count = await _collectionRepository.GetCountAsync(workspaceId);
-        if (count <= 1)
-        {
-            return BadRequest("Cannot delete the last collection. Users must have at least one collection.");
-        }
-
-        var deleted = await _collectionRepository.DeleteAsync(id, workspaceId);
-        if (!deleted)
-        {
-            return NotFound();
-        }
-        return NoContent();
+        var result = await _deletion.DeleteAsync(GetUserId(), GetWorkspaceId(), id, HttpContext.RequestAborted);
+        return result.Status == CollectionWriteStatus.Success ? NoContent() : WriteFailure(result);
     }
+
+    private ActionResult WriteFailure(CollectionWriteResult result) => result.Status switch
+    {
+        CollectionWriteStatus.NotFound => NotFound(),
+        CollectionWriteStatus.Forbidden => Forbid(),
+        CollectionWriteStatus.Invalid => BadRequest(result.Error),
+        CollectionWriteStatus.Conflict => Conflict(result.Error),
+        _ => throw new ArgumentOutOfRangeException(nameof(result))
+    };
 
     [HttpGet("{id}/statistics")]
     public async Task<ActionResult<CollectionStatisticsResponse>> GetStatistics(int id)

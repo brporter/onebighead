@@ -1,17 +1,10 @@
+import '../../styles/components/DeletionConfirmationModal.css';
 import { ModalDialog } from './ModalDialog';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { DeletionStatsGrid, type DeletionStatsGridProps } from './DeletionStatsGrid';
-import { DeletionBlockerReason, WorkspaceActionType, type UserBasicInfo } from '../../api/account';
-
-export interface WorkspaceBlocker {
-  workspaceId: number;
-  workspaceName: string;
-  reason: DeletionBlockerReason;
-  users?: UserBasicInfo[];
-  resolved?: boolean;
-  action?: WorkspaceActionType;
-  transferToUserId?: number;
-}
+import { DeletionBlockerReason, WorkspaceActionType } from '../../api/account';
+import type { AccountDeletionBlocker as WorkspaceBlocker } from '../../data/account/deletionPlan';
+export type { AccountDeletionBlocker as WorkspaceBlocker } from '../../data/account/deletionPlan';
 
 export interface DeletionConfirmationModalProps {
   isOpen: boolean;
@@ -28,6 +21,7 @@ export interface DeletionConfirmationModalProps {
 
   // Export
   showExportOption?: boolean;
+  exportUnavailableReason?: string;
   onExport?: () => Promise<void>;
   isExporting?: boolean;
 
@@ -38,6 +32,7 @@ export interface DeletionConfirmationModalProps {
   // Blockers (for account deletion)
   blockers?: WorkspaceBlocker[];
   onResolveBlocker?: (workspaceId: number, action: WorkspaceActionType, userId?: number) => void;
+  errorAction?: { label: string; onClick: () => void };
 }
 
 export function DeletionConfirmationModal({
@@ -49,13 +44,16 @@ export function DeletionConfirmationModal({
   entityName,
   stats,
   showExportOption,
+  exportUnavailableReason,
   onExport,
   isExporting,
   confirmationType,
   confirmationText,
   blockers,
   onResolveBlocker,
+  errorAction,
 }: DeletionConfirmationModalProps) {
+  const confirmationId = useId();
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [confirmInput, setConfirmInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -74,7 +72,7 @@ export function DeletionConfirmationModal({
     (confirmationType === 'checkbox' ? isConfirmed : isTextConfirmationValid);
 
   const handleConfirm = async () => {
-    if (!canConfirm) return;
+    if (!canConfirm || isDeleting || isExporting) return;
 
     setIsDeleting(true);
     setError(null);
@@ -88,17 +86,16 @@ export function DeletionConfirmationModal({
     }
   };
 
-  const handleExport = async () => {
-    if (!onExport) return;
+  const handleExport = async (exportData: () => Promise<void>) => {
     try {
-      await onExport();
+      await exportData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed');
     }
   };
 
   const handleClose = () => {
-    if (isDeleting) return;
+    if (isDeleting || isExporting) return;
     setIsConfirmed(false);
     setConfirmInput('');
     setError(null);
@@ -123,6 +120,7 @@ export function DeletionConfirmationModal({
                   You are the only member of this workspace. It will be deleted when you delete your account.
                 </p>
                 <button
+                  type="button"
                   className="deletion-modal__blocker-action"
                   onClick={() => onResolveBlocker?.(blocker.workspaceId, WorkspaceActionType.Delete)}
                 >
@@ -136,10 +134,11 @@ export function DeletionConfirmationModal({
                 <p className="deletion-modal__blocker-description">
                   You are the only admin. Transfer admin role to another user before deleting your account.
                 </p>
-                {blocker.users && blocker.users.length > 0 && (
+                {blocker.users && blocker.users.length > 0 ? (
                   <div className="deletion-modal__blocker-select">
-                    <label className="deletion-modal__blocker-label">Transfer admin to:</label>
+                    <label htmlFor={`${confirmationId}-${blocker.workspaceId}`} className="deletion-modal__blocker-label">Transfer admin to:</label>
                     <select
+                      id={`${confirmationId}-${blocker.workspaceId}`}
                       className="deletion-modal__blocker-dropdown"
                       value={blocker.transferToUserId || ''}
                       onChange={(e) => {
@@ -157,6 +156,10 @@ export function DeletionConfirmationModal({
                       ))}
                     </select>
                   </div>
+                ) : (
+                  <p className="deletion-modal__blocker-description">
+                    No active member can receive the admin role. Close this dialog and resolve membership or delete this workspace in Settings before deleting your account.
+                  </p>
                 )}
               </>
             )}
@@ -168,10 +171,10 @@ export function DeletionConfirmationModal({
 
   return (
     <ModalDialog label={title} onClose={handleClose}>
-      <div className="modal deletion-modal">
+      <form className="modal deletion-modal" aria-label="Confirm deletion" onSubmit={event => { event.preventDefault(); void handleConfirm(); }}>
         <div className="modal__header">
           <h2 className="modal__title">{title}</h2>
-          <button className="modal__close" onClick={handleClose} disabled={isDeleting}>
+          <button type="button" className="modal__close" onClick={handleClose} disabled={isDeleting || isExporting} aria-label="Close">
             &times;
           </button>
         </div>
@@ -181,9 +184,9 @@ export function DeletionConfirmationModal({
           <div className="deletion-modal__warning">
             <span className="deletion-modal__warning-icon">&#9888;</span>
             <div className="deletion-modal__warning-content">
-              <strong>This action cannot be undone.</strong>
+              <strong>{entityType === 'account' ? 'This action cannot be undone.' : 'This workspace will be deleted.'}</strong>
               {entityType === 'workspace' && (
-                <p>Deleting "{entityName}" will permanently remove all collections, categories, items, and images.</p>
+                <p>Deleting "{entityName}" removes access to its collections, categories, items, and images. Restore it from My Workspaces before its recovery period ends.</p>
               )}
               {entityType === 'account' && (
                 <p>Deleting your account will permanently remove your profile and access to all workspaces.</p>
@@ -200,12 +203,14 @@ export function DeletionConfirmationModal({
           )}
 
           {/* Export option */}
+          {exportUnavailableReason && <p className="deletion-modal__export">{exportUnavailableReason}</p>}
           {showExportOption && onExport && (
             <div className="deletion-modal__export">
               <p>Before deleting, you can export your data:</p>
               <button
+                type="button"
                 className="deletion-modal__export-button"
-                onClick={handleExport}
+                onClick={() => { void handleExport(onExport); }}
                 disabled={isExporting || isDeleting}
               >
                 {isExporting ? 'Exporting...' : 'Download Export'}
@@ -234,14 +239,15 @@ export function DeletionConfirmationModal({
                     onChange={(e) => setIsConfirmed(e.target.checked)}
                     disabled={isDeleting}
                   />
-                  <span>I understand that this action is permanent and cannot be undone.</span>
+                  <span>{entityType === 'workspace' ? 'I understand that this workspace will be deleted.' : 'I understand that this action is permanent and cannot be undone.'}</span>
                 </label>
               ) : (
                 <div className="deletion-modal__text-confirm">
-                  <label className="deletion-modal__text-label">
+                  <label htmlFor={confirmationId} className="deletion-modal__text-label">
                     Type <strong>{confirmationText || entityName}</strong> to confirm:
                   </label>
                   <input
+                    id={confirmationId}
                     type="text"
                     className="deletion-modal__text-input"
                     value={confirmInput}
@@ -257,29 +263,32 @@ export function DeletionConfirmationModal({
 
           {/* Error */}
           {error && (
-            <div className="deletion-modal__error">
+            <div className="deletion-modal__error" role="alert">
               {error}
+              {errorAction && <button type="button" className="deletion-modal__blocker-action" onClick={errorAction.onClick}
+                disabled={isDeleting || isExporting}>{errorAction.label}</button>}
             </div>
           )}
         </div>
 
         <div className="modal__footer">
           <button
+            type="button"
             className="modal__button modal__button--secondary"
             onClick={handleClose}
-            disabled={isDeleting}
+            disabled={isDeleting || isExporting}
           >
             Cancel
           </button>
           <button
+            type="submit"
             className="modal__button modal__button--danger"
-            onClick={handleConfirm}
-            disabled={!canConfirm || isDeleting}
+            disabled={!canConfirm || isDeleting || isExporting}
           >
             {isDeleting ? 'Deleting...' : `Delete ${entityType === 'workspace' ? 'Workspace' : 'Account'}`}
           </button>
         </div>
-      </div>
+      </form>
     </ModalDialog>
   );
 }

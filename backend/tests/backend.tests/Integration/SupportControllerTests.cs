@@ -185,40 +185,7 @@ public class SupportControllerTests : IntegrationTestBase
 
     #endregion
 
-    #region POST /api/support/{id}/reply
 
-    [Fact]
-    public async Task AddReply_OwnRequest_AddsReply()
-    {
-        // Arrange
-        var createRequest = new CreateSupportRequestDto
-        {
-            Subject = "Reply Test",
-            Description = "Original description"
-        };
-        var createResponse = await Client.PostAsJsonAsync("/api/support", createRequest);
-        var created = await DeserializeResponseAsync<SupportRequestDto>(createResponse);
-
-        var replyRequest = new CreateSupportReplyDto
-        {
-            Message = "User follow-up message"
-        };
-
-        // Act
-        var response = await Client.PostAsJsonAsync($"/api/support/{created!.SupportRequestId}/reply", replyRequest);
-
-        // Assert
-        response.EnsureSuccessStatusCode();
-
-        // Verify reply was added
-        var getResponse = await Client.GetAsync($"/api/support/{created.SupportRequestId}");
-        var fetched = await DeserializeResponseAsync<SupportRequestDto>(getResponse);
-        Assert.Single(fetched!.Replies);
-        Assert.Equal("User follow-up message", fetched.Replies[0].Message);
-        Assert.False(fetched.Replies[0].IsFromAdmin);
-    }
-
-    #endregion
 
     #region DELETE /api/support/{id}
 

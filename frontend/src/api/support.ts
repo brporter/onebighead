@@ -1,4 +1,4 @@
-import api from './client';
+import api, { type RequestOptions } from './client';
 
 export interface SupportRequest {
   supportRequestId: number;
@@ -51,11 +51,11 @@ export const createSupportRequest = (data: CreateSupportRequest) =>
   api.post<SupportRequest>('/support', data);
 
 // User API (requires auth)
-export const getMySupportRequests = () =>
-  api.get<SupportRequest[]>('/support');
+export const getMySupportRequests = (options?: RequestOptions) =>
+  api.get<SupportRequest[]>('/support', options);
 
-export const getSupportRequest = (id: number) =>
-  api.get<SupportRequest>(`/support/${id}`);
+export const getSupportRequest = (id: number, options?: RequestOptions) =>
+  api.get<SupportRequest>(`/support/${id}`, options);
 
 export const addSupportReply = (requestId: number, data: CreateSupportReply) =>
   api.post<SupportReply>(`/support/${requestId}/reply`, data);
@@ -63,8 +63,8 @@ export const addSupportReply = (requestId: number, data: CreateSupportReply) =>
 export const deleteSupportRequest = (id: number) =>
   api.delete<void>(`/support/${id}`);
 
-export const getUnreadSupportCount = () =>
-  api.get<UnreadCount>('/support/unread-count');
+export const getUnreadSupportCount = (options?: RequestOptions) =>
+  api.get<UnreadCount>('/support/unread-count', options);
 
 export const markSupportRequestAsRead = (id: number) =>
   api.post<void>(`/support/${id}/mark-read`);
@@ -75,7 +75,7 @@ export const getAdminSupportRequests = (params?: {
   includeDeleted?: boolean;
   limit?: number;
   offset?: number;
-}) => {
+}, options?: RequestOptions) => {
   const searchParams = new URLSearchParams();
   if (params?.status) searchParams.set('status', params.status);
   if (params?.includeDeleted) searchParams.set('includeDeleted', 'true');
@@ -83,11 +83,11 @@ export const getAdminSupportRequests = (params?: {
   if (params?.offset) searchParams.set('offset', params.offset.toString());
   
   const query = searchParams.toString();
-  return api.get<SupportRequestListResponse>(`/admin/support${query ? `?${query}` : ''}`);
+  return api.get<SupportRequestListResponse>(`/admin/support${query ? `?${query}` : ''}`, options);
 };
 
-export const getAdminSupportRequest = (id: number) =>
-  api.get<SupportRequest>(`/admin/support/${id}`);
+export const getAdminSupportRequest = (id: number, options?: RequestOptions) =>
+  api.get<SupportRequest>(`/admin/support/${id}`, options);
 
 export const addAdminSupportReply = (requestId: number, data: CreateSupportReply) =>
   api.post<SupportReply>(`/admin/support/${requestId}/reply`, data);

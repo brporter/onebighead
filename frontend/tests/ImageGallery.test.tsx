@@ -204,3 +204,8 @@ describe('ImageGallery', () => {
   });
 });
 
+
+  it('supports public images with null alt text and no gallery title', () => {
+    const { container } = render(<ImageGallery images={[{ url: '/image.jpg', alt: null }]} />);
+    expect(container.querySelector('img')).toHaveAttribute('alt', '');
+  });

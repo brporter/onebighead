@@ -1,3 +1,4 @@
+using OneBigHead.Server.Services.Support;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
@@ -5,23 +6,26 @@ using OneBigHead.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using OneBigHead.Server.Authentication;
+using OneBigHead.Server.Middleware;
 
 namespace OneBigHead.Server.Controllers;
 
 [ApiController]
 [Route("api/admin/support")]
-[Authorize(Roles = "SystemAdministrator")]
+[Authorize(Policy = SystemAdministratorRequirement.PolicyName)]
+[AllowInactiveWorkspace]
 public class AdminSupportController : ControllerBase
 {
     private readonly ISupportRepository _supportRepository;
-    private readonly IEmailService _emailService;
+    private readonly ISupportReplies _replies;
 
     public AdminSupportController(
         ISupportRepository supportRepository,
-        IEmailService emailService)
+        ISupportReplies replies)
     {
         _supportRepository = supportRepository;
-        _emailService = emailService;
+        _replies = replies;
     }
 
     /// <summary>
@@ -73,46 +77,17 @@ public class AdminSupportController : ControllerBase
     [HttpPost("{id:int}/reply")]
     public async Task<ActionResult<SupportReplyDto>> AddReply(int id, [FromBody] CreateSupportReplyDto dto)
     {
-        var request = await _supportRepository.GetRequestByIdAsync(id);
-        if (request == null)
+        var userId = GetUserId();
+        if (!userId.HasValue) return Unauthorized();
+        var result = await _replies.AddAdminReplyAsync(id, userId.Value, dto.Message);
+        return result.Status switch
         {
-            return NotFound();
-        }
-
-        if (request.IsDeleted)
-        {
-            return BadRequest(new { error = "Cannot reply to a deleted request." });
-        }
-
-        var adminUserId = GetUserId();
-
-        var reply = new SupportReply
-        {
-            SupportRequestId = id,
-            UserId = adminUserId,
-            IsFromAdmin = true,
-            Message = dto.Message,
-            IsRead = false // Needs to be read by the user
+            SupportReplyStatus.NotFound => NotFound(),
+            SupportReplyStatus.Forbidden => Forbid(),
+            SupportReplyStatus.Invalid => BadRequest(new { error = result.Error }),
+            SupportReplyStatus.Conflict => Conflict(new { error = result.Error }),
+            _ => Ok(result.Reply)
         };
-
-        var created = await _supportRepository.AddReplyAsync(reply);
-
-        // Update status to InProgress if it was Open
-        if (request.Status == SupportRequestStatus.Open)
-        {
-            await _supportRepository.UpdateStatusAsync(id, SupportRequestStatus.InProgress);
-        }
-
-        // Send email notification to the user
-        var isLoggedInUser = request.UserId.HasValue;
-        await _emailService.SendSupportReplyNotificationAsync(
-            request.Email,
-            request.Subject,
-            dto.Message,
-            request.Id,
-            isLoggedInUser);
-
-        return Ok(SupportReplyDto.FromEntity(created));
     }
 
     /// <summary>
@@ -148,7 +123,7 @@ public class AdminSupportController : ControllerBase
     private int? GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (int.TryParse(userIdClaim, out var userId))
+        if (int.TryParse(userIdClaim, out var userId) && userId > 0)
         {
             return userId;
         }

@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import CollectionTemplateEditor from '../src/components/collection/CollectionTemplateEditor';
-import DataContext from '../src/contexts/DataContext';
+import DataContext from './testUtils/DataContext';
 import type { Collection, ItemTemplate } from '../src/utils/types';
 import { Visibility } from '../src/utils/types';
 import { createMockDataContextValue } from './testUtils';
+import { deferred } from './testUtils/deferred';
 
 const mockCollection: Collection = {
   collectionId: 1,
@@ -52,8 +54,7 @@ const mockTemplates: ItemTemplate[] = [
 
 function createMockContext(overrides: Record<string, unknown> = {}) {
   return createMockDataContextValue({
-    itemTemplates: mockTemplates,
-    loadItemTemplates: vi.fn().mockResolvedValue(mockTemplates),
+    fetchItemTemplates: vi.fn().mockResolvedValue(mockTemplates),
     loadCollectionTemplates: vi.fn().mockResolvedValue([mockTemplates[0]]),
     associateTemplateWithCollection: vi.fn().mockResolvedValue(undefined),
     disassociateTemplateFromCollection: vi.fn().mockResolvedValue(undefined),
@@ -70,13 +71,13 @@ describe('CollectionTemplateEditor', () => {
 
   const renderComponent = (onClose = vi.fn(), onDirtyChange = vi.fn()) => {
     return render(
-      <DataContext.Provider value={mockContext}>
+      <DataContext value={mockContext}>
         <CollectionTemplateEditor
           collection={mockCollection}
           onClose={onClose}
           onDirtyChange={onDirtyChange}
         />
-      </DataContext.Provider>
+      </DataContext>
     );
   };
 
@@ -95,8 +96,8 @@ describe('CollectionTemplateEditor', () => {
   it('loads templates on mount', async () => {
     renderComponent();
     await waitFor(() => {
-      expect(mockContext.loadCollectionTemplates).toHaveBeenCalledWith(1);
-      expect(mockContext.loadItemTemplates).toHaveBeenCalled();
+      expect(mockContext.loadCollectionTemplates).toHaveBeenCalledWith(1, expect.objectContaining({ signal: expect.any(AbortSignal) }));
+      expect(mockContext.fetchItemTemplates).toHaveBeenCalled();
     });
   });
 
@@ -159,7 +160,7 @@ describe('CollectionTemplateEditor', () => {
     });
 
     // Initially not dirty
-    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false));
 
     // Toggle a checkbox
     const checkboxes = screen.getAllByRole('checkbox');
@@ -251,9 +252,8 @@ describe('CollectionTemplateEditor', () => {
   });
 
   it('shows empty message when no templates available', async () => {
-    mockContext.loadItemTemplates = vi.fn().mockResolvedValue([]);
+    mockContext.fetchItemTemplates = vi.fn().mockResolvedValue([]);
     mockContext.loadCollectionTemplates = vi.fn().mockResolvedValue([]);
-    mockContext.itemTemplates = [];
 
     renderComponent();
     await waitFor(() => {
@@ -317,7 +317,26 @@ describe('CollectionTemplateEditor', () => {
     });
 
     // Complete the save
-    resolveAssociate!();
+    await act(async () => resolveAssociate!());
+  });
+
+  it('reports pending assignments to route navigation and releases dirty state on unmount', async () => {
+    const pending = deferred<void>();
+    mockContext.associateTemplateWithCollection = vi.fn().mockReturnValue(pending.promise);
+    const status = vi.fn();
+    const dirty = vi.fn();
+    const { unmount } = render(<DataContext value={mockContext}>
+      <CollectionTemplateEditor collection={mockCollection} onClose={vi.fn()} onDirtyChange={dirty} onStatusChange={status} />
+    </DataContext>);
+    await screen.findByText('Template B');
+    fireEvent.click(screen.getAllByRole('checkbox')[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    expect(status).toHaveBeenLastCalledWith({ dirty: true, pending: true });
+    await act(async () => pending.resolve());
+    expect(status).toHaveBeenLastCalledWith({ dirty: false, pending: false });
+    unmount();
+    expect(dirty).toHaveBeenLastCalledWith(false);
+    expect(status).toHaveBeenLastCalledWith({ dirty: false, pending: false });
   });
 
   it('disables checkboxes during save', async () => {
@@ -344,7 +363,7 @@ describe('CollectionTemplateEditor', () => {
       });
     });
 
-    resolveAssociate!();
+    await act(async () => resolveAssociate!());
   });
 
   it('resets dirty state after successful save', async () => {
@@ -363,6 +382,66 @@ describe('CollectionTemplateEditor', () => {
 
     await waitFor(() => {
       expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    });
+  });
+
+  describe('recovery and navigation', () => {
+    it('keeps a Back action available during loading', async () => {
+      mockContext.fetchItemTemplates = vi.fn().mockReturnValue(new Promise(() => {}));
+      const onClose = vi.fn();
+      renderComponent(onClose);
+      await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+      expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it('retries failed catalog loads before allowing assignment changes', async () => {
+      vi.mocked(mockContext.fetchItemTemplates).mockRejectedValueOnce(new Error('Catalog offline'));
+      renderComponent();
+      expect(await screen.findByRole('alert')).toHaveTextContent('Catalog offline');
+      expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+      expect(await screen.findByRole('checkbox', { name: 'Template A' })).toBeChecked();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('asks before discarding a changed selection and respects cancellation', async () => {
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+      const onClose = vi.fn();
+      render(<DataContext value={mockContext}><CollectionTemplateEditor collection={mockCollection} onClose={onClose} /></DataContext>);
+      await userEvent.click(await screen.findByRole('checkbox', { name: 'Template B' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(onClose).not.toHaveBeenCalled();
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(onClose).toHaveBeenCalledOnce();
+      confirm.mockRestore();
+    });
+
+    it('keeps the draft after partial save failure and retries only the remaining operation', async () => {
+      vi.mocked(mockContext.disassociateTemplateFromCollection).mockRejectedValueOnce(new Error('Removal failed'));
+      renderComponent();
+      await userEvent.click(await screen.findByRole('checkbox', { name: 'Template A' }));
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Template B' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent('Removal failed');
+      expect(screen.getByRole('checkbox', { name: 'Template B' })).toBeChecked();
+      await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save Changes' })).toBeDisabled());
+      expect(mockContext.associateTemplateWithCollection).toHaveBeenCalledOnce();
+      expect(mockContext.disassociateTemplateFromCollection).toHaveBeenCalledTimes(2);
+    });
+
+    it('discards late catalog responses when the collection changes', async () => {
+      const pending = deferred<ItemTemplate[]>();
+      vi.mocked(mockContext.loadCollectionTemplates).mockReturnValueOnce(pending.promise).mockResolvedValue([mockTemplates[1]]);
+      const view = (collection: Collection) => <DataContext value={mockContext}>
+        <CollectionTemplateEditor collection={collection} onClose={vi.fn()} />
+      </DataContext>;
+      const { rerender } = render(view(mockCollection));
+      rerender(view({ ...mockCollection, collectionId: 2, name: 'Another collection' }));
+      expect(await screen.findByRole('checkbox', { name: 'Template B' })).toBeChecked();
+      await act(async () => pending.resolve([mockTemplates[0]]));
+      expect(screen.getByRole('checkbox', { name: 'Template A' })).not.toBeChecked();
+      expect(screen.getByRole('heading')).toHaveTextContent('Another collection');
     });
   });
 

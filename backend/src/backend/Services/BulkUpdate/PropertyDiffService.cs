@@ -102,17 +102,13 @@ public class PropertyDiffService : IPropertyDiffService
             result.RemoveAll(p => p.Category == change.Category && p.Name == change.Name);
         }
 
-        // 3. Apply Renamed: find by (OldCategory, OldName), update to (NewCategory, NewName)
-        foreach (var change in diff.Changes.Where(c => c.Type == PropertyChangeType.Renamed))
-        {
-            for (var i = 0; i < result.Count; i++)
-            {
-                if (result[i].Category == change.Category && result[i].Name == change.Name)
-                {
-                    result[i] = new ItemProperty(change.NewCategory!, change.NewName!, result[i].Value);
-                }
-            }
-        }
+        // 3. Rename from the original keys in one pass. Swaps and chains must not rename
+        // an already-renamed property a second time and move its value to the wrong key.
+        var renames = diff.Changes.Where(change => change.Type == PropertyChangeType.Renamed)
+            .ToDictionary(change => (change.Category, change.Name));
+        result = result.Select(property => renames.TryGetValue((property.Category, property.Name), out var change)
+            ? new ItemProperty(change.NewCategory!, change.NewName!, property.Value)
+            : property).ToList();
 
         // 4. Apply Added: add with Value="" if (Category, Name) doesn't already exist
         foreach (var change in diff.Changes.Where(c => c.Type == PropertyChangeType.Added))

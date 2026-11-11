@@ -33,6 +33,7 @@ describe('ItemDetail', () => {
     vi.clearAllMocks();
   });
 
+
   describe('snapshots', () => {
     it('should render empty state', () => {
       const { container } = render(<ItemDetail item={null} />);
@@ -178,5 +179,10 @@ describe('ItemDetail', () => {
       );
       expect(container).toMatchSnapshot();
     });
+  });
+  it('can display an unsaved item and its images before it has an ID', () => {
+    render(<ItemDetail item={{ ...mockItem, id: null }} />);
+    expect(screen.getByRole('heading', { name: 'Test Item' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Image 1' })).toBeInTheDocument();
   });
 });

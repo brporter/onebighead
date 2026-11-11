@@ -3,13 +3,19 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import CollectionView from '../../src/views/CollectionView';
-import { useData } from '../../src/contexts/useData';
+import { useCollectionsData as useDataHook } from '../../src/contexts/useData';
 import type { Collection } from '../../src/utils/types';
 import { Visibility } from '../../src/utils/types';
+import { createMockDataContextValue } from '../testUtils/factories';
 
-vi.mock('../../src/contexts/useData', () => ({
+const useData = useDataHook as () => import('../testUtils/dataTypes').DataContextValue;
+
+vi.mock('../../src/contexts/useData', async () => {
+  const { mockDataHooks } = await import('../testUtils/mockDataHooks');
+  return mockDataHooks({
   useData: vi.fn(),
-}));
+});
+});
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -82,6 +88,17 @@ describe('CollectionView', () => {
 
     expect(screen.getByText('Collection One')).toBeInTheDocument();
     expect(screen.getByText('Collection Two')).toBeInTheDocument();
+  });
+
+  it.each([0, 1, 2])('keeps a failed load visible without redirecting when %s collections are cached', async count => {
+    vi.mocked(useData).mockReturnValue(createMockDataContextValue({ ...mockDataContext, collections: mockCollections.slice(0, count),
+      collectionsError: 'Unable to reach the workspace' }));
+    renderWithRouter();
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to load collections');
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to reach the workspace');
+    expect(mockNavigate).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(mockDataContext.loadCollections).toHaveBeenCalledTimes(2);
   });
 
   it('should navigate to collection when clicked', async () => {

@@ -16,7 +16,7 @@ public class CookieJwtAuthenticationHandler : AuthenticationHandler<CookieJwtAut
     public const string AuthErrorItemKey = "AuthErrorType";
 
     private readonly ITokenService _tokenService;
-    private readonly ITokenRevocationService _tokenRevocationService;
+    private readonly IAccountSessionValidator _sessions;
     private readonly AuthenticationSettings _authSettings;
 
     public CookieJwtAuthenticationHandler(
@@ -24,12 +24,12 @@ public class CookieJwtAuthenticationHandler : AuthenticationHandler<CookieJwtAut
         ILoggerFactory logger,
         UrlEncoder encoder,
         ITokenService tokenService,
-        ITokenRevocationService tokenRevocationService,
+        IAccountSessionValidator sessions,
         IOptions<AuthenticationSettings> authSettings)
         : base(options, logger, encoder)
     {
         _tokenService = tokenService;
-        _tokenRevocationService = tokenRevocationService;
+        _sessions = sessions;
         _authSettings = authSettings.Value;
     }
 
@@ -42,8 +42,7 @@ public class CookieJwtAuthenticationHandler : AuthenticationHandler<CookieJwtAut
             return AuthenticateResult.NoResult();
         }
 
-        // Expired or otherwise invalid tokens fail here, before the revocation
-        // check, so the revocation cache/SQL lookup is skipped for them.
+        // Verify the signature and lifetime before looking up account state.
         var principal = _tokenService.ValidateAppToken(token);
 
         if (principal is null)
@@ -53,16 +52,19 @@ public class CookieJwtAuthenticationHandler : AuthenticationHandler<CookieJwtAut
 
         var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var issuedAtClaim = principal.FindFirst(JwtRegisteredClaimNames.Iat)?.Value;
+        var stampClaim = principal.FindFirst(ClaimNames.AuthenticationStamp)?.Value;
 
-        if (!int.TryParse(userIdClaim, out var userId) ||
-            !long.TryParse(issuedAtClaim, out var issuedAtUnixSeconds))
+        if (!int.TryParse(userIdClaim, out var userId) || userId <= 0 ||
+            !long.TryParse(issuedAtClaim, out var issuedAtUnixSeconds) ||
+            issuedAtUnixSeconds < DateTimeOffset.MinValue.ToUnixTimeSeconds() ||
+            issuedAtUnixSeconds > DateTimeOffset.MaxValue.ToUnixTimeSeconds())
         {
             return AuthenticateResult.Fail("Invalid token claims");
         }
 
-        var issuedAtUtc = DateTimeOffset.FromUnixTimeSeconds(issuedAtUnixSeconds).UtcDateTime;
-
-        if (await _tokenRevocationService.IsTokenRevokedAsync(userId, issuedAtUtc))
+        // Cookies issued before stamps were introduced also require a new sign-in.
+        if (!Guid.TryParseExact(stampClaim, "N", out var stamp) || stamp == Guid.Empty ||
+            !await _sessions.IsCurrentAsync(userId, stamp, Context.RequestAborted))
         {
             Context.Items[AuthErrorItemKey] = AuthErrorType.SessionRevoked;
             return AuthenticateResult.Fail("Token has been revoked");

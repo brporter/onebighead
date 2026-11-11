@@ -1,4 +1,6 @@
+import { useId } from 'react';
 import type { CollectionTheme } from '../../utils/types';
+import '../../styles/components/ThemeCard.css';
 
 interface ThemeCardProps {
   theme: CollectionTheme;
@@ -6,38 +8,38 @@ interface ThemeCardProps {
   onSelect: () => void;
 }
 
-const THEME_ICONS: Record<string, string> = {
-  book: '📚',
-  gamepad: '🎮',
-  palette: '🎨',
-  music: '💿',
-  coin: '🪙',
-  box: '📦',
-};
+const THEME_ICONS = new Map([
+  ['book', '📚'],
+  ['gamepad', '🎮'],
+  ['palette', '🎨'],
+  ['music', '💿'],
+  ['coin', '🪙'],
+  ['box', '📦'],
+]);
 
 function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
-  const icon = THEME_ICONS[theme.iconName] || '📦';
-  
-  // Get a preview of templates
-  const templatePreview = theme.templates
-    .slice(0, 1)
-    .map(t => t.properties.slice(0, 3).map(p => p.name).join(', '))
-    .join('');
+  const id = useId();
+  const icon = THEME_ICONS.get(theme.iconName) ?? '📦';
+  const properties = theme.templates[0]?.properties ?? [];
+  const templatePreview = properties.slice(0, 3).map(property => property.name).join(', ');
 
   return (
     <button
       className={`themeCard ${isSelected ? 'themeCard--selected' : ''}`}
       onClick={onSelect}
       type="button"
+      aria-pressed={isSelected}
+      aria-labelledby={`${id}-name`}
+      aria-describedby={`${id}-description`}
     >
-      <span className="themeCard__icon">{icon}</span>
-      <span className="themeCard__name">{theme.name}</span>
-      <span className="themeCard__description">{theme.description}</span>
+      <span className="themeCard__icon" aria-hidden="true">{icon}</span>
+      <span id={`${id}-name`} className="themeCard__name">{theme.name}</span>
+      <span id={`${id}-description`} className="themeCard__description">{theme.description}</span>
       {templatePreview && (
-        <span className="themeCard__preview">{templatePreview}...</span>
+        <span className="themeCard__preview">{templatePreview}{properties.length > 3 ? '…' : ''}</span>
       )}
       {isSelected && (
-        <span className="themeCard__check">✓</span>
+        <span className="themeCard__check" aria-hidden="true">✓</span>
       )}
     </button>
   );

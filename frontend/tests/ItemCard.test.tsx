@@ -339,4 +339,19 @@ describe('ItemCard', () => {
     expect(screen.getByRole('button', { name: 'Publish' }).closest('.item-card__select')).toBeNull();
   });
 
+  it('does not select an unsaved item through its checkbox', async () => {
+    const onToggleCheck = vi.fn();
+    const onSelect = vi.fn();
+    render(<ItemCard {...defaultProps} item={{ ...itemWithImages, id: null }} selectionMode
+      onToggleCheck={onToggleCheck} onSelect={onSelect} />);
+    await userEvent.click(screen.getByRole('checkbox'));
+    expect(onToggleCheck).not.toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('uses the item name when an image has no alternative text', () => {
+    render(<ItemCard {...defaultProps} item={{ ...itemWithImages, images: [{ url: '/camera.jpg', alt: '' }] }} />);
+    expect(screen.getByRole('img', { name: 'Leica M3' })).toHaveAttribute('src', '/camera.jpg');
+  });
+
 });

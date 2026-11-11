@@ -42,33 +42,6 @@ public class DatabaseImageProvider : IImageProvider
         return new StoredImageInfo(image.Id, url);
     }
 
-    public async Task<RetrievedImage?> RetrieveAsync(Guid key, int workspaceId)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var image = await context.StoredImages
-            .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == key && i.WorkspaceId == workspaceId);
-
-        if (image == null)
-            return null;
-
-        return new RetrievedImage(image.Data, image.ContentType, image.FileName);
-    }
-
-    public async Task<RetrievedImage?> RetrievePublicAsync(Guid key)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var image = await context.StoredImages
-            .AsNoTracking()
-            .Include(i => i.Workspace)
-            .FirstOrDefaultAsync(i => i.Id == key && i.Workspace != null && i.Workspace.Slug != null);
-
-        if (image == null)
-            return null;
-
-        return new RetrievedImage(image.Data, image.ContentType, image.FileName);
-    }
-
     public async Task DeleteAsync(Guid key, int workspaceId)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();

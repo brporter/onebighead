@@ -705,8 +705,14 @@ namespace OneBigHead.Server.Migrations
                     b.Property<DateTime?>("AcceptedTermsAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("ActiveWorkspaceId")
+                    b.Property<int?>("ActiveWorkspaceId")
                         .HasColumnType("integer");
+
+                    b.Property<Guid>("AuthenticationStamp")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -776,6 +782,9 @@ namespace OneBigHead.Server.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<int?>("WelcomeCollectionId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("IsDeleted");
@@ -786,7 +795,85 @@ namespace OneBigHead.Server.Migrations
                         .IsUnique()
                         .HasFilter("\"Slug\" IS NOT NULL");
 
+                    b.HasIndex("WelcomeCollectionId");
+
                     b.ToTable("Workspaces");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.WorkspaceInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("AcceptedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("WorkspaceId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcceptedByUserId");
+
+                    b.HasIndex("WorkspaceId", "Email")
+                        .IsUnique()
+                        .HasFilter("\"AcceptedAt\" IS NULL");
+
+                    b.ToTable("WorkspaceInvitations");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.WorkspaceSetupReceipt", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("CollectionId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int?>("WorkspaceId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "RequestId");
+
+                    b.HasIndex("CollectionId");
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.ToTable("WorkspaceSetupReceipts");
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.WorkspaceStatistic", b =>
@@ -1090,10 +1177,52 @@ namespace OneBigHead.Server.Migrations
                     b.HasOne("OneBigHead.Server.Models.Workspace", "ActiveWorkspace")
                         .WithMany("ActiveUsers")
                         .HasForeignKey("ActiveWorkspaceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ActiveWorkspace");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.Workspace", b =>
+                {
+                    b.HasOne("OneBigHead.Server.Models.Collection", null)
+                        .WithMany()
+                        .HasForeignKey("WelcomeCollectionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.WorkspaceInvitation", b =>
+                {
+                    b.HasOne("OneBigHead.Server.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("AcceptedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("OneBigHead.Server.Models.Workspace", "Workspace")
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Workspace");
+                });
+
+            modelBuilder.Entity("OneBigHead.Server.Models.WorkspaceSetupReceipt", b =>
+                {
+                    b.HasOne("OneBigHead.Server.Models.Collection", null)
+                        .WithMany()
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("OneBigHead.Server.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OneBigHead.Server.Models.Workspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("OneBigHead.Server.Models.WorkspaceUser", b =>

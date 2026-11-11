@@ -21,30 +21,10 @@ public class SignInModel : PageModel
     public string? ReturnUrl { get; set; }
 
     /// <summary>
-    /// True when the development sign-in form should render. The backing
-    /// endpoint (POST /api/auth/dev-login) is compiled only into Debug
-    /// builds, so Release builds never show the form.
+    /// Uses MVC's local URL policy for both sign-in flows, rejecting external
+    /// destinations and control characters and resolving application-relative paths.
     /// </summary>
-#if DEBUG
-    public bool DevLoginEnabled => true;
-#else
-    public bool DevLoginEnabled => false;
-#endif
-
-    /// <summary>
-    /// The return URL restricted to local paths. Absolute and
-    /// protocol-relative URLs fall back to /collections so the dev sign-in
-    /// flow cannot redirect off-site. A backslash after the leading slash is
-    /// rejected because browsers normalize "/\" to "//" when it is assigned to
-    /// window.location.href, matching ASP.NET Core's IsLocalUrl.
-    /// </summary>
-    public string SafeReturnUrl =>
-        ReturnUrl != null
-        && ReturnUrl.StartsWith('/')
-        && (ReturnUrl.Length == 1
-            || (ReturnUrl[1] != '/' && ReturnUrl[1] != '\\'))
-            ? ReturnUrl
-            : "/collections";
+    public string SafeReturnUrl => Url.IsLocalUrl(ReturnUrl) ? Url.Content(ReturnUrl)! : "/collections";
 
     public void OnGet(string? error = null, string? returnUrl = null, AuthErrorType errorType = AuthErrorType.None)
     {

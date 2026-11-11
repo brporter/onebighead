@@ -34,8 +34,8 @@ public class ExternalAuthenticationTests
         var settings = Settings();
         settings.OAuth.BaseUrl = formPost ? "https://app.example" : "";
         var users = new Mock<IExternalUserService>();
-        users.Setup(s => s.GetOrCreateAsync(It.IsAny<IdentityProvider>(), It.IsAny<OidcValidationResult>()))
-            .ReturnsAsync((new User { Id = 1, Email = "user@example.com" }, WorkspaceRole.WorkspaceAdmin));
+        users.Setup(s => s.GetOrCreateAsync(It.IsAny<IdentityProvider>(), It.IsAny<OidcValidationResult>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExternalSignInResult(new User { Id = 1, Email = "user@example.com" }, WorkspaceRole.WorkspaceAdmin));
         var tokens = new Mock<ITokenService>();
         tokens.Setup(s => s.GenerateAppToken(It.IsAny<User>(), WorkspaceRole.WorkspaceAdmin)).Returns("app-jwt");
         var builder = WebApplication.CreateBuilder();
@@ -94,14 +94,14 @@ public class ExternalAuthenticationTests
         if (invalidNonce)
         {
             Assert.StartsWith("/signin?error=", response.Headers.Location!.OriginalString);
-            users.Verify(s => s.GetOrCreateAsync(It.IsAny<IdentityProvider>(), It.IsAny<OidcValidationResult>()), Times.Never);
+            users.Verify(s => s.GetOrCreateAsync(It.IsAny<IdentityProvider>(), It.IsAny<OidcValidationResult>(), It.IsAny<CancellationToken>()), Times.Never);
             Assert.DoesNotContain(response.Headers.GetValues("Set-Cookie"), c => c.StartsWith("auth_token="));
         }
         else
         {
             Assert.Equal("/collections/42", response.Headers.Location!.OriginalString);
             Assert.Contains(response.Headers.GetValues("Set-Cookie"), c => c.StartsWith("auth_token=app-jwt"));
-            users.Verify(s => s.GetOrCreateAsync(Enum.Parse<IdentityProvider>(scheme), It.Is<OidcValidationResult>(i => i.Email == "user@example.com" && i.Subject == "subject")), Times.Once);
+            users.Verify(s => s.GetOrCreateAsync(Enum.Parse<IdentityProvider>(scheme), It.Is<OidcValidationResult>(i => i.Email == "user@example.com" && i.Subject == "subject"), It.IsAny<CancellationToken>()), Times.Once);
         }
         Assert.Equal(!formPost, !string.IsNullOrEmpty(verifier));
     }
@@ -121,14 +121,15 @@ public class ExternalAuthenticationTests
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TicketWithoutIdentityOrAccount_DoesNotIssueCookie(bool missingClaims)
+    [InlineData(true, null)]
+    [InlineData(false, null)]
+    [InlineData(false, "Use the original account and provider.")]
+    public async Task TicketWithoutIdentityOrAccount_DoesNotIssueCookie(bool missingClaims, string? error)
     {
         var builder = WebApplication.CreateBuilder();
         var users = new Mock<IExternalUserService>();
-        users.Setup(s => s.GetOrCreateAsync(It.IsAny<IdentityProvider>(), It.IsAny<OidcValidationResult>()))
-            .ReturnsAsync(((User?)null, WorkspaceRole.Normal));
+        users.Setup(s => s.GetOrCreateAsync(It.IsAny<IdentityProvider>(), It.IsAny<OidcValidationResult>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExternalSignInResult(null, Error: error));
         builder.Services.AddSingleton(users.Object);
         builder.Services.AddAuthentication().AddExternalProviders(Settings());
         await using var app = builder.Build();
@@ -141,11 +142,44 @@ public class ExternalAuthenticationTests
         Assert.Equal(302, http.Response.StatusCode);
         Assert.StartsWith("/signin?error=", http.Response.Headers.Location.ToString());
         Assert.Equal(0, http.Response.Headers.SetCookie.Count);
+        if (!missingClaims) Assert.Contains(Uri.EscapeDataString(error ?? ExternalSignInResult.DefaultError), http.Response.Headers.Location.ToString());
     }
 
     [Fact]
     public void ProviderSettings_RejectUnsupportedProvider() =>
         Assert.Throws<ArgumentOutOfRangeException>(() => new OidcProviderSettings().Get(IdentityProvider.None));
+
+    [Fact]
+    public async Task MappedIdentity_UsesTheSharedClaimPolicyAndDefaultReturnDestination()
+    {
+        var builder = WebApplication.CreateBuilder();
+        var user = new User { Id = 5, Email = "mapped@example.test" };
+        var users = new Mock<IExternalUserService>();
+        users.Setup(s => s.GetOrCreateAsync(IdentityProvider.Google,
+            It.Is<OidcValidationResult>(identity => identity.IsValid && identity.Email == user.Email && identity.Subject == "mapped-subject"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExternalSignInResult(user, WorkspaceRole.Normal));
+        var tokens = new Mock<ITokenService>();
+        tokens.Setup(t => t.GenerateAppToken(user, WorkspaceRole.Normal)).Returns("app-cookie");
+        builder.Services.AddSingleton(users.Object);
+        builder.Services.AddSingleton(tokens.Object);
+        var settings = Settings();
+        settings.OAuth.PostLoginRedirectUrl = "/settings?section=support";
+        builder.Services.AddAuthentication().AddExternalProviders(settings);
+        await using var app = builder.Build();
+        var options = app.Services.GetRequiredService<IOptionsMonitor<OpenIdConnectOptions>>().Get("Google");
+        var http = new Microsoft.AspNetCore.Http.DefaultHttpContext { RequestServices = app.Services };
+        var ticket = new AuthenticationTicket(new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Email, user.Email), new Claim(ClaimTypes.NameIdentifier, "mapped-subject")
+        })), "Google");
+        var context = new TicketReceivedContext(http,
+            new AuthenticationScheme("Google", "Google", typeof(OpenIdConnectHandler)), options, ticket);
+        await options.Events.TicketReceived(context);
+        Assert.Equal("/settings?section=support", http.Response.Headers.Location.ToString());
+        Assert.Contains("auth_token=app-cookie", http.Response.Headers.SetCookie.ToString());
+        users.VerifyAll();
+        tokens.VerifyAll();
+    }
 
     private static AuthenticationSettings Settings() => new()
     {

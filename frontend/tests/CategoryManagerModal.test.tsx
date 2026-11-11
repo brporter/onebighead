@@ -1,681 +1,274 @@
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { beforeEach, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
+import type { DragMoveEvent } from '@dnd-kit/core';
 import CategoryManagerModal from '../src/components/category/CategoryManagerModal';
-import type { Category } from '../src/utils/types';
+import { createMockCategory as category } from './testUtils';
+import { deferred } from './testUtils/deferred';
+import { Visibility } from '../src/utils/types';
 
-// Use vi.hoisted for mocks that need to be available before module loading
-const {
-  mockLoadCategoriesForCollection,
-  mockAddCategory,
-  mockUpdateCategory,
-  mockDeleteCategory,
-  mockReorderCategories,
-  mockRequestPublish,
-  mockRequestUnpublish,
-  mockCategories,
-} = vi.hoisted(() => {
-  const cats: Category[] = [
-    {
-      workspaceId: 1,
-      collectionId: 1,
-      categoryId: 1,
-      name: 'Bravo',
-      description: 'Description 1',
-      parentCategoryId: null,
-      isSystem: false,
-      visibility: 'Private' as Category['visibility'],
-      effectiveIsPublic: false,
-      itemTemplateIds: [],
-      sortOrder: 0,
-    },
-    {
-      workspaceId: 1,
-      collectionId: 1,
-      categoryId: 2,
-      name: 'Alpha',
-      description: 'Description 2',
-      parentCategoryId: null,
-      isSystem: false,
-      visibility: 'Private' as Category['visibility'],
-      effectiveIsPublic: false,
-      itemTemplateIds: [],
-      sortOrder: 1,
-    },
-    {
-      workspaceId: 1,
-      collectionId: 1,
-      categoryId: 3,
-      name: 'Child of Bravo',
-      description: 'Description 3',
-      parentCategoryId: 1,
-      isSystem: false,
-      visibility: 'Public' as Category['visibility'],
-      effectiveIsPublic: true,
-      itemTemplateIds: [],
-      sortOrder: 0,
-    },
-    {
-      workspaceId: 1,
-      collectionId: 1,
-      categoryId: 99,
-      name: 'Unassigned Items',
-      description: 'System category',
-      parentCategoryId: null,
-      isSystem: true,
-      visibility: 'Private' as Category['visibility'],
-      effectiveIsPublic: false,
-      itemTemplateIds: [],
-      sortOrder: 999,
-    },
-  ];
-
-  return {
-    mockLoadCategoriesForCollection: vi.fn(),
-    mockAddCategory: vi.fn(),
-    mockUpdateCategory: vi.fn(),
-    mockDeleteCategory: vi.fn(),
-    mockReorderCategories: vi.fn(),
-    mockRequestPublish: vi.fn(),
-    mockRequestUnpublish: vi.fn(),
-    mockCategories: cats,
+const mocks = vi.hoisted(() => ({ data: {} as Record<string, unknown>, publish: vi.fn(), unpublish: vi.fn(), dnd: {} as Record<string, unknown> }));
+vi.mock('../src/contexts/useData', async () => {
+  const { mockDataHooks } = await import('./testUtils/mockDataHooks');
+  return mockDataHooks({ useData: () => mocks.data });
+});
+vi.mock('../src/contexts/usePublish', () => ({ usePublish: () => ({ requestPublish: mocks.publish, requestUnpublish: mocks.unpublish }) }));
+vi.mock('../src/components/category/CategoryTemplateSelector', () => ({ default: () => <p>Templates</p> }));
+vi.mock('@dnd-kit/core', () => ({
+  DndContext: (props: Record<string, unknown> & { children: ReactNode }) => { mocks.dnd = props; return props.children; },
+  DragOverlay: ({ children }: { children: ReactNode }) => children,
+  PointerSensor: vi.fn(), KeyboardSensor: vi.fn(), useSensor: vi.fn(), useSensors: vi.fn(),
+  MeasuringStrategy: { Always: 'always' }, pointerWithin: vi.fn(), closestCenter: vi.fn(),
+  useDroppable: () => ({ setNodeRef: vi.fn(), isOver: false }),
+}));
+vi.mock('@dnd-kit/sortable', () => ({
+  SortableContext: ({ children }: { children: ReactNode }) => children,
+  sortableKeyboardCoordinates: vi.fn(), useSortable: ({ disabled }: { disabled: boolean }) => ({
+    attributes: { role: 'button', tabIndex: disabled ? -1 : 0, 'aria-disabled': disabled },
+    listeners: {}, setNodeRef: vi.fn(), isDragging: false,
+  }),
+}));
+const categories = [category({ categoryId: 1, collectionId: 1, name: 'Books', sortOrder: 0 }),
+  category({ categoryId: 2, collectionId: 1, name: 'Cameras', sortOrder: 1, visibility: Visibility.Public }),
+  category({ categoryId: 3, collectionId: 2, name: 'Other collection' })];
+const load = vi.fn();
+const create = vi.fn();
+const update = vi.fn();
+const remove = vi.fn();
+const reorder = vi.fn();
+const onClose = vi.fn();
+const props = { collectionId: 1, isOpen: true, onClose };
+const click = async (name: string) => userEvent.click(screen.getByRole('button', { name }));
+const ready = () => screen.findByRole('button', { name: 'Add category' });
+const edit = async () => { await ready(); await click('Books'); };
+const changeName = (value: string) => fireEvent.change(screen.getByRole('textbox', { name: /Name/ }), { target: { value } });
+function drop(y: number) {
+  const event: DragMoveEvent = {
+    active: { id: '1', data: { current: {} }, rect: { current: { initial: null, translated: null } } },
+    over: { id: '2', rect: new DOMRect(0, 0, 100, 100), disabled: false, data: { current: {} } },
+    activatorEvent: new MouseEvent('pointerdown', { clientY: y }), delta: { x: 0, y: 0 }, collisions: null,
   };
+  act(() => (mocks.dnd.onDragEnd as (event: DragMoveEvent) => void)(event));
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  load.mockReset().mockResolvedValue(undefined);
+  create.mockReset().mockResolvedValue(4);
+  update.mockReset().mockResolvedValue(undefined);
+  remove.mockReset().mockResolvedValue(undefined);
+  reorder.mockReset().mockResolvedValue(undefined);
+  mocks.data = { categories, loadCategoriesForCollection: load, addCategory: create, updateCategory: update, deleteCategory: remove, reorderCategories: reorder };
 });
 
-// Mock DataContext
-vi.mock('../src/contexts/useData', () => ({
-  useData: () => ({
-    categories: mockCategories,
-    loadCategoriesForCollection: mockLoadCategoriesForCollection,
-    addCategory: mockAddCategory,
-    updateCategory: mockUpdateCategory,
-    deleteCategory: mockDeleteCategory,
-    reorderCategories: mockReorderCategories,
-  }),
-}));
-
-// Mock usePublish
-vi.mock('../src/contexts/usePublish', () => ({
-  usePublish: () => ({
-    requestPublish: mockRequestPublish,
-    requestUnpublish: mockRequestUnpublish,
-    pendingIntent: null,
-    clearIntent: vi.fn(),
-  }),
-}));
-
-// Track props passed to child components
-let lastTreeProps: Record<string, unknown> = {};
-let lastFormProps: Record<string, unknown> = {};
-
-// Mock CategoryManagerTree
-vi.mock('../src/components/category/CategoryManagerTree', () => ({
-  default: (props: Record<string, unknown>) => {
-    lastTreeProps = props;
-    return (
-      <div data-testid="category-manager-tree">
-        <button data-testid="tree-edit-1" onClick={() => (props.onEditCategory as (id: number) => void)(1)}>Edit 1</button>
-        <button data-testid="tree-edit-2" onClick={() => (props.onEditCategory as (id: number) => void)(2)}>Edit 2</button>
-        <button data-testid="tree-add" onClick={props.onAdd as () => void}>Add</button>
-        <button data-testid="tree-reorder" onClick={() => (props.onReorder as (u: { categoryId: number; sortOrder: number }[]) => void)([{ categoryId: 1, sortOrder: 0 }, { categoryId: 2, sortOrder: 1 }])}>Reorder</button>
-        <button data-testid="tree-reparent" onClick={() => (props.onReparent as (id: number, parentId: number | null) => void)(3, 2)}>Reparent</button>
-        {props.toolbarSlot as React.ReactNode}
-      </div>
-    );
-  },
-}));
-
-// Mock CategoryManagerForm
-vi.mock('../src/components/category/CategoryManagerForm', () => ({
-  default: (props: Record<string, unknown>) => {
-    lastFormProps = props;
-    return (
-      <form id={props.formId as string} data-testid="category-manager-form" onSubmit={event => { event.preventDefault(); (props.onSave as (value: object) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] }); }}>
-        <button type="button" data-testid="form-save" onClick={() => (props.onSave as (u: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void)({ name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] })}>Save</button>
-        <button type="button" data-testid="form-back" onClick={props.onBack as () => void}>Back</button>
-        <button type="button" data-testid="form-publish" onClick={() => (props.onPublish as (c: Category) => void)(mockCategories[0])}>Publish</button>
-        <button type="button" data-testid="form-unpublish" onClick={() => (props.onUnpublish as (c: Category) => void)(mockCategories[2])}>Unpublish</button>
-      </form>
-    );
-  },
-}));
-
-// Mock QuickCreatePopover
-vi.mock('../src/components/category/QuickCreatePopover', () => ({
-  default: (props: Record<string, unknown>) => {
-    if (!props.isVisible) return null;
-    return (
-      <div data-testid="quick-create-popover">
-        <button data-testid="popover-save" onClick={() => (props.onSave as (name: string) => void)('Quick Cat')}>Popover Save</button>
-        <button data-testid="popover-more" onClick={() => (props.onMoreDetails as (name: string) => void)('Quick Cat')}>Popover More</button>
-        <button data-testid="popover-cancel" onClick={props.onCancel as () => void}>Popover Cancel</button>
-      </div>
-    );
-  },
-}));
-
-describe('CategoryManagerModal', () => {
-  const defaultProps = {
-    collectionId: 1,
-    isOpen: true,
-    onClose: vi.fn(),
-  };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    lastTreeProps = {};
-    lastFormProps = {};
-    // Mock dialog methods
-    HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
-      this.setAttribute('open', '');
-    });
-    HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
-      this.removeAttribute('open');
-    });
-    mockLoadCategoriesForCollection.mockResolvedValue(undefined);
-    mockAddCategory.mockResolvedValue(100);
-    mockUpdateCategory.mockResolvedValue(undefined);
-    mockDeleteCategory.mockResolvedValue(undefined);
-    mockReorderCategories.mockResolvedValue(undefined);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  describe('rendering', () => {
-    it('should not render dialog content when isOpen is false', () => {
-      render(<CategoryManagerModal {...defaultProps} isOpen={false} />);
-
-      expect(HTMLDialogElement.prototype.close).not.toHaveBeenCalled();
-      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
-    });
-
-    it('should render modal with tree and form when isOpen is true', () => {
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      expect(screen.getByText('Category Manager')).toBeInTheDocument();
-      expect(screen.getByTestId('category-manager-tree')).toBeInTheDocument();
-      expect(screen.getByTestId('category-manager-form')).toBeInTheDocument();
-    });
-
-    it('should call showModal when isOpen is true', () => {
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalled();
-    });
-  });
-
-  describe('loading categories', () => {
-    it('should load categories on open', async () => {
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(mockLoadCategoriesForCollection).toHaveBeenCalledWith(1);
-      });
-    });
-
-    it('should not load categories when closed', () => {
-      render(<CategoryManagerModal {...defaultProps} isOpen={false} />);
-
-      expect(mockLoadCategoriesForCollection).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('view state', () => {
-    it('should open to tree view by default', () => {
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      const track = document.querySelector('.categoryManager__track');
-      expect(track).not.toBeNull();
-      expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
-    });
-
-    it('should slide to form when category row clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-
-      const track = document.querySelector('.categoryManager__track');
-      expect(track!.classList.contains('categoryManager__track--form')).toBe(true);
-      expect((lastFormProps.category as Category)?.categoryId).toBe(1);
-      expect(lastFormProps.isNew).toBe(false);
-    });
-
-    it('should not auto-select on open', () => {
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      // No category should be selected by default
-      expect(lastFormProps.category).toBeNull();
-    });
-
-    it('should reset to tree view when modal re-opens', async () => {
-      const user = userEvent.setup();
-      const { rerender } = render(<CategoryManagerModal {...defaultProps} />);
-
-      // Slide to form
-      await user.click(screen.getByTestId('tree-edit-1'));
-      const track = document.querySelector('.categoryManager__track');
-      expect(track!.classList.contains('categoryManager__track--form')).toBe(true);
-
-      // Close and re-open
-      rerender(<CategoryManagerModal {...defaultProps} isOpen={false} />);
-      rerender(<CategoryManagerModal {...defaultProps} isOpen={true} />);
-
-      const trackAfter = document.querySelector('.categoryManager__track');
-      expect(trackAfter!.classList.contains('categoryManager__track--form')).toBe(false);
-    });
-  });
-
-  describe('quick create', () => {
-    it('should show popover when add clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-add'));
-
-      expect(screen.getByTestId('quick-create-popover')).toBeInTheDocument();
-    });
-
-    it('should create category and stay on tree when popover Save clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-add'));
-      await user.click(screen.getByTestId('popover-save'));
-
-      await waitFor(() => {
-        expect(mockAddCategory).toHaveBeenCalledWith({
-          collectionId: 1,
-          name: 'Quick Cat',
-          description: '',
-          parentCategoryId: null,
-          itemTemplateIds: [],
-        });
-      });
-
-      // Should stay on tree view
-      const track = document.querySelector('.categoryManager__track');
-      expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
-    });
-
-    it('should slide to form with name when More Details clicked', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-add'));
-      await user.click(screen.getByTestId('popover-more'));
-
-      const track = document.querySelector('.categoryManager__track');
-      expect(track!.classList.contains('categoryManager__track--form')).toBe(true);
-      expect(lastFormProps.isNew).toBe(true);
-      expect(lastFormProps.initialName).toBe('Quick Cat');
-    });
-
-    it('should close popover on cancel', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-add'));
-      expect(screen.getByTestId('quick-create-popover')).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('popover-cancel'));
-      expect(screen.queryByTestId('quick-create-popover')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('saving a category (update)', () => {
-    it('should call updateCategory and slide back to tree when saving existing category', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      // Edit a category first
-      await user.click(screen.getByTestId('tree-edit-1'));
-      // Save it
-      await user.click(screen.getByTestId('form-save'));
-
-      await waitFor(() => {
-        expect(mockUpdateCategory).toHaveBeenCalledWith(1, { name: 'Updated', description: 'Desc', parentCategoryId: null, itemTemplateIds: [] });
-      });
-      await waitFor(() => {
-        expect(mockLoadCategoriesForCollection).toHaveBeenCalledWith(1);
-      });
-
-      // Should slide back to tree
-      const track = document.querySelector('.categoryManager__track');
-      expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
-    });
-
-    it('should call addCategory when saving in create mode', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      // Use quick-create More Details to enter create mode
-      await user.click(screen.getByTestId('tree-add'));
-      await user.click(screen.getByTestId('popover-more'));
-      // Save
-      await user.click(screen.getByTestId('form-save'));
-
-      await waitFor(() => {
-        expect(mockAddCategory).toHaveBeenCalledWith({
-          collectionId: 1,
-          name: 'Updated',
-          description: 'Desc',
-          parentCategoryId: null,
-          itemTemplateIds: [],
-        });
-      });
-    });
-  });
-
-  describe('deleting a category', () => {
-    it('should call deleteCategory and slide back to tree', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      // Edit a category first
-      await user.click(screen.getByTestId('tree-edit-1'));
-      // Click the Delete button from form
-      await user.click(screen.getByRole('button', { name: 'Delete' }));
-
-      // Confirm in the delete confirmation modal
-      const confirmButtons = screen.getAllByRole('button', { name: 'Delete' });
-      // The confirmation modal's Delete button (last one)
-      await user.click(confirmButtons[confirmButtons.length - 1]);
-
-      await waitFor(() => {
-        expect(mockDeleteCategory).toHaveBeenCalledWith(1);
-      });
-
-      // Should slide back to tree
-      await waitFor(() => {
-        const track = document.querySelector('.categoryManager__track');
-        expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
-      });
-    });
-
-    it('should not call deleteCategory when confirm is cancelled', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      // Click the Delete button from form
-      await user.click(screen.getByRole('button', { name: 'Delete' }));
-
-      // Click Cancel in the confirmation modal
-      const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
-      await user.click(cancelButtons[cancelButtons.length - 1]);
-
-      expect(mockDeleteCategory).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('reordering categories', () => {
-    it('should call reorderCategories on reorder', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-reorder'));
-
-      await waitFor(() => {
-        expect(mockReorderCategories).toHaveBeenCalledWith([
-          { categoryId: 1, sortOrder: 0 },
-          { categoryId: 2, sortOrder: 1 },
-        ]);
-      });
-    });
-  });
-
-  describe('reparenting categories', () => {
-    it('should call updateCategory with new parentCategoryId and then reorderCategories', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-reparent'));
-
-      await waitFor(() => {
-        expect(mockUpdateCategory).toHaveBeenCalledWith(3, expect.objectContaining({ parentCategoryId: 2 }));
-      });
-      await waitFor(() => {
-        expect(mockReorderCategories).toHaveBeenCalled();
-      });
-    });
-
-    it('should compute sort orders including existing siblings in target parent', async () => {
-      // Add a category with parentCategoryId=2 to have existing siblings
-      const extraCat: Category = {
-        workspaceId: 1,
-        collectionId: 1,
-        categoryId: 5,
-        name: 'Existing Child of Alpha',
-        description: '',
-        parentCategoryId: 2,
-        isSystem: false,
-        visibility: 'Private' as Category['visibility'],
-        effectiveIsPublic: false,
-        itemTemplateIds: [],
-        sortOrder: 0,
-      };
-      mockCategories.push(extraCat);
-
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      // Reparent category 3 to parent 2 (which now has existing child 5)
-      await user.click(screen.getByTestId('tree-reparent'));
-
-      await waitFor(() => {
-        expect(mockReorderCategories).toHaveBeenCalled();
-      });
-
-      // Verify that sibling 5 and reparented 3 both got sort orders
-      const reorderCall = mockReorderCategories.mock.calls[0][0] as { categoryId: number; sortOrder: number }[];
-      expect(reorderCall.find((c: { categoryId: number }) => c.categoryId === 5)).toBeDefined();
-      expect(reorderCall.find((c: { categoryId: number }) => c.categoryId === 3)).toBeDefined();
-
-      // Clean up
-      mockCategories.pop();
-    });
-  });
-
-  describe('publishing a category', () => {
-    it('should call requestPublish with correct entity ref', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-publish'));
-
-      expect(mockRequestPublish).toHaveBeenCalledWith([{ type: 'category', id: 1 }]);
-    });
-  });
-
-  describe('unpublishing a category', () => {
-    it('should call requestUnpublish with correct entity ref', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-unpublish'));
-
-      expect(mockRequestUnpublish).toHaveBeenCalledWith([{ type: 'category', id: 3 }]);
-    });
-  });
-
-  describe('closing the modal', () => {
-    it('should call onClose when close button clicked from tree view', async () => {
-      const user = userEvent.setup();
-      const onClose = vi.fn();
-      render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
-
-      await user.click(screen.getByLabelText('Close'));
-
-      expect(onClose).toHaveBeenCalled();
-    });
-
-    it('should slide back to tree when close clicked from form without changes', async () => {
-      const user = userEvent.setup();
-      const onClose = vi.fn();
-      render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
-
-      // Slide to form
-      await user.click(screen.getByTestId('tree-edit-1'));
-      const track = document.querySelector('.categoryManager__track');
-      expect(track!.classList.contains('categoryManager__track--form')).toBe(true);
-
-      // Close from form view
-      await user.click(screen.getByLabelText('Close'));
-
-      // Should slide back to tree, NOT close modal
-      expect(onClose).not.toHaveBeenCalled();
-      expect(track!.classList.contains('categoryManager__track--form')).toBe(false);
-    });
-
-    it('should call onClose when native dialog close event fires', () => {
-      const onClose = vi.fn();
-      render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
-
-      const dialog = document.querySelector('dialog');
-      dialog!.dispatchEvent(new Event('close'));
-
-      expect(onClose).toHaveBeenCalled();
-    });
-
-    it('should call onClose when backdrop is clicked from tree view', async () => {
-      const user = userEvent.setup();
-      const onClose = vi.fn();
-      render(<CategoryManagerModal {...defaultProps} onClose={onClose} />);
-
-      const dialog = document.querySelector('dialog');
-      await user.click(dialog!);
-
-      expect(onClose).toHaveBeenCalled();
-    });
-  });
-
-  describe('form props', () => {
-    it('should pass categories, collectionId, and isNew to form', async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      // Click to edit first
-      await user.click(screen.getByTestId('tree-edit-1'));
-
-      expect(lastFormProps.categories).toEqual(mockCategories);
-      expect(lastFormProps.collectionId).toBe(1);
-      expect(lastFormProps.isNew).toBe(false);
-      expect((lastFormProps.category as Category)?.categoryId).toBe(1);
-    });
-  });
-
-  describe('tree props', () => {
-    it('should pass categories to tree', () => {
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      expect(lastTreeProps.categories).toEqual(mockCategories);
-    });
-  });
-
-  describe('error handling', () => {
-    it('should handle updateCategory failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockUpdateCategory.mockRejectedValue(new Error('Network error'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      await user.click(screen.getByTestId('form-save'));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalled();
-      });
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle deleteCategory failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockDeleteCategory.mockRejectedValue(new Error('Delete failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-edit-1'));
-      // Click Delete from form
-      await user.click(screen.getByRole('button', { name: 'Delete' }));
-      // Confirm in the delete confirmation modal
-      const confirmButtons = screen.getAllByRole('button', { name: 'Delete' });
-      await user.click(confirmButtons[confirmButtons.length - 1]);
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalled();
-      });
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle reorderCategories failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockReorderCategories.mockRejectedValue(new Error('Reorder failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-reorder'));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalled();
-      });
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle reparent failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockUpdateCategory.mockRejectedValue(new Error('Reparent failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-reparent'));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalled();
-      });
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle quick create failure gracefully', async () => {
-      const user = userEvent.setup();
-      mockAddCategory.mockRejectedValue(new Error('Create failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<CategoryManagerModal {...defaultProps} />);
-
-      await user.click(screen.getByTestId('tree-add'));
-      await user.click(screen.getByTestId('popover-save'));
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to create category:', expect.any(Error));
-      });
-
-      consoleSpy.mockRestore();
-    });
-  });
-  it('preserves edits when Escape dismisses a nested confirmation', async () => {
-    const onClose = vi.fn();
-    const user = userEvent.setup();
-    render(<CategoryManagerModal isOpen collectionId={1} onClose={onClose} />);
-    await user.click(screen.getByTestId('tree-edit-1'));
-    act(() => (lastFormProps.onHasChanges as (changed: boolean) => void)(true));
-    fireEvent(screen.getByRole('dialog', { name: 'Category Manager' }), new Event('cancel', { cancelable: true }));
-    const discard = screen.getByRole('dialog', { name: 'Discard Changes' });
-    fireEvent(discard, new Event('cancel', { cancelable: true, bubbles: true }));
-    expect(screen.queryByRole('dialog', { name: 'Discard Changes' })).not.toBeInTheDocument();
-    expect(onClose).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
-    fireEvent(screen.getByRole('dialog', { name: 'Delete Category' }), new Event('cancel', { cancelable: true }));
-    expect(screen.queryByRole('dialog', { name: 'Delete Category' })).not.toBeInTheDocument();
-    expect(mockDeleteCategory).not.toHaveBeenCalled();
-  });
-
+it('loads only when open, shows scoped categories, and aborts reads when the session closes', async () => {
+  const { rerender } = render(<CategoryManagerModal {...props} isOpen={false} />);
+  expect(load).not.toHaveBeenCalled();
+  rerender(<CategoryManagerModal {...props} />);
+  await ready();
+  expect(load).toHaveBeenCalledWith(1, { signal: expect.any(AbortSignal), throwOnError: true });
+  expect(screen.queryByText('Other collection')).not.toBeInTheDocument();
+  expect(screen.queryByRole('form', { name: 'Category details' })).not.toBeInTheDocument();
+  const signal = load.mock.calls[0][1].signal;
+  rerender(<CategoryManagerModal {...props} isOpen={false} />);
+  expect(signal.aborted).toBe(true);
+});
+
+it('shows read failures and retries without presenting stale categories as loaded', async () => {
+  load.mockRejectedValueOnce(new Error('Offline'));
+  render(<CategoryManagerModal {...props} />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Offline');
+  expect(screen.queryByRole('button', { name: 'Books' })).not.toBeInTheDocument();
+  await click('Try again');
+  await ready();
+});
+
+it('discards the actual draft, mounts only one panel, and distinguishes back from close', async () => {
+  render(<CategoryManagerModal {...props} />);
+  await edit();
+  expect(screen.queryByRole('button', { name: 'Add category' })).not.toBeInTheDocument();
+  const name = screen.getByRole('textbox', { name: /Name/ });
+  expect(name).toHaveFocus();
+  name.closest('.categoryManager__body')!.scrollTop = 250;
+  changeName('Unsaved');
+  await click('Cancel');
+  await click('Keep Editing');
+  expect(screen.getByRole('textbox', { name: /Name/ })).toHaveValue('Unsaved');
+  await click('Cancel');
+  fireEvent(screen.getByRole('dialog', { name: 'Discard Changes' }), new Event('cancel', { cancelable: true }));
+  expect(screen.queryByRole('dialog', { name: 'Discard Changes' })).not.toBeInTheDocument();
+  await click('Cancel');
+  await click('Discard');
+  const add = screen.getByRole('button', { name: 'Add category' });
+  expect(add).toHaveFocus();
+  expect(add.closest('.categoryManager__body')!.scrollTop).toBe(0);
+  await edit();
+  expect(screen.getByRole('textbox', { name: /Name/ })).toHaveValue('Books');
+  await click('Close');
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+it('closes after confirmed discard and resets state on collection changes and reopening', async () => {
+  const { rerender } = render(<CategoryManagerModal {...props} />);
+  await edit();
+  changeName('Draft');
+  await click('Close');
+  await click('Discard');
+  expect(onClose).toHaveBeenCalledOnce();
+  rerender(<CategoryManagerModal {...props} collectionId={2} />);
+  await screen.findByRole('button', { name: 'Other collection' });
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  rerender(<CategoryManagerModal {...props} isOpen={false} />);
+  rerender(<CategoryManagerModal {...props} />);
+  await edit();
+  expect(screen.getByRole('textbox', { name: /Name/ })).toHaveValue('Books');
+});
+
+it('keeps failed edits editable and prevents duplicate submissions or dismissal during a write', async () => {
+  update.mockRejectedValueOnce(new Error('Write failed'));
+  render(<CategoryManagerModal {...props} />);
+  await edit();
+  changeName('Updated');
+  await click('Save Changes');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Write failed');
+  expect(screen.getByRole('textbox', { name: /Name/ })).toBeEnabled();
+  const pending = deferred<void>();
+  update.mockReturnValueOnce(pending.promise);
+  changeName('Corrected');
+  fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
+  fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
+  expect(screen.getByRole('textbox', { name: /Name/ })).toBeDisabled();
+  fireEvent(screen.getByRole('dialog', { name: 'Category Manager' }), new Event('cancel', { cancelable: true }));
+  expect(onClose).not.toHaveBeenCalled();
+  expect(update).toHaveBeenCalledTimes(2);
+  await act(async () => { pending.resolve(); });
+  await ready();
+  expect(update).toHaveBeenLastCalledWith(1, expect.objectContaining({ name: 'Corrected' }));
+});
+
+it('quick creates once and resumes the failed order step with the saved draft locked', async () => {
+  reorder.mockRejectedValueOnce(new Error('Ordering failed'));
+  render(<CategoryManagerModal {...props} />);
+  await ready();
+  await click('Add category');
+  changeName('New category');
+  await click('Save');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Your change was saved');
+  expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('New category');
+  expect(screen.getByRole('textbox', { name: 'Name' })).toBeDisabled();
+  await click('Finish saving');
+  await ready();
+  expect(create).toHaveBeenCalledTimes(1);
+  expect(reorder).toHaveBeenCalledTimes(2);
+});
+
+it('retries a failed create, carries the name into details, and creates from the full form', async () => {
+  create.mockRejectedValueOnce(new Error('Create failed'));
+  render(<CategoryManagerModal {...props} />);
+  await ready();
+  await click('Add category');
+  changeName('Quick');
+  await click('Save');
+  await screen.findByRole('alert');
+  await click('Try again');
+  await ready();
+  expect(create).toHaveBeenCalledTimes(2);
+  await click('Add category');
+  changeName('Detailed');
+  await click('More Details...');
+  expect(screen.getByRole('textbox', { name: /Name/ })).toHaveValue('Detailed');
+  await click('Create');
+  await ready();
+  expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ collectionId: 1, name: 'Detailed' }));
+});
+
+it('allows cancelling an empty quick form and guards a dirty quick form', async () => {
+  render(<CategoryManagerModal {...props} />);
+  await ready();
+  await click('Add category');
+  await click('Cancel');
+  await ready();
+  await click('Add category');
+  changeName('Draft');
+  await click('Cancel');
+  await click('Discard');
+  await ready();
+  await click('Add category');
+  expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('');
+});
+
+it('explains that leaving a partially saved operation does not undo it', async () => {
+  load.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('Refresh failed'));
+  render(<CategoryManagerModal {...props} />);
+  await edit();
+  changeName('Saved');
+  await click('Save Changes');
+  await screen.findByRole('alert');
+  await click('Close');
+  expect(screen.getByRole('dialog', { name: 'Leave saved changes' })).toHaveTextContent('Leaving will not undo them');
+  await click('Keep Editing');
+  await click('Close');
+  await click('Leave');
+  expect(onClose).toHaveBeenCalledOnce();
+  expect(update).toHaveBeenCalledOnce();
+});
+
+it('deletes after confirmation and resumes refresh without deleting twice', async () => {
+  render(<CategoryManagerModal {...props} />);
+  await edit();
+  await click('Delete');
+  fireEvent(screen.getByRole('dialog', { name: 'Delete Category' }), new Event('cancel', { cancelable: true }));
+  await click('Delete');
+  await userEvent.click(within(screen.getByRole('dialog', { name: 'Delete Category' })).getByRole('button', { name: 'Cancel' }));
+  await click('Delete');
+  load.mockRejectedValueOnce(new Error('Reload failed'));
+  await userEvent.click(within(screen.getByRole('dialog', { name: 'Delete Category' })).getByRole('button', { name: 'Delete' }));
+  await screen.findByRole('alert');
+  await click('Finish saving');
+  await ready();
+  expect(remove).toHaveBeenCalledExactlyOnceWith(1);
+});
+
+it('delegates publication and unpublication while preserving category editing', async () => {
+  render(<CategoryManagerModal {...props} />);
+  await edit();
+  await click('Publish');
+  expect(mocks.publish).toHaveBeenCalledWith([{ type: 'category', id: 1 }]);
+  await click('← Back to Categories');
+  await click('Cameras');
+  await click('Unpublish');
+  expect(mocks.unpublish).toHaveBeenCalledWith([{ type: 'category', id: 2 }]);
+});
+
+it.each([50, 95])('applies tree move intent at pointer position %s', async y => {
+  render(<CategoryManagerModal {...props} />);
+  await ready();
+  drop(y);
+  await waitFor(() => expect(reorder).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(screen.queryByText('Saving category changes…')).not.toBeInTheDocument());
+  if (y === 50) expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ parentCategoryId: 2 }));
+  else expect(update).not.toHaveBeenCalled();
+});
+
+it('closes directly from the category list', async () => {
+  render(<CategoryManagerModal {...props} />);
+  await ready();
+  await userEvent.click(screen.getAllByRole('button', { name: 'Close' })[1]);
+  expect(onClose).toHaveBeenCalledOnce();
+});
+
+it('starts a fresh draft after a failed tree reorder instead of retrying the old operation', async () => {
+  reorder.mockRejectedValueOnce(new Error('Order failed'));
+  render(<CategoryManagerModal {...props} />);
+  await ready();
+  drop(95);
+  await screen.findByRole('alert');
+  await click('Add category');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: 'Close' })).toHaveLength(1);
+  changeName('New draft');
+  await click('Save');
+  await ready();
+  expect(create).toHaveBeenCalledOnce();
 });

@@ -1,7 +1,7 @@
 /**
  * Collections API
  */
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 import type { Collection, SetupCollectionRequest } from '../utils/types';
 
 export interface CreateCollectionRequest {
@@ -37,8 +37,8 @@ export interface CollectionStatisticsResponse {
 }
 
 export const collectionsApi = {
-  getAll(): Promise<Collection[]> {
-    return api.get<Collection[]>('/collections');
+  getAll(options?: RequestOptions): Promise<Collection[]> {
+    return api.get<Collection[]>('/collections', options);
   },
 
   getById(id: number): Promise<Collection> {
@@ -73,7 +73,7 @@ export const collectionsApi = {
     return api.delete(`/collections/${id}`);
   },
 
-  getStatistics(id: number): Promise<CollectionStatisticsResponse> {
-    return api.get<CollectionStatisticsResponse>(`/collections/${id}/statistics`);
+  getStatistics(id: number, options?: RequestOptions): Promise<CollectionStatisticsResponse> {
+    return api.get<CollectionStatisticsResponse>(`/collections/${id}/statistics`, options);
   },
 };

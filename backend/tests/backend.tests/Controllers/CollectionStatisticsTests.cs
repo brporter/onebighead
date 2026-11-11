@@ -1,3 +1,4 @@
+using OneBigHead.Server.Services.Collections;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Controllers;
 using OneBigHead.Server.Data;
@@ -33,7 +34,7 @@ public class CollectionStatisticsTests
             _mockItemTemplateRepository.Object,
             _mockSetupService.Object,
             _mockThemeRepository.Object,
-            _mockCollectionStatisticsRepository.Object);
+            _mockCollectionStatisticsRepository.Object, Mock.Of<ICollectionDetails>(), Mock.Of<ICollectionDeletion>());
 
         var claims = new List<Claim>
         {

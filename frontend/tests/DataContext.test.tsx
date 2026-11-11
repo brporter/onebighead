@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act } from '@testing-library/react';
 import { DataProvider } from '../src/contexts/DataContext';
-import { useData } from '../src/contexts/useData';
+import { useData } from './testUtils/useData';
 import type { Item, Category, Collection } from '../src/utils/types';
 import { UserFlag, Visibility } from '../src/utils/types';
 
@@ -34,11 +34,13 @@ describe('DataContext', () => {
   let mockItemIdCounter = 100;
   let mockCategoryIdCounter = 100;
   let mockCollectionIdCounter = 100;
+  let serverItems: Item[];
 
   beforeEach(() => {
     mockItemIdCounter = 100;
     mockCategoryIdCounter = 100;
     mockCollectionIdCounter = 100;
+    serverItems = mockItems.map(item => ({ ...item }));
     vi.spyOn(globalThis, 'fetch').mockImplementation((url, options) => {
       const urlStr = typeof url === 'string' ? url : url.toString();
       const method = options?.method || 'GET';
@@ -118,13 +120,14 @@ describe('DataContext', () => {
         return Promise.resolve({
           ok: true,
           headers: new Headers({ 'ETag': '"test-etag"' }),
-          json: async () => mockItems,
+          json: async () => serverItems,
         } as Response);
       }
 
       if (urlStr === '/api/items' && method === 'POST') {
         const body = JSON.parse(options?.body as string);
         const newItem = { ...body, id: mockItemIdCounter++ };
+        serverItems = [...serverItems, newItem];
         return Promise.resolve({
           ok: true,
           json: async () => newItem,
@@ -133,6 +136,7 @@ describe('DataContext', () => {
 
       if (urlStr.match(/\/api\/items\/\d+/) && method === 'PUT') {
         const body = JSON.parse(options?.body as string);
+        serverItems = serverItems.map(item => item.id === body.id ? body : item);
         return Promise.resolve({
           ok: true,
           json: async () => body,
@@ -140,6 +144,8 @@ describe('DataContext', () => {
       }
 
       if (urlStr.match(/\/api\/items\/\d+/) && method === 'DELETE') {
+        const id = Number(urlStr.split('/').pop());
+        serverItems = serverItems.filter(item => item.id !== id);
         return Promise.resolve({ ok: true, status: 204 } as Response);
       }
 
@@ -425,7 +431,11 @@ describe('DataContext', () => {
       });
 
       expect(itemId).toBe(100);
-      expect(capturedData!.items).toHaveLength(1);
+      expect(capturedData!.itemDetails.get(100)).toEqual({ ...newItem, id: 100 });
+      expect(capturedData!.items).toEqual([]);
+      await act(async () => { await capturedData!.loadItemsForCategory(1); });
+      expect(capturedData!.items).toHaveLength(3);
+      expect(capturedData!.items.find(item => item.id === 100)).toEqual({ ...newItem, id: 100 });
     });
 
     it('should update an item', async () => {

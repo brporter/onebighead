@@ -1,7 +1,7 @@
 /**
  * Workspaces API
  */
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 import { WorkspaceRole, type WorkspaceMembership } from '../utils/types';
 
 export interface CreateWorkspaceRequest {
@@ -38,6 +38,7 @@ export interface UpdateWorkspaceResponse {
 }
 
 export interface SetupWorkspaceRequest {
+  requestId: string;
   workspaceName: string;
   collectionName?: string;
   collectionDescription?: string;
@@ -48,8 +49,8 @@ export interface SetupWorkspaceResponse {
   workspaceId: number;
   workspaceName: string;
   workspaceRole: WorkspaceRole;
-  collectionId: number;
-  collectionName: string;
+  collectionId: number | null;
+  collectionName: string | null;
 }
 
 export interface WorkspaceStats {
@@ -158,8 +159,8 @@ export const workspacesApi = {
   /**
    * Get deletion statistics for a workspace (requires admin)
    */
-  getStats(workspaceId: number): Promise<WorkspaceStats> {
-    return api.get<WorkspaceStats>(`/workspaces/${workspaceId}/stats`);
+  getStats(workspaceId: number, options?: RequestOptions): Promise<WorkspaceStats> {
+    return api.get<WorkspaceStats>(`/workspaces/${workspaceId}/stats`, options);
   },
 
   /**
@@ -179,8 +180,8 @@ export const workspacesApi = {
   /**
    * Get soft-deleted workspaces the current user can restore
    */
-  getRestorableWorkspaces(): Promise<RestorableWorkspace[]> {
-    return api.get<RestorableWorkspace[]>('/users/me/restorable-workspaces');
+  getRestorableWorkspaces(options?: RequestOptions): Promise<RestorableWorkspace[]> {
+    return api.get<RestorableWorkspace[]>('/users/me/restorable-workspaces', options);
   },
 
   /**

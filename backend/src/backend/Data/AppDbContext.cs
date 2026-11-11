@@ -28,6 +28,8 @@ public class AppDbContext : DbContext
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
     public DbSet<SupportReply> SupportReplies => Set<SupportReply>();
     public DbSet<WorkspaceUser> WorkspaceUsers => Set<WorkspaceUser>();
+    public DbSet<WorkspaceInvitation> WorkspaceInvitations => Set<WorkspaceInvitation>();
+    public DbSet<WorkspaceSetupReceipt> WorkspaceSetupReceipts => Set<WorkspaceSetupReceipt>();
     public DbSet<WorkspaceStatistic> WorkspaceStatistics => Set<WorkspaceStatistic>();
     public DbSet<CollectionStatistic> CollectionStatistics => Set<CollectionStatistic>();
     public DbSet<CollectionItemHighlight> CollectionItemHighlights => Set<CollectionItemHighlight>();
@@ -36,10 +38,19 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<WorkspaceSetupReceipt>(entity =>
+        {
+            entity.HasKey(receipt => new { receipt.UserId, receipt.RequestId });
+            entity.HasOne<User>().WithMany().HasForeignKey(receipt => receipt.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Workspace>().WithMany().HasForeignKey(receipt => receipt.WorkspaceId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<Collection>().WithMany().HasForeignKey(receipt => receipt.CollectionId).OnDelete(DeleteBehavior.SetNull);
+        });
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<Workspace>(entity =>
         {
+            entity.HasOne<Collection>().WithMany().HasForeignKey(w => w.WelcomeCollectionId)
+                .OnDelete(DeleteBehavior.SetNull);
             entity.HasKey(w => w.Id);
             entity.HasIndex(w => w.Name);
             entity.HasIndex(w => w.IsDeleted);
@@ -51,6 +62,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(u => u.Id);
+            entity.Property(u => u.AuthenticationStamp).IsConcurrencyToken().HasDefaultValueSql("gen_random_uuid()");
 
             entity.HasIndex(u => u.Email);
             entity.HasIndex(u => new { u.IdentityProvider, u.ProviderSubjectId }).IsUnique();
@@ -76,6 +88,16 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(wu => wu.WorkspaceId);
+        });
+
+        modelBuilder.Entity<WorkspaceInvitation>(entity =>
+        {
+            entity.HasIndex(invitation => new { invitation.WorkspaceId, invitation.Email })
+                .IsUnique().HasFilter("\"AcceptedAt\" IS NULL");
+            entity.HasOne(invitation => invitation.Workspace).WithMany()
+                .HasForeignKey(invitation => invitation.WorkspaceId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<User>().WithMany().HasForeignKey(invitation => invitation.AcceptedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Collection>(entity =>

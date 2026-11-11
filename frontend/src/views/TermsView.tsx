@@ -9,7 +9,7 @@ function TermsView() {
 
   const handleAccepted = async () => {
     // Refresh user data to get updated hasAcceptedTerms
-    await refetch();
+    await refetch({ throwOnError: true });
     // Navigate to collections (or welcome if needed)
     navigate('/collections', { replace: true });
   };

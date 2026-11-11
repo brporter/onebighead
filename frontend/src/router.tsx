@@ -19,8 +19,10 @@ const PublicLayout = lazy(() => import('./components/public/PublicLayout'));
 const PublicCollectionsView = lazy(() => import('./views/PublicCollectionsView'));
 const PublicCollectionDetailView = lazy(() => import('./views/PublicCollectionDetailView'));
 const PublicItemView = lazy(() => import('./views/PublicItemView'));
+const InvitationView = lazy(() => import('./views/InvitationView'));
 
 export const router = createBrowserRouter([
+  { path: '/join/:invitationId', element: <Suspense fallback={<LoadingFallback />}><InvitationView /></Suspense> },
   {
     path: '/',
     element: (

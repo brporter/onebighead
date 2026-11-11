@@ -9,7 +9,7 @@ export function Loading({ message = 'Loading...', size = 'md', inline = false }:
 
   if (inline) {
     return (
-      <span className="loading loading--inline">
+      <span className="loading loading--inline" role="status" aria-live="polite">
         <span className={spinnerClass} aria-hidden="true" />
         {message && <span className="loading__text">{message}</span>}
       </span>

@@ -1,4 +1,5 @@
 using OneBigHead.Server.Controllers;
+using OneBigHead.Server.Services.Templates;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
@@ -20,7 +21,7 @@ public class ItemTemplatesControllerTests
     public ItemTemplatesControllerTests()
     {
         _mockTemplateRepository = new Mock<IItemTemplateRepository>();
-        _controller = new ItemTemplatesController(_mockTemplateRepository.Object);
+        _controller = new ItemTemplatesController(_mockTemplateRepository.Object, new WorkspaceTemplateEditor(_mockTemplateRepository.Object));
 
         var claims = new List<Claim>
         {

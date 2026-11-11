@@ -1,112 +1,43 @@
-using Microsoft.IdentityModel.Validators;
-using System.IdentityModel.Tokens.Jwt;
-using OneBigHead.Server.Models;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Protocols;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+using OneBigHead.Server.Models;
 
 namespace OneBigHead.Server.Authentication;
 
-public class OidcTokenValidator : IOidcTokenValidator
+/// <summary>Validates token callbacks with the same named provider policy used by browser sign-in.</summary>
+public sealed class OidcTokenValidator(IOptions<AuthenticationSettings> settings,
+    IOptionsMonitor<OpenIdConnectOptions> providers, ILogger<OidcTokenValidator> logger) : IOidcTokenValidator
 {
-    private readonly AuthenticationSettings _settings;
-    private readonly ILogger<OidcTokenValidator> _logger;
-    private readonly Dictionary<IdentityProvider, ConfigurationManager<OpenIdConnectConfiguration>> _configManagers;
-
-    public OidcTokenValidator(IOptions<AuthenticationSettings> settings, ILogger<OidcTokenValidator> logger)
-    {
-        _settings = settings.Value;
-        _logger = logger;
-        _configManagers = new Dictionary<IdentityProvider, ConfigurationManager<OpenIdConnectConfiguration>>();
-
-        InitializeConfigurationManagers();
-    }
-
-    private void InitializeConfigurationManagers()
-    {
-        foreach (var provider in new[] { IdentityProvider.Microsoft, IdentityProvider.Google, IdentityProvider.Apple })
-        {
-            var configuration = _settings.Providers.Get(provider);
-            if (!configuration.Enabled) continue;
-            _configManagers[provider] = new ConfigurationManager<OpenIdConnectConfiguration>(
-                $"{configuration.Authority}/.well-known/openid-configuration",
-                new OpenIdConnectConfigurationRetriever(), new HttpDocumentRetriever());
-        }
-    }
-
     public async Task<OidcValidationResult> ValidateTokenAsync(string token, IdentityProvider provider)
     {
-        if (!_configManagers.TryGetValue(provider, out var configManager))
-        {
-            return new OidcValidationResult
-            {
-                IsValid = false,
-                Error = $"Provider {provider} is not configured or enabled"
-            };
-        }
+        if (!Enum.IsDefined(provider) || provider == IdentityProvider.None || !settings.Value.Providers.Get(provider).IsConfigured)
+            return new() { Error = $"Provider {provider} is not configured or enabled" };
 
         try
         {
-            var config = await configManager.GetConfigurationAsync(CancellationToken.None);
-            var providerSettings = _settings.Providers.Get(provider);
+            var options = providers.Get(provider.ToString());
+            var configuration = await options.ConfigurationManager!.GetConfigurationAsync(CancellationToken.None);
+            var parameters = options.TokenValidationParameters.Clone();
+            parameters.ValidIssuers = (parameters.ValidIssuers ?? []).Append(configuration.Issuer);
+            parameters.IssuerSigningKeys = (parameters.IssuerSigningKeys ?? []).Concat(configuration.SigningKeys);
+            // IdentityModel owns cached discovery and signing-key refresh. Static
+            // configurations still work through the explicit issuer/key values above.
+            parameters.ConfigurationManager = options.ConfigurationManager as BaseConfigurationManager;
 
-            var validationParameters = new TokenValidationParameters
+            var result = await options.TokenHandler.ValidateTokenAsync(token, parameters);
+            if (!result.IsValid)
             {
-                ValidateIssuer = true,
-                ValidIssuer = config.Issuer,
-                IssuerValidator = provider == IdentityProvider.Microsoft
-                    ? AadIssuerValidator.GetAadIssuerValidator(providerSettings.Authority).Validate
-                    : null,
-                ValidateAudience = true,
-                ValidAudience = providerSettings.ClientId,
-                ValidateLifetime = true,
-                IssuerSigningKeys = config.SigningKeys,
-                ClockSkew = TimeSpan.FromMinutes(5)
-            };
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
-
-            var email = principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-                        ?? principal.FindFirst("email")?.Value;
-            var subject = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                          ?? principal.FindFirst("sub")?.Value;
-
-            if (string.IsNullOrEmpty(email))
-            {
-                return new OidcValidationResult
-                {
-                    IsValid = false,
-                    Error = "Email claim not found in token"
-                };
+                logger.LogWarning(result.Exception, "Token validation failed for provider {Provider}", provider);
+                return new() { Error = "Token validation failed" };
             }
-
-            return new OidcValidationResult
-            {
-                IsValid = true,
-                Email = email,
-                Subject = subject
-            };
+            return ExternalIdentityClaims.Read(new ClaimsPrincipal(result.ClaimsIdentity));
         }
-        catch (SecurityTokenValidationException ex)
+        catch (Exception exception)
         {
-            _logger.LogWarning(ex, "Token validation failed for provider {Provider}", provider);
-            return new OidcValidationResult
-            {
-                IsValid = false,
-                Error = "Token validation failed: " + ex.Message
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error validating token for provider {Provider}", provider);
-            return new OidcValidationResult
-            {
-                IsValid = false,
-                Error = "An unexpected error occurred during token validation"
-            };
+            logger.LogError(exception, "Unexpected error validating token for provider {Provider}", provider);
+            return new() { Error = "An unexpected error occurred during token validation" };
         }
     }
-
 }

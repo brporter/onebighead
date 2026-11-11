@@ -1,3 +1,4 @@
+using OneBigHead.Server.Services.Collections;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Controllers;
 using OneBigHead.Server.Data;
@@ -19,6 +20,8 @@ public class CollectionsControllerTests
     private readonly Mock<ICollectionSetupService> _mockSetupService = new();
     private readonly Mock<IThemeRepository> _mockThemeRepository;
     private readonly Mock<ICollectionStatisticsRepository> _mockCollectionStatisticsRepository;
+    private readonly Mock<ICollectionDetails> _details = new();
+    private readonly Mock<ICollectionDeletion> _deletion = new();
     private readonly CollectionsController _controller;
     private const int TestWorkspaceId = 1;
     private const int TestUserId = 1;
@@ -33,7 +36,7 @@ public class CollectionsControllerTests
             _mockItemTemplateRepository.Object,
             _mockSetupService.Object,
             _mockThemeRepository.Object,
-            _mockCollectionStatisticsRepository.Object);
+            _mockCollectionStatisticsRepository.Object, _details.Object, _deletion.Object);
 
         var claims = new List<Claim>
         {
@@ -175,140 +178,84 @@ public class CollectionsControllerTests
     }
 
 
-    #region UpdateCollection Tests
-
-    [Fact]
-    public async Task UpdateCollection_ReturnsOkResult_WhenCollectionExists()
+    [Theory]
+    [InlineData(CollectionWriteStatus.NotFound, typeof(NotFoundResult))]
+    [InlineData(CollectionWriteStatus.Forbidden, typeof(ForbidResult))]
+    [InlineData(CollectionWriteStatus.Invalid, typeof(BadRequestObjectResult))]
+    [InlineData(CollectionWriteStatus.Conflict, typeof(ConflictObjectResult))]
+    public async Task Mutations_ForwardActorAndCancellationAndMapRejections(CollectionWriteStatus status, Type responseType)
     {
-        // Arrange
-        var request = new UpdateCollectionRequest
-        {
-            Name = "Updated Collection",
-            Description = "Updated Description"
-        };
-        var existingCollection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Old Name", Slug = "old-name" };
-        var updatedCollection = new Collection
-        {
-            Id = 1,
-            WorkspaceId = TestWorkspaceId,
-            Name = "Updated Collection",
-            Description = "Updated Description",
-            Slug = "updated-collection"
-        };
-
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
-            .ReturnsAsync(existingCollection);
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("updated-collection", TestWorkspaceId))
-            .ReturnsAsync((Collection?)null);
-        _mockCollectionRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Collection>(), TestWorkspaceId))
-            .ReturnsAsync(updatedCollection);
-
-        // Act
-        var result = await _controller.UpdateCollection(1, request);
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedCollection = Assert.IsType<Collection>(okResult.Value);
-        Assert.Equal("Updated Collection", returnedCollection.Name);
+        using var cancellation = new CancellationTokenSource();
+        _controller.HttpContext.RequestAborted = cancellation.Token;
+        var request = new UpdateCollectionRequest { Name = "Updated" };
+        var rejected = new CollectionWriteResult(status, Error: "Review the collection");
+        _details.Setup(service => service.UpdateAsync(TestUserId, TestWorkspaceId, 9, request, cancellation.Token)).ReturnsAsync(rejected);
+        _deletion.Setup(service => service.DeleteAsync(TestUserId, TestWorkspaceId, 9, cancellation.Token)).ReturnsAsync(rejected);
+        var updated = await _controller.UpdateCollection(9, request);
+        var deleted = await _controller.DeleteCollection(9);
+        Assert.IsType(responseType, updated.Result);
+        Assert.IsType(responseType, deleted);
+        if (updated.Result is ObjectResult error) Assert.Equal(rejected.Error, error.Value);
+        _details.VerifyAll();
+        _deletion.VerifyAll();
+        _mockCollectionRepository.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task UpdateCollection_PreservesExistingVisibility()
+    public async Task Mutations_ReturnOnlyCommittedResults()
     {
-        // Arrange
-        var request = new UpdateCollectionRequest
-        {
-            Name = "Updated Collection",
-            Description = "Updated Description"
-        };
-        var existingCollection = new Collection { Id = 1, WorkspaceId = TestWorkspaceId, Name = "Old Name", Slug = "old-name", Visibility = Visibility.Public };
-
-        Collection? capturedCollection = null;
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(1, TestWorkspaceId))
-            .ReturnsAsync(existingCollection);
-        _mockCollectionRepository.Setup(repo => repo.GetBySlugAsync("updated-collection", TestWorkspaceId))
-            .ReturnsAsync((Collection?)null);
-        _mockCollectionRepository.Setup(repo => repo.UpdateAsync(1, It.IsAny<Collection>(), TestWorkspaceId))
-            .Callback<int, Collection, int>((id, c, ws) => capturedCollection = c)
-            .ReturnsAsync((int id, Collection c, int ws) => new Collection { Id = id, WorkspaceId = ws, Name = c.Name, Visibility = c.Visibility });
-
-        // Act
-        await _controller.UpdateCollection(1, request);
-
-        // Assert - Visibility should be preserved from existing collection (Public)
-        Assert.NotNull(capturedCollection);
-        Assert.Equal(Visibility.Public, capturedCollection!.Visibility);
+        var request = new UpdateCollectionRequest { Name = "Updated" };
+        var collection = new Collection { Id = 9, Name = "Updated", Visibility = Visibility.Private };
+        _details.Setup(service => service.UpdateAsync(TestUserId, TestWorkspaceId, 9, request, CancellationToken.None))
+            .ReturnsAsync(new CollectionWriteResult(CollectionWriteStatus.Success, collection));
+        _deletion.Setup(service => service.DeleteAsync(TestUserId, TestWorkspaceId, 9, CancellationToken.None))
+            .ReturnsAsync(new CollectionWriteResult(CollectionWriteStatus.Success));
+        Assert.Same(collection, Assert.IsType<OkObjectResult>((await _controller.UpdateCollection(9, request)).Result).Value);
+        Assert.IsType<NoContentResult>(await _controller.DeleteCollection(9));
     }
 
     [Fact]
-    public async Task UpdateCollection_ReturnsNotFound_WhenCollectionDoesNotExist()
+    public async Task Mutations_RejectUnknownServiceOutcomes()
     {
-        // Arrange
-        var request = new UpdateCollectionRequest { Name = "Updated Collection" };
-        _mockCollectionRepository.Setup(repo => repo.GetByIdAsync(999, TestWorkspaceId))
-            .ReturnsAsync((Collection?)null);
-
-        // Act
-        var result = await _controller.UpdateCollection(999, request);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result.Result);
+        _deletion.Setup(service => service.DeleteAsync(TestUserId, TestWorkspaceId, 9, CancellationToken.None))
+            .ReturnsAsync(new CollectionWriteResult((CollectionWriteStatus)999));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => _controller.DeleteCollection(9));
     }
-
-    #endregion
-
-    #region DeleteCollection Tests
-
-    [Fact]
-    public async Task DeleteCollection_ReturnsNoContent_WhenCollectionExists()
-    {
-        // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetCountAsync(TestWorkspaceId))
-            .ReturnsAsync(2);
-        _mockCollectionRepository.Setup(repo => repo.DeleteAsync(1, TestWorkspaceId))
-            .ReturnsAsync(true);
-
-        // Act
-        var result = await _controller.DeleteCollection(1);
-
-        // Assert
-        Assert.IsType<NoContentResult>(result);
-    }
-
-    [Fact]
-    public async Task DeleteCollection_ReturnsNotFound_WhenCollectionDoesNotExist()
-    {
-        // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetCountAsync(TestWorkspaceId))
-            .ReturnsAsync(2);
-        _mockCollectionRepository.Setup(repo => repo.DeleteAsync(999, TestWorkspaceId))
-            .ReturnsAsync(false);
-
-        // Act
-        var result = await _controller.DeleteCollection(999);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-    }
-
-    [Fact]
-    public async Task DeleteCollection_ReturnsBadRequest_WhenDeletingLastCollection()
-    {
-        // Arrange
-        _mockCollectionRepository.Setup(repo => repo.GetCountAsync(TestWorkspaceId))
-            .ReturnsAsync(1);
-
-        // Act
-        var result = await _controller.DeleteCollection(1);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Contains("Cannot delete the last collection", badRequestResult.Value?.ToString());
-    }
-
-    #endregion
 
     #region SetupCollection Tests
+
+    [Fact]
+    public async Task TemplateOperations_RejectMissingOrForeignCollectionsBeforeAccessingTemplates()
+    {
+        Assert.IsType<NotFoundResult>((await _controller.GetCollectionTemplates(999)).Result);
+        Assert.IsType<NotFoundObjectResult>(await _controller.AssociateTemplate(999, 7));
+        Assert.IsType<NotFoundObjectResult>(await _controller.DisassociateTemplate(999, 7));
+        _mockItemTemplateRepository.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task TemplateMutations_RejectUnavailableTemplatesAndMissingAssociations()
+    {
+        _mockCollectionRepository.Setup(repository => repository.GetByIdAsync(1, TestWorkspaceId))
+            .ReturnsAsync(new Collection { Id = 1, WorkspaceId = TestWorkspaceId });
+        Assert.IsType<NotFoundObjectResult>(await _controller.AssociateTemplate(1, 7));
+        Assert.IsType<NotFoundObjectResult>(await _controller.DisassociateTemplate(1, 7));
+        _mockItemTemplateRepository.Verify(repository => repository.GetByIdAsync(7, TestWorkspaceId), Times.Once);
+        _mockItemTemplateRepository.Verify(repository => repository.DisassociateFromCollectionAsync(7, 1), Times.Once);
+        _mockItemTemplateRepository.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task SetupCollection_ReturnsThemeValidationError()
+    {
+        var theme = new CollectionTheme { Id = 1 };
+        _mockThemeRepository.Setup(repository => repository.GetByIdAsync(1)).ReturnsAsync(theme);
+        _mockSetupService.Setup(service => service.CreateAsync(It.IsAny<Collection>(), theme))
+            .ThrowsAsync(new InvalidCollectionThemeException("The selected theme contains circular category relationships."));
+        var result = await _controller.SetupCollection(new SetupCollectionRequest { Name = "Books", ThemeId = 1 });
+        var response = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Contains("circular category relationships", response.Value!.ToString());
+    }
 
     [Fact]
     public async Task SetupCollection_ReturnsBadRequest_WhenThemeNotFound()

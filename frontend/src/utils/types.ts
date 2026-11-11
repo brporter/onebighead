@@ -107,11 +107,11 @@ export interface CurrentUser {
   userId: number;
   email: string;
   // Active workspace info (new structure)
-  activeWorkspace: WorkspaceMembership;
+  activeWorkspace: WorkspaceMembership | null;
   // All workspace memberships
   workspaces: WorkspaceMembership[];
   // Legacy fields for backwards compatibility
-  workspaceId: number;
+  workspaceId: number | null;
   workspaceName: string;
   hasCompletedWelcome: boolean;
   hasAcceptedTerms: boolean;
@@ -133,7 +133,7 @@ export interface WorkspaceSummary {
 export interface UserSummary {
   userId: number;
   email: string;
-  workspaceId: number;
+  workspaceId: number | null;
   workspaceName: string;
   identityProvider: string;
   isSystemAdministrator: boolean;
@@ -300,6 +300,8 @@ export interface UnpublishWillHideChildrenResolution {
   kind: 'unpublish-will-hide-children';
   entityType: string;
   entityId: number;
+  affectedPublicItems: number;
+  affectedPublicCategories: number;
 }
 
 export interface ExecuteRequest {

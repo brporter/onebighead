@@ -6,13 +6,15 @@ import type { Category } from '../src/utils/types';
 import { Visibility } from '../src/utils/types';
 
 // Mock useData
-vi.mock('../src/contexts/useData', () => ({
+vi.mock('../src/contexts/useData', async () => {
+  const { mockDataHooks } = await import('./testUtils/mockDataHooks');
+  return mockDataHooks({
   useData: () => ({
+    fetchItemTemplates: vi.fn(async () => []),
     loadCollectionTemplates: vi.fn(async () => []),
-    loadItemTemplates: vi.fn(async () => []),
-    itemTemplates: [],
   }),
-}));
+});
+});
 
 // Mock CategoryTemplateSelector
 vi.mock('../src/components/category/CategoryTemplateSelector', () => ({
@@ -61,6 +63,29 @@ describe('CategoryManagerForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('supports omitted initial names and returning a nested category to root', async () => {
+    const { rerender } = render(<CategoryManagerForm {...defaultProps} isNew initialName={undefined} />);
+    expect(screen.getByLabelText(/Name/)).toHaveValue('');
+    const nested = makeCategory({ categoryId: 3, parentCategoryId: 1 });
+    rerender(<CategoryManagerForm {...defaultProps} category={nested} />);
+    await userEvent.selectOptions(screen.getByLabelText('Parent Category'), '');
+    fireEvent.submit(screen.getByRole('form', { name: 'Category details' }));
+    expect(defaultProps.onSave).toHaveBeenCalledWith(expect.objectContaining({ parentCategoryId: null }));
+  });
+
+  it('keeps the captured dirty baseline while server data refreshes and associates labels uniquely', () => {
+    const original = makeCategory();
+    const dirty = vi.fn();
+    const { rerender } = render(<CategoryManagerForm {...defaultProps} category={original} onHasChanges={dirty} />);
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Draft' } });
+    rerender(<CategoryManagerForm {...defaultProps} category={{ ...original, name: 'Draft' }} onHasChanges={dirty} />);
+    expect(dirty).toHaveBeenLastCalledWith(true);
+    render(<CategoryManagerForm {...defaultProps} category={makeCategory({ categoryId: 99, isSystem: true })} />);
+    const names = screen.getAllByLabelText(/Name/);
+    expect(names[0].id).not.toBe(names[1].id);
+    expect(names[1]).toBeDisabled();
   });
 
   describe('empty state', () => {

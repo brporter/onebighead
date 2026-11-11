@@ -1,4 +1,4 @@
-import { ApiError } from '../api';
+import { ApiError } from '../api/transport';
 
 /**
  * Extract a user-friendly error message from an error, preserving status code for API errors.

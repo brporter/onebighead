@@ -345,6 +345,10 @@
   text-align: center;
 }
 
+.landing__reference {
+  overflow-wrap: anywhere;
+}
+
 .landing__form-subtitle {
   color: var(--color-text-muted);
   text-align: center;

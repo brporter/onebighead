@@ -1,0 +1,41 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { api } from '../../src/api/client';
+import { collectionsApi } from '../../src/api/collections';
+import { createMockCollection } from '../testUtils/factories';
+
+afterEach(() => vi.restoreAllMocks());
+it('loads collection summaries, identities, slugs and statistics through the shared transport', async () => {
+  const collection = createMockCollection();
+  const get = vi.spyOn(api, 'get').mockResolvedValue(collection);
+  const options = { signal: new AbortController().signal };
+  await collectionsApi.getAll(options);
+  expect(get).toHaveBeenLastCalledWith('/collections', options);
+  await collectionsApi.getAll();
+  expect(get).toHaveBeenLastCalledWith('/collections', undefined);
+  expect(await collectionsApi.getById(1)).toBe(collection);
+  expect(get).toHaveBeenLastCalledWith('/collections/1');
+  expect(await collectionsApi.getBySlug('books')).toBe(collection);
+  expect(get).toHaveBeenLastCalledWith('/collections/slug/books');
+  const statistics = { itemCount: 4, imageCount: 2, totalImageSizeBytes: 1000, topViewedItems: [], recentlyAddedItems: [] };
+  get.mockResolvedValue(statistics);
+  expect(await collectionsApi.getStatistics(1)).toBe(statistics);
+  expect(get).toHaveBeenLastCalledWith('/collections/1/statistics', undefined);
+  expect(await collectionsApi.getStatistics(1, options)).toBe(statistics);
+  expect(get).toHaveBeenLastCalledWith('/collections/1/statistics', options);
+});
+it('forwards collection creation, theme setup, updates and deletion', async () => {
+  const collection = createMockCollection();
+  const post = vi.spyOn(api, 'post').mockResolvedValue(collection);
+  const create = { name: 'Books', description: 'Library', heroImageUrl: '/image' };
+  expect(await collectionsApi.create(create)).toBe(collection);
+  expect(post).toHaveBeenLastCalledWith('/collections', create);
+  const setup = { name: 'Records', themeId: 2 };
+  expect(await collectionsApi.setup(setup)).toBe(collection);
+  expect(post).toHaveBeenLastCalledWith('/collections/setup', setup);
+  const put = vi.spyOn(api, 'put').mockResolvedValue(collection);
+  expect(await collectionsApi.update(1, create)).toBe(collection);
+  expect(put).toHaveBeenCalledWith('/collections/1', create);
+  const remove = vi.spyOn(api, 'delete').mockResolvedValue(undefined);
+  await collectionsApi.delete(1);
+  expect(remove).toHaveBeenCalledWith('/collections/1');
+});

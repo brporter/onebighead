@@ -1,4 +1,7 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Npgsql;
 using OneBigHead.Server.Services.Seeding;
 
@@ -29,6 +32,50 @@ public class JsonDatabaseSeederTests : IDisposable
 
     private void WriteSeedFile(string fileName, string json)
         => File.WriteAllText(Path.Combine(_tempDir, fileName), json);
+
+    [Theory]
+    [InlineData("null", 0)]
+    [InlineData("{\"tables\":null}", 0)]
+    [InlineData("{\"tables\":[]}", 0)]
+    [InlineData("{\"tables\":[{\"name\":\"Empty\",\"rows\":null}]}", 1)]
+    [InlineData("{\"tables\":[{\"name\":\"Empty\",\"rows\":[]}]}", 1)]
+    public async Task SeedAsync_SkipsEmptyJsonInputsWithoutAccessingTheDatabase(string json, int tableCount)
+    {
+        WriteSeedFile("01-empty.json", json);
+        using var connection = new NpgsqlConnection();
+        var result = await new JsonDatabaseSeeder(_tempDir, NullLogger<JsonDatabaseSeeder>.Instance)
+            .SeedAsync(connection, dryRun: true);
+        Assert.Equal(tableCount, result.Count);
+        Assert.All(result, table => Assert.Equal((0, 0, 0), (table.InsertedCount, table.UpdatedCount, table.SkippedCount)));
+        Assert.Equal(System.Data.ConnectionState.Closed, connection.State);
+    }
+
+    [Fact]
+    public async Task SeedAsync_ReportsMissingAndEmptyDirectoriesToTheProvidedLogger()
+    {
+        var logger = new Mock<ILogger<JsonDatabaseSeeder>>();
+        using var connection = new NpgsqlConnection();
+        Assert.Empty(await new JsonDatabaseSeeder(Path.Combine(_tempDir, "missing"), logger.Object).SeedAsync(connection, dryRun: true));
+        Assert.Empty(await new JsonDatabaseSeeder(_tempDir, logger.Object).SeedAsync(connection, dryRun: true));
+        logger.Verify(log => log.Log(LogLevel.Warning, It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Seeds directory not found")),
+            null, It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+        logger.Verify(log => log.Log(LogLevel.Information, It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("No seed files found")),
+            null, It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SeedAsync_LogsRowOutcomesForANonemptyTable()
+    {
+        WriteSeedFile("01-data.json", """{"tables":[{"name":"Templates","rows":[{"Name":"Book"}]}]}""");
+        var logger = new Mock<ILogger<JsonDatabaseSeeder>>();
+        using var connection = new NpgsqlConnection();
+        Assert.Equal(1, Assert.Single(await new JsonDatabaseSeeder(_tempDir, logger.Object).SeedAsync(connection, dryRun: true)).InsertedCount);
+        logger.Verify(log => log.Log(LogLevel.Information, It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Table Templates: Inserted 1, updated 0, skipped 0")),
+            null, It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+    }
 
     [Fact]
     public void GetSeedFiles_ReturnsEmpty_WhenDirectoryDoesNotExist()

@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/useData';
+import { useCollectionsData } from '../contexts/useData';
 import CollectionList from '../components/collection/CollectionList';
-import { Loading } from '../components/common';
+import { ContentState } from '../components/common';
 
 function CollectionView() {
   const navigate = useNavigate();
@@ -11,10 +11,10 @@ function CollectionView() {
     collectionsLoading,
     collectionsError,
     loadCollections,
-  } = useData();
+  } = useCollectionsData();
 
   useEffect(() => {
-    loadCollections();
+    void loadCollections();
   }, [loadCollections]);
 
   useEffect(() => {
@@ -36,20 +36,16 @@ function CollectionView() {
   }, [collections, collectionsLoading, collectionsError, navigate]);
 
   if (collectionsLoading) {
-    return <Loading message="Loading collections..." />;
+    return <ContentState kind="loading" title="Loading collections..." />;
   }
 
   if (collectionsError) {
-    return (
-      <div className="app__error">
-        <p>Error loading collections: {collectionsError}</p>
-        <button onClick={() => loadCollections()}>Retry</button>
-      </div>
-    );
+    return <ContentState kind="error" title="Unable to load collections"
+      action={<button type="button" onClick={() => void loadCollections()}>Try again</button>}>{collectionsError}</ContentState>;
   }
 
   if (collections.length === 0) {
-    return <Loading message="Redirecting to setup..." />;
+    return <ContentState kind="loading" title="Redirecting to setup..." />;
   }
 
   return (

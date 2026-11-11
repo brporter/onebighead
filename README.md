@@ -36,6 +36,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup instructions.
 
 ## Documentation
 
+- [Architecture](docs/ARCHITECTURE.md) - Module boundaries, data flow, design system, and testing
 - [Development Setup](docs/DEVELOPMENT.md) - Local development environment and workflow
 - [Local Hosting](docs/LOCAL-HOSTING.md) - Run the full application in containers with `docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build`
 - [Deployment Guide](docs/DEPLOYMENT.md) - Production VM deployment and CI/CD pipeline

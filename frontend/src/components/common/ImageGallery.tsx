@@ -1,8 +1,10 @@
 import { useId, useMemo, useState } from 'react';
-import type { ItemImage } from '../../utils/types';
+import '../../styles/components/ImageGallery.css';
+
+interface GalleryImage { url: string; alt?: string | null }
 
 interface ImageGalleryProps {
-  images?: (string | ItemImage)[];
+  images?: (string | GalleryImage)[];
   title?: string;
 }
 
@@ -11,7 +13,7 @@ interface NormalizedImage {
   alt: string;
 }
 
-function normalizeImages(images: (string | ItemImage)[] | undefined): NormalizedImage[] {
+function normalizeImages(images: (string | GalleryImage)[] | undefined): NormalizedImage[] {
   return (images ?? [])
     .filter(Boolean)
     .map((img): NormalizedImage => {

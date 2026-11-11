@@ -122,7 +122,7 @@ public class DtoValidationTests
         // Assert
         Assert.Equal(0, response.UserId);
         Assert.Equal(string.Empty, response.Email);
-        Assert.Equal(0, response.WorkspaceId);
+        Assert.Null(response.WorkspaceId);
         Assert.Equal(string.Empty, response.WorkspaceName);
         Assert.Equal(string.Empty, response.IdentityProvider);
         Assert.False(response.IsSystemAdministrator);

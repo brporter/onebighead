@@ -4,13 +4,10 @@ public class BulkUpdateJob
 {
     public Guid JobId { get; set; } = Guid.NewGuid();
     public int WorkspaceId { get; set; }
-    public BulkUpdateScope Scope { get; set; }
-    public Guid? TemplateKey { get; set; }
-    public int? CategoryId { get; set; }
-    public int? CollectionId { get; set; }
+    public int RequestedByUserId { get; init; }
+    public BulkUpdateTarget Target { get; init; } = null!;
     public PropertyDiff Diff { get; set; } = null!;
     public List<PropertyIdentifier> NewPropertyOrder { get; set; } = new();
-    public int? ExcludeItemId { get; set; }
     public BulkUpdateJobStatus Status { get; set; } = BulkUpdateJobStatus.Queued;
     public int TotalItems { get; set; }
     public int ProcessedItems { get; set; }

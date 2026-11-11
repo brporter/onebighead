@@ -24,11 +24,8 @@ public class TokenRevocationRepository : ITokenRevocationRepository
     public async Task UpsertAsync(int userId, DateTime revokedAtUtc)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        await context.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO "TokenRevocations" ("UserId", "RevokedAtUtc")
-            VALUES ({userId}, {revokedAtUtc})
-            ON CONFLICT ("UserId") DO UPDATE
-            SET "RevokedAtUtc" = GREATEST("TokenRevocations"."RevokedAtUtc", EXCLUDED."RevokedAtUtc")
-            """);
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await TokenRevocationWrite.UpsertAsync(context, userId, revokedAtUtc);
+        await transaction.CommitAsync();
     }
 }

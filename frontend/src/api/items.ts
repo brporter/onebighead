@@ -1,7 +1,7 @@
 /**
  * Items API
  */
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 import type { Item } from '../utils/types';
 
 export interface GetItemsOptions {
@@ -17,7 +17,7 @@ export interface GetItemsResult {
 }
 
 export const itemsApi = {
-  async getAll(options: GetItemsOptions = {}): Promise<GetItemsResult> {
+  async getAll(options: GetItemsOptions = {}, requestOptions?: RequestOptions): Promise<GetItemsResult> {
     const params = new URLSearchParams();
     if (options.categoryId !== undefined) {
       params.set('categoryId', options.categoryId.toString());
@@ -34,7 +34,7 @@ export const itemsApi = {
       headers['If-None-Match'] = options.etag;
     }
 
-    const response = await api.get<Response>(endpoint, { headers, skipJsonParse: true });
+    const response = await api.get<Response>(endpoint, { ...requestOptions, headers, skipJsonParse: true });
     
     // Handle 304 Not Modified - ApiClient returns undefined for 304
     if (!response) {
@@ -46,8 +46,8 @@ export const itemsApi = {
     return { items, etag, notModified: false };
   },
 
-  getById(id: number): Promise<Item> {
-    return api.get<Item>(`/items/${id}`);
+  getById(id: number, options?: RequestOptions): Promise<Item> {
+    return api.get<Item>(`/items/${id}`, options);
   },
 
   create(item: Item): Promise<Item> {

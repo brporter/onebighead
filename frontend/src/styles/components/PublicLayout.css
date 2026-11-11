@@ -17,11 +17,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
+  min-height: 72px;
+  gap: var(--space-md);
+  padding-block: var(--space-md);
+  flex-wrap: wrap;
 }
 
 .publicLayout__brand {
-  font-size: 1.25rem;
+  font-family: 'Fraunces', serif;
+  font-size: 1.5rem;
+  overflow-wrap: anywhere;
+  min-width: 0;
   font-weight: 600;
   color: var(--color-text);
   text-decoration: none;
@@ -47,7 +53,7 @@
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
-  padding: var(--space-xl);
+  padding: clamp(1rem, 4vw, 2rem);
 }
 
 .publicLayout__footer {
@@ -67,17 +73,7 @@
   font-size: 0.75rem;
 }
 
-.publicLayout__loading,
-.publicLayout__error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 50vh;
-  color: var(--color-text-muted);
-}
-
-.publicLayout__error h1 {
-  margin: 0 0 var(--space-sm);
-  color: var(--color-text);
+.publicLayout a:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 4px; }
+@media (max-width: 600px) {
+  .publicLayout__header, .publicLayout__footer { padding-inline: var(--space-md); }
 }

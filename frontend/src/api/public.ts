@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 
 export interface PublicWorkspace {
   name: string;
@@ -58,24 +58,24 @@ export interface PublicItem {
 }
 
 export const publicApi = {
-  getWorkspace(slug: string): Promise<PublicWorkspace> {
-    return api.get<PublicWorkspace>(`/public/${slug}`);
+  getWorkspace(slug: string, options?: RequestOptions): Promise<PublicWorkspace> {
+    return api.get<PublicWorkspace>(`/public/${slug}`, options);
   },
 
-  getCollections(slug: string): Promise<PublicCollection[]> {
-    return api.get<PublicCollection[]>(`/public/${slug}/collections`);
+  getCollections(slug: string, options?: RequestOptions): Promise<PublicCollection[]> {
+    return api.get<PublicCollection[]>(`/public/${slug}/collections`, options);
   },
 
-  getCollection(slug: string, collectionId: number): Promise<PublicCollectionDetail> {
-    return api.get<PublicCollectionDetail>(`/public/${slug}/collections/${collectionId}`);
+  getCollection(slug: string, collectionId: number, options?: RequestOptions): Promise<PublicCollectionDetail> {
+    return api.get<PublicCollectionDetail>(`/public/${slug}/collections/${collectionId}`, options);
   },
 
-  getItems(slug: string, collectionId: number, categoryId?: number): Promise<PublicItemSummary[]> {
+  getItems(slug: string, collectionId: number, categoryId?: number, options?: RequestOptions): Promise<PublicItemSummary[]> {
     const params = categoryId ? `?categoryId=${categoryId}` : '';
-    return api.get<PublicItemSummary[]>(`/public/${slug}/collections/${collectionId}/items${params}`);
+    return api.get<PublicItemSummary[]>(`/public/${slug}/collections/${collectionId}/items${params}`, options);
   },
 
-  getItem(slug: string, itemId: number): Promise<PublicItem> {
-    return api.get<PublicItem>(`/public/${slug}/items/${itemId}`);
+  getItem(slug: string, itemId: number, options?: RequestOptions): Promise<PublicItem> {
+    return api.get<PublicItem>(`/public/${slug}/items/${itemId}`, options);
   },
 };

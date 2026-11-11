@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { DataContextValue } from '../../src/contexts/DataContext';
+import type { DataContextValue } from './dataTypes';
 /**
  * Test factories for creating properly typed mock objects.
  * Use these to ensure all required properties are present in test mocks.
@@ -97,7 +97,7 @@ export function createMockWorkspaceMembership(overrides: Partial<WorkspaceMember
  * Creates a mock CurrentUser with all required properties.
  */
 export function createMockCurrentUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
-  const activeWorkspace = createMockWorkspaceMembership(overrides.activeWorkspace);
+  const activeWorkspace = createMockWorkspaceMembership(overrides.activeWorkspace ?? undefined);
   return {
     userId: 1,
     email: 'test@example.com',
@@ -252,6 +252,7 @@ export function createMockDataContextValue(overrides: Partial<DataContextValue> 
     getCategoryTemplates: vi.fn(),
     reorderCategories: vi.fn(),
     items: [],
+    itemDetails: new Map(),
     itemsLoading: false,
     itemsError: null,
     loadItemsForCategory: vi.fn(),
@@ -266,10 +267,7 @@ export function createMockDataContextValue(overrides: Partial<DataContextValue> 
     syncPropertySuggestions: vi.fn(),
     addLocalCategorySuggestion: vi.fn(),
     addLocalNameSuggestion: vi.fn(),
-    itemTemplates: [],
-    itemTemplatesLoading: false,
-    itemTemplatesError: null,
-    loadItemTemplates: vi.fn(),
+    fetchItemTemplates: vi.fn(async () => []),
     loadCollectionTemplates: vi.fn(),
     createItemTemplate: vi.fn(),
     updateItemTemplate: vi.fn(),
@@ -277,6 +275,7 @@ export function createMockDataContextValue(overrides: Partial<DataContextValue> 
     associateTemplateWithCollection: vi.fn(),
     disassociateTemplateFromCollection: vi.fn(),
     invalidateItemCache: vi.fn(),
+    refreshLoadedItems: vi.fn(),
     ...overrides,
   };
 }

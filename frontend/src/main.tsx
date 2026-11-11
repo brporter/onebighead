@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import './styles/index.css';
 import { router } from './router';
-import { DataProvider } from './contexts/DataContext';
+import { WorkspaceSession } from './contexts/WorkspaceSession';
 import { UserProvider } from './contexts/UserContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { PublishProvider } from './contexts/PublishContext';
@@ -13,7 +13,7 @@ import { PublishApp } from './components/common/PublishApp';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <UserProvider>
-      <DataProvider>
+      <WorkspaceSession navigate={router.navigate}>
         <ToastProvider>
           <PublishProvider>
             <RouterProvider router={router} />
@@ -21,7 +21,7 @@ createRoot(document.getElementById('root')!).render(
             <ToastContainer />
           </PublishProvider>
         </ToastProvider>
-      </DataProvider>
+      </WorkspaceSession>
     </UserProvider>
   </StrictMode>,
 );

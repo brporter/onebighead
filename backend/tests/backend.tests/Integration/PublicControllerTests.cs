@@ -1,13 +1,15 @@
 using System.Net;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
-using Microsoft.Extensions.DependencyInjection;
+using System.Net.Http.Json;
+using OneBigHead.Server.Tests.Integration.Postgres;
 using OneBigHead.Server.Data;
 
 namespace OneBigHead.Server.Tests.Integration;
 
-[Trait("Category", "Integration")]
-public class PublicControllerTests : IntegrationTestBase
+[Collection(PostgresIntegrationCollection.Name)]
+[Trait("Category", "PostgresIntegration")]
+public class PublicControllerTests(PostgresIntegrationFixture fixture) : IAsyncLifetime
 {
     // Test workspace IDs (high to avoid conflicts with default seeded data)
     private const int PublicWorkspaceId = 100;
@@ -29,19 +31,15 @@ public class PublicControllerTests : IntegrationTestBase
     private const int PrivateItemId = 101;
     private const int PublicItemInPrivateCategoryId = 102;
 
-    public PublicControllerTests(CustomWebApplicationFactory factory)
-        : base(factory)
-    {
-    }
+    private readonly MembershipWebApplicationFactory _app = new(fixture.ConnectionString);
+    private HttpClient CreateAnonymousClient() => _app.CreateClient();
+    private static Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response) => response.Content.ReadFromJsonAsync<T>();
+    public Task DisposeAsync() => _app.DisposeAsync().AsTask();
 
-    protected override Task SeedAdditionalDataAsync()
+    public async Task InitializeAsync()
     {
-        using var scope = Factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        // Skip if already seeded
-        if (context.Workspaces.Any(w => w.Id == PublicWorkspaceId))
-            return Task.CompletedTask;
+        await fixture.ResetAsync();
+        await using var context = fixture.CreateContext();
 
         // Workspace with public access (has a slug)
         context.Workspaces.Add(new Workspace
@@ -161,8 +159,7 @@ public class PublicControllerTests : IntegrationTestBase
             Visibility = Visibility.Public
         });
 
-        context.SaveChanges();
-        return Task.CompletedTask;
+        await context.SaveChangesAsync();
     }
 
     #region GET /api/public/{slug} - GetWorkspace

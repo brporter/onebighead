@@ -83,7 +83,7 @@ public class ItemRepository : IItemRepository
         existingItem.CategoryId = item.CategoryId;
         existingItem.Properties = item.Properties;
         existingItem.Images = item.Images;
-        existingItem.Visibility = item.Visibility;
+        // Publication owns visibility. A stale edit or bulk update must not undo it.
         existingItem.UserFlag = item.UserFlag;
 
         await context.SaveChangesAsync();
@@ -119,46 +119,6 @@ public class ItemRepository : IItemRepository
         }
 
         return true;
-    }
-
-    public async Task<IEnumerable<Item>> GetByTemplateKeyAsync(Guid templateKey, int workspaceId)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Items
-            .Where(i => i.WorkspaceId == workspaceId && i.TemplateKey == templateKey)
-            .ToListAsync();
-    }
-
-    public async Task<int> CountByTemplateKeyAsync(Guid templateKey, int workspaceId)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Items
-            .AsNoTracking()
-            .CountAsync(i => i.WorkspaceId == workspaceId && i.TemplateKey == templateKey);
-    }
-
-    public async Task<IEnumerable<Item>> GetByCollectionIdAsync(int collectionId, int workspaceId)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Items
-            .Where(i => i.WorkspaceId == workspaceId && i.CollectionId == collectionId)
-            .ToListAsync();
-    }
-
-    public async Task<int> CountByCollectionIdAsync(int collectionId, int workspaceId)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Items
-            .AsNoTracking()
-            .CountAsync(i => i.WorkspaceId == workspaceId && i.CollectionId == collectionId);
-    }
-
-    public async Task<int> CountByCategoryIdAsync(int categoryId, int workspaceId)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Items
-            .AsNoTracking()
-            .CountAsync(i => i.WorkspaceId == workspaceId && i.CategoryId == categoryId);
     }
 
     private async Task AdjustCollectionImageStatsAsync(AppDbContext context, int collectionId, List<ItemImage> newImages, List<ItemImage> oldImages)

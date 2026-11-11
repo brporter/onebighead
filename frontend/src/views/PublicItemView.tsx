@@ -1,18 +1,20 @@
-import { useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { publicApi } from '../api';
 import { useAsyncData } from '../utils/useAsyncData';
+import { ContentState } from '../components/common/ContentState';
+import PropertyRender from '../components/item/PropertyRender';
+import ImageGallery from '../components/common/ImageGallery';
+import { parseRouteId } from '../utils/routeIds';
 import '../styles/components/PublicItem.css';
 
 function PublicItemView() {
   const { slug, itemId } = useParams<{ slug: string; itemId: string }>();
-  const navigate = useNavigate();
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const itemIdNum = itemId ? parseInt(itemId, 10) : null;
+  const itemIdNum = parseRouteId(itemId);
 
   const fetchItem = useCallback(
-    () => publicApi.getItem(slug!, itemIdNum!),
+    (signal: AbortSignal) => publicApi.getItem(slug!, itemIdNum!, { signal }),
     [slug, itemIdNum],
   );
   const { data: item, loading, error } = useAsyncData(
@@ -20,48 +22,22 @@ function PublicItemView() {
   );
 
   if (loading) {
-    return <div className="publicItem__loading">Loading item...</div>;
+    return <ContentState kind="loading" title="Loading item…" />;
   }
 
   if (error || !item) {
-    return <div className="publicItem__error">{error || 'Item not found'}</div>;
+    return <ContentState kind="error" title="Item unavailable">{error || 'Item not found'}</ContentState>;
   }
-
-  const propertyGroups = item.properties.reduce<Record<string, { name: string; value: string }[]>>((acc, prop) => {
-    const key = prop.category || 'Details';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push({ name: prop.name, value: prop.value });
-    return acc;
-  }, {});
 
   return (
     <div className="publicItem">
-      <button className="publicItem__back" onClick={() => navigate(-1)}>
-        &larr; Back
-      </button>
+      <Link className="publicItem__back" to={`/public/${slug}`}>
+        &larr; All Collections
+      </Link>
       <div className="publicItem__layout">
         {item.images.length > 0 && (
           <div className="publicItem__gallery">
-            <div className="publicItem__mainImage">
-              <img
-                src={item.images[selectedImageIndex]?.url}
-                alt={item.images[selectedImageIndex]?.alt || item.name}
-                className="publicItem__image"
-              />
-            </div>
-            {item.images.length > 1 && (
-              <div className="publicItem__thumbnails">
-                {item.images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    className={`publicItem__thumbnail ${idx === selectedImageIndex ? 'publicItem__thumbnail--active' : ''}`}
-                    onClick={() => setSelectedImageIndex(idx)}
-                  >
-                    <img src={img.url} alt={img.alt || `Image ${idx + 1}`} />
-                  </button>
-                ))}
-              </div>
-            )}
+            <ImageGallery key={item.id} images={item.images} title={item.name} />
           </div>
         )}
         <div className="publicItem__info">
@@ -69,19 +45,7 @@ function PublicItemView() {
           {item.categoryName && <div className="publicItem__category">{item.categoryName}</div>}
           {item.summary && <p className="publicItem__summary">{item.summary}</p>}
           {item.description && <div className="publicItem__description">{item.description}</div>}
-          {Object.entries(propertyGroups).map(([category, props]) => (
-            <div key={category} className="publicItem__propertyGroup">
-              <h2 className="publicItem__propertyGroupTitle">{category}</h2>
-              <dl className="publicItem__properties">
-                {props.map((prop, idx) => (
-                  <div key={idx} className="publicItem__property">
-                    <dt className="publicItem__propertyName">{prop.name}</dt>
-                    <dd className="publicItem__propertyValue">{prop.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          ))}
+          <PropertyRender properties={item.properties} heading="h2" />
         </div>
       </div>
     </div>

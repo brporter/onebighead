@@ -10,9 +10,13 @@
 
     <!-- Coverage configuration -->
     <CollectCoverage>true</CollectCoverage>
-    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <CoverletOutputFormat>cobertura,json</CoverletOutputFormat>
     <CoverletOutput>./TestResults/</CoverletOutput>
-    <Exclude>[backend]Program,[backend]OneBigHead.Server.Migrations.*,[backend]OneBigHead.Server.Pages.*,[backend]OneBigHead.Server.Authentication.CookieJwtAuthentication*,[backend]OneBigHead.Server.Authentication.OidcTokenValidator,[backend]*OpenApi*,[backend]*Regex*</Exclude>
+    <Threshold>100</Threshold>
+    <ThresholdType>line,branch,method</ThresholdType>
+    <ThresholdStat>minimum</ThresholdStat>
+    <!-- Only EF-generated migrations are excluded; handwritten startup, auth and pages are measured. -->
+    <Exclude>[backend]OneBigHead.Server.Migrations.*</Exclude>
     <ExcludeByAttribute>GeneratedCodeAttribute</ExcludeByAttribute>
   </PropertyGroup>
 
@@ -26,6 +30,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Moq" Version="4.20.72" />
@@ -43,6 +48,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\backend\backend.csproj" />
+    <ProjectReference Include="..\..\src\backend.generators\backend.generators.csproj" />
   </ItemGroup>
 
 </Project>

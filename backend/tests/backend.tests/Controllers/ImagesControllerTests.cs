@@ -3,6 +3,7 @@ using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.Images;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -17,11 +18,12 @@ namespace OneBigHead.Server.Tests.Controllers;
 public class ImagesControllerTests
 {
     private readonly Mock<IImageProvider> _mockImageProvider;
+    private readonly Mock<IImageReader> _imageReader = new();
     private readonly Mock<IImageProcessor> _mockImageProcessor;
     private readonly Mock<IContentScanner> _mockContentScanner;
     private readonly Mock<ICsamReportingService> _mockCsamReportingService;
     private readonly Mock<IContentScanLogRepository> _mockScanLogRepository;
-    private readonly Mock<ILogger<ImagesController>> _mockLogger;
+    private readonly Mock<ILogger<ImageUploadService>> _mockLogger;
     private readonly ImagesController _controller;
     private const int TestWorkspaceId = 1;
 
@@ -64,7 +66,7 @@ public class ImagesControllerTests
         _mockContentScanner = new Mock<IContentScanner>();
         _mockCsamReportingService = new Mock<ICsamReportingService>();
         _mockScanLogRepository = new Mock<IContentScanLogRepository>();
-        _mockLogger = new Mock<ILogger<ImagesController>>();
+        _mockLogger = new Mock<ILogger<ImageUploadService>>();
 
         // Default passthrough: return input data unchanged
         _mockImageProcessor
@@ -76,13 +78,10 @@ public class ImagesControllerTests
             .Setup(s => s.ScanAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ContentScanResult(IsMatch: false, MatchScore: 0.0, ScannerName: "MockScanner"));
 
-        _controller = new ImagesController(
-            _mockImageProvider.Object,
-            _mockImageProcessor.Object,
-            _mockContentScanner.Object,
-            _mockCsamReportingService.Object,
-            _mockScanLogRepository.Object,
-            _mockLogger.Object);
+        _controller = new ImagesController(_mockImageProvider.Object, _imageReader.Object,
+            new ImageUploadService(new SkiaImageFormatDetector(), _mockContentScanner.Object,
+                _mockScanLogRepository.Object, _mockCsamReportingService.Object, _mockImageProcessor.Object,
+                _mockImageProvider.Object, TimeProvider.System, _mockLogger.Object));
         SetupAuthenticatedUser(TestWorkspaceId);
     }
 
@@ -387,6 +386,17 @@ public class ImagesControllerTests
     }
 
     [Fact]
+    public async Task Upload_SanitizesFileName_WithAnExtensionLongerThanTheLimit()
+    {
+        _mockImageProvider.Setup(provider => provider.StoreAsync(TestWorkspaceId, It.IsAny<string>(), "image/jpeg", It.IsAny<Stream>()))
+            .ReturnsAsync(new StoredImageInfo(Guid.NewGuid(), "/api/images/test"));
+        var result = await _controller.Upload(CreateMockFile(JpegImage, "photo." + new string('x', 250), "image/jpeg"));
+        Assert.IsType<OkObjectResult>(result.Result);
+        _mockImageProvider.Verify(provider => provider.StoreAsync(TestWorkspaceId,
+            It.Is<string>(name => name.Length == 200 && name.StartsWith("photo.")), "image/jpeg", It.IsAny<Stream>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Upload_CallsResizeIfNeeded_BeforeStoring()
     {
         // Arrange
@@ -615,115 +625,39 @@ public class ImagesControllerTests
 
     #endregion
 
-    #region Get Tests
-
-    [Fact]
-    public async Task Get_ReturnsFile_WhenAuthenticatedAndImageExistsInWorkspace()
+    [Theory]
+    [InlineData("member", true)]
+    [InlineData("member", false)]
+    [InlineData("anonymous", true)]
+    [InlineData("anonymous", false)]
+    [InlineData("no-identity", false)]
+    [InlineData("untrusted-claims", false)]
+    public async Task Get_DelegatesAccessAndCancellationToReader(string identity, bool found)
     {
-        // Arrange
-        var imageKey = Guid.NewGuid();
-        var imageData = new byte[] { 0xFF, 0xD8, 0xFF };
-        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
-            .ReturnsAsync(new RetrievedImage(imageData, "image/jpeg", "test.jpg"));
-
-        // Act
-        var result = await _controller.Get(imageKey);
-
-        // Assert
-        var fileResult = Assert.IsType<FileContentResult>(result);
-        Assert.Equal("image/jpeg", fileResult.ContentType);
-        Assert.Equal("test.jpg", fileResult.FileDownloadName);
-        Assert.Equal(imageData, fileResult.FileContents);
+        if (identity == "anonymous") SetupUnauthenticatedUser();
+        if (identity == "no-identity") _controller.HttpContext.User = new ClaimsPrincipal();
+        if (identity == "untrusted-claims")
+            _controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity([
+                new Claim(ClaimTypes.NameIdentifier, "1"), new Claim("workspace_id", "1")]));
+        var key = Guid.NewGuid();
+        using var cancellation = new CancellationTokenSource();
+        _controller.HttpContext.RequestAborted = cancellation.Token;
+        int? userId = identity == "member" ? 1 : null;
+        int? workspaceId = identity is "member" or "untrusted-claims" ? 1 : null;
+        _imageReader.Setup(reader => reader.ReadAsync(key, userId, workspaceId, cancellation.Token))
+            .ReturnsAsync(found ? new RetrievedImage([1, 2, 3], "image/png", "photo.png") : null);
+        var result = await _controller.Get(key);
+        if (found)
+        {
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.Equal(new byte[] { 1, 2, 3 }, file.FileContents);
+            Assert.Equal("image/png", file.ContentType);
+            Assert.Equal("photo.png", file.FileDownloadName);
+        }
+        else Assert.IsType<NotFoundResult>(result);
+        _imageReader.Verify(reader => reader.ReadAsync(key, userId, workspaceId, cancellation.Token), Times.Once);
+        _mockImageProvider.VerifyNoOtherCalls();
     }
-
-    [Fact]
-    public async Task Get_ReturnsNotFound_WhenAuthenticatedAndImageDoesNotExist()
-    {
-        // Arrange
-        var imageKey = Guid.NewGuid();
-        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
-            .ReturnsAsync((RetrievedImage?)null);
-        _mockImageProvider.Setup(p => p.RetrievePublicAsync(imageKey))
-            .ReturnsAsync((RetrievedImage?)null);
-
-        // Act
-        var result = await _controller.Get(imageKey);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-    }
-
-    [Fact]
-    public async Task Get_FallsBackToPublic_WhenAuthenticatedButNotInWorkspace()
-    {
-        // Arrange
-        var imageKey = Guid.NewGuid();
-        var imageData = new byte[] { 0xFF, 0xD8, 0xFF };
-        // Not found in user's workspace
-        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
-            .ReturnsAsync((RetrievedImage?)null);
-        // But available publicly
-        _mockImageProvider.Setup(p => p.RetrievePublicAsync(imageKey))
-            .ReturnsAsync(new RetrievedImage(imageData, "image/jpeg", "test.jpg"));
-
-        // Act
-        var result = await _controller.Get(imageKey);
-
-        // Assert
-        var fileResult = Assert.IsType<FileContentResult>(result);
-        Assert.Equal("image/jpeg", fileResult.ContentType);
-    }
-
-    [Fact]
-    public async Task Get_ReturnsFile_WhenUnauthenticatedAndImageIsPublic()
-    {
-        // Arrange
-        SetupUnauthenticatedUser();
-        var imageKey = Guid.NewGuid();
-        var imageData = new byte[] { 0xFF, 0xD8, 0xFF };
-        _mockImageProvider.Setup(p => p.RetrievePublicAsync(imageKey))
-            .ReturnsAsync(new RetrievedImage(imageData, "image/jpeg", "test.jpg"));
-
-        // Act
-        var result = await _controller.Get(imageKey);
-
-        // Assert
-        var fileResult = Assert.IsType<FileContentResult>(result);
-        Assert.Equal("image/jpeg", fileResult.ContentType);
-    }
-
-    [Fact]
-    public async Task Get_ReturnsNotFound_WhenUnauthenticatedAndImageIsNotPublic()
-    {
-        // Arrange
-        SetupUnauthenticatedUser();
-        var imageKey = Guid.NewGuid();
-        _mockImageProvider.Setup(p => p.RetrievePublicAsync(imageKey))
-            .ReturnsAsync((RetrievedImage?)null);
-
-        // Act
-        var result = await _controller.Get(imageKey);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-    }
-
-    [Fact]
-    public async Task Get_PassesWorkspaceIdToProvider_WhenAuthenticated()
-    {
-        // Arrange
-        var imageKey = Guid.NewGuid();
-        _mockImageProvider.Setup(p => p.RetrieveAsync(imageKey, TestWorkspaceId))
-            .ReturnsAsync(new RetrievedImage(new byte[] { 0xFF }, "image/jpeg", "test.jpg"));
-
-        // Act
-        await _controller.Get(imageKey);
-
-        // Assert
-        _mockImageProvider.Verify(p => p.RetrieveAsync(imageKey, TestWorkspaceId), Times.Once);
-    }
-
-    #endregion
 
     #region Delete Tests
 
