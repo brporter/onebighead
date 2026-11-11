@@ -9,16 +9,16 @@ it.each([
   ['attachment; filename=onebighead-export.zip; filename*=UTF-8\'\'onebighead-export.zip', 'onebighead-export.zip'],
 ])('downloads the archive with its filename (%s)', async (header, filename) => {
   const response = new Response('archive', { headers: header ? { 'Content-Disposition': header } : {} });
+  const body = vi.spyOn(response, 'blob');
   const download = vi.spyOn(api, 'download').mockResolvedValue(response);
   const result = await exportApi.downloadExport();
   expect(download).toHaveBeenCalledExactlyOnceWith('/export', { credentials: 'include' });
   expect(result.filename).toBe(filename);
-  const text = await new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsText(result.blob);
-  });
-  expect(text).toBe('archive');
+  // Node's Response and jsdom's FileReader can use different Blob realms.
+  // Verify that the download preserves the actual response body unchanged.
+  expect(body).toHaveBeenCalledExactlyOnceWith();
+  expect(result.blob).toBe(await body.mock.results[0].value);
+  expect(result.blob.size).toBe('archive'.length);
 });
 
 it('propagates download and body read errors instead of producing an empty archive', async () => {
