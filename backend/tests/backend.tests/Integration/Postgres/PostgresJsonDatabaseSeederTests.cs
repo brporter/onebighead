@@ -92,6 +92,36 @@ public class PostgresJsonDatabaseSeederTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SeedAsync_UsesGeneratedIdsWhenIdentityInsertIsEnabledButNoIdsAreProvided()
+    {
+        WriteSeedFile("01-templates.json", ItemTemplatesSeed.Replace("\"Id\": 10,", "").Replace("\"Id\": 20,", ""));
+        var seeder = new JsonDatabaseSeeder(_tempDir);
+
+        Assert.Equal(2, Assert.Single(await seeder.SeedAsync(_fixture.ConnectionString)).InsertedCount);
+        Assert.Equal(2, Assert.Single(await seeder.SeedAsync(_fixture.ConnectionString)).UpdatedCount);
+
+        await using var context = _fixture.CreateContext();
+        Assert.Equal(new[] { 1, 2 }, await context.ItemTemplates.OrderBy(template => template.Id).Select(template => template.Id).ToArrayAsync());
+        var next = new ItemTemplate { Name = "Next", TemplateKey = Guid.NewGuid() };
+        context.ItemTemplates.Add(next);
+        await context.SaveChangesAsync();
+        Assert.Equal(3, next.Id);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("\"checkColumns\": [\"TemplateKey\", \"WorkspaceId\"],")]
+    public async Task SeedAsync_InsertsWhenNoCompleteCheckKeyIsConfigured(string checkColumns)
+    {
+        WriteSeedFile("01-templates.json", ItemTemplatesSeed.Replace("\"checkColumn\": \"TemplateKey\",", checkColumns));
+        var result = Assert.Single(await new JsonDatabaseSeeder(_tempDir).SeedAsync(_fixture.ConnectionString));
+        Assert.Equal((2, 0, 0), (result.InsertedCount, result.UpdatedCount, result.SkippedCount));
+        await using var context = _fixture.CreateContext();
+        Assert.Equal(new[] { "Integration Book", "Integration Coin" },
+            await context.ItemTemplates.OrderBy(template => template.Id).Select(template => template.Name).ToArrayAsync());
+    }
+
+    [Fact]
     public async Task SeedAsync_SecondRun_UpdatesExistingRows_WithoutDuplicating()
     {
         WriteSeedFile("01-templates.json", ItemTemplatesSeed);

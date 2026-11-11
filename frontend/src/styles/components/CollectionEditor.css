@@ -1,0 +1,16 @@
+.collection-editor { max-width: 42rem; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: clamp(1rem, 3vw, 2rem); background: var(--color-surface); }
+.collection-editor__title { margin: 0 0 var(--space-lg); color: var(--color-text); }
+.collection-editor__fields { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: var(--space-xl); }
+.collection-editor__field { display: grid; gap: var(--space-sm); min-width: 0; }
+.collection-editor__field label, .collection-editor__field h4 { margin: 0; font-weight: 600; color: var(--color-text-secondary); }
+.collection-editor__field p { margin: 0; color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.collection-editor input, .collection-editor textarea { width: 100%; min-width: 0; padding: var(--space-md); border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text); font: inherit; }
+.collection-editor textarea { min-height: 6rem; resize: vertical; }
+.collection-editor button { min-height: 44px; padding: var(--space-sm) var(--space-lg); border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-secondary); font: inherit; cursor: pointer; }
+.collection-editor button:hover { background: var(--color-surface-alt); }
+.collection-editor button.collection-editor__primary { background: var(--color-primary); color: var(--color-primary-text); border-color: var(--color-primary); }
+.collection-editor button.collection-editor__danger { color: var(--color-danger); border-color: var(--color-danger-border); }
+.collection-editor input:disabled, .collection-editor textarea:disabled, .collection-editor button:disabled { opacity: 0.6; cursor: wait; }
+.collection-editor__actions { display: flex; flex-wrap: wrap; gap: var(--space-md); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); }
+.collection-editor__actions button { flex: 1 1 10rem; }
+.collection-editor :focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }

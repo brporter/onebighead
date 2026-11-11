@@ -3,6 +3,7 @@
    ========================================================================== */
 
 .categoryNav {
+  min-width: 0;
   padding: var(--space-lg);
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
@@ -34,8 +35,8 @@
 
 .categoryNav__editBtn,
 .categoryNav__collapseBtn {
-  width: 28px;
-  height: 28px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,6 +76,11 @@
 }
 
 .categoryNav__breadcrumb-link {
+  min-height: 44px;
+  min-width: 44px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: left;
   background: none;
   border: none;
   padding: 0;
@@ -95,6 +101,8 @@
 }
 
 .categoryNav__breadcrumb-current {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-weight: 600;
   color: var(--color-text);
 }
@@ -110,6 +118,7 @@
 }
 
 .categoryNav__back {
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -130,6 +139,7 @@
 }
 
 .categoryNav__row {
+  min-height: 44px;
   width: 100%;
   background: transparent;
   color: inherit;
@@ -151,7 +161,13 @@
 
 .categoryNav__row--active {
   background: var(--color-accent-subtle);
-  border-left: 3px solid var(--color-accent);
+  border-color: var(--color-accent);
+  box-shadow: inset 2px 0 var(--color-accent);
+}
+
+.categoryNav button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .categoryNav__dot {

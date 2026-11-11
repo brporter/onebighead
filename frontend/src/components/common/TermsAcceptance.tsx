@@ -1,35 +1,35 @@
 import { useState } from 'react';
 import { authApi } from '../../api';
+import { useAsyncAction } from '../../utils/useAsyncAction';
+import { useEditorStatus, type EditorStatusListener } from '../../data/shared/useEditorStatus';
 import '../../styles/TermsAcceptance.css';
 
 interface TermsAcceptanceProps {
-  onAccepted: () => void;
+  onAccepted: () => void | Promise<void>;
   showSkip?: boolean;
-  onSkip?: () => void;
+  onSkip?: () => void | Promise<void>;
+  onStatusChange?: EditorStatusListener;
 }
 
-export function TermsAcceptance({ onAccepted, showSkip = false, onSkip }: TermsAcceptanceProps) {
+export function TermsAcceptance({ onAccepted, showSkip = false, onSkip, onStatusChange }: TermsAcceptanceProps) {
   const [termsChecked, setTermsChecked] = useState(false);
   const [privacyChecked, setPrivacyChecked] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const action = useAsyncAction();
+  const [accepting, setAccepting] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  useEditorStatus(!accepted && (termsChecked || privacyChecked), action.pending, onStatusChange);
 
   const canContinue = termsChecked && privacyChecked;
 
-  const handleAccept = async () => {
-    if (!canContinue) return;
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      await authApi.acceptTerms();
-      onAccepted();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to accept terms');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleAccept = () => {
+    setAccepting(true);
+    void action.run(async () => {
+      if (!accepted) {
+        await authApi.acceptTerms();
+        setAccepted(true);
+      }
+      await onAccepted();
+    }, 'Failed to accept terms');
   };
 
   return (
@@ -75,13 +75,14 @@ export function TermsAcceptance({ onAccepted, showSkip = false, onSkip }: TermsA
         </div>
       </div>
 
-      {error && <div className="terms-acceptance__error">{error}</div>}
+      {action.error && <div className="terms-acceptance__error" role="alert">{action.error}</div>}
 
       <div className="terms-acceptance__checkboxes">
         <label className="terms-acceptance__checkbox">
           <input
             type="checkbox"
             checked={termsChecked}
+            disabled={action.pending}
             onChange={(e) => setTermsChecked(e.target.checked)}
           />
           <span>
@@ -93,6 +94,7 @@ export function TermsAcceptance({ onAccepted, showSkip = false, onSkip }: TermsA
           <input
             type="checkbox"
             checked={privacyChecked}
+            disabled={action.pending}
             onChange={(e) => setPrivacyChecked(e.target.checked)}
           />
           <span>
@@ -106,18 +108,22 @@ export function TermsAcceptance({ onAccepted, showSkip = false, onSkip }: TermsA
           <button
             type="button"
             className="terms-acceptance__button terms-acceptance__button--secondary"
-            onClick={onSkip}
+            disabled={action.pending}
+            onClick={() => {
+              setAccepting(false);
+              void action.run(onSkip, 'Unable to sign out');
+            }}
           >
-            Sign Out
+            {action.pending && !accepting ? 'Signing out…' : 'Sign Out'}
           </button>
         )}
         <button
           type="button"
           className="terms-acceptance__button terms-acceptance__button--primary"
           onClick={handleAccept}
-          disabled={!canContinue || isSubmitting}
+          disabled={!canContinue || action.pending}
         >
-          {isSubmitting ? 'Accepting...' : 'Accept and Continue'}
+          {action.pending && accepting ? 'Accepting...' : 'Accept and Continue'}
         </button>
       </div>
     </div>

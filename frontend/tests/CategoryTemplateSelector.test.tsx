@@ -2,12 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CategoryTemplateSelector from '../src/components/category/CategoryTemplateSelector';
-import { useData } from '../src/contexts/useData';
+import { useCollectionsData as useDataHook } from '../src/contexts/useData';
 import type { ItemTemplate } from '../src/utils/types';
 
-vi.mock('../src/contexts/useData', () => ({
+const useData = useDataHook as () => import('./testUtils/dataTypes').DataContextValue;
+
+vi.mock('../src/contexts/useData', async () => {
+  const { mockDataHooks } = await import('./testUtils/mockDataHooks');
+  return mockDataHooks({
   useData: vi.fn(),
-}));
+});
+});
 
 describe('CategoryTemplateSelector', () => {
   const mockCollectionTemplates: ItemTemplate[] = [
@@ -47,7 +52,7 @@ describe('CategoryTemplateSelector', () => {
   ];
 
   const mockLoadCollectionTemplates = vi.fn();
-  const mockLoadItemTemplates = vi.fn();
+  const mockFetchItemTemplates = vi.fn();
 
   const defaultProps = {
     collectionId: 1,
@@ -59,11 +64,10 @@ describe('CategoryTemplateSelector', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLoadCollectionTemplates.mockResolvedValue(mockCollectionTemplates);
-    mockLoadItemTemplates.mockResolvedValue(undefined);
+    mockFetchItemTemplates.mockResolvedValue(mockLibraryTemplates);
     (useData as ReturnType<typeof vi.fn>).mockReturnValue({
       loadCollectionTemplates: mockLoadCollectionTemplates,
-      loadItemTemplates: mockLoadItemTemplates,
-      itemTemplates: mockLibraryTemplates,
+      fetchItemTemplates: mockFetchItemTemplates,
     });
   });
 
@@ -71,7 +75,7 @@ describe('CategoryTemplateSelector', () => {
     it('should show loading message while templates are loading', () => {
       // Make the promise never resolve to keep loading state
       mockLoadCollectionTemplates.mockReturnValue(new Promise(() => {}));
-      mockLoadItemTemplates.mockReturnValue(new Promise(() => {}));
+      mockFetchItemTemplates.mockReturnValue(new Promise(() => {}));
 
       render(<CategoryTemplateSelector {...defaultProps} />);
 
@@ -92,8 +96,7 @@ describe('CategoryTemplateSelector', () => {
       mockLoadCollectionTemplates.mockResolvedValue([]);
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({
         loadCollectionTemplates: mockLoadCollectionTemplates,
-        loadItemTemplates: mockLoadItemTemplates,
-        itemTemplates: [],
+        fetchItemTemplates: vi.fn().mockResolvedValue([]),
       });
 
       render(<CategoryTemplateSelector {...defaultProps} />);
@@ -157,8 +160,7 @@ describe('CategoryTemplateSelector', () => {
 
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({
         loadCollectionTemplates: mockLoadCollectionTemplates,
-        loadItemTemplates: mockLoadItemTemplates,
-        itemTemplates: duplicateLibraryTemplates,
+        fetchItemTemplates: vi.fn().mockResolvedValue(duplicateLibraryTemplates),
       });
 
       render(<CategoryTemplateSelector {...defaultProps} />);
@@ -179,8 +181,7 @@ describe('CategoryTemplateSelector', () => {
       mockLoadCollectionTemplates.mockResolvedValue(unsortedTemplates);
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({
         loadCollectionTemplates: mockLoadCollectionTemplates,
-        loadItemTemplates: mockLoadItemTemplates,
-        itemTemplates: [],
+        fetchItemTemplates: vi.fn().mockResolvedValue([]),
       });
 
       render(<CategoryTemplateSelector {...defaultProps} />);
@@ -287,26 +288,34 @@ describe('CategoryTemplateSelector', () => {
       await waitFor(() => {
         const labels = screen.getAllByRole('checkbox').map(cb => cb.closest('label'));
         labels.forEach(label => {
-          expect(label).toHaveClass('categoryTemplateSelector__item--disabled');
+          expect(label?.querySelector('input')).toBeDisabled();
         });
       });
     });
   });
 
   describe('data loading', () => {
+    it('shows a request error with a retry instead of remaining in loading state', async () => {
+      mockFetchItemTemplates.mockRejectedValueOnce(new Error('Library unavailable'));
+      render(<CategoryTemplateSelector {...defaultProps} />);
+      expect(await screen.findByRole('alert')).toHaveTextContent('Library unavailable');
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+      expect(await screen.findByText('Library Template')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
     it('should call loadCollectionTemplates with collectionId', async () => {
       render(<CategoryTemplateSelector {...defaultProps} collectionId={42} />);
 
       await waitFor(() => {
-        expect(mockLoadCollectionTemplates).toHaveBeenCalledWith(42);
+        expect(mockLoadCollectionTemplates).toHaveBeenCalledWith(42, expect.objectContaining({ signal: expect.any(AbortSignal) }));
       });
     });
 
-    it('should call loadItemTemplates', async () => {
+    it('should call fetchItemTemplates', async () => {
       render(<CategoryTemplateSelector {...defaultProps} />);
 
       await waitFor(() => {
-        expect(mockLoadItemTemplates).toHaveBeenCalled();
+        expect(mockFetchItemTemplates).toHaveBeenCalled();
       });
     });
 
@@ -314,7 +323,7 @@ describe('CategoryTemplateSelector', () => {
       const { rerender } = render(<CategoryTemplateSelector {...defaultProps} collectionId={1} />);
 
       await waitFor(() => {
-        expect(mockLoadCollectionTemplates).toHaveBeenCalledWith(1);
+        expect(mockLoadCollectionTemplates).toHaveBeenCalledWith(1, expect.objectContaining({ signal: expect.any(AbortSignal) }));
       });
 
       mockLoadCollectionTemplates.mockClear();
@@ -322,7 +331,7 @@ describe('CategoryTemplateSelector', () => {
       rerender(<CategoryTemplateSelector {...defaultProps} collectionId={2} />);
 
       await waitFor(() => {
-        expect(mockLoadCollectionTemplates).toHaveBeenCalledWith(2);
+        expect(mockLoadCollectionTemplates).toHaveBeenCalledWith(2, expect.objectContaining({ signal: expect.any(AbortSignal) }));
       });
     });
   });

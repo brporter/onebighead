@@ -82,7 +82,7 @@ public class BulkUpdateQueueTests
         job.Status = BulkUpdateJobStatus.Running;
         _queue.Enqueue(job);
         _queue.RegisterCollectionLock(10, job.JobId);
-        _queue.ReleaseCollectionLock(10);
+        _queue.ReleaseCollectionLock(10, job.JobId);
 
         var result = _queue.GetActiveJobForCollection(10, 1);
         Assert.Null(result);
@@ -128,9 +128,36 @@ public class BulkUpdateQueueTests
     private static BulkUpdateJob CreateJob(int workspaceId) => new()
     {
         WorkspaceId = workspaceId,
-        Scope = BulkUpdateScope.Template,
-        TemplateKey = Guid.NewGuid(),
+        Target = new(BulkUpdateScope.Template, TemplateKey: Guid.NewGuid()),
         Diff = new PropertyDiff(new List<PropertyChange>()),
         NewPropertyOrder = new List<PropertyIdentifier>(),
     };
+
+    [Fact]
+    public void ReleasingOldJob_DoesNotReleaseNewerCollectionOwner()
+    {
+        var first = CreateJob(1);
+        var second = CreateJob(1);
+        _queue.Enqueue(first);
+        _queue.Enqueue(second);
+        _queue.RegisterCollectionLock(10, first.JobId);
+        _queue.RegisterCollectionLock(10, second.JobId);
+        _queue.ReleaseCollectionLock(10, first.JobId);
+        Assert.Same(second, _queue.GetActiveJobForCollection(10, 1));
+    }
+
+    [Fact]
+    public void UnregisteredAndExpiredJobs_DoNotAppearAsActive()
+    {
+        _queue.RegisterCollectionLock(10, Guid.NewGuid());
+        Assert.Null(_queue.GetActiveJobForCollection(10, 1));
+        var job = CreateJob(1);
+        _queue.Enqueue(job);
+        _queue.RegisterCollectionLock(10, job.JobId);
+        job.Status = BulkUpdateJobStatus.Cancelled;
+        Assert.Null(_queue.GetActiveJobForCollection(10, 1));
+        job.CompletedAt = DateTime.UtcNow.AddHours(-2);
+        _queue.Enqueue(CreateJob(1));
+        Assert.Null(_queue.GetActiveJobForCollection(10, 1));
+    }
 }

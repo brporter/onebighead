@@ -5,6 +5,8 @@ namespace OneBigHead.Server.Authentication;
 /// </summary>
 public static class ClaimNames
 {
+    public const string AuthenticationStamp = "authentication_stamp";
+
     /// <summary>
     /// The claim name for the user's active workspace ID.
     /// </summary>

@@ -113,11 +113,13 @@
 
 .terms-acceptance__actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-md);
 }
 
 .terms-acceptance__button {
+  min-height: 44px;
   padding: var(--space-md) var(--space-xl);
   border-radius: var(--radius-md);
   font-size: 1rem;
@@ -136,7 +138,7 @@
   background: var(--color-primary-hover);
 }
 
-.terms-acceptance__button--primary:disabled {
+.terms-acceptance__button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

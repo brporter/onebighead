@@ -21,6 +21,7 @@ export interface PropertyWithValue extends BaseProperty {
 export interface FieldConfig {
   field: 'category' | 'name' | 'value';
   placeholder: string;
+  label?: string;
   className?: string;
   datalistId?: string;
 }
@@ -77,6 +78,7 @@ function SortablePropertyRow<T extends BaseProperty>({
           type="text"
           className={`${inputClassName} ${fieldConfig.className || ''}`}
           placeholder={fieldConfig.placeholder}
+          aria-label={fieldConfig.label}
           value={(property as unknown as Record<string, string>)[fieldConfig.field] || ''}
           onChange={(e) => onFieldChange(property.id, fieldConfig.field as keyof T, e.target.value)}
           onBlur={() => onFieldBlur?.(property.id, fieldConfig.field as keyof T)}
@@ -107,7 +109,6 @@ interface SortablePropertyListProps<T extends BaseProperty> {
   fields: FieldConfig[];
   classNames: {
     list: string;
-    categoryGroup: string;
     categoryHeader: string;
     row: string;
     rowDragging: string;
@@ -137,6 +138,7 @@ export function SortablePropertyList<T extends BaseProperty>({
   const [groupingCategories, setGroupingCategories] = useState<Record<string, string>>({});
   // Track which input to focus after a re-grouping render
   const focusTargetRef = useRef<{ id: string; field: string } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Initialize grouping categories for new properties
   const syncedCategories = useMemo(() => {
@@ -191,7 +193,7 @@ export function SortablePropertyList<T extends BaseProperty>({
     if (focusTargetRef.current) {
       const { id, field } = focusTargetRef.current;
       focusTargetRef.current = null;
-      const input = document.querySelector<HTMLInputElement>(
+      const input = listRef.current!.querySelector<HTMLInputElement>(
         `[data-property-id="${id}"][data-field="${field}"]`
       );
       input?.focus();
@@ -213,17 +215,12 @@ export function SortablePropertyList<T extends BaseProperty>({
       // Update grouping categories to match new order
       const updated: Record<string, string> = {};
       items.forEach((item) => {
-        updated[item.id] = item.category || 'Uncategorized';
+        updated[item.id] = item.category;
       });
       setGroupingCategories((prev) => ({ ...prev, ...updated }));
-      // Map back to original property type, restoring empty category if it was 'Uncategorized'
-      const reorderedProperties = items.map((item) => {
-        const original = properties.find((p) => p.id === item.id)!;
-        return {
-          ...original,
-          category: item.category === 'Uncategorized' ? '' : item.category,
-        } as T;
-      });
+      // Sorting changes only order. Preserve original values, including an actual
+      // category named "Uncategorized", rather than persisting display labels.
+      const reorderedProperties = items.map(item => properties.find(property => property.id === item.id)!);
       onPropertiesChange(reorderedProperties);
     }
   );
@@ -241,20 +238,17 @@ export function SortablePropertyList<T extends BaseProperty>({
       }}
       onDragCancel={() => setActiveId(null)}
     >
-      <div className={classNames.list}>
-        {groupedItems.map((group) => (
-          <div key={group.category} className={classNames.categoryGroup}>
-            <div className={classNames.categoryHeader}>{group.category}</div>
-            <SortableContext
-              items={group.items.map((p) => p.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {group.items.map((prop) => {
+      <div ref={listRef} className={classNames.list}>
+        <SortableContext items={groupedItems.flatMap(group => group.items.map(property => property.id))} strategy={verticalListSortingStrategy}>
+          {/* Rows share a stable parent so regrouping never replaces a focused input. */}
+          {groupedItems.flatMap(group => [
+            <div key={`category:${group.category}`} className={classNames.categoryHeader}>{group.category}</div>,
+            ...group.items.map((prop) => {
                 // Find the original property to get the actual category value (not the grouping one)
                 const originalProp = properties.find((p) => p.id === prop.id)!;
                 return (
                   <SortablePropertyRow
-                    key={prop.id}
+                    key={`property:${prop.id}`}
                     property={originalProp}
                     fields={fields}
                     rowClassName={classNames.row}
@@ -267,10 +261,9 @@ export function SortablePropertyList<T extends BaseProperty>({
                     onCategoryTab={handleCategoryTab}
                   />
                 );
-              })}
-            </SortableContext>
-          </div>
-        ))}
+            }),
+          ])}
+        </SortableContext>
       </div>
       <DragOverlay>
         {activeProperty ? (

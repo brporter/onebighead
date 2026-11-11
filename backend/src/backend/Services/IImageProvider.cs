@@ -6,7 +6,5 @@ namespace OneBigHead.Server.Services;
 public interface IImageProvider
 {
     Task<StoredImageInfo> StoreAsync(int workspaceId, string fileName, string contentType, Stream data);
-    Task<RetrievedImage?> RetrieveAsync(Guid key, int workspaceId);
-    Task<RetrievedImage?> RetrievePublicAsync(Guid key);
     Task DeleteAsync(Guid key, int workspaceId);
 }

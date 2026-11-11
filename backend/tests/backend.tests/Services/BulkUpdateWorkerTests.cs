@@ -1,188 +1,64 @@
-using OneBigHead.Server.Data;
-using OneBigHead.Server.Models;
-using OneBigHead.Server.Services.BulkUpdate;
 using Microsoft.Extensions.Logging;
 using Moq;
+using OneBigHead.Server.Services.BulkUpdate;
 
 namespace OneBigHead.Server.Tests.Services;
 
-[Trait("Category", "Unit")]
 public class BulkUpdateWorkerTests
 {
-    private readonly BulkUpdateQueue _queue = new();
-    private readonly Mock<IItemRepository> _mockItemRepo = new();
-    private readonly Mock<IPropertyDiffService> _mockDiffService = new();
-    private readonly Mock<ILogger<BulkUpdateWorker>> _mockLogger = new();
-
-    private BulkUpdateWorker CreateWorker() =>
-        new(_queue, _mockItemRepo.Object, _mockDiffService.Object, _mockLogger.Object);
-
     [Fact]
-    public async Task ProcessesJob_EndToEnd()
-    {
-        var templateKey = Guid.NewGuid();
-        var items = new List<Item>
-        {
-            new() { Id = 1, WorkspaceId = 1, CollectionId = 10, Name = "Item 1", Properties = new List<ItemProperty> { new("Specs", "CPU", "i7") } },
-            new() { Id = 2, WorkspaceId = 1, CollectionId = 10, Name = "Item 2", Properties = new List<ItemProperty> { new("Specs", "CPU", "i5") } },
-        };
-
-        _mockItemRepo.Setup(r => r.GetByTemplateKeyAsync(templateKey, 1))
-            .ReturnsAsync(items);
-        _mockItemRepo.Setup(r => r.UpdateAsync(It.IsAny<int>(), It.IsAny<Item>(), 1))
-            .ReturnsAsync((int id, Item item, int _) => item);
-
-        var updatedProps = new List<ItemProperty> { new("Hardware", "Processor", "i7") };
-        _mockDiffService.Setup(d => d.ApplyDiff(It.IsAny<List<ItemProperty>>(), It.IsAny<PropertyDiff>(), It.IsAny<List<PropertyIdentifier>>()))
-            .Returns(updatedProps);
-
-        var job = new BulkUpdateJob
-        {
-            WorkspaceId = 1,
-            Scope = BulkUpdateScope.Template,
-            TemplateKey = templateKey,
-            Diff = new PropertyDiff(new List<PropertyChange>()),
-            NewPropertyOrder = new List<PropertyIdentifier>(),
-        };
-
-        using var worker = CreateWorker();
-        await worker.ProcessJobAsync(job, CancellationToken.None);
-
-        Assert.Equal(BulkUpdateJobStatus.Completed, job.Status);
-        Assert.Equal(2, job.TotalItems);
-        Assert.Equal(2, job.ProcessedItems);
-        Assert.Equal(0, job.FailedItems);
-        _mockItemRepo.Verify(r => r.UpdateAsync(It.IsAny<int>(), It.IsAny<Item>(), 1), Times.Exactly(2));
-    }
-
-    [Fact]
-    public async Task SkipsExcludedItem()
-    {
-        var templateKey = Guid.NewGuid();
-        var items = new List<Item>
-        {
-            new() { Id = 1, WorkspaceId = 1, CollectionId = 10, Name = "Item 1", Properties = new() },
-            new() { Id = 2, WorkspaceId = 1, CollectionId = 10, Name = "Item 2", Properties = new() },
-            new() { Id = 3, WorkspaceId = 1, CollectionId = 10, Name = "Item 3", Properties = new() },
-        };
-
-        _mockItemRepo.Setup(r => r.GetByTemplateKeyAsync(templateKey, 1))
-            .ReturnsAsync(items);
-        _mockItemRepo.Setup(r => r.UpdateAsync(It.IsAny<int>(), It.IsAny<Item>(), 1))
-            .ReturnsAsync((int id, Item item, int _) => item);
-        _mockDiffService.Setup(d => d.ApplyDiff(It.IsAny<List<ItemProperty>>(), It.IsAny<PropertyDiff>(), It.IsAny<List<PropertyIdentifier>>()))
-            .Returns(new List<ItemProperty>());
-
-        var job = new BulkUpdateJob
-        {
-            WorkspaceId = 1,
-            Scope = BulkUpdateScope.Template,
-            TemplateKey = templateKey,
-            ExcludeItemId = 2,
-            Diff = new PropertyDiff(new List<PropertyChange>()),
-            NewPropertyOrder = new List<PropertyIdentifier>(),
-        };
-
-        using var worker = CreateWorker();
-        await worker.ProcessJobAsync(job, CancellationToken.None);
-
-        Assert.Equal(2, job.TotalItems); // 3 items minus 1 excluded
-        Assert.Equal(2, job.ProcessedItems);
-        _mockItemRepo.Verify(r => r.UpdateAsync(2, It.IsAny<Item>(), 1), Times.Never);
-    }
-
-    [Fact]
-    public async Task HandlesPerItemFailures_WithoutAbortingJob()
-    {
-        var templateKey = Guid.NewGuid();
-        var items = new List<Item>
-        {
-            new() { Id = 1, WorkspaceId = 1, CollectionId = 10, Name = "Item 1", Properties = new() },
-            new() { Id = 2, WorkspaceId = 1, CollectionId = 10, Name = "Item 2", Properties = new() },
-            new() { Id = 3, WorkspaceId = 1, CollectionId = 10, Name = "Item 3", Properties = new() },
-        };
-
-        _mockItemRepo.Setup(r => r.GetByTemplateKeyAsync(templateKey, 1))
-            .ReturnsAsync(items);
-        _mockDiffService.Setup(d => d.ApplyDiff(It.IsAny<List<ItemProperty>>(), It.IsAny<PropertyDiff>(), It.IsAny<List<PropertyIdentifier>>()))
-            .Returns(new List<ItemProperty>());
-
-        // Item 2 fails on update
-        _mockItemRepo.Setup(r => r.UpdateAsync(1, It.IsAny<Item>(), 1)).ReturnsAsync((int id, Item item, int _) => item);
-        _mockItemRepo.Setup(r => r.UpdateAsync(2, It.IsAny<Item>(), 1)).ThrowsAsync(new Exception("DB error"));
-        _mockItemRepo.Setup(r => r.UpdateAsync(3, It.IsAny<Item>(), 1)).ReturnsAsync((int id, Item item, int _) => item);
-
-        var job = new BulkUpdateJob
-        {
-            WorkspaceId = 1,
-            Scope = BulkUpdateScope.Template,
-            TemplateKey = templateKey,
-            Diff = new PropertyDiff(new List<PropertyChange>()),
-            NewPropertyOrder = new List<PropertyIdentifier>(),
-        };
-
-        using var worker = CreateWorker();
-        await worker.ProcessJobAsync(job, CancellationToken.None);
-
-        Assert.Equal(BulkUpdateJobStatus.Completed, job.Status);
-        Assert.Equal(3, job.TotalItems);
-        Assert.Equal(2, job.ProcessedItems);
-        Assert.Equal(1, job.FailedItems);
-    }
-
-    [Fact]
-    public async Task SetsCorrectStatusAndProgress()
-    {
-        var collectionId = 10;
-        var items = new List<Item>
-        {
-            new() { Id = 1, WorkspaceId = 1, CollectionId = collectionId, Name = "Item 1", Properties = new() },
-        };
-
-        _mockItemRepo.Setup(r => r.GetByCollectionIdAsync(collectionId, 1))
-            .ReturnsAsync(items);
-        _mockItemRepo.Setup(r => r.UpdateAsync(It.IsAny<int>(), It.IsAny<Item>(), 1))
-            .ReturnsAsync((int id, Item item, int _) => item);
-        _mockDiffService.Setup(d => d.ApplyDiff(It.IsAny<List<ItemProperty>>(), It.IsAny<PropertyDiff>(), It.IsAny<List<PropertyIdentifier>>()))
-            .Returns(new List<ItemProperty>());
-
-        var job = new BulkUpdateJob
-        {
-            WorkspaceId = 1,
-            Scope = BulkUpdateScope.Collection,
-            CollectionId = collectionId,
-            Diff = new PropertyDiff(new List<PropertyChange>()),
-            NewPropertyOrder = new List<PropertyIdentifier>(),
-        };
-
-        Assert.Equal(BulkUpdateJobStatus.Queued, job.Status);
-
-        using var worker = CreateWorker();
-        await worker.ProcessJobAsync(job, CancellationToken.None);
-
-        Assert.Equal(BulkUpdateJobStatus.Completed, job.Status);
-        Assert.NotNull(job.CompletedAt);
-        Assert.Equal(1, job.TotalItems);
-        Assert.Equal(1, job.ProcessedItems);
-    }
-    [Fact]
-    public async Task StopsWhileWaitingForWork()
+    public async Task Worker_ContinuesAfterQueueAndProcessorFailures_AndStopsWhileWaiting()
     {
         var queue = new Mock<IBulkUpdateQueue>();
+        var processor = new Mock<IBulkUpdateProcessor>();
+        var logger = new Mock<ILogger<BulkUpdateWorker>>();
+        var job = new BulkUpdateJob();
         var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        queue.Setup(q => q.DequeueAsync(It.IsAny<CancellationToken>())).Returns((CancellationToken ct) =>
-            new ValueTask<BulkUpdateJob>(WaitForCancellation(ct)));
-        async Task<BulkUpdateJob> WaitForCancellation(CancellationToken ct)
+        var reads = 0;
+        queue.Setup(value => value.DequeueAsync(It.IsAny<CancellationToken>())).Returns((CancellationToken token) =>
+            new ValueTask<BulkUpdateJob>(ReadAsync(token)));
+        async Task<BulkUpdateJob> ReadAsync(CancellationToken token)
         {
+            reads++;
+            if (reads == 1) throw new InvalidOperationException("Queue failure");
+            if (reads <= 3) return job;
             waiting.SetResult();
-            await Task.Delay(Timeout.Infinite, ct);
+            await Task.Delay(Timeout.Infinite, token);
             throw new InvalidOperationException("Unreachable");
         }
-        using var worker = new BulkUpdateWorker(queue.Object, _mockItemRepo.Object, _mockDiffService.Object, _mockLogger.Object);
+        processor.SetupSequence(value => value.ProcessAsync(job, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException("Not host shutdown"))
+            .Returns(Task.CompletedTask);
+        using var worker = new BulkUpdateWorker(queue.Object, processor.Object, logger.Object);
         await worker.StartAsync(CancellationToken.None);
         await waiting.Task.WaitAsync(TimeSpan.FromSeconds(5));
         await worker.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
         Assert.True(worker.ExecuteTask!.IsCompletedSuccessfully);
+        processor.Verify(value => value.ProcessAsync(job, It.IsAny<CancellationToken>()), Times.Exactly(2));
+        logger.Verify(value => value.Log(LogLevel.Error, It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(),
+            It.IsAny<Exception>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Exactly(2));
     }
 
+    [Fact]
+    public async Task Worker_StopsAfterProcessorHandlesShutdown_WithoutReadingAnotherJob()
+    {
+        var queue = new Mock<IBulkUpdateQueue>();
+        var processor = new Mock<IBulkUpdateProcessor>();
+        var processing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var job = new BulkUpdateJob();
+        queue.Setup(value => value.DequeueAsync(It.IsAny<CancellationToken>())).ReturnsAsync(job);
+        processor.Setup(value => value.ProcessAsync(job, It.IsAny<CancellationToken>()))
+            .Returns(async (BulkUpdateJob _, CancellationToken token) =>
+            {
+                processing.SetResult();
+                try { await Task.Delay(Timeout.Infinite, token); }
+                catch (OperationCanceledException) { }
+            });
+        using var worker = new BulkUpdateWorker(queue.Object, processor.Object, Mock.Of<ILogger<BulkUpdateWorker>>());
+        await worker.StartAsync(CancellationToken.None);
+        await processing.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await worker.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(worker.ExecuteTask!.IsCompletedSuccessfully);
+        queue.Verify(value => value.DequeueAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

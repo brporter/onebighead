@@ -3,7 +3,7 @@ using System.Threading.Channels;
 
 namespace OneBigHead.Server.Services.BulkUpdate;
 
-public class BulkUpdateQueue : IBulkUpdateQueue
+public class BulkUpdateQueue : IBulkUpdateQueue, IBulkUpdateJobs, IBulkUpdateCollectionLocks
 {
     private readonly Channel<BulkUpdateJob> _channel = Channel.CreateUnbounded<BulkUpdateJob>(
         new UnboundedChannelOptions { SingleReader = true });
@@ -13,6 +13,7 @@ public class BulkUpdateQueue : IBulkUpdateQueue
 
     public void Enqueue(BulkUpdateJob job)
     {
+        CleanupStaleJobs();
         _jobs[job.JobId] = job;
         _channel.Writer.TryWrite(job);
     }
@@ -52,9 +53,9 @@ public class BulkUpdateQueue : IBulkUpdateQueue
         _activeCollectionIds[collectionId] = jobId;
     }
 
-    public void ReleaseCollectionLock(int collectionId)
+    public void ReleaseCollectionLock(int collectionId, Guid jobId)
     {
-        _activeCollectionIds.TryRemove(collectionId, out _);
+        _activeCollectionIds.TryRemove(new KeyValuePair<int, Guid>(collectionId, jobId));
     }
 
     private void CleanupStaleJobs()

@@ -28,13 +28,6 @@ public class WorkspaceRepository : IWorkspaceRepository
         await context.SaveChangesAsync();
     }
 
-    public async Task CreateAsync(Workspace workspace)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        context.Workspaces.Add(workspace);
-        await context.SaveChangesAsync();
-    }
-
     public async Task<WorkspaceStats> GetStatsAsync(int workspaceId)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -47,18 +40,10 @@ public class WorkspaceRepository : IWorkspaceRepository
         };
     }
 
-    public async Task<Workspace?> GetBySlugAsync(string slug)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Workspaces
-            .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Slug == slug && !w.IsDeleted);
-    }
-
     public async Task<bool> IsSlugTakenAsync(string slug, int? excludeWorkspaceId = null)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         return await context.Workspaces
-            .AnyAsync(w => w.Slug == slug && !w.IsDeleted && (!excludeWorkspaceId.HasValue || w.Id != excludeWorkspaceId.Value));
+            .AnyAsync(w => w.Slug == slug && (!excludeWorkspaceId.HasValue || w.Id != excludeWorkspaceId.Value));
     }
 }

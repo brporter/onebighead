@@ -1,0 +1,10 @@
+.collection-setup .setupWizard__container { min-width: 0; }
+.collection-setup__fields { border: 0; padding: 0; margin: 0; min-width: 0; overflow-y: auto; }
+.collection-setup .setupWizard__header, .collection-setup .setupWizard__headerActions, .collection-setup .setupWizard__tabs, .collection-setup .setupWizard__footer { flex-wrap: wrap; gap: var(--space-sm); }
+.collection-setup .setupWizard__title { overflow-wrap: anywhere; }
+.collection-setup button { min-height: 44px; }
+.collection-setup button:disabled { opacity: 0.5; cursor: wait; }
+.collection-setup .setupWizard__themeGrid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.collection-setup .setupWizard__input, .collection-setup .setupWizard__textarea { min-width: 0; }
+.collection-setup .setupWizard__summaryList { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+.collection-setup .setupWizard__summaryList dd { overflow-wrap: anywhere; }

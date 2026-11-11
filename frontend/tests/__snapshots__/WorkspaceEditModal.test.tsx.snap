@@ -3,11 +3,12 @@
 exports[`WorkspaceEditModal > snapshots > should match snapshot when open 1`] = `
 <div>
   <dialog
-    class="modal-dialog"
+    aria-label="Edit Workspace"
+    class="modal-dialog "
     open=""
   >
     <div
-      class="modal"
+      class="modal workspace-edit-modal"
     >
       <div
         class="modal__header"
@@ -26,94 +27,99 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot when open 1`] = 
         </button>
       </div>
       <form
+        aria-label="Edit workspace details"
         class="modal__body"
       >
-        <div
-          class="modal__field"
+        <fieldset
+          class="workspace-edit-modal__fields"
         >
-          <label
-            class="modal__label"
-            for="workspace-name"
+          <div
+            class="modal__field"
           >
-            Workspace Name 
-            <span
-              class="modal__required"
+            <label
+              class="modal__label"
+              for="_r_l_-name"
             >
-              *
+              Workspace Name
+              <span
+                aria-hidden="true"
+                class="modal__required"
+              >
+                 *
+              </span>
+            </label>
+            <input
+              class="modal__input"
+              id="_r_l_-name"
+              maxlength="200"
+              placeholder="Workspace name"
+              required=""
+              type="text"
+              value="Test Workspace"
+            />
+          </div>
+          <h3
+            class="workspace-edit-modal__section-title"
+          >
+            Public Gallery
+          </h3>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="_r_l_-slug"
+            >
+              Gallery URL Slug
+            </label>
+            <input
+              aria-describedby="_r_l_-hint"
+              class="modal__input"
+              id="_r_l_-slug"
+              maxlength="50"
+              placeholder="my-workspace"
+              type="text"
+              value="test-workspace"
+            />
+            <p
+              class="workspace-edit-modal__hint"
+              id="_r_l_-hint"
+            >
+              Reserve your gallery URL. Your gallery becomes active when you publish your first item.
+            </p>
+          </div>
+          <div
+            class="workspace-edit-modal__preview"
+          >
+            <span
+              class="workspace-edit-modal__preview-label"
+            >
+              Gallery URL:
             </span>
-          </label>
-          <input
-            class="modal__input"
-            id="workspace-name"
-            maxlength="200"
-            placeholder="Workspace name"
-            required=""
-            type="text"
-            value="Test Workspace"
-          />
-        </div>
-        <div
-          class="modal__divider"
-        />
-        <h3
-          class="modal__section-title"
-        >
-          Public Gallery
-        </h3>
-        <div
-          class="modal__field"
-        >
-          <label
-            class="modal__label"
-            for="public-slug"
+            <code
+              class="workspace-edit-modal__preview-url"
+            >
+              /public/
+              test-workspace
+            </code>
+          </div>
+          <div
+            class="modal__actions"
           >
-            Gallery URL Slug
-          </label>
-          <input
-            class="modal__input"
-            id="public-slug"
-            maxlength="50"
-            placeholder="my-workspace"
-            type="text"
-            value="test-workspace"
-          />
-          <p
-            class="modal__hint"
-          >
-            Reserve your gallery URL. Your gallery becomes active when you publish your first item.
-          </p>
-        </div>
-        <div
-          class="workspace-edit-modal__preview"
-        >
-          <span
-            class="workspace-edit-modal__preview-label"
-          >
-            Gallery URL:
-          </span>
-          <code
-            class="workspace-edit-modal__preview-url"
-          >
-            /public/
-            test-workspace
-          </code>
-        </div>
-        <div
-          class="modal__actions"
-        >
-          <button
-            class="detail__btn detail__btn--primary"
-            type="submit"
-          >
-            Save
-          </button>
-          <button
-            class="detail__btn detail__btn--secondary"
-            type="button"
-          >
-            Cancel
-          </button>
-        </div>
+            <button
+              class="modal__button modal__button--primary"
+              type="submit"
+            >
+              Save
+            </button>
+            <button
+              class="modal__button modal__button--secondary"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </fieldset>
       </form>
     </div>
   </dialog>
@@ -123,11 +129,12 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot when open 1`] = 
 exports[`WorkspaceEditModal > snapshots > should match snapshot with error 1`] = `
 <div>
   <dialog
-    class="modal-dialog"
+    aria-label="Edit Workspace"
+    class="modal-dialog "
     open=""
   >
     <div
-      class="modal"
+      class="modal workspace-edit-modal"
     >
       <div
         class="modal__header"
@@ -146,100 +153,106 @@ exports[`WorkspaceEditModal > snapshots > should match snapshot with error 1`] =
         </button>
       </div>
       <form
+        aria-label="Edit workspace details"
         class="modal__body"
       >
         <div
           class="modal__error"
           role="alert"
+          tabindex="-1"
         >
           Something went wrong
         </div>
-        <div
-          class="modal__field"
+        <fieldset
+          class="workspace-edit-modal__fields"
         >
-          <label
-            class="modal__label"
-            for="workspace-name"
+          <div
+            class="modal__field"
           >
-            Workspace Name 
-            <span
-              class="modal__required"
+            <label
+              class="modal__label"
+              for="_r_m_-name"
             >
-              *
+              Workspace Name
+              <span
+                aria-hidden="true"
+                class="modal__required"
+              >
+                 *
+              </span>
+            </label>
+            <input
+              class="modal__input"
+              id="_r_m_-name"
+              maxlength="200"
+              placeholder="Workspace name"
+              required=""
+              type="text"
+              value="Test Workspace"
+            />
+          </div>
+          <h3
+            class="workspace-edit-modal__section-title"
+          >
+            Public Gallery
+          </h3>
+          <div
+            class="modal__field"
+          >
+            <label
+              class="modal__label"
+              for="_r_m_-slug"
+            >
+              Gallery URL Slug
+            </label>
+            <input
+              aria-describedby="_r_m_-hint"
+              class="modal__input"
+              id="_r_m_-slug"
+              maxlength="50"
+              placeholder="my-workspace"
+              type="text"
+              value="test-workspace"
+            />
+            <p
+              class="workspace-edit-modal__hint"
+              id="_r_m_-hint"
+            >
+              Reserve your gallery URL. Your gallery becomes active when you publish your first item.
+            </p>
+          </div>
+          <div
+            class="workspace-edit-modal__preview"
+          >
+            <span
+              class="workspace-edit-modal__preview-label"
+            >
+              Gallery URL:
             </span>
-          </label>
-          <input
-            class="modal__input"
-            id="workspace-name"
-            maxlength="200"
-            placeholder="Workspace name"
-            required=""
-            type="text"
-            value="Test Workspace"
-          />
-        </div>
-        <div
-          class="modal__divider"
-        />
-        <h3
-          class="modal__section-title"
-        >
-          Public Gallery
-        </h3>
-        <div
-          class="modal__field"
-        >
-          <label
-            class="modal__label"
-            for="public-slug"
+            <code
+              class="workspace-edit-modal__preview-url"
+            >
+              /public/
+              test-workspace
+            </code>
+          </div>
+          <div
+            class="modal__actions"
           >
-            Gallery URL Slug
-          </label>
-          <input
-            class="modal__input"
-            id="public-slug"
-            maxlength="50"
-            placeholder="my-workspace"
-            type="text"
-            value="test-workspace"
-          />
-          <p
-            class="modal__hint"
-          >
-            Reserve your gallery URL. Your gallery becomes active when you publish your first item.
-          </p>
-        </div>
-        <div
-          class="workspace-edit-modal__preview"
-        >
-          <span
-            class="workspace-edit-modal__preview-label"
-          >
-            Gallery URL:
-          </span>
-          <code
-            class="workspace-edit-modal__preview-url"
-          >
-            /public/
-            test-workspace
-          </code>
-        </div>
-        <div
-          class="modal__actions"
-        >
-          <button
-            class="detail__btn detail__btn--primary"
-            type="submit"
-          >
-            Save
-          </button>
-          <button
-            class="detail__btn detail__btn--secondary"
-            type="button"
-          >
-            Cancel
-          </button>
-        </div>
+            <button
+              class="modal__button modal__button--primary"
+              type="submit"
+            >
+              Save
+            </button>
+            <button
+              class="modal__button modal__button--secondary"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </fieldset>
       </form>
     </div>
   </dialog>

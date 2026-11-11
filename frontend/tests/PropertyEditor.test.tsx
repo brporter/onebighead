@@ -1,191 +1,147 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { StrictMode, useState } from 'react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { beforeEach, expect, it, vi } from 'vitest';
+import type { DndContextProps, DragEndEvent } from '@dnd-kit/core';
 import PropertyEditor from '../src/components/item/PropertyEditor';
-import type { ItemProperty } from '../src/utils/types';
+import { createItemProperty, type ItemPropertyDraft } from '../src/data/items/itemDraft';
 
-// Mock generateUniqueId for deterministic snapshots
-let idCounter = 0;
-vi.mock('../src/utils/idUtils', () => ({
-  generateUniqueId: (prefix: string) => `${prefix}-test-${idCounter++}`,
+const dnd = vi.hoisted(() => ({ props: {} as DndContextProps }));
+vi.mock('@dnd-kit/core', async importOriginal => ({
+  ...await importOriginal<typeof import('@dnd-kit/core')>(),
+  DndContext: (props: DndContextProps) => { dnd.props = props; return props.children; },
 }));
-
-const mockAddLocalCategorySuggestion = vi.fn();
-const mockAddLocalNameSuggestion = vi.fn();
-
-vi.mock('../src/contexts/useData', () => ({
-  useData: () => ({
-    propertyCategorySuggestions: ['General', 'Technical'],
-    propertyNameSuggestions: ['Color', 'Size'],
-    addLocalCategorySuggestion: mockAddLocalCategorySuggestion,
-    addLocalNameSuggestion: mockAddLocalNameSuggestion,
-  }),
+const suggestions = vi.hoisted(() => ({
+  propertyCategorySuggestions: ['General', 'Technical'], propertyNameSuggestions: ['Color', 'Size'],
+  addLocalCategorySuggestion: vi.fn(), addLocalNameSuggestion: vi.fn(),
 }));
+vi.mock('../src/contexts/useData', () => ({ useSuggestionsData: () => suggestions }));
+beforeEach(() => vi.clearAllMocks());
 
-describe('PropertyEditor', () => {
-  const mockProperties: ItemProperty[] = [
-    { category: 'General', name: 'Prop1', value: 'Value1' },
-    { category: 'Technical', name: 'Prop2', value: 'Value2' },
-  ];
+const initial = [
+  { id: 'first', category: 'General', name: 'Color', value: 'Red' },
+  { id: 'second', category: 'General', name: 'Size', value: 'Small' },
+  { id: 'third', category: 'Technical', name: 'Voltage', value: '12V' },
+];
+function Editor({ starting = initial }: { starting?: ItemPropertyDraft[] }) {
+  const [properties, setProperties] = useState(starting);
+  return <PropertyEditor properties={properties} onChange={setProperties} />;
+}
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    idCounter = 0;
-  });
-
-  describe('snapshots', () => {
-    it('should render with properties', () => {
-      const { container } = render(
-        <PropertyEditor properties={mockProperties} onChange={() => {}} />
-      );
-      expect(container).toMatchSnapshot();
-    });
-
-    it('should render with empty properties', () => {
-      const { container } = render(
-        <PropertyEditor properties={[]} onChange={() => {}} />
-      );
-      expect(container).toMatchSnapshot();
-    });
-  });
-
-  describe('display', () => {
-    it('should display all properties', () => {
-      render(<PropertyEditor properties={mockProperties} onChange={() => {}} />);
-
-      const categoryInputs = screen.getAllByPlaceholderText('Category');
-      expect(categoryInputs.length).toBe(2);
-      expect(categoryInputs[0]).toHaveValue('General');
-      expect(categoryInputs[1]).toHaveValue('Technical');
-    });
-
-    it('should show add property button', () => {
-      render(<PropertyEditor properties={[]} onChange={() => {}} />);
-
-      expect(screen.getByText('+ Add Property')).toBeInTheDocument();
-    });
-
-    it('should show remove button for each property', () => {
-      render(<PropertyEditor properties={mockProperties} onChange={() => {}} />);
-
-      const removeButtons = screen.getAllByLabelText('Remove property');
-      expect(removeButtons.length).toBe(2);
-    });
-  });
-
-  describe('interactions', () => {
-    it('should call onChange when adding a property', async () => {
-      const user = userEvent.setup();
-      const handleChange = vi.fn();
-
-      render(<PropertyEditor properties={mockProperties} onChange={handleChange} />);
-
-      await user.click(screen.getByText('+ Add Property'));
-
-      expect(handleChange).toHaveBeenCalledWith([
-        ...mockProperties,
-        { category: '', name: '', value: '' },
-      ]);
-    });
-
-    it('should call onChange when removing a property', async () => {
-      const user = userEvent.setup();
-      const handleChange = vi.fn();
-
-      render(<PropertyEditor properties={mockProperties} onChange={handleChange} />);
-
-      const removeButtons = screen.getAllByLabelText('Remove property');
-      await user.click(removeButtons[0]);
-
-      expect(handleChange).toHaveBeenCalledWith([mockProperties[1]]);
-    });
-
-    it('should call onChange when updating category', async () => {
-      const user = userEvent.setup();
-      const handleChange = vi.fn();
-
-      render(<PropertyEditor properties={mockProperties} onChange={handleChange} />);
-
-      const categoryInputs = screen.getAllByPlaceholderText('Category');
-      await user.clear(categoryInputs[0]);
-      await user.type(categoryInputs[0], 'New Category');
-
-      expect(handleChange).toHaveBeenCalled();
-    });
-
-    it('should call onChange when updating name', async () => {
-      const user = userEvent.setup();
-      const handleChange = vi.fn();
-
-      render(<PropertyEditor properties={mockProperties} onChange={handleChange} />);
-
-      const nameInputs = screen.getAllByPlaceholderText('Name');
-      await user.clear(nameInputs[0]);
-      await user.type(nameInputs[0], 'New Name');
-
-      expect(handleChange).toHaveBeenCalled();
-    });
-
-    it('should call onChange when updating value', async () => {
-      const user = userEvent.setup();
-      const handleChange = vi.fn();
-
-      render(<PropertyEditor properties={mockProperties} onChange={handleChange} />);
-
-      const valueInputs = screen.getAllByPlaceholderText('Value');
-      await user.clear(valueInputs[0]);
-      await user.type(valueInputs[0], 'New Value');
-
-      expect(handleChange).toHaveBeenCalled();
-    });
-  });
-
-  describe('local suggestions', () => {
-    it('should call addLocalCategorySuggestion on blur with non-empty value', async () => {
-      const user = userEvent.setup();
-      
-      // Use a property that already has a category value
-      render(<PropertyEditor properties={[{ category: 'ExistingCategory', name: '', value: '' }]} onChange={() => {}} />);
-
-      const categoryInputs = screen.getAllByPlaceholderText('Category');
-      // Focus the field (it already has a value)
-      await user.click(categoryInputs[0]);
-      // Blur by tabbing away
-      await user.tab();
-      
-      // Should be called with the existing value
-      expect(mockAddLocalCategorySuggestion).toHaveBeenCalledWith('ExistingCategory');
-    });
-
-    it('should call addLocalNameSuggestion on blur with non-empty value', async () => {
-      const user = userEvent.setup();
-      
-      // Use a property that already has a name value
-      render(<PropertyEditor properties={[{ category: '', name: 'ExistingName', value: '' }]} onChange={() => {}} />);
-
-      const nameInputs = screen.getAllByPlaceholderText('Name');
-      // Focus the field (it already has a value)
-      await user.click(nameInputs[0]);
-      // Blur by tabbing away
-      await user.tab();
-      
-      // Should be called with the existing value
-      expect(mockAddLocalNameSuggestion).toHaveBeenCalledWith('ExistingName');
-    });
-
-    it('should not call addLocalCategorySuggestion on blur for empty value', async () => {
-      const user = userEvent.setup();
-
-      render(<PropertyEditor properties={[{ category: '', name: '', value: '' }]} onChange={() => {}} />);
-
-      const categoryInputs = screen.getAllByPlaceholderText('Category');
-      // Focus and blur the empty field
-      await user.click(categoryInputs[0]);
-      await user.tab();
-
-      // Should not be called for empty string
-      expect(mockAddLocalCategorySuggestion).not.toHaveBeenCalled();
-    });
-  });
+it('labels its section and fields and keeps suggestion lists separate across editor instances', () => {
+  render(<><Editor /><Editor /></>);
+  const sections = screen.getAllByRole('region', { name: 'Properties' });
+  expect(sections).toHaveLength(2);
+  const lists = new Set<string>();
+  for (const section of sections) {
+    expect(within(section).getByRole('heading', { name: 'Properties' })).toBeInTheDocument();
+    for (const [label, expected] of [['Property category', ['General', 'Technical']], ['Property name', ['Color', 'Size']]] as const) {
+      const inputs = within(section).getAllByRole('combobox', { name: label });
+      const listId = inputs[0].getAttribute('list')!;
+      lists.add(listId);
+      expect(inputs.every(input => input.getAttribute('list') === listId)).toBe(true);
+      expect([...document.getElementById(listId)!.querySelectorAll('option')].map(option => option.value)).toEqual(expected);
+    }
+    expect(within(section).getAllByRole('textbox', { name: 'Property value' })).toHaveLength(3);
+    expect(within(section).getAllByRole('button', { name: 'Remove property' })).toHaveLength(3);
+  }
+  expect(lists.size).toBe(4);
 });
 
+it('adds independent rows and focuses the new category within the selected editor in StrictMode', async () => {
+  render(<StrictMode><Editor starting={[]} /><Editor starting={[]} /></StrictMode>);
+  const sections = screen.getAllByRole('region', { name: 'Properties' });
+  const second = within(sections[1]);
+  await userEvent.click(second.getByRole('button', { name: '+ Add Property' }));
+  expect(second.getByRole('combobox', { name: 'Property category' })).toHaveFocus();
+  const first = second.getByRole('combobox', { name: 'Property category' });
+  await userEvent.click(second.getByRole('button', { name: '+ Add Property' }));
+  const categories = second.getAllByRole('combobox', { name: 'Property category' });
+  expect(categories[1]).toHaveFocus();
+  expect(categories[1].getAttribute('data-property-id')).not.toBe(first.getAttribute('data-property-id'));
+  expect(within(sections[0]).queryByRole('combobox')).not.toBeInTheDocument();
+  expect(within(sections[0]).getByText(/No properties yet/)).toBeInTheDocument();
+});
+
+it('preserves the focused input and row identity during category regrouping and field editing', async () => {
+  render(<Editor />);
+  const category = screen.getAllByRole('combobox', { name: 'Property category' })[0];
+  const name = screen.getByDisplayValue('Color');
+  const value = screen.getByDisplayValue('Red');
+  await userEvent.click(category);
+  fireEvent.change(category, { target: { value: 'Appearance' } });
+  await userEvent.type(name, ' finish');
+  expect(name).toHaveValue('Color finish');
+  expect(name).toHaveFocus();
+  expect(name).toHaveAttribute('data-property-id', 'first');
+  expect(screen.getByText('Appearance')).toBeInTheDocument();
+  await userEvent.clear(value);
+  await userEvent.type(value, 'Blue');
+  expect(value).toHaveValue('Blue');
+  expect(value).toHaveFocus();
+  expect(initial[0]).toEqual({ id: 'first', category: 'General', name: 'Color', value: 'Red' });
+});
+
+it('records meaningful category and name suggestions only when those fields blur', () => {
+  render(<Editor />);
+  const category = screen.getAllByRole('combobox', { name: 'Property category' })[0];
+  const name = screen.getByDisplayValue('Color');
+  const value = screen.getByDisplayValue('Red');
+  fireEvent.blur(category);
+  fireEvent.blur(name);
+  expect(suggestions.addLocalCategorySuggestion).toHaveBeenCalledWith('General');
+  expect(suggestions.addLocalNameSuggestion).toHaveBeenCalledWith('Color');
+  vi.clearAllMocks();
+  fireEvent.change(category, { target: { value: '   ' } });
+  fireEvent.change(name, { target: { value: '' } });
+  fireEvent.blur(category);
+  fireEvent.blur(name);
+  fireEvent.blur(value);
+  expect(suggestions.addLocalCategorySuggestion).not.toHaveBeenCalled();
+  expect(suggestions.addLocalNameSuggestion).not.toHaveBeenCalled();
+});
+
+it('removes one duplicate row without changing the surviving row identity', async () => {
+  const duplicate = { category: 'General', name: 'Color', value: 'Red' };
+  render(<Editor starting={[createItemProperty(duplicate), createItemProperty(duplicate)]} />);
+  const surviving = screen.getAllByDisplayValue('Red')[1];
+  const identity = surviving.getAttribute('data-property-id');
+  await userEvent.click(screen.getAllByRole('button', { name: 'Remove property' })[0]);
+  expect(screen.getByDisplayValue('Red')).toBe(surviving);
+  expect(surviving).toHaveAttribute('data-property-id', identity);
+  await userEvent.click(screen.getByRole('button', { name: 'Remove property' }));
+  expect(screen.getByText(/No properties yet/)).toBeInTheDocument();
+});
+
+it('keeps surviving input identity and focus when the parent removes, reorders or inserts rows', () => {
+  const onChange = vi.fn();
+  const { rerender } = render(<PropertyEditor properties={initial} onChange={onChange} />);
+  const focused = screen.getByDisplayValue('Small');
+  focused.focus();
+  rerender(<PropertyEditor properties={[initial[2], initial[1]]} onChange={onChange} />);
+  expect(screen.getByDisplayValue('Small')).toBe(focused);
+  expect(focused).toHaveFocus();
+  rerender(<PropertyEditor properties={[createItemProperty(), initial[1], initial[2]]} onChange={onChange} />);
+  expect(focused).toHaveFocus();
+  expect(screen.getByDisplayValue('Small')).toHaveAttribute('data-property-id', 'second');
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+it('reorders rows within a category while keeping values, identity and subsequent edits together', () => {
+  const { container } = render(<Editor />);
+  const red = screen.getByDisplayValue('Red');
+  act(() => dnd.props.onDragEnd!({ active: { id: 'first' }, over: { id: 'second' } } as DragEndEvent));
+  expect([...container.querySelectorAll('[data-field="value"]')].map(input => (input as HTMLInputElement).value)).toEqual(['Small', 'Red', '12V']);
+  expect(screen.getByDisplayValue('Red')).toBe(red);
+  fireEvent.change(red, { target: { value: 'Blue' } });
+  expect(screen.getByDisplayValue('Blue')).toHaveAttribute('data-property-id', 'first');
+});
+
+it('leaves focus alone when a parent declines the added row', async () => {
+  const onChange = vi.fn();
+  const { rerender } = render(<PropertyEditor properties={initial} onChange={onChange} />);
+  await userEvent.click(screen.getByRole('button', { name: '+ Add Property' }));
+  expect(onChange).toHaveBeenCalledWith([...initial, expect.objectContaining({ category: '', name: '', value: '' })]);
+  rerender(<PropertyEditor properties={initial} onChange={onChange} />);
+  expect(screen.getByRole('button', { name: '+ Add Property' })).toHaveFocus();
+});

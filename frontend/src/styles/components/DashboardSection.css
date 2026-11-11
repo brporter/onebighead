@@ -1,0 +1,107 @@
+/* Dashboard stats grid */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--space-lg);
+  margin: 0 0 var(--space-xl);
+}
+
+.dashboard-stats__card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.dashboard-stats__value {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  margin: var(--space-xs) 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.dashboard-stats__label {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.dashboard-stats__detail {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}
+
+/* Dashboard bar chart */
+.dashboard-chart {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  background: var(--color-bg);
+}
+
+.dashboard-chart__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-lg) 0;
+}
+
+.dashboard-chart__bars {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(0.25rem, 1.5vw, 1rem);
+  height: 200px;
+}
+
+.dashboard-chart__bar-wrapper {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.dashboard-chart__bar-count {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+  min-height: 1.2em;
+}
+
+.dashboard-chart__bar-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.dashboard-chart__bar {
+  width: 70%;
+  max-width: 48px;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: height 0.3s ease;
+}
+
+.dashboard-chart__bar-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-chart__bar { transition: none; }
+}

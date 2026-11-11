@@ -2,22 +2,31 @@
  * API module for workspace user management.
  */
 
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 import type { WorkspaceUser, InviteUserRequest, UpdateUserRoleRequest, WorkspaceRole } from '../utils/types';
+import type { CreatedInvitation, WorkspaceInvitation } from '../data/invitations/types';
 
 export const usersApi = {
   /**
    * Get all users in the current workspace.
    */
-  getUsers(): Promise<WorkspaceUser[]> {
-    return api.get<WorkspaceUser[]>('/users');
+  getUsers(options?: RequestOptions): Promise<WorkspaceUser[]> {
+    return api.get<WorkspaceUser[]>('/users', options);
   },
 
   /**
    * Invite a new user to the workspace by email.
    */
-  inviteUser(request: InviteUserRequest): Promise<WorkspaceUser> {
-    return api.post<WorkspaceUser>('/users', request);
+  inviteUser(request: InviteUserRequest): Promise<CreatedInvitation> {
+    return api.post<CreatedInvitation>('/users', request);
+  },
+
+  getInvitations(options?: RequestOptions): Promise<WorkspaceInvitation[]> {
+    return api.get<WorkspaceInvitation[]>('/invitations', options);
+  },
+
+  cancelInvitation(id: string): Promise<void> {
+    return api.delete<void>(`/invitations/${encodeURIComponent(id)}`);
   },
 
   /**

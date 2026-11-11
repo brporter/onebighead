@@ -39,7 +39,7 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -50,8 +50,10 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -65,9 +67,12 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -82,8 +87,10 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📋
@@ -98,8 +105,10 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👥
@@ -114,8 +123,10 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📦
@@ -130,8 +141,10 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -146,8 +159,10 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -162,8 +177,10 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤
@@ -193,8 +210,9 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
         <div
           class="settings-panel"
         >
-          <div
-            class="settings-section"
+          <section
+            aria-labelledby="collection-settings-title"
+            class="settings-section collection-settings"
           >
             <div
               class="settings-section__header"
@@ -202,6 +220,7 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
               <div>
                 <h2
                   class="settings-section__title"
+                  id="collection-settings-title"
                 >
                   Collections
                 </h2>
@@ -212,7 +231,8 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
                 </p>
               </div>
               <button
-                class="settings-section__addButton"
+                class="collection-settings__create"
+                type="button"
               >
                 + New Collection
               </button>
@@ -220,7 +240,8 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
             <div
               class="settings-collection-grid"
             >
-              <div
+              <article
+                aria-label="Test Collection 1"
                 class="settings-collection-card"
               >
                 <div
@@ -251,27 +272,32 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
                 >
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Categories
                   </button>
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Templates
                   </button>
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Edit
                   </button>
                   <button
                     class="settings-collection-card__button settings-collection-card__button--danger"
+                    type="button"
                   >
                     Delete
                   </button>
                 </div>
-              </div>
-              <div
+              </article>
+              <article
+                aria-label="Test Collection 2"
                 class="settings-collection-card"
               >
                 <div
@@ -302,28 +328,32 @@ exports[`SettingsView > snapshots > should match snapshot for admin user - colle
                 >
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Categories
                   </button>
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Templates
                   </button>
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Edit
                   </button>
                   <button
                     class="settings-collection-card__button settings-collection-card__button--danger"
+                    type="button"
                   >
                     Delete
                   </button>
                 </div>
-              </div>
+              </article>
             </div>
-          </div>
+          </section>
         </div>
       </main>
     </div>
@@ -375,7 +405,7 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -386,8 +416,10 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -402,8 +434,10 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -418,8 +452,10 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📋
@@ -434,8 +470,10 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👥
@@ -449,9 +487,12 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📦
@@ -466,8 +507,10 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -482,8 +525,10 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -498,8 +543,10 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤
@@ -544,7 +591,7 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
                 <p
                   class="settings-section__description"
                 >
-                  Download all your collections, categories, and items as a ZIP file. This includes all metadata and can be used for backup purposes.
+                  Download the active workspace’s collections, categories, items, and templates as a ZIP file for backup.
                 </p>
               </div>
             </div>
@@ -552,6 +599,7 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
               class="settings-export-card"
             >
               <div
+                aria-hidden="true"
                 class="settings-export-card__icon"
               >
                 📦
@@ -567,11 +615,12 @@ exports[`SettingsView > snapshots > should match snapshot for export section 1`]
                 <p
                   class="settings-export-card__description"
                 >
-                  Creates a ZIP archive containing JSON files with all your collections, categories, items, and their properties.
+                  Creates a ZIP archive containing JSON files with your collection metadata and item properties.
                 </p>
               </div>
               <button
                 class="settings-export-card__button"
+                type="button"
               >
                 Download Export
               </button>
@@ -628,7 +677,7 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -639,8 +688,10 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -654,9 +705,12 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -671,8 +725,10 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -687,8 +743,10 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -703,8 +761,10 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤
@@ -734,8 +794,9 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
         <div
           class="settings-panel"
         >
-          <div
-            class="settings-section"
+          <section
+            aria-labelledby="collection-settings-title"
+            class="settings-section collection-settings"
           >
             <div
               class="settings-section__header"
@@ -743,6 +804,7 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
               <div>
                 <h2
                   class="settings-section__title"
+                  id="collection-settings-title"
                 >
                   Collections
                 </h2>
@@ -756,7 +818,8 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
             <div
               class="settings-collection-grid"
             >
-              <div
+              <article
+                aria-label="Test Collection 1"
                 class="settings-collection-card"
               >
                 <div
@@ -787,22 +850,26 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
                 >
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Categories
                   </button>
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Templates
                   </button>
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Edit
                   </button>
                 </div>
-              </div>
-              <div
+              </article>
+              <article
+                aria-label="Test Collection 2"
                 class="settings-collection-card"
               >
                 <div
@@ -833,23 +900,26 @@ exports[`SettingsView > snapshots > should match snapshot for normal user - coll
                 >
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Categories
                   </button>
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Templates
                   </button>
                   <button
                     class="settings-collection-card__button"
+                    type="button"
                   >
                     Edit
                   </button>
                 </div>
-              </div>
+              </article>
             </div>
-          </div>
+          </section>
         </div>
       </main>
     </div>
@@ -901,7 +971,7 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -912,8 +982,10 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -928,8 +1000,10 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -944,8 +1018,10 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📋
@@ -960,8 +1036,10 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👥
@@ -976,8 +1054,10 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📦
@@ -992,8 +1072,10 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -1007,9 +1089,12 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -1024,8 +1109,10 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤
@@ -1075,11 +1162,24 @@ exports[`SettingsView > snapshots > should match snapshot for support section 1`
               </div>
             </div>
             <div
+              data-refresh="0"
               data-testid="support-section"
             >
               Support Section (fullPage: 
               true
               )
+              <button>
+                New support request
+              </button>
+              <button>
+                Draft support reply
+              </button>
+              <button>
+                Sending support reply
+              </button>
+              <button>
+                Support reply sent
+              </button>
             </div>
           </div>
         </div>
@@ -1133,7 +1233,7 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -1144,8 +1244,10 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -1160,8 +1262,10 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -1176,8 +1280,10 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📋
@@ -1191,9 +1297,12 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👥
@@ -1208,8 +1317,10 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📦
@@ -1224,8 +1335,10 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -1240,8 +1353,10 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -1256,8 +1371,10 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤
@@ -1315,6 +1432,12 @@ exports[`SettingsView > snapshots > should match snapshot for team section 1`] =
               <button>
                 Mark Team Dirty
               </button>
+              <button>
+                Saving team change
+              </button>
+              <button>
+                Team change saved
+              </button>
             </div>
           </div>
         </div>
@@ -1368,7 +1491,7 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -1379,8 +1502,10 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -1395,8 +1520,10 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -1410,9 +1537,12 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📋
@@ -1427,8 +1557,10 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👥
@@ -1443,8 +1575,10 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📦
@@ -1459,8 +1593,10 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -1475,8 +1611,10 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -1491,8 +1629,10 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤
@@ -1533,6 +1673,12 @@ exports[`SettingsView > snapshots > should match snapshot for templates section 
               </button>
               <button>
                 Mark Dirty
+              </button>
+              <button>
+                Saving template
+              </button>
+              <button>
+                Template saved
               </button>
             </div>
           </div>
@@ -1587,7 +1733,7 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -1598,8 +1744,10 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -1613,9 +1761,12 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -1630,8 +1781,10 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📋
@@ -1646,8 +1799,10 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👥
@@ -1662,8 +1817,10 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📦
@@ -1678,8 +1835,10 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -1694,8 +1853,10 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -1710,8 +1871,10 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤
@@ -1741,63 +1904,50 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
         <div
           class="settings-panel"
         >
-          <div
-            class="settings-section"
+          <form
+            aria-label="Edit collection"
+            class="collection-editor"
           >
-            <div
-              class="settings-section__header"
+            <h3
+              class="collection-editor__title"
             >
-              <div>
-                <h2
-                  class="settings-section__title"
-                >
-                  Collections
-                </h2>
-                <p
-                  class="settings-section__description"
-                >
-                  Manage your collections. Each collection can have categories and items.
-                </p>
-              </div>
-            </div>
-            <form
-              class="settings-form"
+              Edit Collection
+            </h3>
+            <fieldset
+              aria-busy="false"
+              class="collection-editor__fields"
             >
-              <h3
-                class="settings-form__title"
-              >
-                Edit Collection
-              </h3>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
                 <label
-                  class="settings-form__label"
+                  for="_react-id_-name"
                 >
                   Name 
                   <span
-                    class="settings-form__required"
+                    aria-hidden="true"
                   >
                     *
                   </span>
                 </label>
                 <input
-                  class="settings-form__input"
+                  aria-required="true"
+                  id="_react-id_-name"
                   placeholder="My Collection"
                   type="text"
                   value="Test Collection 1"
                 />
               </div>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
                 <label
-                  class="settings-form__label"
+                  for="_react-id_-description"
                 >
                   Description
                 </label>
                 <textarea
-                  class="settings-form__textarea"
+                  id="_react-id_-description"
                   placeholder="A brief description of this collection"
                   rows="3"
                 >
@@ -1805,78 +1955,68 @@ exports[`SettingsView > snapshots > should match snapshot in collection edit mod
                 </textarea>
               </div>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
                 <label
-                  class="settings-form__label"
+                  for="_react-id_-image"
                 >
                   Hero Image URL
                 </label>
                 <input
-                  class="settings-form__input"
+                  id="_react-id_-image"
                   placeholder="https://example.com/image.jpg"
                   type="url"
                   value="https://example.com/hero1.jpg"
                 />
               </div>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
-                <label
-                  class="settings-form__label"
-                >
+                <h4>
                   Item Templates
-                </label>
-                <p
-                  class="settings-form__hint"
-                >
-                  Configure which templates are available when creating items in this collection.
+                </h4>
+                <p>
+                  Configure which templates are available when creating items in this collection. Your collection draft is kept while you manage templates.
                 </p>
                 <button
-                  class="settings-form__button settings-form__button--secondary"
                   type="button"
                 >
                   Manage Templates
                 </button>
               </div>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
-                <label
-                  class="settings-form__label"
-                >
+                <h4>
                   Visibility
-                </label>
-                <p
-                  class="settings-form__hint"
-                >
+                </h4>
+                <p>
                   This collection is currently visible in your public gallery.
                 </p>
                 <button
-                  class="settings-form__button settings-form__button--danger"
+                  class="collection-editor__danger"
                   type="button"
                 >
                   Unpublish Collection
                 </button>
               </div>
               <div
-                class="settings-form__actions"
+                class="collection-editor__actions"
               >
                 <button
-                  class="settings-form__button settings-form__button--primary"
+                  class="collection-editor__primary"
                   type="submit"
                 >
                   Save Changes
                 </button>
                 <button
-                  class="settings-form__button settings-form__button--secondary"
                   type="button"
                 >
                   Cancel
                 </button>
               </div>
-            </form>
-          </div>
+            </fieldset>
+          </form>
         </div>
       </main>
     </div>
@@ -1928,7 +2068,7 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -1939,8 +2079,10 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -1954,9 +2096,12 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -1971,8 +2116,10 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📋
@@ -1987,8 +2134,10 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👥
@@ -2003,8 +2152,10 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📦
@@ -2019,8 +2170,10 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -2035,8 +2188,10 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -2051,8 +2206,10 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤
@@ -2083,22 +2240,17 @@ exports[`SettingsView > snapshots > should match snapshot with collection templa
           class="settings-panel"
         >
           <div
-            class="settings-section"
+            data-testid="collection-template-editor"
           >
-            <div
-              data-testid="collection-template-editor"
-            >
-              <span>
-                Editing templates for: 
-                Test Collection 1
-              </span>
-              <button>
-                Close Collection Templates
-              </button>
-              <button>
-                Mark Collection Templates Dirty
-              </button>
-            </div>
+            <span>
+              Editing templates for: Test Collection 1
+            </span>
+            <button>
+              Close Collection Templates
+            </button>
+            <button>
+              Mark Collection Templates Dirty
+            </button>
           </div>
         </div>
       </main>
@@ -2151,7 +2303,7 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -2162,8 +2314,10 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -2177,9 +2331,12 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -2194,8 +2351,10 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📋
@@ -2210,8 +2369,10 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👥
@@ -2226,8 +2387,10 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📦
@@ -2242,8 +2405,10 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -2258,8 +2423,10 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -2274,8 +2441,10 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤
@@ -2305,68 +2474,71 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
         <div
           class="settings-panel"
         >
-          <div
-            class="settings-section"
+          <form
+            aria-label="Edit collection"
+            class="collection-editor"
           >
-            <div
-              class="settings-section__header"
+            <h3
+              class="collection-editor__title"
             >
-              <div>
-                <h2
-                  class="settings-section__title"
-                >
-                  Collections
-                </h2>
-                <p
-                  class="settings-section__description"
-                >
-                  Manage your collections. Each collection can have categories and items.
-                </p>
+              Edit Collection
+            </h3>
+            <div
+              class="content-state content-state--error"
+              role="alert"
+            >
+              <span
+                aria-hidden="true"
+                class="content-state__symbol"
+              >
+                !
+              </span>
+              <p
+                class="content-state__title"
+              >
+                Unable to save collection
+              </p>
+              <div
+                class="content-state__description"
+              >
+                Failed to save
               </div>
             </div>
-            <div
-              class="settings-section__error"
+            <fieldset
+              aria-busy="false"
+              class="collection-editor__fields"
             >
-              Failed to save
-            </div>
-            <form
-              class="settings-form"
-            >
-              <h3
-                class="settings-form__title"
-              >
-                Edit Collection
-              </h3>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
                 <label
-                  class="settings-form__label"
+                  for="_react-id_-name"
                 >
                   Name 
                   <span
-                    class="settings-form__required"
+                    aria-hidden="true"
                   >
                     *
                   </span>
                 </label>
                 <input
-                  class="settings-form__input"
+                  aria-required="true"
+                  id="_react-id_-name"
                   placeholder="My Collection"
                   type="text"
                   value="Test Collection 1"
                 />
               </div>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
                 <label
-                  class="settings-form__label"
+                  for="_react-id_-description"
                 >
                   Description
                 </label>
                 <textarea
-                  class="settings-form__textarea"
+                  id="_react-id_-description"
                   placeholder="A brief description of this collection"
                   rows="3"
                 >
@@ -2374,78 +2546,68 @@ exports[`SettingsView > snapshots > should match snapshot with error displayed 1
                 </textarea>
               </div>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
                 <label
-                  class="settings-form__label"
+                  for="_react-id_-image"
                 >
                   Hero Image URL
                 </label>
                 <input
-                  class="settings-form__input"
+                  id="_react-id_-image"
                   placeholder="https://example.com/image.jpg"
                   type="url"
                   value="https://example.com/hero1.jpg"
                 />
               </div>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
-                <label
-                  class="settings-form__label"
-                >
+                <h4>
                   Item Templates
-                </label>
-                <p
-                  class="settings-form__hint"
-                >
-                  Configure which templates are available when creating items in this collection.
+                </h4>
+                <p>
+                  Configure which templates are available when creating items in this collection. Your collection draft is kept while you manage templates.
                 </p>
                 <button
-                  class="settings-form__button settings-form__button--secondary"
                   type="button"
                 >
                   Manage Templates
                 </button>
               </div>
               <div
-                class="settings-form__field"
+                class="collection-editor__field"
               >
-                <label
-                  class="settings-form__label"
-                >
+                <h4>
                   Visibility
-                </label>
-                <p
-                  class="settings-form__hint"
-                >
+                </h4>
+                <p>
                   This collection is currently visible in your public gallery.
                 </p>
                 <button
-                  class="settings-form__button settings-form__button--danger"
+                  class="collection-editor__danger"
                   type="button"
                 >
                   Unpublish Collection
                 </button>
               </div>
               <div
-                class="settings-form__actions"
+                class="collection-editor__actions"
               >
                 <button
-                  class="settings-form__button settings-form__button--primary"
+                  class="collection-editor__primary"
                   type="submit"
                 >
                   Save Changes
                 </button>
                 <button
-                  class="settings-form__button settings-form__button--secondary"
                   type="button"
                 >
                   Cancel
                 </button>
               </div>
-            </form>
-          </div>
+            </fieldset>
+          </form>
         </div>
       </main>
     </div>
@@ -2497,7 +2659,7 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
     >
       <nav
         aria-label="Settings navigation"
-        class="app__sidebar"
+        class="app__sidebar settings-sidebar"
       >
         <div
           class="settings-nav"
@@ -2508,8 +2670,10 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📊
@@ -2523,9 +2687,12 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
             </li>
             <li>
               <button
+                aria-current="page"
                 class="settings-nav__item settings-nav__item--active"
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📚
@@ -2540,8 +2707,10 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📋
@@ -2556,8 +2725,10 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👥
@@ -2572,8 +2743,10 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   📦
@@ -2588,8 +2761,10 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   🏢
@@ -2604,8 +2779,10 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   💬
@@ -2620,8 +2797,10 @@ exports[`SettingsView > snapshots > should match snapshot with setup wizard 1`] 
             <li>
               <button
                 class="settings-nav__item "
+                type="button"
               >
                 <span
+                  aria-hidden="true"
                   class="settings-nav__icon"
                 >
                   👤

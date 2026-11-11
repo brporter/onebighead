@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import type { Category } from '../../utils/types';
 import { Visibility } from '../../utils/types';
+import { availableCategoryParents, validateCategoryName, type CategoryDraft } from '../../data/categories/categoryDraft';
 import CategoryTemplateSelector from './CategoryTemplateSelector';
+import CategorySelector from './CategorySelector';
 
 interface CategoryManagerFormProps {
   category: Category | null;
@@ -9,15 +11,14 @@ interface CategoryManagerFormProps {
   collectionId: number;
   isNew: boolean;
   initialName?: string;
-  onSave: (updates: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => void;
+  onSave: (updates: CategoryDraft) => void;
+  disabled?: boolean;
   onBack: () => void;
   onPublish: (category: Category) => void;
   onUnpublish: (category: Category) => void;
   onHasChanges?: (hasChanges: boolean) => void;
   formId?: string;
 }
-
-const RESERVED_NAMES = ['unassigned items'];
 
 function CategoryManagerForm(props: CategoryManagerFormProps) {
   const key = props.isNew ? `new:${props.initialName ?? ''}` : props.category?.categoryId ?? 'empty';
@@ -36,7 +37,10 @@ function CategoryForm({
   onUnpublish,
   onHasChanges,
   formId,
+  disabled = false,
 }: CategoryManagerFormProps) {
+  const inputId = useId();
+  const [baseline] = useState(category);
   const [name, setName] = useState(isNew ? initialName : category?.name ?? '');
   const [description, setDescription] = useState(isNew ? '' : category?.description ?? '');
   const [parentCategoryId, setParentCategoryId] = useState<number | null>(isNew ? null : category?.parentCategoryId ?? null);
@@ -49,52 +53,19 @@ function CategoryForm({
   // Track whether form has unsaved changes
   const hasChanges = isNew
     ? name.trim() !== '' || description.trim() !== '' || parentCategoryId !== null || itemTemplateIds.length > 0
-    : category
-      ? name !== category.name || description !== category.description || parentCategoryId !== category.parentCategoryId || JSON.stringify(itemTemplateIds) !== JSON.stringify(category.itemTemplateIds)
+    : baseline
+      ? name !== baseline.name || description !== baseline.description || parentCategoryId !== baseline.parentCategoryId || JSON.stringify(itemTemplateIds) !== JSON.stringify(baseline.itemTemplateIds)
       : false;
 
   useEffect(() => {
     onHasChanges?.(hasChanges);
   }, [hasChanges, onHasChanges]);
 
-  const validateName = (value: string): string | null => {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return 'Name is required';
-    }
-    if (RESERVED_NAMES.includes(trimmed.toLowerCase())) {
-      return `"${trimmed}" is a reserved name and cannot be used`;
-    }
-    return null;
-  };
-
-  // Get available parent categories (exclude self and descendants to prevent circular references)
-  const getAvailableParents = (): Category[] => {
-    if (isNew || !category) {
-      return categories.filter((c) => !c.isSystem);
-    }
-
-    // Build set of this category and all its descendants
-    const excludeIds = new Set<number>();
-    excludeIds.add(category.categoryId);
-
-    const findDescendants = (parentId: number) => {
-      for (const c of categories) {
-        if (c.parentCategoryId === parentId && !excludeIds.has(c.categoryId)) {
-          excludeIds.add(c.categoryId);
-          findDescendants(c.categoryId);
-        }
-      }
-    };
-    findDescendants(category.categoryId);
-
-    return categories.filter((c) => !excludeIds.has(c.categoryId) && !c.isSystem);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const nameError = validateName(name);
+    if (disabled || isSystem) return;
+    const nameError = validateCategoryName(name);
     if (nameError) {
       setError(nameError);
       return;
@@ -121,6 +92,7 @@ function CategoryForm({
           type="button"
           className="category-manager-form__back"
           onClick={onBack}
+        disabled={disabled}
         >
           ← Back to Categories
         </button>
@@ -129,8 +101,9 @@ function CategoryForm({
         </div>
         <p className="modal__info">System categories cannot be modified.</p>
         <div className="modal__field">
-          <label className="modal__label">Name</label>
+          <label htmlFor={`${inputId}-name`} className="modal__label">Name</label>
           <input
+            id={`${inputId}-name`}
             type="text"
             className="modal__input"
             value={name}
@@ -138,8 +111,9 @@ function CategoryForm({
           />
         </div>
         <div className="modal__field">
-          <label className="modal__label">Description</label>
+          <label htmlFor={`${inputId}-description`} className="modal__label">Description</label>
           <textarea
+            id={`${inputId}-description`}
             className="modal__textarea"
             value={description}
             disabled
@@ -150,7 +124,7 @@ function CategoryForm({
     );
   }
 
-  const availableParents = getAvailableParents();
+  const availableParents = availableCategoryParents(categories, collectionId, isNew ? null : category);
 
   return (
     <div className="category-manager-form">
@@ -158,6 +132,7 @@ function CategoryForm({
         type="button"
         className="category-manager-form__back"
         onClick={onBack}
+        disabled={disabled}
       >
         ← Back to Categories
       </button>
@@ -171,99 +146,87 @@ function CategoryForm({
       )}
 
       <form id={formId} aria-label="Category details" onSubmit={handleSubmit}>
-        {error && (
-          <div className="modal__error" role="alert">
-            {error}
-          </div>
-        )}
-
-        <div className="modal__field">
-          <label htmlFor="category-name" className="modal__label">
-            Name <span className="modal__required">*</span>
-          </label>
-          <input
-            id="category-name"
-            type="text"
-            className="modal__input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Category name"
-            required
-          />
-        </div>
-
-        <div className="modal__field">
-          <label htmlFor="category-description" className="modal__label">
-            Description
-          </label>
-          <textarea
-            id="category-description"
-            className="modal__textarea"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional description"
-            rows={3}
-          />
-        </div>
-
-        <div className="modal__field">
-          <label htmlFor="category-parent" className="modal__label">
-            Parent Category
-          </label>
-          <select
-            id="category-parent"
-            className="modal__select"
-            value={parentCategoryId ?? ''}
-            onChange={(e) => setParentCategoryId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">None (root level)</option>
-            {availableParents.map((c) => (
-              <option key={c.categoryId} value={c.categoryId}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="modal__field">
-          <label className="modal__label">
-            Recommended Templates
-          </label>
-          <CategoryTemplateSelector
-            collectionId={collectionId}
-            selectedTemplateIds={itemTemplateIds}
-            onChange={setItemTemplateIds}
-          />
-        </div>
-
-        {category && !isNew && (
-          <div className="modal__field">
-            <label className="modal__label">Visibility</label>
-            <div className="category-manager-form__visibility">
-              <span className="category-manager-form__visibility-text">
-                {isPublic ? 'Public' : 'Private'}
-              </span>
-              {isPublic ? (
-                <button
-                  type="button"
-                  className="modal__button modal__button--secondary"
-                  onClick={() => onUnpublish(category)}
-                >
-                  Unpublish
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="modal__button modal__button--primary"
-                  onClick={() => onPublish(category)}
-                >
-                  Publish
-                </button>
-              )}
+        <fieldset className="category-manager-form__fields" disabled={disabled}>
+          {error && (
+            <div className="modal__error" role="alert">
+              {error}
             </div>
-          </div>
-        )}
+          )}
 
+          <div className="modal__field">
+            <label htmlFor={`${inputId}-name`} className="modal__label">
+              Name <span className="modal__required">*</span>
+            </label>
+            <input
+              id={`${inputId}-name`}
+              autoFocus
+              type="text"
+              className="modal__input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Category name"
+              required
+            />
+          </div>
+
+          <div className="modal__field">
+            <label htmlFor={`${inputId}-description`} className="modal__label">
+              Description
+            </label>
+            <textarea
+              id={`${inputId}-description`}
+              className="modal__textarea"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional description"
+              rows={3}
+            />
+          </div>
+
+          <CategorySelector categories={availableParents} selectedCategoryId={parentCategoryId} onChange={setParentCategoryId}
+            label="Parent Category" nullLabel="None (root level)" variant="modal" />
+
+          <div className="modal__field">
+            <label className="modal__label">
+              Recommended Templates
+            </label>
+            <CategoryTemplateSelector
+              collectionId={collectionId}
+              selectedTemplateIds={itemTemplateIds}
+              onChange={setItemTemplateIds}
+              disabled={disabled}
+            />
+          </div>
+
+          {category && !isNew && (
+            <div className="modal__field">
+              <label className="modal__label">Visibility</label>
+              <div className="category-manager-form__visibility">
+                <span className="category-manager-form__visibility-text">
+                  {isPublic ? 'Public' : 'Private'}
+                </span>
+                {isPublic ? (
+                  <button
+                    type="button"
+                    className="modal__button modal__button--secondary"
+                    onClick={() => onUnpublish(category)}
+                  >
+                    Unpublish
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="modal__button modal__button--primary"
+                    onClick={() => onPublish(category)}
+                  >
+                    Publish
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+        </fieldset>
       </form>
     </div>
   );

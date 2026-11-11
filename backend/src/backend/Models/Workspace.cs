@@ -13,6 +13,10 @@ public class Workspace
 
     public bool HasCompletedWelcome { get; set; } = false;
 
+    /// <summary>The initial collection, retained so welcome retries cannot create another.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public int? WelcomeCollectionId { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>

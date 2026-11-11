@@ -1,150 +1,60 @@
-import React, { useRef, useState } from 'react';
-import { useData } from '../../contexts/useData';
+import '../../styles/components/ImageEditor.css';
+import { useId, useRef } from 'react';
+import { useImagesData } from '../../contexts/useData';
 import type { ItemImage } from '../../utils/types';
+import { IMAGE_FILE_TYPES, IMAGE_UPLOAD_HINT } from '../../data/images/imageUploadPolicy';
+import { useImageUploads } from '../../data/images/useImageUploads';
+import { useEditorStatus, type EditorStatusListener } from '../../data/shared/useEditorStatus';
 
 interface ImageEditorProps {
   images: ItemImage[];
-  onChange: (images: ItemImage[]) => void;
+  onChange: (update: (current: ItemImage[]) => ItemImage[]) => void;
+  onStatusChange?: EditorStatusListener;
 }
 
-const MAX_FILE_SIZE_MB = 10;
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+/** Functional draft updates retain edits made while an upload is in flight. */
+function ImageEditor({ images, onChange, onStatusChange }: ImageEditorProps) {
+  const { uploadImage } = useImagesData();
+  const id = useId();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const uploads = useImageUploads(uploadImage, added => onChange(current => [...current, ...added]));
+  useEditorStatus(false, uploads.pending, onStatusChange);
 
-function ImageEditor({ images, onChange }: ImageEditorProps) {
-  const { uploadImage } = useData();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  function validateFile(file: File): string | null {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return `${file.name}: Invalid file type. Allowed types: JPEG, PNG, GIF, WebP`;
-    }
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      return `${file.name}: File size exceeds ${MAX_FILE_SIZE_MB}MB limit`;
-    }
-    return null;
-  }
-
-  function handleAltChange(index: number, value: string) {
-    const updated = images.map((img, i) =>
-      i === index ? { ...img, alt: value } : img
-    );
-    onChange(updated);
-  }
-
-  async function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploading(true);
-    setUploadError(null);
-
-    // Validate all files first
-    const validationErrors: string[] = [];
-    const validFiles: File[] = [];
-
-    for (const file of Array.from(files)) {
-      const error = validateFile(file);
-      if (error) {
-        validationErrors.push(error);
-      } else {
-        validFiles.push(file);
-      }
-    }
-
-    if (validationErrors.length > 0) {
-      setUploadError(validationErrors.join('; '));
-      if (validFiles.length === 0) {
-        setUploading(false);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        return;
-      }
-    }
-
-    try {
-      const newImages: ItemImage[] = [];
-
-      for (const file of validFiles) {
-        const result = await uploadImage(file);
-        newImages.push({ url: result.url, alt: file.name.replace(/\.[^/.]+$/, '') });
-      }
-
-      onChange([...images, ...newImages]);
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  }
-
-  function handleRemoveImage(index: number) {
-    onChange(images.filter((_, i) => i !== index));
-  }
-
-  function handleAddClick() {
-    fileInputRef.current?.click();
-  }
-
-  return (
-    <div className="imageEditor">
-      <label className="imageEditor__label">Images</label>
-      
-      {uploadError && (
-        <div className="imageEditor__error">{uploadError}</div>
-      )}
-
-      <div className="imageEditor__grid">
-        {images.map((img, index) => (
-          <div key={index} className="imageEditor__item">
-            <div className="imageEditor__preview">
-              <img src={img.url} alt={img.alt} className="imageEditor__image" />
-              <button
-                type="button"
-                className="imageEditor__remove"
-                onClick={() => handleRemoveImage(index)}
-                aria-label="Remove image"
-              >
-                ×
-              </button>
-            </div>
-            <input
-              type="text"
-              className="imageEditor__input imageEditor__input--alt"
-              placeholder="Alt text"
-              value={img.alt}
-              onChange={(e) => handleAltChange(index, e.target.value)}
-            />
-          </div>
-        ))}
-      </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp"
-        multiple
-        className="imageEditor__fileInput"
-        onChange={handleFileSelect}
-      />
-      
-      <button
-        type="button"
-        className="imageEditor__add"
-        onClick={handleAddClick}
-        disabled={uploading}
-      >
-        {uploading ? 'Uploading...' : '+ Add Image'}
-      </button>
+  return <section className="imageEditor" aria-labelledby={`${id}-title`} aria-busy={uploads.pending}>
+    <h3 id={`${id}-title`} className="imageEditor__label">Images</h3>
+    <p className="imageEditor__hint" id={`${id}-hint`}>{IMAGE_UPLOAD_HINT}</p>
+    {uploads.issues.length > 0 && <div className="imageEditor__error" role="alert">
+      <p>Some images could not be added. Successfully uploaded images are kept in your draft.</p>
+      <ul>{uploads.issues.map((issue, index) => <li key={index}><strong>{issue.fileName}:</strong> {issue.message}</li>)}</ul>
+    </div>}
+    {uploads.pending && <p className="imageEditor__status" role="status">Uploading images ({uploads.completed}/{uploads.total})…</p>}
+    <div className="imageEditor__grid">
+      {images.map((img, index) => <div key={index} className="imageEditor__item">
+        <div className="imageEditor__preview">
+          <img src={img.url} alt={img.alt} className="imageEditor__image" />
+          <button type="button" className="imageEditor__remove" aria-label={`Remove image ${index + 1}`}
+            onClick={() => onChange(current => current.filter((_, position) => position !== index))}>×</button>
+        </div>
+        <label htmlFor={`${id}-description-${index}`} className="imageEditor__caption">Image {index + 1} description</label>
+        <input id={`${id}-description-${index}`} type="text" className="imageEditor__input imageEditor__input--alt"
+          placeholder="Alt text" value={img.alt}
+          onChange={event => {
+            const value = event.target.value;
+            onChange(current => current.map((image, position) => position === index ? { ...image, alt: value } : image));
+          }} />
+      </div>)}
     </div>
-  );
+    <input ref={fileInput} type="file" accept={IMAGE_FILE_TYPES.join(',')} multiple disabled={uploads.pending}
+      aria-label="Choose images" aria-describedby={`${id}-hint`} className="imageEditor__fileInput"
+      onChange={event => {
+        const files = Array.from(event.target.files ?? []);
+        event.target.value = '';
+        void uploads.select(files);
+      }} />
+    <button type="button" className="imageEditor__add" onClick={() => fileInput.current!.click()} disabled={uploads.pending}>
+      {uploads.pending ? 'Uploading...' : '+ Add Image'}
+    </button>
+  </section>;
 }
 
 export default ImageEditor;
-

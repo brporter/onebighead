@@ -1,10 +1,11 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import UserButton from '../src/components/user/UserButton';
 import * as UserContext from '../src/contexts/useUser';
 import { createMockCurrentUser } from './testUtils';
+import { deferred } from './testUtils/deferred';
 
 vi.mock('../src/contexts/useUser', () => ({
   useUser: vi.fn(),
@@ -48,7 +49,7 @@ describe('UserButton', () => {
       user: null,
       loading: true,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: mockLogout,
     });
 
@@ -61,7 +62,7 @@ describe('UserButton', () => {
       user: null,
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: mockLogout,
     });
 
@@ -74,7 +75,7 @@ describe('UserButton', () => {
       user: createMockCurrentUser(),
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: mockLogout,
     });
 
@@ -88,7 +89,7 @@ describe('UserButton', () => {
       user: createMockCurrentUser({ email: 'admin@example.com', isSystemAdministrator: true }),
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: mockLogout,
     });
 
@@ -101,7 +102,7 @@ describe('UserButton', () => {
       user: createMockCurrentUser({ email: 'user@example.com' }),
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: mockLogout,
     });
 
@@ -114,16 +115,45 @@ describe('UserButton', () => {
       user: createMockCurrentUser(),
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: mockLogout,
     });
 
     renderWithRouter(<UserButton onClick={mockOnClick} />);
 
     const signOutButton = screen.getByText('Sign Out');
-    await fireEvent.click(signOutButton);
+    await act(async () => { fireEvent.click(signOutButton); });
 
     expect(mockLogout).toHaveBeenCalled();
+    await waitFor(() => expect(mockLocation.href).toBe('/'));
+  });
+
+  it('opens settings through its supplied action or the settings route', () => {
+    vi.mocked(UserContext.useUser).mockReturnValue({ user: createMockCurrentUser(), loading: false, error: null, signedOut: false, refetch: vi.fn(), logout: mockLogout });
+    const { rerender } = renderWithRouter(<UserButton onClick={mockOnClick} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(mockOnClick).toHaveBeenCalledOnce();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    rerender(<MemoryRouter><UserButton /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/settings');
+  });
+
+  it('keeps failed sign-out visible and prevents duplicate submissions while retrying', async () => {
+    const retry = deferred<void>();
+    mockLogout.mockRejectedValueOnce(new Error('Network unavailable')).mockReturnValueOnce(retry.promise);
+    vi.mocked(UserContext.useUser).mockReturnValue({ user: createMockCurrentUser(), loading: false, error: null, signedOut: false, refetch: vi.fn(), logout: mockLogout });
+    renderWithRouter(<UserButton />);
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network unavailable');
+    expect(mockLocation.href).toBe('');
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out' }));
+    const pending = screen.getByRole('button', { name: 'Signing out…' });
+    expect(pending).toBeDisabled();
+    fireEvent.click(pending);
+    expect(mockLogout).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await act(async () => retry.resolve());
     expect(mockLocation.href).toBe('/');
   });
 
@@ -132,7 +162,7 @@ describe('UserButton', () => {
       user: createMockCurrentUser({ email: 'admin@example.com', isSystemAdministrator: true }),
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: mockLogout,
     });
 
@@ -150,7 +180,7 @@ describe('UserButton', () => {
         user: createMockCurrentUser({ email: 'user@example.com' }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: mockLogout,
       });
 
@@ -163,7 +193,7 @@ describe('UserButton', () => {
         user: createMockCurrentUser({ email: 'admin@example.com', isSystemAdministrator: true }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: mockLogout,
       });
 

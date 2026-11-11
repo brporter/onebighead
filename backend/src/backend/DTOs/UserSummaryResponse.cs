@@ -4,9 +4,20 @@ public class UserSummaryResponse
 {
     public int UserId { get; set; }
     public string Email { get; set; } = string.Empty;
-    public int WorkspaceId { get; set; }
+    public int? WorkspaceId { get; set; }
     public string WorkspaceName { get; set; } = string.Empty;
     public string IdentityProvider { get; set; } = string.Empty;
     public bool IsSystemAdministrator { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    public static UserSummaryResponse FromUser(Models.User user) => new()
+    {
+        UserId = user.Id,
+        Email = user.Email,
+        WorkspaceId = user.ActiveWorkspaceId,
+        WorkspaceName = user.ActiveWorkspace?.Name ?? "",
+        IdentityProvider = user.IdentityProvider.ToString(),
+        IsSystemAdministrator = user.IsSystemAdministrator,
+        CreatedAt = user.CreatedAt
+    };
 }

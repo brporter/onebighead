@@ -1,0 +1,30 @@
+.workspace-setup .setupWizard__container { min-width: 0; }
+.workspace-setup__body { min-height: 0; min-width: 0; flex: 1 1 auto; overflow-y: auto; }
+.workspace-setup__fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.workspace-setup .setupWizard__header,
+.workspace-setup .setupWizard__headerActions,
+.workspace-setup .setupWizard__tabs,
+.workspace-setup .setupWizard__footer { flex-wrap: wrap; gap: var(--space-sm); }
+.workspace-setup .setupWizard__header { flex-shrink: 0; }
+.workspace-setup .setupWizard__footer { position: sticky; bottom: 0; background: var(--color-surface); }
+.workspace-setup button, .workspace-setup input { min-height: 44px; }
+.workspace-setup button:disabled { cursor: default; opacity: 0.5; }
+.workspace-setup button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.workspace-setup .setupWizard__themeGrid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.workspace-setup .setupWizard__input, .workspace-setup .setupWizard__textarea { min-width: 0; font: inherit; }
+.workspace-setup .setupWizard__summaryList { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+.workspace-setup .setupWizard__summaryList dd, .workspace-setup .setupWizard__title { overflow-wrap: anywhere; }
+.workspace-setup__intro { margin-bottom: var(--space-lg); }
+.workspace-setup__intro p { color: var(--color-text-muted); line-height: 1.6; }
+.workspace-setup__continuation { padding: var(--space-md); overflow-wrap: anywhere; }
+
+@media (max-width: 520px) {
+  .workspace-setup { padding: var(--space-sm); }
+  .workspace-setup .setupWizard__container { max-height: calc(100dvh - var(--space-sm) - var(--space-sm)); }
+  .workspace-setup .setupWizard__header,
+  .workspace-setup .setupWizard__tabs,
+  .workspace-setup .setupWizard__content,
+  .workspace-setup .setupWizard__footer { padding: var(--space-md); }
+  .workspace-setup .setupWizard__summaryList { grid-template-columns: minmax(0, 1fr); gap: var(--space-xs); }
+  .workspace-setup .setupWizard__summaryList dd { margin-bottom: var(--space-sm); }
+}

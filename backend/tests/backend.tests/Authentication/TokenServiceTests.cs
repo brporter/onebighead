@@ -28,6 +28,16 @@ public class TokenServiceTests
     }
 
     [Fact]
+    public void WorkspaceLessAccount_ReceivesAnIdentityWithoutAWorkspaceClaim()
+    {
+        var token = _tokenService.GenerateAppToken(new User { Id = 17, Email = "account@example.test" }, WorkspaceRole.Normal);
+        var principal = Assert.IsType<ClaimsPrincipal>(_tokenService.ValidateAppToken(token));
+        Assert.Equal("17", principal.FindFirstValue(ClaimTypes.NameIdentifier));
+        Assert.Null(principal.FindFirst(ClaimNames.WorkspaceId));
+        Assert.Equal("Normal", principal.FindFirstValue(ClaimNames.WorkspaceRole));
+    }
+
+    [Fact]
     public void GenerateAppToken_ReturnsValidJwt()
     {
         // Arrange

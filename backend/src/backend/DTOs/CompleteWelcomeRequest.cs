@@ -6,7 +6,7 @@ public class CompleteWelcomeRequest
 {
     [MaxLength(200)]
     public string? WorkspaceName { get; set; }
-}
 
-#if DEBUG
-#endif
+    /// <summary>Omit to finish welcome without creating an initial collection.</summary>
+    public SetupCollectionRequest? Collection { get; set; }
+}

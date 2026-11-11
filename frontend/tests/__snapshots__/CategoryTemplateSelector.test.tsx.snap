@@ -10,76 +10,92 @@ exports[`CategoryTemplateSelector > snapshots > should match snapshot with templ
     >
       Items in this category will see these templates recommended when adding new items.
     </p>
-    <div
-      class="categoryTemplateSelector__list"
+    <fieldset
+      aria-label="Recommended templates"
+      class="template-checklist"
     >
       <label
-        class="categoryTemplateSelector__item "
+        class="template-checklist__option"
       >
         <input
-          class="categoryTemplateSelector__checkbox"
+          aria-label="Collection Template 1"
           type="checkbox"
         />
-        <div
-          class="categoryTemplateSelector__itemContent"
+        <span
+          class="template-checklist__content"
         >
           <span
-            class="categoryTemplateSelector__itemName"
+            class="template-checklist__name"
           >
             Collection Template 1
           </span>
           <span
-            class="categoryTemplateSelector__itemDescription"
+            class="template-checklist__description"
           >
             Description 1
           </span>
-        </div>
+          <span
+            class="template-checklist__count"
+          >
+            0 properties
+          </span>
+        </span>
       </label>
       <label
-        class="categoryTemplateSelector__item "
+        class="template-checklist__option"
       >
         <input
-          class="categoryTemplateSelector__checkbox"
+          aria-label="Collection Template 2"
           type="checkbox"
         />
-        <div
-          class="categoryTemplateSelector__itemContent"
+        <span
+          class="template-checklist__content"
         >
           <span
-            class="categoryTemplateSelector__itemName"
+            class="template-checklist__name"
           >
             Collection Template 2
           </span>
-        </div>
+          <span
+            class="template-checklist__count"
+          >
+            0 properties
+          </span>
+        </span>
       </label>
       <label
-        class="categoryTemplateSelector__item "
+        class="template-checklist__option"
       >
         <input
-          class="categoryTemplateSelector__checkbox"
+          aria-label="Library Template"
           type="checkbox"
         />
-        <div
-          class="categoryTemplateSelector__itemContent"
+        <span
+          class="template-checklist__content"
         >
           <span
-            class="categoryTemplateSelector__itemName"
+            class="template-checklist__name"
           >
             Library Template
           </span>
           <span
-            class="categoryTemplateSelector__systemBadge"
+            class="template-checklist__badge"
           >
             System
           </span>
           <span
-            class="categoryTemplateSelector__itemDescription"
+            class="template-checklist__description"
           >
             A library template
           </span>
-        </div>
+          <span
+            class="template-checklist__count"
+          >
+            0 properties
+          </span>
+        </span>
       </label>
-    </div>
+    </fieldset>
   </div>
 </div>
 `;

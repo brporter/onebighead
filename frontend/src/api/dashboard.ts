@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 
 export interface DailyView {
   date: string;
@@ -14,7 +14,7 @@ export interface DashboardData {
 }
 
 export const dashboardApi = {
-  get(): Promise<DashboardData> {
-    return api.get<DashboardData>('/dashboard');
+  get(options?: RequestOptions): Promise<DashboardData> {
+    return api.get<DashboardData>('/dashboard', options);
   },
 };

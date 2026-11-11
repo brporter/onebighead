@@ -464,4 +464,31 @@ public class PropertyDiffServiceTests
     }
 
     #endregion
+    [Theory]
+    [InlineData("A")]
+    [InlineData("C")]
+    public void ApplyDiff_UsesOriginalKeysForSimultaneousRenames(string secondDestination)
+    {
+        List<PropertyIdentifier> oldProperties = [new("Specs", "A"), new("Specs", "B")];
+        List<PropertyIdentifier> newProperties = [new("Specs", "B"), new("Specs", secondDestination)];
+        List<PropertyRenameMapping> renames = [new("Specs", "A", "Specs", "B"), new("Specs", "B", "Specs", secondDestination)];
+        var diff = _service.ComputeDiff(oldProperties, newProperties, renames);
+        List<ItemProperty> original = [new("Specs", "A", "first value"), new("Specs", "B", "second value")];
+        var updated = _service.ApplyDiff(original, diff, newProperties);
+        Assert.Equal([new ItemProperty("Specs", "B", "first value"), new ItemProperty("Specs", secondDestination, "second value")], updated);
+        Assert.Equal("A", original[0].Name);
+        Assert.Equal("B", original[1].Name);
+    }
+
+    [Theory]
+    [InlineData("Missing", "B")]
+    [InlineData("A", "Missing")]
+    public void ComputeDiff_IgnoresRenameMappingsOutsideTheProvidedSchemas(string source, string destination)
+    {
+        var diff = _service.ComputeDiff([new("Specs", "A")], [new("Specs", "B")],
+            [new("Specs", source, "Specs", destination)]);
+        Assert.DoesNotContain(diff.Changes, change => change.Type == PropertyChangeType.Renamed);
+        Assert.Contains(diff.Changes, change => change.Type == PropertyChangeType.Removed && change.Name == "A");
+        Assert.Contains(diff.Changes, change => change.Type == PropertyChangeType.Added && change.Name == "B");
+    }
 }

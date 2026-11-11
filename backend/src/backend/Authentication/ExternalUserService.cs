@@ -1,86 +1,62 @@
+using System.ComponentModel.DataAnnotations;
+using System.Data;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.Models;
 
 namespace OneBigHead.Server.Authentication;
 
-public interface IExternalUserService
-{
-    Task<(User? user, WorkspaceRole workspaceRole)> GetOrCreateAsync(IdentityProvider provider, OidcValidationResult identity);
-}
-
-public class ExternalUserService(IUserRepository users, IWorkspaceUserRepository memberships,
+/// <summary>Commits account restoration or provisioning before returning a sign-in identity.</summary>
+public sealed class ExternalUserService(IDbContextFactory<AppDbContext> contexts, TimeProvider time,
     ILogger<ExternalUserService> logger) : IExternalUserService
 {
-    public async Task<(User? user, WorkspaceRole workspaceRole)> GetOrCreateAsync(IdentityProvider provider, OidcValidationResult validationResult)
+    public async Task<ExternalSignInResult> GetOrCreateAsync(IdentityProvider provider, OidcValidationResult identity,
+        CancellationToken cancellationToken = default)
     {
-        // 1. Check for existing linked user by provider ID
-        var user = await users.GetByProviderIdAsync(provider, validationResult.Subject!);
-        if (user != null)
+        var email = identity.Email?.Trim();
+        if (!identity.IsValid || !Enum.IsDefined(provider) || provider == IdentityProvider.None ||
+            string.IsNullOrWhiteSpace(identity.Subject) || identity.Subject.Length > 255 ||
+            string.IsNullOrWhiteSpace(email) || email.Length > 320 || !new EmailAddressAttribute().IsValid(email))
+            return ExternalSignInResult.Rejected("The identity provider did not supply a valid account identity.");
+
+        await using var context = await contexts.CreateDbContextAsync(cancellationToken);
+        await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        try
         {
-            // Restore soft-deleted user
-            if (user.IsDeleted)
+            var user = await context.Users.Include(user => user.ActiveWorkspace)
+                .SingleOrDefaultAsync(user => user.IdentityProvider == provider && user.ProviderSubjectId == identity.Subject, cancellationToken);
+            if (user is null)
             {
-                user.IsDeleted = false;
-                user.DeletedAt = null;
-                await users.UpdateAsync(user);
-                logger.LogInformation("Restored soft-deleted user {UserId} ({Email}) on sign-in",
-                    user.Id, user.Email);
+                // Email is provider metadata, not proof of another account's identity or invitations.
+                var now = time.GetUtcNow().UtcDateTime;
+                var workspace = new Workspace { Name = email[(email.LastIndexOf('@') + 1)..], CreatedAt = now };
+                user = new User { Email = email, IdentityProvider = provider, ProviderSubjectId = identity.Subject,
+                    ActiveWorkspace = workspace, CreatedAt = now };
+                context.WorkspaceUsers.Add(new WorkspaceUser
+                {
+                    User = user, Workspace = workspace, WorkspaceRole = WorkspaceRole.WorkspaceAdmin, CreatedAt = now
+                });
             }
 
-            var membership = await memberships.GetMembershipAsync(user.Id, user.ActiveWorkspaceId);
-            return (user, membership?.WorkspaceRole ?? WorkspaceRole.Normal);
+            // A restored account must not reactivate cookies from before deletion.
+            if (user.IsDeleted) user.AuthenticationStamp = Guid.NewGuid();
+            user.IsDeleted = false;
+            user.DeletedAt = null;
+            await context.SaveChangesAsync(cancellationToken);
+            var role = user.ActiveWorkspaceId is int workspaceId
+                ? await context.WorkspaceUsers.Where(member => member.UserId == user.Id && member.WorkspaceId == workspaceId)
+                    .Select(member => (WorkspaceRole?)member.WorkspaceRole).SingleOrDefaultAsync(cancellationToken) ?? WorkspaceRole.Normal
+                : WorkspaceRole.Normal;
+            await transaction.CommitAsync(cancellationToken);
+            logger.LogInformation("Authenticated external account {UserId} with provider {Provider}", user.Id, provider);
+            return new(user, role);
         }
-
-        // 2. Check for pending user by email (email linking)
-        var pendingUser = await users.GetByEmailAsync(validationResult.Email!);
-        if (pendingUser != null && !pendingUser.IsLinked)
+        catch (Exception exception) when (DatabaseConcurrency.IsConflict(exception) ||
+            exception.GetBaseException() is PostgresException
+                { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "IX_Users_IdentityProvider_ProviderSubjectId" })
         {
-            // Restore if soft-deleted
-            if (pendingUser.IsDeleted)
-            {
-                pendingUser.IsDeleted = false;
-                pendingUser.DeletedAt = null;
-                await users.UpdateAsync(pendingUser);
-                logger.LogInformation("Restored soft-deleted pending user {UserId} on link", pendingUser.Id);
-            }
-
-            // Link pending user to this OAuth identity
-            logger.LogInformation("Linking pending user {Email} to {Provider}", validationResult.Email, provider);
-            var linkedUser = await users.LinkUserAsync(
-                pendingUser.Id, provider, validationResult.Subject!);
-            if (linkedUser != null)
-            {
-                var membership = await memberships.GetMembershipAsync(linkedUser.Id, linkedUser.ActiveWorkspaceId);
-                return (linkedUser, membership?.WorkspaceRole ?? WorkspaceRole.Normal);
-            }
-            return (null, WorkspaceRole.Normal);
+            return ExternalSignInResult.Rejected("Account sign-in changed. Please try again.");
         }
-
-        if (pendingUser != null)
-        {
-            // User exists with same email but different provider (already linked)
-            // Restore if soft-deleted
-            if (pendingUser.IsDeleted)
-            {
-                pendingUser.IsDeleted = false;
-                pendingUser.DeletedAt = null;
-                await users.UpdateAsync(pendingUser);
-                logger.LogInformation("Restored soft-deleted user {UserId} ({Email}) on sign-in with different provider",
-                    pendingUser.Id, pendingUser.Email);
-            }
-            logger.LogInformation("User {Email} authenticated with different provider", validationResult.Email);
-            var membership = await memberships.GetMembershipAsync(pendingUser.Id, pendingUser.ActiveWorkspaceId);
-            return (pendingUser, membership?.WorkspaceRole ?? WorkspaceRole.Normal);
-        }
-
-        // 3. Auto-provision new user with new workspace (first-time signup)
-        logger.LogInformation("Auto-provisioning new user with email {Email}", validationResult.Email);
-        var newUser = await users.CreateWithNewWorkspaceAsync(
-            validationResult.Email!,
-            provider,
-            validationResult.Subject!);
-        // New users are WorkspaceAdmin of their own workspace
-        return (newUser, WorkspaceRole.WorkspaceAdmin);
     }
-
 }

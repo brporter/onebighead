@@ -3,13 +3,30 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using OneBigHead.Server.Middleware;
-using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.Workspaces;
 
 namespace OneBigHead.Server.Tests.Middleware;
 
 [Trait("Category", "Unit")]
 public class WorkspaceActiveMiddlewareTests
 {
+    [Fact]
+    public async Task MissingRequestPath_DoesNotPreventEndpointAuthorization()
+    {
+        var request = new Mock<HttpRequest>();
+        request.SetupGet(r => r.Path).Returns(default(PathString));
+        var context = new Mock<HttpContext>();
+        context.SetupGet(c => c.Request).Returns(request.Object);
+        context.SetupGet(c => c.Features).Returns(new Microsoft.AspNetCore.Http.Features.FeatureCollection());
+        context.SetupGet(c => c.User).Returns(new ClaimsPrincipal());
+        var service = new Mock<IWorkspaceAccessService>(MockBehavior.Strict);
+        HttpContext? received = null;
+        await new WorkspaceActiveMiddleware(current => { received = current; return Task.CompletedTask; }, NullLogger<WorkspaceActiveMiddleware>.Instance)
+            .InvokeAsync(context.Object, service.Object);
+        Assert.Same(context.Object, received);
+        service.VerifyNoOtherCalls();
+    }
+
     [Theory]
     [InlineData(true, false, true, false, 200, "")]
     [InlineData(false, true, true, false, 401, "USER_DELETED")]
@@ -23,7 +40,7 @@ public class WorkspaceActiveMiddlewareTests
         context.Response.Body = new MemoryStream();
         context.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "1"), new Claim("workspace_id", "2")], "test"));
         if (exempt) context.SetEndpoint(new Endpoint(_ => Task.CompletedTask, new EndpointMetadataCollection(new AllowInactiveWorkspaceAttribute()), "Recovery"));
-        var service = new Mock<IWorkspaceService>();
+        var service = new Mock<IWorkspaceAccessService>();
         service.Setup(s => s.IsUserDeletedAsync(1)).ReturnsAsync(userDeleted);
         service.Setup(s => s.HasUserAnyActiveWorkspaceAsync(1)).ReturnsAsync(hasWorkspace);
         service.Setup(s => s.IsWorkspaceDeletedAsync(2)).ReturnsAsync(workspaceDeleted);
@@ -54,7 +71,7 @@ public class WorkspaceActiveMiddlewareTests
         context.User = new ClaimsPrincipal(new ClaimsIdentity(claims));
         var called = false;
         await new WorkspaceActiveMiddleware(_ => { called = true; return Task.CompletedTask; }, NullLogger<WorkspaceActiveMiddleware>.Instance)
-            .InvokeAsync(context, Mock.Of<IWorkspaceService>());
+            .InvokeAsync(context, Mock.Of<IWorkspaceAccessService>());
         Assert.True(called);
     }
 }

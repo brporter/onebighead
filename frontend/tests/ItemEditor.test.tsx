@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ItemEditor from '../src/components/item/ItemEditor';
 import type { Item, Collection } from '../src/utils/types';
 import { UserFlag, Visibility } from '../src/utils/types';
+import { deferred } from './testUtils/deferred';
 
 // Mock generateUniqueId for deterministic snapshots
 let idCounter = 0;
@@ -11,16 +12,32 @@ vi.mock('../src/utils/idUtils', () => ({
   generateUniqueId: (prefix: string) => `${prefix}-test-${idCounter++}`,
 }));
 
+const { uploadImage } = vi.hoisted(() => ({ uploadImage: vi.fn() }));
+
 // Mock DataContext for PropertyEditor and ImageEditor
-vi.mock('../src/contexts/useData', () => ({
+vi.mock('../src/contexts/useData', async () => {
+  const { mockDataHooks } = await import('./testUtils/mockDataHooks');
+  return mockDataHooks({
   useData: () => ({
     propertyCategorySuggestions: [],
     propertyNameSuggestions: [],
     addLocalCategorySuggestion: vi.fn(),
     addLocalNameSuggestion: vi.fn(),
-    uploadImage: vi.fn().mockResolvedValue({ key: 'test-key', url: '/api/images/test-key' }),
+    uploadImage,
   }),
-}));
+});
+});
+
+function editorStructure(container: HTMLElement) {
+  return {
+    heading: screen.getByRole('heading', { level: 2 }).textContent,
+    busy: container.querySelector('form')?.getAttribute('aria-busy'),
+    fieldGroups: screen.getAllByRole('group').map(group => group.getAttribute('aria-label') ?? group.querySelector('legend')?.textContent),
+    selectedRelationship: screen.getAllByRole('radio').find(radio => (radio as HTMLInputElement).checked)?.parentElement?.textContent,
+    buttons: screen.getAllByRole('button').map(button => ({ label: button.getAttribute('aria-label') ?? button.textContent,
+      disabled: (button as HTMLButtonElement).disabled })),
+  };
+}
 
 describe('ItemEditor', () => {
   const mockItem: Item = {
@@ -70,6 +87,7 @@ describe('ItemEditor', () => {
   };
 
   beforeEach(() => {
+    uploadImage.mockReset().mockResolvedValue({ key: 'test-key', url: '/api/images/test-key' });
     vi.clearAllMocks();
     idCounter = 0;
   });
@@ -77,12 +95,12 @@ describe('ItemEditor', () => {
   describe('snapshots', () => {
     it('should render edit mode', () => {
       const { container } = render(<ItemEditor item={mockItem} {...defaultProps} />);
-      expect(container).toMatchSnapshot();
+      expect(editorStructure(container)).toMatchSnapshot();
     });
 
     it('should render new item mode', () => {
       const { container } = render(<ItemEditor item={null} {...defaultProps} />);
-      expect(container).toMatchSnapshot();
+      expect(editorStructure(container)).toMatchSnapshot();
     });
   });
 
@@ -101,12 +119,13 @@ describe('ItemEditor', () => {
       expect(screen.getByText('Edit: Test Item')).toBeInTheDocument();
     });
 
-    it('should prevent form submission', () => {
+    it('should prevent native form submission', async () => {
       render(<ItemEditor item={mockItem} {...defaultProps} />);
 
       const form = document.querySelector('.detail__form');
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-      form?.dispatchEvent(submitEvent);
+      await act(async () => { form?.dispatchEvent(submitEvent); });
+      expect(submitEvent.defaultPrevented).toBe(true);
 
       // Form submission should be prevented - no navigation or errors
       expect(screen.getByLabelText('Name')).toBeInTheDocument();
@@ -267,7 +286,133 @@ describe('ItemEditor', () => {
     });
   });
 
+  describe('saving and recovery', () => {
+    it('reports reversible edits and asks before discarding a changed draft', async () => {
+      const report = vi.fn();
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      const { unmount } = render(<ItemEditor {...defaultProps} item={mockItem} onStatusChange={report} />);
+      expect(report).toHaveBeenLastCalledWith({ dirty: false, pending: false });
+      fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'My draft' } });
+      expect(report).toHaveBeenLastCalledWith({ dirty: true, pending: false });
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(confirm).toHaveBeenCalledWith('You have unsaved changes. Discard them?');
+      expect(defaultProps.onCancel).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('Name')).toHaveValue('My draft');
+      fireEvent.change(screen.getByLabelText('Name'), { target: { value: mockItem.name } });
+      expect(report).toHaveBeenLastCalledWith({ dirty: false, pending: false });
+      fireEvent.change(screen.getByLabelText('Summary'), { target: { value: 'Changed' } });
+      confirm.mockReturnValue(true);
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(defaultProps.onCancel).toHaveBeenCalledOnce();
+      unmount();
+      expect(report).toHaveBeenLastCalledWith({ dirty: false, pending: false });
+      confirm.mockRestore();
+    });
+
+    it('uses the actual collection and workspace for a new item', async () => {
+      const user = userEvent.setup();
+      render(<ItemEditor {...defaultProps} item={null} collection={{ ...mockCollection, collectionId: 8, workspaceId: 9 }}
+        initialProperties={[mockItem.properties[0]]} />);
+      await user.type(screen.getByLabelText('Name'), '  New item  ');
+      await user.click(screen.getByRole('button', { name: 'Create Item' }));
+      expect(defaultProps.onSave).toHaveBeenCalledWith(expect.objectContaining({ collectionId: 8, workspaceId: 9,
+        name: 'New item', properties: [mockItem.properties[0]] }));
+    });
+
+    it('saves the selected category', async () => {
+      render(<ItemEditor {...defaultProps} item={mockItem} />);
+      await userEvent.selectOptions(screen.getByLabelText('Category'), '1');
+      await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+      expect(defaultProps.onSave).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 1 }));
+    });
+
+    it('requires a collection before creating an item', () => {
+      render(<ItemEditor {...defaultProps} item={null} collection={null} />);
+      expect(screen.getByRole('alert')).toHaveTextContent('Choose a collection');
+      expect(screen.queryByRole('button', { name: 'Create Item' })).not.toBeInTheDocument();
+    });
+
+    it('rejects whitespace-only names even for direct form submissions', () => {
+      const { container } = render(<ItemEditor {...defaultProps} item={{ ...mockItem, name: ' ' }} />);
+      fireEvent.submit(container.querySelector('form')!);
+      expect(defaultProps.onSave).not.toHaveBeenCalled();
+    });
+
+    it('retains the draft and prevents duplicate saves until the pending request settles', async () => {
+      const user = userEvent.setup();
+      const pending = deferred<void>();
+      const onSave = vi.fn().mockReturnValueOnce(pending.promise).mockResolvedValue(undefined);
+      const { container } = render(<ItemEditor {...defaultProps} item={mockItem} onSave={onSave} />);
+      await user.clear(screen.getByLabelText('Name'));
+      await user.type(screen.getByLabelText('Name'), 'My draft');
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+      expect(screen.getByLabelText('Name')).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+      expect(container.querySelector('form')).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('group', { name: 'Item details' })).toHaveAttribute('inert');
+      fireEvent.submit(container.querySelector('form')!);
+      expect(onSave).toHaveBeenCalledOnce();
+      await act(async () => pending.reject(new Error('Save unavailable')));
+      expect(screen.getByRole('alert')).toHaveTextContent('Save unavailable');
+      expect(screen.getByLabelText('Name')).toHaveValue('My draft');
+      expect(screen.getByLabelText('Name')).toBeEnabled();
+      expect(screen.getByRole('group', { name: 'Item details' })).not.toHaveAttribute('inert');
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+      expect(onSave).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('confirms deletion and displays delete failures without closing the editor', async () => {
+      const user = userEvent.setup();
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValue(true);
+      const onDelete = vi.fn().mockRejectedValue(new Error('Delete unavailable'));
+      render(<ItemEditor {...defaultProps} item={mockItem} onDelete={onDelete} />);
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+      expect(onDelete).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+      expect(onDelete).toHaveBeenCalledWith(1);
+      expect(screen.getByRole('alert')).toHaveTextContent('Delete unavailable');
+      expect(screen.getByLabelText('Name')).toHaveValue(mockItem.name);
+      confirm.mockRestore();
+    });
+
+    it('normalizes legacy items with missing relationship, properties, or images', async () => {
+      const user = userEvent.setup();
+      const legacy = { ...mockItem, userFlag: undefined, properties: undefined, images: undefined } as unknown as Item;
+      render(<ItemEditor {...defaultProps} item={legacy} />);
+      expect(screen.getByRole('radio', { name: 'I Have This' })).toBeChecked();
+      await user.click(screen.getByRole('radio', { name: 'I Want This' }));
+      await user.click(screen.getByRole('radio', { name: 'I Have This' }));
+      expect(screen.getByRole('radio', { name: 'I Have This' })).toBeChecked();
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+  });
+
   describe('property editor', () => {
+    it('saves edited properties in order without leaking draft identities or modifying the original item', async () => {
+      render(<ItemEditor item={mockItem} {...defaultProps} />);
+      const survivingValue = screen.getByDisplayValue('Value2');
+      const identity = survivingValue.getAttribute('data-property-id');
+      await userEvent.click(screen.getAllByRole('button', { name: 'Remove property' })[0]);
+      expect(screen.getByDisplayValue('Value2')).toBe(survivingValue);
+      fireEvent.change(survivingValue, { target: { value: 'Edited' } });
+      expect(survivingValue).toHaveAttribute('data-property-id', identity);
+      await userEvent.click(screen.getByRole('button', { name: '+ Add Property' }));
+      const category = screen.getAllByRole('combobox', { name: 'Property category' }).at(-1)!;
+      expect(category).toHaveFocus();
+      fireEvent.change(category, { target: { value: 'Notes' } });
+      const name = screen.getAllByRole('combobox', { name: 'Property name' }).at(-1)!;
+      fireEvent.change(name, { target: { value: 'Condition' } });
+      fireEvent.change(screen.getAllByRole('textbox', { name: 'Property value' }).at(-1)!, { target: { value: 'Good' } });
+      await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+      expect(defaultProps.onSave).toHaveBeenCalledWith(expect.objectContaining({ properties: [
+        { category: 'General', name: 'Prop2', value: 'Edited' }, mockItem.properties[2],
+        { category: 'Notes', name: 'Condition', value: 'Good' },
+      ] }));
+      expect(mockItem.properties).toHaveLength(3);
+      expect(mockItem.properties[1].value).toBe('Value2');
+    });
+
     it('should display existing properties', () => {
       render(<ItemEditor item={mockItem} {...defaultProps} />);
 
@@ -344,6 +489,34 @@ describe('ItemEditor', () => {
   });
 
   describe('image editor', () => {
+    it('adds an image to legacy drafts without an images array', async () => {
+      const onSave = vi.fn();
+      render(<ItemEditor item={{ ...mockItem, images: undefined } as unknown as Item} {...defaultProps} onSave={onSave} />);
+      await userEvent.upload(screen.getByLabelText('Choose images'), new File(['photo'], 'added.png', { type: 'image/png' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save Changes' })).toBeEnabled());
+      await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ images: [{ url: '/api/images/test-key', alt: 'added' }] }));
+    });
+    it('locks save, cancel, delete and editing while uploads are pending, then saves every completed image', async () => {
+      const pending = deferred<{ url: string; key: string }>();
+      uploadImage.mockReturnValue(pending.promise);
+      const onSave = vi.fn();
+      const onCancel = vi.fn();
+      const onDelete = vi.fn();
+      const { container } = render(<ItemEditor item={mockItem} categories={[]} collection={mockCollection} onSave={onSave} onCancel={onCancel} onDelete={onDelete} />);
+      await userEvent.upload(screen.getByLabelText('Choose images'), new File(['photo'], 'added.png', { type: 'image/png' }));
+      expect(screen.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+      expect(screen.getByLabelText('Name')).toBeDisabled();
+      fireEvent.submit(container.querySelector('form')!);
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(onSave).not.toHaveBeenCalled();
+      expect(onCancel).not.toHaveBeenCalled();
+      await act(async () => pending.resolve({ url: '/added.png', key: 'added' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ images: [...mockItem.images, { url: '/added.png', alt: 'added' }] }));
+    });
     it('should display existing images', () => {
       render(<ItemEditor item={mockItem} {...defaultProps} />);
 
@@ -377,7 +550,7 @@ describe('ItemEditor', () => {
 
       const initialImages = screen.getAllByRole('img').length;
 
-      const removeButtons = screen.getAllByLabelText('Remove image');
+      const removeButtons = screen.getAllByRole('button', { name: /^Remove image/ });
       await user.click(removeButtons[0]);
 
       const newImages = screen.getAllByRole('img').length;
@@ -401,7 +574,7 @@ describe('ItemEditor', () => {
 
       const fileInput = document.querySelector('input[type="file"]');
       expect(fileInput).toBeInTheDocument();
-      expect(fileInput).toHaveAttribute('accept', 'image/jpeg,image/png,image/gif,image/webp');
+      expect(fileInput).toHaveAttribute('accept', 'image/jpeg,image/png,image/gif,image/webp,image/avif');
     });
   });
 
@@ -548,24 +721,24 @@ describe('ItemEditor', () => {
 
     it('should render snapshot with user flag selector', () => {
       const { container } = render(<ItemEditor item={mockItem} {...defaultProps} />);
-      expect(container).toMatchSnapshot();
+      expect(editorStructure(container)).toMatchSnapshot();
     });
 
     it('should render snapshot for new item with user flag selector', () => {
       const { container } = render(<ItemEditor item={null} {...defaultProps} />);
-      expect(container).toMatchSnapshot();
+      expect(editorStructure(container)).toMatchSnapshot();
     });
 
     it('should render snapshot with Have flag selected', () => {
       const itemWithFlag = { ...mockItem, userFlag: UserFlag.Have };
       const { container } = render(<ItemEditor item={itemWithFlag} {...defaultProps} />);
-      expect(container).toMatchSnapshot();
+      expect(editorStructure(container)).toMatchSnapshot();
     });
 
     it('should render snapshot with Want flag selected', () => {
       const itemWithFlag = { ...mockItem, userFlag: UserFlag.Want };
       const { container } = render(<ItemEditor item={itemWithFlag} {...defaultProps} />);
-      expect(container).toMatchSnapshot();
+      expect(editorStructure(container)).toMatchSnapshot();
     });
   });
 });

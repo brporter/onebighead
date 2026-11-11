@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import ItemList from '../src/components/item/ItemList';
 import type { Item, Category } from '../src/utils/types';
 import { Visibility, UserFlag } from '../src/utils/types';
+import { getAccentColor } from '../src/utils/accentColors';
 
 const mockRequestPublish = vi.fn();
 const mockRequestUnpublish = vi.fn();
@@ -58,6 +59,16 @@ describe('ItemList', () => {
     pageIndex: 0,
     onPageChange: vi.fn(),
   };
+
+  it.each([null, 999])('keeps items selectable with a fallback accent when category %s is unavailable', async categoryId => {
+    const item = { ...createMockItems(1)[0], categoryId };
+    const onSelect = vi.fn();
+    const { container } = render(<ItemList {...defaultProps} items={[item]} onSelect={onSelect} />);
+    const accent = getAccentColor(0);
+    expect(container.querySelector('.item-card__ribbon')).toHaveStyle({ background: `linear-gradient(90deg, ${accent.start}, ${accent.end})` });
+    await userEvent.click(screen.getByRole('button', { name: 'Select Item 1' }));
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith(1);
+  });
 
   describe('snapshots', () => {
     it('should render empty list', () => {

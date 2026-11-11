@@ -1,7 +1,7 @@
 /**
  * Bulk Updates API
  */
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 
 export interface PropertyIdentifierDto {
   category: string;
@@ -48,19 +48,19 @@ export interface BulkUpdateJobResponse {
 }
 
 export const bulkUpdatesApi = {
-  preview(request: BulkUpdatePreviewRequest): Promise<BulkUpdatePreviewResponse> {
-    return api.post<BulkUpdatePreviewResponse>('/bulkupdates/preview', request);
+  preview(request: BulkUpdatePreviewRequest, options?: RequestOptions): Promise<BulkUpdatePreviewResponse> {
+    return api.post<BulkUpdatePreviewResponse>('/bulkupdates/preview', request, options);
   },
 
-  enqueue(request: EnqueueBulkUpdateRequest): Promise<BulkUpdateJobResponse> {
-    return api.post<BulkUpdateJobResponse>('/bulkupdates', request);
+  enqueue(request: EnqueueBulkUpdateRequest, options?: RequestOptions): Promise<BulkUpdateJobResponse> {
+    return api.post<BulkUpdateJobResponse>('/bulkupdates', request, options);
   },
 
-  getStatus(jobId: string): Promise<BulkUpdateJobResponse> {
-    return api.get<BulkUpdateJobResponse>(`/bulkupdates/${jobId}`);
+  getStatus(jobId: string, options?: RequestOptions): Promise<BulkUpdateJobResponse> {
+    return api.get<BulkUpdateJobResponse>(`/bulkupdates/${jobId}`, options);
   },
 
-  getCollectionStatus(collectionId: number): Promise<BulkUpdateJobResponse | null> {
-    return api.get<BulkUpdateJobResponse | null>(`/bulkupdates/collection/${collectionId}/status`);
+  getCollectionStatus(collectionId: number, options?: RequestOptions): Promise<BulkUpdateJobResponse | null> {
+    return api.get<BulkUpdateJobResponse | null>(`/bulkupdates/collection/${collectionId}/status`, options);
   },
 };

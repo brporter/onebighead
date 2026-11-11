@@ -1,0 +1,64 @@
+/* Account deletion section */
+.account-deletion-section {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+
+.account-deletion-section__header {
+  margin-bottom: var(--space-lg);
+}
+
+.account-deletion-section__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-danger);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.account-deletion-section__description {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.account-deletion-section__button {
+  min-height: 44px;
+  max-width: 100%;
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.account-deletion-section__button:hover:not(:disabled) {
+  background: var(--color-surface-alt);
+}
+
+.account-deletion-section__button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.account-deletion-section__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.account-deletion-section__button--danger {
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
+}
+
+.account-deletion-section__button--danger:hover:not(:disabled) {
+  background: var(--color-danger-bg);
+}
+

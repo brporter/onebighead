@@ -1,390 +1,96 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useData } from '../contexts/useData';
+import { useCollectionsData, useCategoriesData, useItemsData, useSuggestionsData } from '../contexts/useData';
 import { usePublish } from '../contexts/usePublish';
 import CategoryNav from '../components/category/CategoryNav';
 import { CategoryManagerModal } from '../components/category';
+import { CategoryItems } from '../components/category/CategoryItems';
 import { CollectionDashboard } from '../components/collection';
-import ItemList from '../components/item/ItemList';
-import SubcategoryDropdown from '../components/category/SubcategoryDropdown';
-import { BackNav, Loading, PublishButton, PublicBadge } from '../components/common';
-import { getCategoryAndDescendantIds } from '../utils/categoryUtils';
-import { bulkUpdatesApi, type BulkUpdateJobResponse } from '../api';
-import '../styles/components/BulkUpdateModal.css';
+import { CollectionLayout } from '../components/collection/CollectionLayout';
+import { CollectionHeader } from '../components/collection/CollectionHeader';
+import { BackNav, PublishButton, PublicBadge } from '../components/common';
+import { ContentState } from '../components/common/ContentState';
+import { BulkUpdateStatus } from '../components/common/BulkUpdateStatus';
+import { useCollectionBulkUpdate } from '../data/bulkUpdates/useCollectionBulkUpdate';
+import { bulkUpdatesApi } from '../api/bulkUpdates';
+import { parseRouteId } from '../utils/routeIds';
+import { useCollectionRoute } from '../data/routes/useCollectionRoute';
 
 function CategoryView() {
   const { collectionId, categoryId } = useParams<{ collectionId: string; categoryId?: string }>();
+  const collection = parseRouteId(collectionId);
+  const category = parseRouteId(categoryId);
+  if (collection === null || (categoryId !== undefined && category === null)) {
+    return <ContentState kind="error" title="Invalid collection link"
+      action={<Link to="/collections">All Collections</Link>} />;
+  }
+  return <CollectionBrowser key={collection} collectionId={collection} categoryId={category} />;
+}
+
+function CollectionBrowser({ collectionId, categoryId }: { collectionId: number; categoryId: number | null }) {
   const navigate = useNavigate();
-  const {
-    collections,
-    collectionsLoading,
-    loadCollections,
-    currentCollection,
-    setCurrentCollection,
-    categories,
-    categoriesError,
-    loadCategoriesForCollection,
-    items,
-    itemsLoading,
-    itemsError,
-    loadItemsForCategory,
-    loadPropertySuggestions,
-  } = useData();
+  const collectionsData = useCollectionsData();
+  const categoriesData = useCategoriesData();
+  const { items, itemsLoading, itemsError, loadItemsForCategory } = useItemsData();
+  const { loadPropertySuggestions } = useSuggestionsData();
+  const data = { ...collectionsData, ...categoriesData, loadPropertySuggestions };
+  const { collections, collectionsLoading, collectionsError, loadCollections } = collectionsData;
+  const { categoriesError, loadCategoriesForCollection } = categoriesData;
+  const { collection, categories: collectionCategories, categoriesPending } = useCollectionRoute(collectionId, data);
   const { requestPublish, requestUnpublish } = usePublish();
-
-  const collectionIdNum = collectionId ? parseInt(collectionId, 10) : null;
-  const categoryIdNum = categoryId ? parseInt(categoryId, 10) : null;
-
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
-  );
-  const [subcategoryFilter, setSubcategoryFilter] = useState<number | null>(null);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [prevCategoryId, setPrevCategoryId] = useState(categoryIdNum);
-  const [activeBulkJob, setActiveBulkJob] = useState<BulkUpdateJobResponse | null>(null);
-  const bulkPollRef = useRef<number | null>(null);
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
+  const resolvedCollectionId = collection?.collectionId;
+  const itemRequest = useRef<AbortController | null>(null);
 
-  // Reset filters when category changes (setState during render pattern)
-  if (categoryIdNum !== prevCategoryId) {
-    setPrevCategoryId(categoryIdNum);
-    setSubcategoryFilter(null);
-    setPageIndex(0);
-  }
-
-  // Deep linking: Load collection data if needed
+  const refreshItems = useCallback(() => {
+    itemRequest.current?.abort();
+    const controller = new AbortController();
+    itemRequest.current = controller;
+    if (categoryId !== null && resolvedCollectionId !== undefined) void loadItemsForCategory(categoryId, { signal: controller.signal });
+  }, [categoryId, resolvedCollectionId, loadItemsForCategory]);
   useEffect(() => {
-    if (!collectionsLoading && collections.length === 0) {
-      loadCollections();
-    }
-  }, [collectionsLoading, collections.length, loadCollections]);
+    refreshItems();
+    return () => { itemRequest.current?.abort(); };
+  }, [refreshItems]);
+  const bulk = useCollectionBulkUpdate(resolvedCollectionId ?? null, bulkUpdatesApi, refreshItems);
 
-  // Set current collection once collections are loaded
-  useEffect(() => {
-    if (collectionIdNum && collections.length > 0 && currentCollection?.collectionId !== collectionIdNum) {
-      const collection = collections.find(c => c.collectionId === collectionIdNum);
-      if (collection) {
-        setCurrentCollection(collection);
-        loadCategoriesForCollection(collectionIdNum);
-        loadPropertySuggestions(collectionIdNum);
-      } else {
-        navigate('/collections', { replace: true });
-      }
-    }
-  }, [collectionIdNum, collections, currentCollection, setCurrentCollection, loadCategoriesForCollection, loadPropertySuggestions, navigate]);
+  if (collectionsError) return <ContentState kind="error" title="Unable to load collections"
+    action={<button type="button" onClick={() => void loadCollections()}>Try again</button>}>{collectionsError}</ContentState>;
+  if (collectionsLoading) return <ContentState kind="loading" title="Loading..." />;
+  if (!collection) return <ContentState kind="error" title="Collection not found"
+    action={<Link to="/collections">All Collections</Link>}>This collection is unavailable in your current workspace.</ContentState>;
 
-  // Load items when category changes
-  useEffect(() => {
-    if (categoryIdNum) {
-      loadItemsForCategory(categoryIdNum);
-    }
-  }, [categoryIdNum, loadItemsForCategory]);
+  const selectedCategory = collectionCategories.find(category => category.categoryId === categoryId);
+  const homeHref = `/collections/${collectionId}`;
+  const selectItem = (id: number) => navigate(`${homeHref}/items/${id}`);
 
-  // Check for active bulk update on collection load
-  const checkBulkUpdate = useCallback(async (colId: number) => {
-    try {
-      const job = await bulkUpdatesApi.getCollectionStatus(colId);
-      if (job && (job.status === 'Queued' || job.status === 'Running')) {
-        setActiveBulkJob(job);
-        // Start polling
-        if (bulkPollRef.current) clearInterval(bulkPollRef.current);
-        bulkPollRef.current = window.setInterval(async () => {
-          try {
-            const status = await bulkUpdatesApi.getStatus(job.jobId);
-            setActiveBulkJob(status);
-            if (status.status === 'Completed' || status.status === 'Failed') {
-              if (bulkPollRef.current) clearInterval(bulkPollRef.current);
-              bulkPollRef.current = null;
-              // Refresh items after completion
-              setTimeout(() => {
-                setActiveBulkJob(null);
-                if (categoryIdNum) loadItemsForCategory(categoryIdNum);
-              }, 1500);
-            }
-          } catch {
-            if (bulkPollRef.current) clearInterval(bulkPollRef.current);
-            bulkPollRef.current = null;
-            setActiveBulkJob(null);
-          }
-        }, 500);
-      } else {
-        setActiveBulkJob(null);
-      }
-    } catch {
-      // Ignore errors
-    }
-  }, [categoryIdNum, loadItemsForCategory]);
-
-  useEffect(() => {
-    if (collectionIdNum && currentCollection) {
-      void Promise.resolve().then(() => checkBulkUpdate(collectionIdNum));
-    }
-    return () => {
-      if (bulkPollRef.current) {
-        clearInterval(bulkPollRef.current);
-        bulkPollRef.current = null;
-      }
-    };
-  }, [collectionIdNum, currentCollection, checkBulkUpdate]);
-
-  const directSubcategories = useMemo(() => {
-    if (categoryIdNum == null) return [];
-    return categories.filter((cat) => cat.parentCategoryId === categoryIdNum);
-  }, [categories, categoryIdNum]);
-
-  const showSubcategoryDropdown = directSubcategories.length > 0;
-
-  const eligibleCategoryIds = useMemo(() => {
-    if (categoryIdNum == null) return new Set<number>();
-    if (subcategoryFilter != null) {
-      return getCategoryAndDescendantIds(categories, subcategoryFilter);
-    }
-    return getCategoryAndDescendantIds(categories, categoryIdNum);
-  }, [categories, categoryIdNum, subcategoryFilter]);
-
-  const filteredItems = useMemo(() => {
-    if (categoryIdNum == null) return [];
-    return items.filter((item) => item.categoryId !== null && eligibleCategoryIds.has(item.categoryId));
-  }, [eligibleCategoryIds, items, categoryIdNum]);
-
-  const totalPages = useMemo(() => {
-    const pageSize = 25;
-    return Math.max(1, Math.ceil(filteredItems.length / pageSize));
-  }, [filteredItems.length]);
-
-  const safePageIndex = useMemo(() => {
-    return Math.min(Math.max(0, pageIndex), totalPages - 1);
-  }, [pageIndex, totalPages]);
-
-  function handleSelectCategory(catId: number | null) {
-    if (catId === null) {
-      navigate(`/collections/${collectionIdNum}`);
-    } else {
-      navigate(`/collections/${collectionIdNum}/categories/${catId}`);
-    }
-  }
-
-  function handleSelectItem(itemId: number) {
-    navigate(`/collections/${collectionIdNum}/items/${itemId}`);
-  }
-
-  function handleBackToCategories() {
-    navigate(`/collections/${collectionIdNum}`);
-  }
-
-  function handleAddItem() {
-    navigate(`/collections/${collectionIdNum}/items/new?categoryId=${categoryIdNum}`);
-  }
-
-  function handlePageChange(next: number) {
-    const clamped = Math.min(Math.max(0, next), totalPages - 1);
-    setPageIndex(clamped);
-  }
-
-  if (collectionsLoading || collections.length === 0) {
-    return <Loading message="Loading..." />;
-  }
-
-  if (!currentCollection) {
-    return <Loading message="Collection not found" />;
-  }
-
-  // Show error state if categories failed to load (blocks entire layout)
-  if (categoriesError) {
-    return (
-      <div className="app__layout">
-        <main className="app__content">
-          <div className="app__error">
-            <p>Failed to load categories: {categoriesError}</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  function handleCollectionPublishClick() {
-    if (!currentCollection) return;
-    requestPublish([{ type: 'collection', id: currentCollection.collectionId }]);
-  }
-
-  function handleCollectionUnpublishClick() {
-    if (!currentCollection) return;
-    requestUnpublish([{ type: 'collection', id: currentCollection.collectionId }]);
-  }
-
-  function handleBackToCollections() {
-    navigate('/collections');
-  }
-
-  const showBackToCollections = collections.length > 1;
-
-  // Show category tree with placeholder if no category selected
-  if (!categoryIdNum) {
-    return (
-      <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
-        <nav className="app__sidebar" aria-label="Category navigation">
-          {sidebarCollapsed ? (
-            <div className="app__sidebar-collapsed-content">
-              <button
-                type="button"
-                className="app__sidebar-toggle"
-                onClick={() => setSidebarCollapsed(false)}
-                aria-label="Expand sidebar"
-              >
-                &raquo;
-              </button>
-              <span className="app__sidebar-collapsed-label">Categories</span>
-            </div>
-          ) : (
-            <CategoryNav
-              categories={categories}
-              selectedCategoryId={null}
-              onSelect={handleSelectCategory}
-              onCollapse={() => setSidebarCollapsed(true)}
-              onEdit={() => setCategoryManagerOpen(true)}
-            />
-          )}
-        </nav>
-        <main className="app__content">
-          <div className="collection-title-bar">
-            {showBackToCollections && (
-              <button className="collection-title-bar__back" onClick={handleBackToCollections}>
-                ← All Collections
-              </button>
-            )}
-            <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
-            {currentCollection.effectiveIsPublic ? (
-              <PublicBadge
-                effectiveIsPublic={currentCollection.effectiveIsPublic}
-                onUnpublish={handleCollectionUnpublishClick}
-                className="collection-title-bar__badge"
-              />
-            ) : (
-              <PublishButton
-                onPublish={handleCollectionPublishClick}
-                className="collection-title-bar__publish-btn"
-              />
-            )}
-          </div>
-          <CollectionDashboard
-            collectionId={collectionIdNum!}
-            onSelectItem={handleSelectItem}
-          />
-        </main>
-
-        {currentCollection && (
-          <CategoryManagerModal
-            collectionId={currentCollection.collectionId}
-            isOpen={categoryManagerOpen}
-            onClose={() => setCategoryManagerOpen(false)}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // Show category tree with item list
-  return (
-    <div className={`app__layout${sidebarCollapsed ? ' app__layout--sidebar-collapsed' : ''}`}>
-      <nav className="app__sidebar" aria-label="Category navigation">
-        {sidebarCollapsed ? (
-          <button
-            type="button"
-            className="app__sidebar-toggle"
-            onClick={() => setSidebarCollapsed(false)}
-            aria-label="Expand sidebar"
-          >
-            ▶
-          </button>
-        ) : (
-          <CategoryNav
-            categories={categories}
-            selectedCategoryId={categoryIdNum}
-            onSelect={handleSelectCategory}
-            onCollapse={() => setSidebarCollapsed(true)}
-            onEdit={() => setCategoryManagerOpen(true)}
-          />
-        )}
-      </nav>
-      <main className="app__content">
-        <div className="collection-title-bar">
-          {showBackToCollections && (
-            <button className="collection-title-bar__back" onClick={handleBackToCollections}>
-              ← All Collections
-            </button>
-          )}
-          <Link to={`/collections/${collectionIdNum}`} className="collection-title-bar__title-link">
-            <h1 className="collection-title-bar__title">{currentCollection.name}</h1>
-          </Link>
-          {currentCollection.effectiveIsPublic ? (
-            <PublicBadge
-              effectiveIsPublic={currentCollection.effectiveIsPublic}
-              onUnpublish={handleCollectionUnpublishClick}
-              className="collection-title-bar__badge"
-            />
-          ) : (
-            <PublishButton
-              onPublish={handleCollectionPublishClick}
-              className="collection-title-bar__publish-btn"
-            />
-          )}
-          <p className="collection-title-bar__subtitle">Browse categories, then view items and details.</p>
-        </div>
-        <section className="app__items">
-          <BackNav label="Categories" onClick={handleBackToCategories} />
-          {activeBulkJob && (
-            <div className="bulk-update-banner">
-              <p className="bulk-update-banner__text">
-                Updating item properties...
-              </p>
-              <progress
-                className="bulk-update-modal__bar"
-                aria-label="Items updated"
-                value={activeBulkJob.totalItems > 0 ? activeBulkJob.processedItems + activeBulkJob.failedItems : undefined}
-                max={activeBulkJob.totalItems || 1}
-              />
-              <p className="bulk-update-banner__detail">
-                {activeBulkJob.processedItems + activeBulkJob.failedItems} / {activeBulkJob.totalItems} items
-                {activeBulkJob.status === 'Queued' && ' (queued)'}
-              </p>
-            </div>
-          )}
-          {showSubcategoryDropdown && (
-            <SubcategoryDropdown
-              subcategories={directSubcategories}
-              selectedId={subcategoryFilter}
-              onChange={setSubcategoryFilter}
-            />
-          )}
-          {itemsError ? (
-            <div className="app__error">
-              <p>Failed to load items: {itemsError}</p>
-            </div>
-          ) : itemsLoading && filteredItems.length === 0 ? (
-            <Loading message="Loading items..." />
-          ) : (
-            <ItemList
-              items={filteredItems}
-              categories={categories}
-              selectedId={null}
-              onSelect={handleSelectItem}
-              onAddItem={handleAddItem}
-              pageIndex={safePageIndex}
-              onPageChange={handlePageChange}
-            />
-          )}
-        </section>
-      </main>
-
-      {currentCollection && (
-        <CategoryManagerModal
-          collectionId={currentCollection.collectionId}
-          isOpen={categoryManagerOpen}
-          onClose={() => setCategoryManagerOpen(false)}
-        />
-      )}
-    </div>
-  );
+  return <>
+    <CollectionLayout
+      sidebar={categoriesPending ? <ContentState kind="loading" title="Loading categories…" /> :
+        <CategoryNav categories={collectionCategories} selectedCategoryId={categoryId}
+          onSelect={id => navigate(id === null ? homeHref : `${homeHref}/categories/${id}`)}
+          onEdit={() => setCategoryManagerOpen(true)} />}
+      header={<CollectionHeader collection={collection} homeHref={categoryId === null ? undefined : homeHref}
+        showAllCollections={collections.length > 1}
+        actions={collection.effectiveIsPublic ?
+          <PublicBadge effectiveIsPublic={collection.effectiveIsPublic}
+            onUnpublish={() => requestUnpublish([{ type: 'collection', id: collectionId }])} /> :
+          <PublishButton onPublish={() => requestPublish([{ type: 'collection', id: collectionId }])} />} />}>
+      <BulkUpdateStatus job={bulk.job} error={bulk.error} onRetry={bulk.retry} />
+      {categoriesError ? <ContentState kind="error" title="Unable to load categories"
+        action={<button type="button" onClick={() => void loadCategoriesForCollection(collectionId)}>Try again</button>}>{categoriesError}</ContentState> :
+        categoryId === null ? <CollectionDashboard collectionId={collectionId} onSelectItem={selectItem} /> :
+          categoriesPending ? <ContentState kind="loading" title="Loading categories…" /> :
+            !selectedCategory ? <ContentState kind="error" title="Category not found"
+              action={<Link to={homeHref}>View collection</Link>} /> : <>
+              <BackNav label="Categories" onClick={() => navigate(homeHref)} />
+              <CategoryItems key={categoryId} categoryId={categoryId} categories={collectionCategories}
+                items={items.filter(item => item.collectionId === collectionId)} loading={itemsLoading} error={itemsError}
+                onRetry={refreshItems} onSelect={selectItem} onAdd={() => navigate(`${homeHref}/items/new?categoryId=${categoryId}`)} />
+            </>}
+    </CollectionLayout>
+    <CategoryManagerModal collectionId={collectionId} isOpen={categoryManagerOpen} onClose={() => setCategoryManagerOpen(false)} />
+  </>;
 }
 
 export default CategoryView;

@@ -1,16 +1,60 @@
 using System.Net;
+using System.Net.Http.Json;
+using OneBigHead.Server.Data;
+using OneBigHead.Server.Tests.Integration.Postgres;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 
 namespace OneBigHead.Server.Tests.Integration;
 
-[Trait("Category", "Integration")]
-public class CollectionsControllerTests : IntegrationTestBase
+[Collection(PostgresIntegrationCollection.Name)]
+[Trait("Category", "PostgresIntegration")]
+public class CollectionsControllerTests(PostgresIntegrationFixture fixture) : IAsyncLifetime
 {
-    public CollectionsControllerTests(CustomWebApplicationFactory factory)
-        : base(factory)
+    private const int DefaultWorkspaceId = 1;
+    private const int DefaultCollectionId = 1;
+    private readonly MembershipWebApplicationFactory _app = new(fixture.ConnectionString);
+    private HttpClient Client = null!;
+
+    public async Task InitializeAsync()
     {
+        await fixture.ResetAsync();
+        await using var db = fixture.CreateContext();
+        db.Workspaces.Add(new Workspace { Id = 1, Name = "Workspace" });
+        db.Users.Add(new User { Id = 1, Email = "owner@example.test", ActiveWorkspaceId = 1 });
+        db.WorkspaceUsers.Add(new WorkspaceUser { UserId = 1, WorkspaceId = 1, WorkspaceRole = WorkspaceRole.WorkspaceAdmin });
+        db.Collections.Add(new Collection { WorkspaceId = 1, Name = "Default", Slug = "default" });
+        db.ItemTemplates.Add(new ItemTemplate { Name = "General Item", TemplateKey = Guid.NewGuid() });
+        db.WorkspaceStatistics.Add(new WorkspaceStatistic { WorkspaceId = 1, StatisticType = StatisticType.CollectionCount, Date = DateOnly.MinValue, Value = 1 });
+        await db.SaveChangesAsync();
+        Client = CreateClientForWorkspace(1, 1, "owner@example.test");
     }
+
+    public async Task DisposeAsync()
+    {
+        Client.Dispose();
+        await _app.DisposeAsync();
+    }
+
+    private HttpClient CreateAnonymousClient() => _app.CreateClient();
+    private AppDbContext GetDbContext() => fixture.CreateContext();
+    private HttpClient CreateClientForWorkspace(int workspaceId, int userId, string email)
+    {
+        var client = _app.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.WorkspaceIdHeader, workspaceId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email);
+        return client;
+    }
+    private async Task SeedDatabaseAsync(Action<AppDbContext> seed)
+    {
+        await using var db = fixture.CreateContext();
+        seed(db);
+        await db.SaveChangesAsync();
+    }
+    private static Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response) => response.Content.ReadFromJsonAsync<T>();
+    private Task<HttpResponseMessage> PostJsonAsync<T>(string url, T body) => Client.PostAsJsonAsync(url, body);
+    private Task<HttpResponseMessage> PutJsonAsync<T>(string url, T body) => Client.PutAsJsonAsync(url, body);
 
     #region GET /api/collections
 
@@ -51,7 +95,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         const int user2Id = 1002;
         const int collection2Id = 1002;
 
-        await Factory.SeedDatabaseAsync(context =>
+        await SeedDatabaseAsync(context =>
         {
             // Skip if already seeded
             if (context.Workspaces.Any(t => t.Id == workspace2Id))
@@ -135,7 +179,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         const int otherWorkspaceId = 3003;
         const int otherCollectionId = 3003;
 
-        await Factory.SeedDatabaseAsync(context =>
+        await SeedDatabaseAsync(context =>
         {
             // Skip if already seeded (check both workspace and collection)
             if (context.Collections.Any(c => c.Id == otherCollectionId))
@@ -332,7 +376,7 @@ public class CollectionsControllerTests : IntegrationTestBase
         const int isolatedUserId = 2000;
         const int isolatedCollectionId = 2000;
 
-        await Factory.SeedDatabaseAsync(context =>
+        await SeedDatabaseAsync(context =>
         {
             if (context.Workspaces.Any(t => t.Id == isolatedWorkspaceId))
                 return;
@@ -395,23 +439,9 @@ public class CollectionsControllerTests : IntegrationTestBase
         // Arrange - use very high IDs to avoid conflicts with auto-generated IDs
         const int otherWorkspaceId = 99990004;
         const int otherCollectionId = 99990004;
-        const int extraCollectionId = 99990005;
 
-        await Factory.SeedDatabaseAsync(context =>
+        await SeedDatabaseAsync(context =>
         {
-            // Add a second collection to workspace 1 so the "last collection" check passes
-            // (the controller checks count before ownership, so we need > 1 collection)
-            if (!context.Collections.Any(c => c.Id == extraCollectionId))
-            {
-                context.Collections.Add(new Collection
-                {
-                    Id = extraCollectionId,
-                    WorkspaceId = DefaultWorkspaceId,
-                    Name = "Extra Collection for Delete Test",
-                    Slug = "extra-collection-delete-test"
-                });
-            }
-
             // Create the other workspace if not exists
             if (!context.Workspaces.Any(t => t.Id == otherWorkspaceId))
             {

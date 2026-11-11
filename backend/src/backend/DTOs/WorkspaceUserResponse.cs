@@ -1,4 +1,4 @@
-﻿using OneBigHead.Server.Models;
+using OneBigHead.Server.Models;
 
 namespace OneBigHead.Server.DTOs;
 
@@ -10,19 +10,6 @@ public class WorkspaceUserResponse
     public bool IsLinked { get; set; }
     public string? IdentityProvider { get; set; }
     public DateTime CreatedAt { get; set; }
-
-    public static WorkspaceUserResponse FromUser(User user, WorkspaceRole role)
-    {
-        return new WorkspaceUserResponse
-        {
-            UserId = user.Id,
-            Email = user.Email,
-            WorkspaceRole = role,
-            IsLinked = user.IsLinked,
-            IdentityProvider = user.IsLinked ? user.IdentityProvider.ToString() : null,
-            CreatedAt = user.CreatedAt
-        };
-    }
 
     public static WorkspaceUserResponse FromWorkspaceUser(WorkspaceUser workspaceUser)
     {

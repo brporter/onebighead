@@ -1,14 +1,16 @@
 import { useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { publicApi, type PublicCollection } from '../api';
+import { useParams } from 'react-router-dom';
+import { publicApi } from '../api';
 import { useAsyncData } from '../utils/useAsyncData';
+import { ContentState } from '../components/common/ContentState';
+import { PublicCard } from '../components/public/PublicCard';
 import '../styles/components/PublicCollections.css';
 
 function PublicCollectionsView() {
   const { slug } = useParams<{ slug: string }>();
 
   const fetchCollections = useCallback(
-    () => publicApi.getCollections(slug!),
+    (signal: AbortSignal) => publicApi.getCollections(slug!, { signal }),
     [slug],
   );
   const { data: collections, loading, error } = useAsyncData(
@@ -16,18 +18,16 @@ function PublicCollectionsView() {
   );
 
   if (loading) {
-    return <div className="publicCollections__loading">Loading collections...</div>;
+    return <ContentState kind="loading" title="Loading collections…" />;
   }
 
   if (error) {
-    return <div className="publicCollections__error">{error}</div>;
+    return <ContentState kind="error" title="Unable to load collections">{error}</ContentState>;
   }
 
   if (!collections || collections.length === 0) {
     return (
-      <div className="publicCollections__empty">
-        <p>No public collections available.</p>
-      </div>
+      <ContentState kind="empty" title="No public collections available.">Published collections will appear here.</ContentState>
     );
   }
 
@@ -35,24 +35,9 @@ function PublicCollectionsView() {
     <div className="publicCollections">
       <h1 className="publicCollections__title">Collections</h1>
       <div className="publicCollections__grid">
-        {collections.map((collection: PublicCollection) => (
-          <Link
-            key={collection.id}
-            className="publicCollections__card"
-            to={`/public/${slug}/collections/${collection.id}`}
-          >
-            {collection.heroImageUrl && (
-              <div className="publicCollections__imageWrap">
-                <img src={collection.heroImageUrl} alt={collection.name} className="publicCollections__image" />
-              </div>
-            )}
-            <div className="publicCollections__content">
-              <h2 className="publicCollections__name">{collection.name}</h2>
-              {collection.description && (
-                <p className="publicCollections__description">{collection.description}</p>
-              )}
-            </div>
-          </Link>
+        {collections.map(collection => (
+          <PublicCard key={collection.id} to={`/public/${slug}/collections/${collection.id}`}
+            name={collection.name} description={collection.description} imageUrl={collection.heroImageUrl} heading="h2" />
         ))}
       </div>
     </div>

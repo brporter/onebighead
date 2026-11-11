@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useDialog } from '../../utils/useDialog';
+import '../../styles/components/ModalDialog.css';
 
 interface ModalDialogProps {
   children: ReactNode;

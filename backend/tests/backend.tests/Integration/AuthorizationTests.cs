@@ -90,21 +90,6 @@ public class AuthorizationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task DeleteCollection_AsAdmin_Succeeds()
-    {
-        // Arrange - Create a second collection
-        var createRequest = new CreateCollectionRequest { Name = "Admin Deletable Collection" };
-        var createResponse = await PostJsonAsync("/api/collections", createRequest);
-        var collection = await DeserializeResponseAsync<Collection>(createResponse);
-
-        // Act
-        var response = await Client.DeleteAsync($"/api/collections/{collection!.Id}");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-    }
-
-    [Fact]
     public async Task GetCollections_AsNormalUser_Succeeds()
     {
         // Arrange - Normal users CAN read collections

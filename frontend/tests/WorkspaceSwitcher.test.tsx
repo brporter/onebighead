@@ -60,17 +60,23 @@ describe('WorkspaceSwitcher', () => {
   it('renders nothing when user has only one workspace', () => {
     (useUser as ReturnType<typeof vi.fn>).mockReturnValue({
       user: mockUserWithSingleWorkspace,
-      refetch: mockRefetch,
+      signedOut: false, refetch: mockRefetch,
     });
 
     const { container } = render(<WorkspaceSwitcher />);
     expect(container.firstChild).toBeNull();
   });
 
+  it('renders nothing for an account without an active workspace', () => {
+    vi.mocked(useUser).mockReturnValue({ user: { ...mockUserWithMultipleWorkspaces, activeWorkspace: null, workspaceId: null, workspaces: [] },
+      loading: false, error: null, signedOut: false, refetch: mockRefetch, logout: vi.fn() });
+    expect(render(<WorkspaceSwitcher />).container).toBeEmptyDOMElement();
+  });
+
   it('renders nothing when user is null', () => {
     (useUser as ReturnType<typeof vi.fn>).mockReturnValue({
       user: null,
-      refetch: mockRefetch,
+      signedOut: false, refetch: mockRefetch,
     });
 
     const { container } = render(<WorkspaceSwitcher />);
@@ -80,7 +86,7 @@ describe('WorkspaceSwitcher', () => {
   it('renders trigger button with active workspace name', () => {
     (useUser as ReturnType<typeof vi.fn>).mockReturnValue({
       user: mockUserWithMultipleWorkspaces,
-      refetch: mockRefetch,
+      signedOut: false, refetch: mockRefetch,
     });
 
     render(<WorkspaceSwitcher />);
@@ -91,7 +97,7 @@ describe('WorkspaceSwitcher', () => {
     const user = userEvent.setup();
     (useUser as ReturnType<typeof vi.fn>).mockReturnValue({
       user: mockUserWithMultipleWorkspaces,
-      refetch: mockRefetch,
+      signedOut: false, refetch: mockRefetch,
     });
 
     render(<WorkspaceSwitcher />);
@@ -107,7 +113,7 @@ describe('WorkspaceSwitcher', () => {
     const user = userEvent.setup();
     (useUser as ReturnType<typeof vi.fn>).mockReturnValue({
       user: mockUserWithMultipleWorkspaces,
-      refetch: mockRefetch,
+      signedOut: false, refetch: mockRefetch,
     });
 
     render(<WorkspaceSwitcher />);
@@ -122,7 +128,7 @@ describe('WorkspaceSwitcher', () => {
     const user = userEvent.setup();
     (useUser as ReturnType<typeof vi.fn>).mockReturnValue({
       user: mockUserWithMultipleWorkspaces,
-      refetch: mockRefetch,
+      signedOut: false, refetch: mockRefetch,
     });
     (workspacesApi.switch as ReturnType<typeof vi.fn>).mockResolvedValue({
       success: true,
@@ -130,7 +136,7 @@ describe('WorkspaceSwitcher', () => {
       workspaceName: 'Secondary Workspace',
     });
 
-    // Mock window.location.reload
+    // Switching refreshes the session instead of forcing a full-page reload.
     const reloadMock = vi.fn();
     Object.defineProperty(window, 'location', {
       value: { reload: reloadMock },
@@ -143,10 +149,12 @@ describe('WorkspaceSwitcher', () => {
     await user.click(screen.getByRole('button', { name: /secondary workspace/i, hidden: true }));
 
     expect(workspacesApi.switch).toHaveBeenCalledWith(2);
+    expect(mockRefetch).toHaveBeenCalledWith({ throwOnError: true });
+    expect(reloadMock).not.toHaveBeenCalled();
   });
 
   it('associates the trigger with an automatically dismissed native popover', () => {
-    vi.mocked(useUser).mockReturnValue({ user: mockUserWithMultipleWorkspaces, refetch: mockRefetch } as unknown as ReturnType<typeof useUser>);
+    vi.mocked(useUser).mockReturnValue({ user: mockUserWithMultipleWorkspaces, signedOut: false, refetch: mockRefetch } as unknown as ReturnType<typeof useUser>);
     render(<WorkspaceSwitcher />);
     const trigger = screen.getByRole('button', { name: /primary workspace/i });
     const popover = document.getElementById(trigger.getAttribute('popovertarget')!);
@@ -155,10 +163,9 @@ describe('WorkspaceSwitcher', () => {
 
   it('handles switch error gracefully', async () => {
     const user = userEvent.setup();
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     (useUser as ReturnType<typeof vi.fn>).mockReturnValue({
       user: mockUserWithMultipleWorkspaces,
-      refetch: mockRefetch,
+      signedOut: false, refetch: mockRefetch,
     });
     (workspacesApi.switch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Switch failed'));
 
@@ -168,10 +175,21 @@ describe('WorkspaceSwitcher', () => {
     await user.click(screen.getByRole('button', { name: /secondary workspace/i, hidden: true }));
 
     await waitFor(() => {
-      expect(consoleError).toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent('Switch failed');
       expect(mockRefetch).toHaveBeenCalled();
     });
+  });
 
-    consoleError.mockRestore();
+  it('shows each membership role and treats an unsuccessful switch response as an error', async () => {
+    const activeWorkspace = { ...mockActiveWorkspace, workspaceRole: WorkspaceRole.Normal };
+    const destination = { ...mockOtherWorkspace, workspaceRole: WorkspaceRole.WorkspaceAdmin };
+    vi.mocked(useUser).mockReturnValue({ user: { ...mockUserWithMultipleWorkspaces, activeWorkspace, workspaces: [activeWorkspace, destination] }, refetch: mockRefetch } as unknown as ReturnType<typeof useUser>);
+    vi.mocked(workspacesApi.switch).mockResolvedValue({ success: false, workspaceId: 1, workspaceName: 'Primary Workspace' });
+    render(<WorkspaceSwitcher />);
+    expect(document.querySelector('.workspace-switcher__current')).toHaveTextContent('Member');
+    const button = screen.getByRole('button', { name: /Secondary Workspace Admin/, hidden: true });
+    await userEvent.click(button);
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to switch workspace');
+    expect(mockRefetch).toHaveBeenCalledExactlyOnceWith({ throwOnError: true });
   });
 });

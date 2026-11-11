@@ -1,0 +1,7 @@
+.invitation-view { min-height: 100vh; background: var(--color-bg); color: var(--color-text); }
+.invitation-view__main { width: min(100%, 42rem); box-sizing: border-box; margin: 0 auto; padding: var(--space-xl) var(--space-md); }
+.invitation-view__card { display: grid; gap: var(--space-md); padding: var(--space-xl); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); overflow-wrap: anywhere; }
+.invitation-view__card h2, .invitation-view__card p { margin: 0; line-height: 1.5; }
+.invitation-view__join { min-height: 44px; padding: var(--space-sm) var(--space-md); border: none; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-primary-text); font: inherit; font-weight: 600; cursor: pointer; }
+.invitation-view__join:disabled { opacity: 0.6; cursor: not-allowed; }
+.invitation-view__join:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }

@@ -4,6 +4,7 @@ export { default as CategoryTemplateSelector } from './CategoryTemplateSelector'
 export { default as CategoryManagerForm } from './CategoryManagerForm';
 export { default as CategoryManagerTree } from './CategoryManagerTree';
 export { default as CategoryNav } from './CategoryNav';
+export { CategoryItems } from './CategoryItems';
 export { default as SortConfirmModal } from './SortConfirmModal';
 export { default as SubcategoryDropdown } from './SubcategoryDropdown';
 export { default as QuickCreatePopover } from './QuickCreatePopover';

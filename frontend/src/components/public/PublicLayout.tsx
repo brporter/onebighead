@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { publicApi, type PublicWorkspace } from '../../api';
 import { useAsyncData } from '../../utils/useAsyncData';
 import { useUser } from '../../contexts/useUser';
+import { ContentState } from '../common/ContentState';
 import '../../styles/components/PublicLayout.css';
 
 function PublicLayout() {
@@ -10,7 +11,7 @@ function PublicLayout() {
   const { user, loading: userLoading } = useUser();
 
   const fetchWorkspace = useCallback(
-    () => publicApi.getWorkspace(slug!),
+    (signal: AbortSignal) => publicApi.getWorkspace(slug!, { signal }),
     [slug],
   );
   const { data: workspace, loading, error } = useAsyncData<PublicWorkspace>(
@@ -20,7 +21,7 @@ function PublicLayout() {
   if (loading) {
     return (
       <div className="publicLayout">
-        <div className="publicLayout__loading">Loading...</div>
+        <ContentState kind="loading" title="Loading workspace…" />
       </div>
     );
   }
@@ -28,10 +29,9 @@ function PublicLayout() {
   if (error || !workspace) {
     return (
       <div className="publicLayout">
-        <div className="publicLayout__error">
-          <h1>Not Found</h1>
-          <p>This workspace doesn't exist or isn't publicly accessible.</p>
-        </div>
+        <ContentState kind="error" title="Workspace unavailable">
+          {error || "This workspace doesn't exist or isn't publicly accessible."}
+        </ContentState>
       </div>
     );
   }

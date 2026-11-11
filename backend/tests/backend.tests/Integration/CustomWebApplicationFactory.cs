@@ -45,7 +45,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IEmailService>();
             services.AddSingleton<IEmailService, TestEmailService>();
 
-            // HTTP tests isolate statistics; repository behavior runs against PostgreSQL.
+            // HTTP tests isolate statistics; repository and transaction behavior run against PostgreSQL.
+            services.RemoveAll<IWorkspaceStatisticsWriter>();
+            services.AddSingleton(Mock.Of<IWorkspaceStatisticsWriter>());
             services.RemoveAll<IWorkspaceStatisticsRepository>();
             services.AddSingleton(Mock.Of<IWorkspaceStatisticsRepository>());
 

@@ -46,24 +46,23 @@ public static class ExternalAuthenticationExtensions
                     OnTicketReceived = async context =>
                     {
                         // TicketReceived runs after nonce, state and token checks have completed.
-                        var email = context.Principal?.FindFirst("email")?.Value;
-                        var subject = context.Principal?.FindFirst("sub")?.Value;
+                        var identity = ExternalIdentityClaims.Read(context.Principal);
                         context.HandleResponse();
-                        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(subject))
+                        if (!identity.IsValid)
                         {
-                            context.Response.Redirect(ErrorUrl(settings, "Email or subject claim missing"));
+                            context.Response.Redirect(ErrorUrl(settings, identity.Error!));
                             return;
                         }
                         var users = context.HttpContext.RequestServices.GetRequiredService<IExternalUserService>();
-                        var (user, role) = await users.GetOrCreateAsync(provider,
-                            new OidcValidationResult { IsValid = true, Email = email, Subject = subject });
+                        var signIn = await users.GetOrCreateAsync(provider, identity, context.HttpContext.RequestAborted);
+                        var user = signIn.User;
                         if (user is null)
                         {
-                            context.Response.Redirect(ErrorUrl(settings, "Failed to create user account"));
+                            context.Response.Redirect(ErrorUrl(settings, signIn.Error ?? ExternalSignInResult.DefaultError));
                             return;
                         }
                         var tokens = context.HttpContext.RequestServices.GetRequiredService<ITokenService>();
-                        context.Response.SetAuthCookie(tokens.GenerateAppToken(user, role), settings);
+                        context.Response.SetAuthCookie(tokens.GenerateAppToken(user, signIn.WorkspaceRole), settings);
                         context.Response.Redirect(context.ReturnUri ?? settings.OAuth.PostLoginRedirectUrl);
                     },
                     OnRemoteFailure = context =>

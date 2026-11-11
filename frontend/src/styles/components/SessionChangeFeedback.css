@@ -1,0 +1,7 @@
+.modal.session-change { max-width: min(30rem, calc(100vw - 2rem)); min-width: 0; max-height: 90dvh; padding: var(--space-xl); color: var(--color-text); }
+.session-change h2 { margin-top: 0; }
+.session-change p { overflow-wrap: anywhere; }
+.session-change__error { color: var(--color-danger); }
+.session-change button { min-height: 44px; padding: var(--space-sm) var(--space-md); }
+.session-change button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.session-change__content { display: contents; }

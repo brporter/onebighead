@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import RequireAuth from '../src/components/common/RequireAuth';
 import * as UserContext from '../src/contexts/useUser';
@@ -61,12 +61,39 @@ describe('RequireAuth', () => {
     mockLocation.href = '';
   });
 
+  it.each([true, false])('lets non-administrators finish their own onboarding while workspace welcome is incomplete (terms accepted: %s)', accepted => {
+    vi.mocked(UserContext.useUser).mockReturnValue({
+      user: createUser({ hasCompletedWelcome: false, hasAcceptedTerms: accepted, isWorkspaceAdmin: false }),
+      loading: false, error: null, signedOut: false, refetch: vi.fn(), logout: vi.fn(),
+    });
+    renderWithRouter(<RequireAuth><div>Collection content</div></RequireAuth>);
+    expect(screen.getByText(accepted ? 'Collection content' : 'Terms Page')).toBeInTheDocument();
+    expect(screen.queryByText('Welcome Page')).not.toBeInTheDocument();
+  });
+
+  it('keeps a failed session check on the page with a retry action', () => {
+    const refetch = vi.fn();
+    vi.mocked(UserContext.useUser).mockReturnValue({ user: null, loading: false, error: 'Offline', signedOut: false, refetch, logout: vi.fn() });
+    renderWithRouter(<RequireAuth><div>Protected Content</div></RequireAuth>);
+    expect(screen.getByRole('alert')).toHaveTextContent('Offline');
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+    expect(mockLocation.href).toBe('');
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(refetch).toHaveBeenCalledOnce();
+  });
+
+  it('lets users without workspaces reach the workspace recovery flow', () => {
+    vi.mocked(UserContext.useUser).mockReturnValue({ user: createUser({ workspaces: [], hasCompletedWelcome: false, hasAcceptedTerms: false }), loading: false, error: null, signedOut: false, refetch: vi.fn(), logout: vi.fn() });
+    renderWithRouter(<RequireAuth><div>Create a workspace</div></RequireAuth>);
+    expect(screen.getByText('Create a workspace')).toBeInTheDocument();
+  });
+
   it('should show loading state while checking auth', () => {
     vi.mocked(UserContext.useUser).mockReturnValue({
       user: null,
       loading: true,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: vi.fn(),
     });
 
@@ -85,7 +112,7 @@ describe('RequireAuth', () => {
       user: createUser({ hasCompletedWelcome: true }),
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: vi.fn(),
     });
 
@@ -103,7 +130,7 @@ describe('RequireAuth', () => {
       user: null,
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: vi.fn(),
     });
 
@@ -125,7 +152,7 @@ describe('RequireAuth', () => {
       user: null,
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      signedOut: false, refetch: vi.fn(),
       logout: vi.fn(),
     });
 
@@ -144,10 +171,10 @@ describe('RequireAuth', () => {
   describe('welcome redirect', () => {
     it('should redirect to /welcome when hasCompletedWelcome is false', () => {
       vi.mocked(UserContext.useUser).mockReturnValue({
-        user: createUser({ hasCompletedWelcome: false }),
+        user: createUser({ hasCompletedWelcome: false, isWorkspaceAdmin: true }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: vi.fn(),
       });
 
@@ -164,10 +191,10 @@ describe('RequireAuth', () => {
 
     it('should not redirect to /welcome when skipWelcomeCheck is true', () => {
       vi.mocked(UserContext.useUser).mockReturnValue({
-        user: createUser({ hasCompletedWelcome: false }),
+        user: createUser({ hasCompletedWelcome: false, isWorkspaceAdmin: true }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: vi.fn(),
       });
 
@@ -188,7 +215,7 @@ describe('RequireAuth', () => {
         user: createUser({ hasCompletedWelcome: true }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: vi.fn(),
       });
 
@@ -209,7 +236,7 @@ describe('RequireAuth', () => {
         user: createUser({ hasAcceptedTerms: false, hasCompletedWelcome: true }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: vi.fn(),
       });
 
@@ -227,10 +254,10 @@ describe('RequireAuth', () => {
     it('should not redirect to /terms for new users (hasCompletedWelcome false)', () => {
       // New users should go to welcome wizard, where terms are part of the flow
       vi.mocked(UserContext.useUser).mockReturnValue({
-        user: createUser({ hasAcceptedTerms: false, hasCompletedWelcome: false }),
+        user: createUser({ hasAcceptedTerms: false, hasCompletedWelcome: false, isWorkspaceAdmin: true }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: vi.fn(),
       });
 
@@ -250,7 +277,7 @@ describe('RequireAuth', () => {
         user: createUser({ hasAcceptedTerms: false, hasCompletedWelcome: true }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: vi.fn(),
       });
 
@@ -270,7 +297,7 @@ describe('RequireAuth', () => {
         user: createUser({ hasAcceptedTerms: true, hasCompletedWelcome: true }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: vi.fn(),
       });
 
@@ -291,7 +318,7 @@ describe('RequireAuth', () => {
         user: null,
         loading: true,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: vi.fn(),
       });
 
@@ -310,7 +337,7 @@ describe('RequireAuth', () => {
         user: createUser({ hasCompletedWelcome: true }),
         loading: false,
         error: null,
-        refetch: vi.fn(),
+        signedOut: false, refetch: vi.fn(),
         logout: vi.fn(),
       });
 

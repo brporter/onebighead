@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Security.Claims;
+using OneBigHead.Server.Services.Accounts;
 
 namespace OneBigHead.Server.Tests.Controllers;
 
@@ -18,18 +19,19 @@ public class AuthControllerTests
     private readonly Mock<IOidcTokenValidator> _mockTokenValidator;
     private readonly Mock<ITokenService> _mockTokenService;
     private readonly Mock<IUserRepository> _mockUserRepository;
-    private readonly Mock<IWorkspaceRepository> _mockWorkspaceRepository;
     private readonly Mock<IWorkspaceUserRepository> _mockWorkspaceUserRepository;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
     private readonly AuthenticationSettings _settings;
     private readonly AuthController _controller;
+    private readonly Mock<ICurrentUserSessionReader> _sessions = new();
+    private readonly Mock<IAccountTerms> _accountTerms = new();
+    private readonly Mock<IExternalUserService> _externalUsers = new();
 
     public AuthControllerTests()
     {
         _mockTokenValidator = new Mock<IOidcTokenValidator>();
         _mockTokenService = new Mock<ITokenService>();
         _mockUserRepository = new Mock<IUserRepository>();
-        _mockWorkspaceRepository = new Mock<IWorkspaceRepository>();
         _mockWorkspaceUserRepository = new Mock<IWorkspaceUserRepository>();
         _mockLogger = new Mock<ILogger<AuthController>>();
 
@@ -70,9 +72,10 @@ public class AuthControllerTests
             _mockTokenValidator.Object,
             _mockTokenService.Object,
             _mockUserRepository.Object,
-            _mockWorkspaceRepository.Object,
             _mockWorkspaceUserRepository.Object,
-            new ExternalUserService(_mockUserRepository.Object, _mockWorkspaceUserRepository.Object, Microsoft.Extensions.Logging.Abstractions.NullLogger<ExternalUserService>.Instance),
+            _externalUsers.Object,
+            _sessions.Object,
+            _accountTerms.Object,
             options,
             _mockLogger.Object);
 
@@ -152,17 +155,21 @@ public class AuthControllerTests
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
-    [Fact]
-    public async Task Callback_ReturnsBadRequest_WhenProviderInvalid()
+    [Theory]
+    [InlineData("invalid")]
+    [InlineData("None")]
+    [InlineData("999")]
+    public async Task Callback_ReturnsBadRequest_WhenProviderInvalid(string provider)
     {
         // Arrange
-        var request = new AuthCallbackRequest { Token = "token", Provider = "invalid" };
+        var request = new AuthCallbackRequest { Token = "token", Provider = provider };
 
         // Act
         var result = await _controller.Callback(request);
 
         // Assert
         Assert.IsType<BadRequestObjectResult>(result);
+        _mockTokenValidator.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -186,14 +193,12 @@ public class AuthControllerTests
         // Arrange
         var request = new AuthCallbackRequest { Token = "valid-token", Provider = "google" };
         var user = new User { Id = 1, ActiveWorkspaceId = 1, Email = "test@example.com", ActiveWorkspace = new Workspace { Name = "Test Workspace" } };
-        var membership = new WorkspaceUser { UserId = 1, WorkspaceId = 1, WorkspaceRole = WorkspaceRole.Normal };
 
         _mockTokenValidator.Setup(v => v.ValidateTokenAsync("valid-token", IdentityProvider.Google))
             .ReturnsAsync(new OidcValidationResult { IsValid = true, Email = "test@example.com", Subject = "sub123" });
-        _mockUserRepository.Setup(r => r.GetByProviderIdAsync(IdentityProvider.Google, "sub123"))
-            .ReturnsAsync(user);
-        _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(1, 1))
-            .ReturnsAsync(membership);
+        _externalUsers.Setup(service => service.GetOrCreateAsync(IdentityProvider.Google,
+            It.Is<OidcValidationResult>(identity => identity.Subject == "sub123"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExternalSignInResult(user, WorkspaceRole.Normal));
         _mockTokenService.Setup(t => t.GenerateAppToken(user, WorkspaceRole.Normal)).Returns("app-token");
 
         // Act
@@ -204,6 +209,25 @@ public class AuthControllerTests
         var response = Assert.IsType<AuthCallbackResponse>(okResult.Value);
         Assert.True(response.Success);
         Assert.Equal("test@example.com", response.Email);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Use the original account and provider.")]
+    public async Task Callback_RejectsAccountMismatchWithoutIssuingACookie(string? error)
+    {
+        using var cancellation = new CancellationTokenSource();
+        _controller.HttpContext.RequestAborted = cancellation.Token;
+        var identity = new OidcValidationResult { IsValid = true, Email = "test@example.com", Subject = "other" };
+        _mockTokenValidator.Setup(v => v.ValidateTokenAsync("token", IdentityProvider.Google)).ReturnsAsync(identity);
+        _externalUsers.Setup(s => s.GetOrCreateAsync(IdentityProvider.Google, identity, cancellation.Token))
+            .ReturnsAsync(new ExternalSignInResult(null, Error: error));
+        var response = Assert.IsType<UnauthorizedObjectResult>(await _controller.Callback(new AuthCallbackRequest { Provider = "google", Token = "token" }));
+        var json = System.Text.Json.JsonSerializer.Serialize(response.Value);
+        Assert.Contains(error ?? ExternalSignInResult.DefaultError, json);
+        Assert.Equal(0, _controller.Response.Headers.SetCookie.Count);
+        _mockTokenService.VerifyNoOtherCalls();
+        _externalUsers.Verify(s => s.GetOrCreateAsync(IdentityProvider.Google, identity, cancellation.Token), Times.Once);
     }
 
     #endregion
@@ -222,137 +246,161 @@ public class AuthControllerTests
 
     #endregion
 
-    #region GetCurrentUser Tests
-
-    [Fact]
-    public async Task GetCurrentUser_ReturnsUnauthorized_WhenNotAuthenticated()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("invalid")]
+    public async Task CurrentUser_RejectsInvalidIdentity(string? userId)
     {
-        // Arrange - default setup has no auth
-
-        // Act
-        var result = await _controller.GetCurrentUser();
-
-        // Assert
-        Assert.IsType<UnauthorizedObjectResult>(result);
+        var claims = userId is null ? Array.Empty<Claim>() : [new Claim(ClaimTypes.NameIdentifier, userId)];
+        _controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        Assert.IsType<UnauthorizedObjectResult>(await _controller.GetCurrentUser());
+        _sessions.Verify(s => s.ReadAsync(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
-    public async Task GetCurrentUser_ReturnsUser_WhenAuthenticated()
+    public async Task CurrentUser_RejectsUnauthenticatedIdentity()
     {
-        // Arrange
-        SetupHttpContext(authenticated: true, workspaceId: 5, email: "user@test.com");
-        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(5))
-            .ReturnsAsync(new Workspace { Id = 5, Name = "Test Workspace", HasCompletedWelcome = true });
-
-        // Act
-        var result = await _controller.GetCurrentUser();
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.NotNull(okResult.Value);
+        Assert.IsType<UnauthorizedObjectResult>(await _controller.GetCurrentUser());
+        _controller.HttpContext.User = new ClaimsPrincipal();
+        Assert.IsType<UnauthorizedObjectResult>(await _controller.GetCurrentUser());
+        _controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "1")]));
+        Assert.IsType<UnauthorizedObjectResult>(await _controller.GetCurrentUser());
     }
 
     [Fact]
-    public async Task GetCurrentUser_ReturnsHasCompletedWelcome_FromWorkspace()
+    public async Task CurrentUser_RejectsMissingAccount()
     {
-        // Arrange
-        SetupHttpContext(authenticated: true, workspaceId: 1, email: "user@test.com");
-        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1))
-            .ReturnsAsync(new Workspace { Id = 1, Name = "Test", HasCompletedWelcome = false });
-
-        // Act
-        var result = await _controller.GetCurrentUser();
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var json = System.Text.Json.JsonSerializer.Serialize(okResult.Value);
-        Assert.Contains("\"hasCompletedWelcome\":false", json);
+        SetupHttpContext(authenticated: true);
+        Assert.IsType<UnauthorizedObjectResult>(await _controller.GetCurrentUser());
+        Assert.Equal(0, _controller.Response.Headers.SetCookie.Count);
     }
 
-    #endregion
-
-    #region CompleteWelcome Tests
-
-    [Fact]
-    public async Task CompleteWelcome_ReturnsUnauthorized_WhenNotAuthenticated()
+    [Theory]
+    [InlineData(null)]
+    [InlineData(5)]
+    public async Task CurrentUser_RefreshesCookieFromTheAuthoritativeSession(int? workspaceId)
     {
-        // Arrange - default setup has no auth
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = "Test" };
-
-        // Act
-        var result = await _controller.CompleteWelcome(request);
-
-        // Assert
-        Assert.IsType<UnauthorizedObjectResult>(result);
+        SetupHttpContext(authenticated: true, workspaceId: 999, email: "stale@example.test");
+        var user = new User { Id = 1, ActiveWorkspaceId = workspaceId, Email = "current@example.test", IsSystemAdministrator = true };
+        if (workspaceId is int id)
+            user.WorkspaceMemberships.Add(new WorkspaceUser { WorkspaceId = id, WorkspaceRole = WorkspaceRole.WorkspaceAdmin,
+                Workspace = new Workspace { Id = id, Name = "Current", HasCompletedWelcome = true } });
+        var response = CurrentUserResponse.FromUser(user);
+        _sessions.Setup(s => s.ReadAsync(1)).ReturnsAsync(new CurrentUserSession(user, response));
+        _mockTokenService.Setup(t => t.GenerateAppToken(user, response.WorkspaceRole)).Returns("refreshed-token");
+        var result = Assert.IsType<OkObjectResult>(await _controller.GetCurrentUser());
+        Assert.Same(response, result.Value);
+        Assert.Equal(workspaceId, response.WorkspaceId);
+        Assert.Equal("current@example.test", response.Email);
+        Assert.Equal("no-store", _controller.Response.Headers.CacheControl);
+        Assert.Contains("auth_token=refreshed-token", _controller.Response.Headers.SetCookie.ToString());
     }
 
+#if DEBUG
     [Fact]
-    public async Task CompleteWelcome_UpdatesWorkspaceName_WhenProvided()
+    public async Task DevLogin_AuthenticatesAnExistingAccountWithoutAWorkspace()
     {
-        // Arrange
-        SetupHttpContext(authenticated: true, workspaceId: 1, email: "user@test.com");
-        var workspace = new Workspace { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
-        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = "New Name" };
-
-        // Act
-        var result = await _controller.CompleteWelcome(request);
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("New Name", workspace.Name);
-        Assert.True(workspace.HasCompletedWelcome);
-        _mockWorkspaceRepository.Verify(r => r.UpdateAsync(workspace), Times.Once);
+        var user = new User { Id = 1, Email = "existing@example.test", ActiveWorkspaceId = null };
+        _mockUserRepository.Setup(r => r.GetByEmailAsync(user.Email)).ReturnsAsync(user);
+        _mockTokenService.Setup(t => t.GenerateAppToken(user, WorkspaceRole.Normal)).Returns("workspace-less-token");
+        Assert.IsType<OkObjectResult>(await _controller.DevLogin(new DevLoginRequest { Email = user.Email }));
+        Assert.Contains("workspace-less-token", _controller.Response.Headers.SetCookie.ToString());
+        _mockWorkspaceUserRepository.Verify(r => r.GetMembershipAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 
-    [Fact]
-    public async Task CompleteWelcome_UsesEmail_WhenWorkspaceNameNotProvided()
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public async Task DevLogin_RestoresTheAccountAndUsesItsCurrentMembership(bool deleted, bool hasMembership)
     {
-        // Arrange
-        SetupHttpContext(authenticated: true, workspaceId: 1, email: "user@example.com");
-        var workspace = new Workspace { Id = 1, Name = "Old Name", HasCompletedWelcome = false };
-        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = null };
-
-        // Act
-        var result = await _controller.CompleteWelcome(request);
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("user@example.com", workspace.Name);
-        Assert.True(workspace.HasCompletedWelcome);
+        var user = new User { Id = 1, ActiveWorkspaceId = 5, Email = "existing@example.test", IsDeleted = deleted, DeletedAt = DateTime.UtcNow };
+        _mockUserRepository.Setup(r => r.GetByEmailAsync(user.Email)).ReturnsAsync(user);
+        if (hasMembership) _mockWorkspaceUserRepository.Setup(r => r.GetMembershipAsync(1, 5))
+            .ReturnsAsync(new WorkspaceUser { WorkspaceRole = WorkspaceRole.WorkspaceAdmin });
+        var role = hasMembership ? WorkspaceRole.WorkspaceAdmin : WorkspaceRole.Normal;
+        _mockTokenService.Setup(t => t.GenerateAppToken(user, role)).Returns("membership-token");
+        Assert.IsType<OkObjectResult>(await _controller.DevLogin(new DevLoginRequest { Email = " Existing@Example.Test " }));
+        Assert.Contains("membership-token", _controller.Response.Headers.SetCookie.ToString());
+        _mockUserRepository.Verify(r => r.UpdateAsync(user), deleted ? Times.Once : Times.Never);
+        Assert.False(user.IsDeleted);
+        if (deleted) Assert.Null(user.DeletedAt);
     }
 
     [Fact]
-    public async Task CompleteWelcome_SetsHasCompletedWelcome_ToTrue()
+    public async Task DevLogin_NewAccountReceivesItsOwnAdministratorWorkspace()
     {
-        // Arrange
-        SetupHttpContext(authenticated: true, workspaceId: 1, email: "user@test.com");
-        var workspace = new Workspace { Id = 1, Name = "Test", HasCompletedWelcome = false };
-        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workspace);
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = "My Org" };
+        var user = new User { Id = 2, ActiveWorkspaceId = 6, Email = "new@example.test" };
+        _mockUserRepository.Setup(r => r.CreateWithNewWorkspaceAsync(user.Email, IdentityProvider.Microsoft, It.IsAny<string>())).ReturnsAsync(user);
+        _mockTokenService.Setup(t => t.GenerateAppToken(user, WorkspaceRole.WorkspaceAdmin)).Returns("new-account-token");
+        Assert.IsType<OkObjectResult>(await _controller.DevLogin(new DevLoginRequest { Email = user.Email }));
+        Assert.Contains("new-account-token", _controller.Response.Headers.SetCookie.ToString());
+    }
 
-        // Act
-        await _controller.CompleteWelcome(request);
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task DevLogin_RequiresAnEmail(string email) =>
+        Assert.IsType<BadRequestObjectResult>(await _controller.DevLogin(new DevLoginRequest { Email = email }));
 
-        // Assert
-        Assert.True(workspace.HasCompletedWelcome);
+#endif
+
+    [Fact]
+    public async Task Callback_AcceptsAnExistingWorkspaceLessIdentity()
+    {
+        var user = new User { Id = 1, Email = "remaining@example.test" };
+        _mockTokenValidator.Setup(v => v.ValidateTokenAsync("valid", IdentityProvider.Google))
+            .ReturnsAsync(new OidcValidationResult { IsValid = true, Subject = "subject", Email = user.Email });
+        _externalUsers.Setup(s => s.GetOrCreateAsync(IdentityProvider.Google, It.IsAny<OidcValidationResult>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExternalSignInResult(user));
+        _mockTokenService.Setup(t => t.GenerateAppToken(user, WorkspaceRole.Normal)).Returns("remaining-token");
+        var result = Assert.IsType<OkObjectResult>(await _controller.Callback(new AuthCallbackRequest { Token = "valid", Provider = "google" }));
+        var response = Assert.IsType<AuthCallbackResponse>(result.Value);
+        Assert.Null(response.WorkspaceId);
+        Assert.Equal("", response.WorkspaceName);
+        Assert.Contains("remaining-token", _controller.Response.Headers.SetCookie.ToString());
     }
 
     [Fact]
-    public async Task CompleteWelcome_ReturnsNotFound_WhenWorkspaceDoesNotExist()
+    public async Task Callback_FailedIdentityLinkDoesNotIssueACookie()
     {
-        // Arrange
-        SetupHttpContext(authenticated: true, workspaceId: 999, email: "user@test.com");
-        _mockWorkspaceRepository.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Workspace?)null);
-        var request = new OneBigHead.Server.DTOs.CompleteWelcomeRequest { WorkspaceName = "Test" };
-
-        // Act
-        var result = await _controller.CompleteWelcome(request);
-
-        // Assert
-        Assert.IsType<NotFoundObjectResult>(result);
+        _mockTokenValidator.Setup(v => v.ValidateTokenAsync("valid", IdentityProvider.Google))
+            .ReturnsAsync(new OidcValidationResult { IsValid = true, Subject = "subject", Email = "pending@example.test" });
+        _externalUsers.Setup(s => s.GetOrCreateAsync(IdentityProvider.Google, It.IsAny<OidcValidationResult>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ExternalSignInResult.Rejected("Account sign-in changed. Please try again."));
+        var result = Assert.IsType<UnauthorizedObjectResult>(await _controller.Callback(new AuthCallbackRequest { Token = "valid", Provider = "google" }));
+        Assert.Equal(401, result.StatusCode);
+        Assert.Equal(0, _controller.Response.Headers.SetCookie.Count);
     }
 
-    #endregion
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("invalid")]
+    [InlineData("0")]
+    [InlineData("-1")]
+    public async Task AcceptTerms_RequiresAValidAccountIdentity(string? id)
+    {
+        _controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(id is null ? [] : [new Claim(ClaimTypes.NameIdentifier, id)], "Test"));
+        Assert.IsType<UnauthorizedObjectResult>(await _controller.AcceptTerms());
+        _accountTerms.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task AcceptTerms_RecordsConsentOnlyForAnExistingAccount()
+    {
+        SetupHttpContext(authenticated: true);
+        Assert.IsType<NotFoundObjectResult>(await _controller.AcceptTerms());
+        using var cancellation = new CancellationTokenSource();
+        _controller.HttpContext.RequestAborted = cancellation.Token;
+        var acceptedAt = new DateTime(2026, 11, 10, 12, 0, 0, DateTimeKind.Utc);
+        _accountTerms.Setup(command => command.AcceptAsync(1, cancellation.Token)).ReturnsAsync(acceptedAt);
+        var result = Assert.IsType<OkObjectResult>(await _controller.AcceptTerms());
+        var response = Assert.IsType<AcceptTermsResponse>(result.Value);
+        Assert.True(response.HasAcceptedTerms);
+        Assert.Equal(acceptedAt, response.AcceptedTermsAt);
+        _accountTerms.Verify(command => command.AcceptAsync(1, cancellation.Token), Times.Once);
+        _mockUserRepository.VerifyNoOtherCalls();
+    }
+
+
 }

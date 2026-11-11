@@ -1,193 +1,69 @@
-using OneBigHead.Server.Authentication;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Moq;
 using OneBigHead.Server.Controllers;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
-using OneBigHead.Server.Services;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Moq;
-using System.Security.Claims;
 
 namespace OneBigHead.Server.Tests.Controllers;
 
 [Trait("Category", "Unit")]
 public class UsersControllerTests
 {
-    private const int TestWorkspaceId = 1;
-    private const int TestUserId = 1;
-    private const int OtherUserId = 2;
-
-    private readonly Mock<IUserRepository> _mockUserRepository;
-    private readonly Mock<IWorkspaceUserRepository> _mockWorkspaceUserRepository;
-    private readonly Mock<IUserDeletionService> _mockUserDeletionService;
-    private readonly Mock<IWorkspaceRepository> _mockWorkspaceRepository;
-    private readonly Mock<ITokenRevocationService> _mockTokenRevocationService;
-    private readonly UsersController _controller;
-
-    public UsersControllerTests()
+    [Fact]
+    public async Task RestorableWorkspaces_ReturnsDeletedAdminWorkspacesAndTheirStatistics()
     {
-        _mockUserRepository = new Mock<IUserRepository>();
-        _mockWorkspaceUserRepository = new Mock<IWorkspaceUserRepository>();
-        _mockUserDeletionService = new Mock<IUserDeletionService>();
-        _mockWorkspaceRepository = new Mock<IWorkspaceRepository>();
-        _mockTokenRevocationService = new Mock<ITokenRevocationService>();
+        var deletedAt = DateTime.UtcNow.AddDays(-5).AddHours(1);
+        var memberships = new Mock<IWorkspaceUserRepository>(MockBehavior.Strict);
+        var workspaces = new Mock<IWorkspaceRepository>(MockBehavior.Strict);
+        memberships.Setup(m => m.GetAdminMembershipsIncludingDeletedAsync(7)).ReturnsAsync([
+            new WorkspaceUser { WorkspaceId = 1, Workspace = null! },
+            new WorkspaceUser { WorkspaceId = 2, Workspace = new Workspace { Id = 2 } },
+            new WorkspaceUser { WorkspaceId = 3, Workspace = new Workspace { Id = 3, Name = "Recoverable", IsDeleted = true, DeletedAt = deletedAt } },
+            new WorkspaceUser { WorkspaceId = 4, Workspace = new Workspace { Id = 4, Name = "Expired", IsDeleted = true, DeletedAt = deletedAt.AddDays(-40) } }
+        ]);
+        workspaces.Setup(w => w.GetStatsAsync(3)).ReturnsAsync(new WorkspaceStats { CollectionCount = 2, ItemCount = 3, CategoryCount = 4, ImageCount = 5 });
+        workspaces.Setup(w => w.GetStatsAsync(4)).ReturnsAsync(new WorkspaceStats());
+        var controller = Controller(memberships.Object, workspaces.Object);
 
-        _controller = new UsersController(
-            _mockUserRepository.Object,
-            _mockWorkspaceUserRepository.Object,
-            _mockUserDeletionService.Object,
-            _mockWorkspaceRepository.Object,
-            _mockTokenRevocationService.Object,
-            Options.Create(new AuthenticationSettings()),
-            new Mock<ILogger<UsersController>>().Object);
+        var result = Assert.IsType<OkObjectResult>(await controller.GetRestorableWorkspaces());
+        var rows = Assert.IsType<List<RestorableWorkspaceResponse>>(result.Value);
+        Assert.Equal(new[] { 3, 4 }, rows.Select(w => w.WorkspaceId));
+        Assert.Equal("Recoverable", rows[0].Name);
+        Assert.Equal(deletedAt, rows[0].DeletedAt);
+        Assert.Equal(26, rows[0].DaysRemaining);
+        Assert.Equal(2, rows[0].Stats.CollectionCount);
+        Assert.Equal(3, rows[0].Stats.ItemCount);
+        Assert.Equal(4, rows[0].Stats.CategoryCount);
+        Assert.Equal(5, rows[0].Stats.ImageCount);
+        Assert.Equal(0, rows[1].DaysRemaining);
+        memberships.Verify(m => m.GetAdminMembershipsIncludingDeletedAsync(7), Times.Once);
+        workspaces.Verify(w => w.GetStatsAsync(3), Times.Once);
+        workspaces.Verify(w => w.GetStatsAsync(4), Times.Once);
+        workspaces.VerifyNoOtherCalls();
+    }
 
-        var claims = new List<Claim>
+    [Fact]
+    public async Task RestorableWorkspaces_WithoutAdminMemberships_ReturnsEmptyList()
+    {
+        var memberships = new Mock<IWorkspaceUserRepository>(MockBehavior.Strict);
+        var workspaces = new Mock<IWorkspaceRepository>(MockBehavior.Strict);
+        memberships.Setup(m => m.GetAdminMembershipsIncludingDeletedAsync(7)).ReturnsAsync([]);
+        var response = await Controller(memberships.Object, workspaces.Object).GetRestorableWorkspaces();
+        Assert.Empty(Assert.IsType<List<RestorableWorkspaceResponse>>(Assert.IsType<OkObjectResult>(response).Value));
+        workspaces.VerifyNoOtherCalls();
+    }
+
+    private static UsersController Controller(IWorkspaceUserRepository memberships, IWorkspaceRepository workspaces) => new(memberships, workspaces)
+    {
+        ControllerContext = new ControllerContext
         {
-            new("workspace_id", TestWorkspaceId.ToString()),
-            new(ClaimTypes.NameIdentifier, TestUserId.ToString()),
-            new(ClaimTypes.Email, "test@example.com")
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuth");
-
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-        };
-    }
-
-    #region UpdateUserRole Tests
-
-    [Fact]
-    public async Task UpdateUserRole_Success_UpdatesRoleAndRevokesTokens()
-    {
-        _mockWorkspaceUserRepository
-            .Setup(r => r.UpdateRoleWithAdminCheckAsync(OtherUserId, TestWorkspaceId, WorkspaceRole.Normal))
-            .ReturnsAsync(AdminCheckResult.Success);
-
-        var result = await _controller.UpdateUserRole(OtherUserId, new UpdateUserRoleRequest { Role = WorkspaceRole.Normal });
-
-        Assert.IsType<NoContentResult>(result);
-        _mockTokenRevocationService.Verify(s => s.RevokeAsync(OtherUserId), Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdateUserRole_OwnRole_ReturnsBadRequestWithoutRevoking()
-    {
-        var result = await _controller.UpdateUserRole(TestUserId, new UpdateUserRoleRequest { Role = WorkspaceRole.Normal });
-
-        Assert.IsType<BadRequestObjectResult>(result);
-        _mockTokenRevocationService.Verify(s => s.RevokeAsync(It.IsAny<int>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task UpdateUserRole_UserNotFound_ReturnsNotFoundWithoutRevoking()
-    {
-        _mockWorkspaceUserRepository
-            .Setup(r => r.UpdateRoleWithAdminCheckAsync(OtherUserId, TestWorkspaceId, WorkspaceRole.Normal))
-            .ReturnsAsync(AdminCheckResult.UserNotFound);
-
-        var result = await _controller.UpdateUserRole(OtherUserId, new UpdateUserRoleRequest { Role = WorkspaceRole.Normal });
-
-        Assert.IsType<NotFoundObjectResult>(result);
-        _mockTokenRevocationService.Verify(s => s.RevokeAsync(It.IsAny<int>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task UpdateUserRole_WouldRemoveLastAdmin_ReturnsBadRequestWithoutRevoking()
-    {
-        _mockWorkspaceUserRepository
-            .Setup(r => r.UpdateRoleWithAdminCheckAsync(OtherUserId, TestWorkspaceId, WorkspaceRole.Normal))
-            .ReturnsAsync(AdminCheckResult.WouldRemoveLastAdmin);
-
-        var result = await _controller.UpdateUserRole(OtherUserId, new UpdateUserRoleRequest { Role = WorkspaceRole.Normal });
-
-        Assert.IsType<BadRequestObjectResult>(result);
-        _mockTokenRevocationService.Verify(s => s.RevokeAsync(It.IsAny<int>()), Times.Never);
-    }
-
-    #endregion
-
-    #region RemoveUser Tests
-
-    [Fact]
-    public async Task RemoveUser_Success_RemovesMembershipAndRevokesTokens()
-    {
-        _mockWorkspaceUserRepository
-            .Setup(r => r.DeleteWithAdminCheckAsync(OtherUserId, TestWorkspaceId))
-            .ReturnsAsync(AdminCheckResult.Success);
-        _mockWorkspaceUserRepository
-            .Setup(r => r.CountUserMembershipsAsync(OtherUserId))
-            .ReturnsAsync(1);
-
-        var result = await _controller.RemoveUser(OtherUserId);
-
-        Assert.IsType<NoContentResult>(result);
-        _mockTokenRevocationService.Verify(s => s.RevokeAsync(OtherUserId), Times.Once);
-        _mockUserRepository.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task RemoveUser_LastMembership_RevokesTokensBeforeDeletingUser()
-    {
-        _mockWorkspaceUserRepository
-            .Setup(r => r.DeleteWithAdminCheckAsync(OtherUserId, TestWorkspaceId))
-            .ReturnsAsync(AdminCheckResult.Success);
-        _mockWorkspaceUserRepository
-            .Setup(r => r.CountUserMembershipsAsync(OtherUserId))
-            .ReturnsAsync(0);
-
-        var callOrder = new List<string>();
-        _mockTokenRevocationService.Setup(s => s.RevokeAsync(OtherUserId))
-            .Callback(() => callOrder.Add("revoke"))
-            .Returns(Task.CompletedTask);
-        _mockUserRepository.Setup(r => r.DeleteAsync(OtherUserId))
-            .Callback(() => callOrder.Add("delete"))
-            .ReturnsAsync(true);
-
-        var result = await _controller.RemoveUser(OtherUserId);
-
-        Assert.IsType<NoContentResult>(result);
-        // The revocation row has an FK to Users, so it must be written before the hard delete
-        Assert.Equal(new[] { "revoke", "delete" }, callOrder);
-    }
-
-    [Fact]
-    public async Task RemoveUser_Self_ReturnsBadRequestWithoutRevoking()
-    {
-        var result = await _controller.RemoveUser(TestUserId);
-
-        Assert.IsType<BadRequestObjectResult>(result);
-        _mockTokenRevocationService.Verify(s => s.RevokeAsync(It.IsAny<int>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task RemoveUser_UserNotFound_ReturnsNotFoundWithoutRevoking()
-    {
-        _mockWorkspaceUserRepository
-            .Setup(r => r.DeleteWithAdminCheckAsync(OtherUserId, TestWorkspaceId))
-            .ReturnsAsync(AdminCheckResult.UserNotFound);
-
-        var result = await _controller.RemoveUser(OtherUserId);
-
-        Assert.IsType<NotFoundObjectResult>(result);
-        _mockTokenRevocationService.Verify(s => s.RevokeAsync(It.IsAny<int>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task RemoveUser_WouldRemoveLastAdmin_ReturnsBadRequestWithoutRevoking()
-    {
-        _mockWorkspaceUserRepository
-            .Setup(r => r.DeleteWithAdminCheckAsync(OtherUserId, TestWorkspaceId))
-            .ReturnsAsync(AdminCheckResult.WouldRemoveLastAdmin);
-
-        var result = await _controller.RemoveUser(OtherUserId);
-
-        Assert.IsType<BadRequestObjectResult>(result);
-        _mockTokenRevocationService.Verify(s => s.RevokeAsync(It.IsAny<int>()), Times.Never);
-    }
-
-    #endregion
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "7")], "Test"))
+            }
+        }
+    };
 }

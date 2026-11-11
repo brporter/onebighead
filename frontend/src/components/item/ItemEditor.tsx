@@ -1,71 +1,82 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useEditorStatus, type EditorStatus, type EditorStatusListener } from '../../data/shared/useEditorStatus';
 import PropertyEditor from './PropertyEditor';
 import ImageEditor from '../common/ImageEditor';
 import CategorySelector from '../category/CategorySelector';
 import type { Item, Category, ItemProperty, Collection } from '../../utils/types';
-import { UserFlag, Visibility } from '../../utils/types';
+import { UserFlag } from '../../utils/types';
+import { createEmptyItem } from '../../utils/itemUtils';
+import { createItemDraft, itemFromDraft, sameItemDraft, type ItemDraft } from '../../data/items/itemDraft';
+import { useAsyncAction } from '../../utils/useAsyncAction';
+import { ContentState } from '../common/ContentState';
+import '../../styles/components/ItemEditor.css';
 
 interface ItemEditorProps {
   item: Item | null;
   categories: Category[];
   collection: Collection | null;
-  onSave: (item: Item) => void;
+  onSave: (item: Item) => void | Promise<void>;
   onCancel: () => void;
-  onDelete?: ((id: number) => void) | null;
+  onDelete?: ((id: number) => void | Promise<void>) | null;
   initialProperties?: ItemProperty[];
+  onStatusChange?: EditorStatusListener;
 }
 
-function ItemEditor({
+function ItemEditor(props: ItemEditorProps) {
+  if (!props.item && !props.collection) return <ContentState kind="error" title="Choose a collection before adding an item" />;
+  return <ItemEditorForm {...props} />;
+}
+
+function ItemEditorForm({
   item,
   categories,
+  collection,
   onSave,
   onCancel,
   onDelete,
   initialProperties,
+  onStatusChange,
 }: ItemEditorProps) {
-  const [formData, setFormData] = useState<Item>(() => {
-    if (item) {
-      // Ensure userFlag has a default value even if not present in loaded item
-      return {
-        ...item,
-        userFlag: item.userFlag ?? UserFlag.Have,
-      };
-    }
-    return {
-      id: null,
-      workspaceId: 1,
-      collectionId: 0,
-      categoryId: null,
-      templateKey: null,
-      name: '',
-      summary: '',
-      description: '',
+  const [original] = useState<ItemDraft>(() => createItemDraft(item ?? {
+      ...createEmptyItem(null, collection!.collectionId, collection!.workspaceId),
       properties: initialProperties ?? [],
-      images: [],
-      visibility: Visibility.Private,
-      effectiveIsPublic: false,
-      userFlag: UserFlag.Have,
-    };
-  });
+  }));
+  const [formData, setFormData] = useState(original);
 
   const isNew = formData.id === null;
+  const action = useAsyncAction();
+  const [imagesPending, setImagesPending] = useState(false);
+  const reportImages = useCallback((status: EditorStatus) => setImagesPending(status.pending), []);
+  const pending = action.pending || imagesPending;
+  const dirty = !sameItemDraft(original, formData);
+  useEditorStatus(dirty, pending, onStatusChange);
 
-  function handleFieldChange<K extends keyof Item>(field: K, value: Item[K]) {
+  function handleCancel() {
+    if (pending || (dirty && !window.confirm('You have unsaved changes. Discard them?'))) return;
+    onCancel();
+  }
+
+  function handleFieldChange<K extends keyof ItemDraft>(field: K, value: ItemDraft[K]) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
   function handleDelete() {
-    if (item && window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
-      if (onDelete && item.id !== null) onDelete(item.id);
+    if (window.confirm(`Are you sure you want to delete "${item!.name}"?`)) {
+      void action.run(() => onDelete!(formData.id!), 'Unable to delete item');
     }
   }
 
   return (
     <section className="detail detail--editing">
-      <form className="detail__form" onSubmit={(e) => { e.preventDefault(); if (formData.name.trim()) onSave(formData); }}>
+      <form className="detail__form" aria-busy={pending} onSubmit={(e) => {
+        e.preventDefault();
+        if (!pending && formData.name.trim()) void action.run(() => onSave(itemFromDraft(formData)), 'Unable to save item');
+      }}>
+        {action.error && <ContentState kind="error" title="Unable to complete this action">{action.error}</ContentState>}
+        <fieldset className="item-editor__fields" disabled={pending} inert={pending} aria-label="Item details">
         <div className="detail__header">
           <h2 className="detail__title">
-            {isNew ? 'Add New Item' : `Edit: ${item?.name}`}
+            {isNew ? 'Add New Item' : `Edit: ${item!.name}`}
           </h2>
         </div>
 
@@ -114,13 +125,14 @@ function ItemEditor({
         />
 
         <PropertyEditor
-          properties={formData.properties || []}
+          properties={formData.properties}
           onChange={(props) => handleFieldChange('properties', props)}
         />
 
         <ImageEditor
-          images={formData.images || []}
-          onChange={(imgs) => handleFieldChange('images', imgs)}
+          images={formData.images}
+          onChange={update => setFormData(current => ({ ...current, images: update(current.images) }))}
+          onStatusChange={reportImages}
         />
 
         <fieldset className="detail__fieldset">
@@ -163,14 +175,14 @@ function ItemEditor({
           <button
             type="submit"
             className="detail__btn detail__btn--primary"
-            disabled={!formData.name?.trim()}
+            disabled={!formData.name.trim()}
           >
             {isNew ? 'Create Item' : 'Save Changes'}
           </button>
           <button
             type="button"
             className="detail__btn detail__btn--secondary"
-            onClick={onCancel}
+            onClick={handleCancel}
           >
             Cancel
           </button>
@@ -184,6 +196,7 @@ function ItemEditor({
             </button>
           )}
         </div>
+        </fieldset>
       </form>
     </section>
   );

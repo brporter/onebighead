@@ -8,18 +8,12 @@ public interface IWorkspaceRepository
 {
     Task<Workspace?> GetByIdAsync(int id);
     Task UpdateAsync(Workspace workspace);
-    Task CreateAsync(Workspace workspace);
 
     /// <summary>
     /// Gets statistics for a workspace (collection, item, category, and image counts).
     /// Used for displaying workspace stats before deletion or restoration.
     /// </summary>
     Task<WorkspaceStats> GetStatsAsync(int workspaceId);
-
-    /// <summary>
-    /// Gets a non-deleted workspace by its public slug.
-    /// </summary>
-    Task<Workspace?> GetBySlugAsync(string slug);
 
     /// <summary>
     /// Checks if a slug is already in use by any workspace (regardless of public access state).

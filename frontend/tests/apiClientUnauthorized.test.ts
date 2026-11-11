@@ -79,4 +79,36 @@ describe('api singleton 401 handling', () => {
 
     expect(fakeLocation.href).toBe('');
   });
+
+  it.each(['USER_DELETED', 'NO_ACTIVE_WORKSPACES'])('logs out and redirects after %s', async (code) => {
+    const send = mockFetch401({ code }).mockResolvedValueOnce(
+      Response.json({ code }, { status: 401 }),
+    ).mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', send);
+
+    await expect(api.get('/items')).rejects.toBeInstanceOf(ApiError);
+    await vi.waitFor(() => expect(fakeLocation.href).toBe('/'));
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenLastCalledWith('/api/auth/logout', expect.objectContaining({ method: 'POST', credentials: 'include' }));
+  });
+
+  it('redirects without a recursive logout when cleanup also returns a deleted-account error', async () => {
+    const send = vi.fn().mockImplementation(async () => Response.json({ code: 'USER_DELETED' }, { status: 401 }));
+    vi.stubGlobal('fetch', send);
+
+    await expect(api.get('/items')).rejects.toBeInstanceOf(ApiError);
+    await vi.waitFor(() => expect(fakeLocation.href).toBe('/'));
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it('redirects even if the logout connection fails', async () => {
+    const send = mockFetch401({ code: 'USER_DELETED' })
+      .mockResolvedValueOnce(Response.json({ code: 'USER_DELETED' }, { status: 401 }))
+      .mockRejectedValueOnce(new Error('offline'));
+    vi.stubGlobal('fetch', send);
+
+    await expect(api.get('/items')).rejects.toBeInstanceOf(ApiError);
+    await vi.waitFor(() => expect(fakeLocation.href).toBe('/'));
+    expect(send).toHaveBeenCalledTimes(2);
+  });
 });

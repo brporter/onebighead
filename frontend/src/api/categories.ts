@@ -1,7 +1,7 @@
 /**
  * Categories API
  */
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 import type { Category } from '../utils/types';
 
 export interface CreateCategoryRequest {
@@ -24,10 +24,10 @@ export interface UpdateCategoryRequest {
 }
 
 export const categoriesApi = {
-  getAll(collectionId?: number): Promise<Category[]> {
-    if (!collectionId) return api.get<Category[]>('/categories');
+  getAll(collectionId?: number, options?: RequestOptions): Promise<Category[]> {
+    if (!collectionId) return api.get<Category[]>('/categories', options);
     const params = new URLSearchParams({ collectionId: String(collectionId) });
-    return api.get<Category[]>(`/categories?${params}`);
+    return api.get<Category[]>(`/categories?${params}`, options);
   },
 
   getById(id: number): Promise<Category> {
@@ -53,7 +53,7 @@ export const categoriesApi = {
   /**
    * Get templates for a category including inherited templates from parent categories.
    */
-  getTemplates(categoryId: number): Promise<number[]> {
-    return api.get<number[]>(`/categories/${categoryId}/templates`);
+  getTemplates(categoryId: number, options?: RequestOptions): Promise<number[]> {
+    return api.get<number[]>(`/categories/${categoryId}/templates`, options);
   },
 };

@@ -49,6 +49,7 @@ public class SupportRepository : ISupportRepository
 
         return await query
             .OrderByDescending(sr => sr.UpdatedAt)
+            .ThenByDescending(sr => sr.Id)
             .ToListAsync();
     }
 
@@ -73,7 +74,7 @@ public class SupportRepository : ISupportRepository
             query = query.Where(sr => sr.Status == status.Value);
         }
 
-        query = query.OrderByDescending(sr => sr.UpdatedAt);
+        query = query.OrderByDescending(sr => sr.UpdatedAt).ThenByDescending(sr => sr.Id);
 
         if (offset.HasValue)
         {
@@ -104,23 +105,6 @@ public class SupportRepository : ISupportRepository
         }
 
         return await query.CountAsync();
-    }
-
-    public async Task<SupportReply> AddReplyAsync(SupportReply reply)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        reply.CreatedAt = DateTime.UtcNow;
-        context.SupportReplies.Add(reply);
-
-        // Update the parent request's UpdatedAt timestamp
-        var request = await context.SupportRequests.FindAsync(reply.SupportRequestId);
-        if (request != null)
-        {
-            request.UpdatedAt = DateTime.UtcNow;
-        }
-
-        await context.SaveChangesAsync();
-        return reply;
     }
 
     public async Task<SupportRequest?> UpdateStatusAsync(int requestId, SupportRequestStatus status)

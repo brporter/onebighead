@@ -1,0 +1,158 @@
+.settings-workspace-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.settings-workspace-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.settings-workspace-card:hover {
+  border-color: var(--color-border-strong);
+}
+
+.settings-workspace-card--active {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.settings-workspace-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-workspace-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.settings-workspace-card__name {
+  overflow-wrap: anywhere;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.settings-workspace-card__badge {
+  font-size: 0.75rem;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.settings-workspace-card__badge--current {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.settings-workspace-card__badge--admin {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.settings-workspace-card__status {
+  margin: var(--space-xs) 0 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.settings-workspace-card__actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  flex-shrink: 1;
+}
+
+.settings-workspace-card__button {
+  min-height: 44px;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.settings-workspace-card__button:hover:not(:disabled) {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border-strong);
+}
+
+.settings-workspace-card__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-workspace-card__button--danger {
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
+}
+
+.settings-workspace-card__button--danger:hover:not(:disabled) {
+  background: var(--color-danger-bg);
+}
+
+.settings-workspace-card__button--primary {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  border-color: var(--color-primary);
+}
+
+.settings-workspace-card__button--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.settings-workspace-card--deleted {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.settings-workspace-card__badge--deleted {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.settings-workspace-card__stats {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.settings-workspace-card__countdown {
+  font-size: 0.75rem;
+  color: var(--color-warning);
+  margin: 0.25rem 0 0;
+}
+
+.settings-section__subtitle {
+  font-size: 1.125rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .settings-workspace-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-workspace-card__actions {
+    justify-content: flex-end;
+  }
+}
+

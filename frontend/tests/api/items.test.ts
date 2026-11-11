@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { itemsApi } from '../../src/api/items';
+import { api } from '../../src/api/client';
 import { createMockItem } from '../testUtils';
 
 describe('itemsApi', () => {
@@ -97,6 +98,12 @@ describe('itemsApi', () => {
   });
 
   describe('getById', () => {
+    it('forwards the caller cancellation signal to the shared transport', async () => {
+      const options = { signal: new AbortController().signal };
+      const get = vi.spyOn(api, 'get').mockResolvedValue(createMockItem());
+      await itemsApi.getById(1, options);
+      expect(get).toHaveBeenCalledWith('/items/1', options);
+    });
     it('should fetch single item by id', async () => {
       const mockItem = createMockItem({
         id: 42,
@@ -186,4 +193,18 @@ describe('itemsApi', () => {
       expect(call[1].method).toBe('DELETE');
     });
   });
+
+  it('records views through the shared API client', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
+    await itemsApi.recordView(42);
+    expect(mockFetch).toHaveBeenCalledWith('/api/items/42/view', expect.objectContaining({ method: 'POST' }));
+  });
+});
+
+it('forwards cancellation when refreshing a category list', async () => {
+  const options = { signal: new AbortController().signal };
+  const get = vi.spyOn(api, 'get').mockResolvedValue(new Response('[]'));
+  await itemsApi.getAll({ categoryId: 2 }, options);
+  expect(get).toHaveBeenCalledWith('/items?categoryId=2', { signal: options.signal, headers: {}, skipJsonParse: true });
+  get.mockRestore();
 });

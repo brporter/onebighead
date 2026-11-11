@@ -1,13 +1,13 @@
 /**
  * Admin API
  */
-import { api } from './client';
+import { api, type RequestOptions } from './client';
 import type { WorkspaceSummary, UserSummary, ItemTemplate, CreateItemTemplateRequest } from '../utils/types';
 
 export const adminApi = {
   // Workspaces
-  getWorkspaces(): Promise<WorkspaceSummary[]> {
-    return api.get<WorkspaceSummary[]>('/admin/workspaces', { credentials: 'include' });
+  getWorkspaces(options?: RequestOptions): Promise<WorkspaceSummary[]> {
+    return api.get<WorkspaceSummary[]>('/admin/workspaces', { ...options, credentials: 'include' });
   },
 
   deleteWorkspace(id: number): Promise<void> {
@@ -15,11 +15,11 @@ export const adminApi = {
   },
 
   // Users
-  getUsers(email?: string): Promise<UserSummary[]> {
+  getUsers(email?: string, options?: RequestOptions): Promise<UserSummary[]> {
     const endpoint = email 
       ? `/admin/users?email=${encodeURIComponent(email)}` 
       : '/admin/users';
-    return api.get<UserSummary[]>(endpoint, { credentials: 'include' });
+    return api.get<UserSummary[]>(endpoint, { ...options, credentials: 'include' });
   },
 
   deleteUser(id: number): Promise<void> {
@@ -35,12 +35,12 @@ export const adminApi = {
   },
 
   // System Templates
-  getSystemTemplates(): Promise<ItemTemplate[]> {
-    return api.get<ItemTemplate[]>('/admin/templates', { credentials: 'include' });
+  getSystemTemplates(options?: RequestOptions): Promise<ItemTemplate[]> {
+    return api.get<ItemTemplate[]>('/admin/templates', { ...options, credentials: 'include' });
   },
 
-  getSystemTemplate(id: number): Promise<ItemTemplate> {
-    return api.get<ItemTemplate>(`/admin/templates/${id}`, { credentials: 'include' });
+  getSystemTemplate(id: number, options?: RequestOptions): Promise<ItemTemplate> {
+    return api.get<ItemTemplate>(`/admin/templates/${id}`, { ...options, credentials: 'include' });
   },
 
   createSystemTemplate(request: CreateItemTemplateRequest): Promise<ItemTemplate> {

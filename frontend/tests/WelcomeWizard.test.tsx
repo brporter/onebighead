@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WelcomeWizard from '../src/components/wizard/WelcomeWizard';
 import * as UserContext from '../src/contexts/useUser';
@@ -13,9 +13,12 @@ vi.mock('../src/contexts/useUser', () => ({
   useUser: vi.fn(),
 }));
 
-vi.mock('../src/contexts/useData', () => ({
+vi.mock('../src/contexts/useData', async () => {
+  const { mockDataHooks } = await import('./testUtils/mockDataHooks');
+  return mockDataHooks({
   useData: vi.fn(),
-}));
+});
+});
 
 vi.mock('../src/api/auth', () => ({
   authApi: {
@@ -75,17 +78,17 @@ describe('WelcomeWizard', () => {
   const mockSetupCollection = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     vi.mocked(UserContext.useUser).mockReturnValue({
       user: createUser(),
       loading: false,
       error: null,
-      refetch: mockRefetch,
+      signedOut: false, refetch: mockRefetch,
       logout: vi.fn(),
     });
 
-    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
+    vi.mocked(DataContext.useCollectionsData).mockReturnValue(createMockDataContextValue({
       themes: mockThemes,
       themesLoading: false,
       loadThemes: mockLoadThemes,
@@ -162,6 +165,7 @@ describe('WelcomeWizard', () => {
       workspaceId: 1,
       workspaceName: 'test@example.com',
       hasCompletedWelcome: true,
+      collectionId: null, collectionName: null,
     });
     mockRefetch.mockResolvedValue(undefined);
 
@@ -171,7 +175,7 @@ describe('WelcomeWizard', () => {
     await user.click(skipButton);
 
     await waitFor(() => {
-      expect(authApi.authApi.completeWelcome).toHaveBeenCalledWith(undefined);
+      expect(authApi.authApi.completeWelcome).toHaveBeenCalledWith({});
       expect(mockRefetch).toHaveBeenCalled();
       expect(mockOnSkip).toHaveBeenCalled();
     });
@@ -200,9 +204,10 @@ describe('WelcomeWizard', () => {
       workspaceId: 1,
       workspaceName: 'My Org',
       hasCompletedWelcome: true,
+      collectionId: 42, collectionName: 'My Collection',
     });
     mockRefetch.mockResolvedValue(undefined);
-    mockSetupCollection.mockResolvedValue({ collectionId: 42 });
+    mockSetupCollection.mockResolvedValue({ collectionId: 42, name: 'My Collection' });
 
     render(<WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />);
 
@@ -222,12 +227,10 @@ describe('WelcomeWizard', () => {
     await user.click(screen.getByRole('button', { name: 'Get Started' }));
 
     await waitFor(() => {
-      expect(authApi.authApi.completeWelcome).toHaveBeenCalledWith('My Org');
-      expect(mockSetupCollection).toHaveBeenCalledWith({
-        name: 'My Collection',
-        description: '',
-        themeId: 1, // General theme
+      expect(authApi.authApi.completeWelcome).toHaveBeenCalledWith({ workspaceName: 'My Org',
+        collection: { name: 'My Collection', description: '', themeId: 1 },
       });
+      expect(mockSetupCollection).not.toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalledWith(42);
     });
   });
@@ -240,7 +243,7 @@ describe('WelcomeWizard', () => {
 
   it('should show loading state when themes are loading', async () => {
     const user = userEvent.setup();
-    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
+    vi.mocked(DataContext.useCollectionsData).mockReturnValue(createMockDataContextValue({
       themes: [],
       themesLoading: true,
       loadThemes: mockLoadThemes,
@@ -263,7 +266,7 @@ describe('WelcomeWizard', () => {
         user: createUser({ hasAcceptedTerms: false }),
         loading: false,
         error: null,
-        refetch: mockRefetch,
+        signedOut: false, refetch: mockRefetch,
         logout: vi.fn(),
       });
 
@@ -279,7 +282,7 @@ describe('WelcomeWizard', () => {
         user: createUser({ hasAcceptedTerms: true }),
         loading: false,
         error: null,
-        refetch: mockRefetch,
+        signedOut: false, refetch: mockRefetch,
         logout: vi.fn(),
       });
 
@@ -290,10 +293,20 @@ describe('WelcomeWizard', () => {
     });
   });
 
-  describe('snapshots', () => {
-    it('should match snapshot for initial welcome step', () => {
-      const { container } = render(<WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />);
-      expect(container).toMatchSnapshot();
-    });
+  it('associates labels and hints with their own fields across wizard instances', async () => {
+    const user = userEvent.setup();
+    render(<><WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} />
+      <WelcomeWizard onComplete={mockOnComplete} onSkip={mockOnSkip} /></>);
+    const sections = screen.getAllByRole('region', { name: 'Get Started' });
+    const fields = screen.getAllByRole('textbox');
+    expect(new Set(fields.map(field => field.id)).size).toBe(fields.length);
+    for (const section of sections) {
+      const workspace = within(section).getByRole('textbox', { name: 'Organization / Workspace Name' }) as HTMLInputElement;
+      expect(workspace).toHaveAccessibleDescription('This is how your workspace will be identified.');
+      await user.click(workspace.labels![0]);
+      expect(workspace).toHaveFocus();
+      expect(within(section).getByRole('textbox', { name: 'First Collection Name' })).toBeInTheDocument();
+      expect(within(section).getByRole('textbox', { name: 'Description' })).toBeInTheDocument();
+    }
   });
 });

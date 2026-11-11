@@ -59,7 +59,7 @@ describe('TermsView', () => {
       user: null,
       loading: false,
       error: null,
-      refetch: mockRefetch,
+      signedOut: false, refetch: mockRefetch,
       logout: mockLogout,
     });
   });
@@ -84,7 +84,7 @@ describe('TermsView', () => {
 
     await user.click(screen.getByText('Accept Terms'));
 
-    expect(mockRefetch).toHaveBeenCalled();
+    expect(mockRefetch).toHaveBeenCalledWith({ throwOnError: true });
     expect(mockNavigate).toHaveBeenCalledWith('/collections', { replace: true });
   });
 

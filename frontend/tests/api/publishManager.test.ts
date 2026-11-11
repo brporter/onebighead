@@ -56,3 +56,14 @@ describe('publishManagerApi', () => {
     });
   });
 });
+
+it('forwards cancellation through both publication requests', async () => {
+  const { api } = await import('../../src/api/client');
+  const post = vi.spyOn(api, 'post').mockResolvedValue({});
+  const options = { signal: new AbortController().signal };
+  await publishManagerApi.preflight(7, 'unpublish', [], options);
+  expect(post).toHaveBeenLastCalledWith('/workspaces/7/publish/preflight', { action: 'unpublish', entities: [] }, options);
+  await publishManagerApi.execute(7, { action: 'publish', entities: [], resolutions: [] }, options);
+  expect(post).toHaveBeenLastCalledWith('/workspaces/7/publish/execute', { action: 'publish', entities: [], resolutions: [] }, options);
+  post.mockRestore();
+});

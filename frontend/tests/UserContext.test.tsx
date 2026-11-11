@@ -163,8 +163,7 @@ describe('UserContext', () => {
     expect(capturedData!.user?.email).toBe('updated@example.com');
   });
 
-  it('should handle logout error gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('propagates a logout failure without discarding the signed-in user', async () => {
     vi.mocked(authApi.getCurrentUser).mockResolvedValue(mockUser);
     vi.mocked(authApi.logout).mockRejectedValue(new Error('Logout failed'));
 
@@ -181,14 +180,9 @@ describe('UserContext', () => {
     });
 
     await act(async () => {
-      await capturedData!.logout();
+      await expect(capturedData!.logout()).rejects.toThrow('Logout failed');
     });
-
-    // logError now uses different format: "Logout failed: message (status: N)" for ApiError
-    expect(consoleSpy).toHaveBeenCalled();
     // User should still be set (logout failed)
     expect(capturedData!.user).toEqual(mockUser);
-
-    consoleSpy.mockRestore();
   });
 });

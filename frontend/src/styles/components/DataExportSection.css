@@ -1,0 +1,66 @@
+/* Export card */
+.settings-export-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xxl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-lg);
+  max-width: 450px;
+}
+
+.settings-export-card__icon {
+  font-size: 3.5rem;
+}
+
+.settings-export-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.settings-export-card__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.settings-export-card__description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.settings-export-card__button {
+  padding: var(--space-md) var(--space-xxl);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.settings-export-card__button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.settings-export-card__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .settings-export-card {
+    max-width: none;
+    width: 100%;
+    padding: var(--space-xl);
+  }
+}

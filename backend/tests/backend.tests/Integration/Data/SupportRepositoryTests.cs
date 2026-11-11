@@ -293,51 +293,7 @@ public class SupportRepositoryTests : IDisposable
 
     #endregion
 
-    #region AddReplyAsync Tests
 
-    [Fact]
-    public async Task AddReplyAsync_CreatesReply_AndUpdatesRequestTimestamp()
-    {
-        // Arrange
-        var request = new SupportRequest
-        {
-            UserId = 1,
-            Email = "test@example.com",
-            Subject = "Test Request",
-            Description = "Description",
-            Status = SupportRequestStatus.Open,
-            CreatedAt = DateTime.UtcNow.AddHours(-1),
-            UpdatedAt = DateTime.UtcNow.AddHours(-1)
-        };
-        await _context.SupportRequests.AddAsync(request);
-        await _context.SaveChangesAsync();
-
-        var originalUpdatedAt = request.UpdatedAt;
-
-        var reply = new SupportReply
-        {
-            SupportRequestId = request.Id,
-            Message = "Test Reply",
-            IsFromAdmin = false,
-            UserId = 1
-        };
-
-        // Act
-        var result = await _repository.AddReplyAsync(reply);
-
-        _context.ChangeTracker.Clear();
-
-        // Assert
-        Assert.NotEqual(0, result.Id);
-        Assert.NotEqual(default, result.CreatedAt);
-
-        // Verify request UpdatedAt was updated
-        var updatedRequest = await _context.SupportRequests.FindAsync(request.Id);
-        Assert.NotNull(updatedRequest);
-        Assert.True(updatedRequest.UpdatedAt > originalUpdatedAt);
-    }
-
-    #endregion
 
     #region GetUnreadCountForUserAsync Tests
 

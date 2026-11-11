@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useData } from '../../contexts/useData';
-import type { ItemTemplate, ItemProperty } from '../../utils/types';
+import { useState } from 'react';
+import { useTemplatesData, useCategoriesData } from '../../contexts/useData';
+import type { ItemProperty, ItemTemplate } from '../../utils/types';
+import { useTemplateCatalog } from '../../data/templates/useTemplateCatalog';
+import { useTemplateRecommendations } from '../../data/templates/useTemplateRecommendations';
+import { ContentState } from '../common/ContentState';
+import { ModalDialog } from '../common/ModalDialog';
+import '../../styles/components/TemplateSelector.css';
 
 interface TemplateSelection {
   properties: ItemProperty[];
@@ -15,203 +20,75 @@ interface TemplateSelectorProps {
   onSelect: (selection: TemplateSelection) => void;
 }
 
-function TemplateSelector({ collectionId, categoryId, isOpen, onClose, onSelect }: TemplateSelectorProps) {
-  const { loadCollectionTemplates, loadItemTemplates, itemTemplates, getCategoryTemplates, categories } = useData();
-  const [collectionTemplates, setCollectionTemplates] = useState<ItemTemplate[]>([]);
-  const [recommendedTemplateIds, setRecommendedTemplateIds] = useState<number[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'recommended' | 'collection' | 'library'>('collection');
+type TemplateGroup = 'recommended' | 'collection' | 'library';
 
-  const category = categoryId ? categories.find(c => c.categoryId === categoryId) : null;
+function TemplateSelector(props: TemplateSelectorProps) {
+  return props.isOpen ? <TemplateSelectorDialog key={`${props.collectionId}/${props.categoryId}`} {...props} /> : null;
+}
 
-  useEffect(() => {
-    if (!isOpen) return;
+function TemplateSelectorDialog({ collectionId, categoryId = null, onClose, onSelect }: TemplateSelectorProps) {
+  const templates = useTemplatesData();
+  const data = useCategoriesData();
+  const catalog = useTemplateCatalog(collectionId, templates);
+  const recommendations = useTemplateRecommendations(categoryId, data);
+  const [selectedGroup, setSelectedGroup] = useState<TemplateGroup | null>(null);
+  const category = data.categories.find(value => value.categoryId === categoryId);
+  const loading = catalog.loading || recommendations.loading;
+  const error = catalog.error ?? recommendations.error;
+  const retry = () => { catalog.retry(); recommendations.retry(); };
+  const groups: { id: TemplateGroup; label: string; templates: ItemTemplate[] }[] = [];
+  if (catalog.data) {
+    const recommended = catalog.data.available.filter(template => recommendations.data?.includes(template.itemTemplateId));
+    if (recommended.length > 0) groups.push({ id: 'recommended', label: 'Recommended', templates: recommended });
+    if (catalog.data.collection.length > 0) groups.push({ id: 'collection', label: 'Collection', templates: catalog.data.collection });
+    groups.push({ id: 'library', label: 'Library', templates: catalog.data.library });
+  }
+  const active = groups.find(group => group.id === selectedGroup) ?? groups[0];
 
-    let cancelled = false;
-
-    const promises: Promise<unknown>[] = [
-      loadCollectionTemplates(collectionId),
-      loadItemTemplates(),
-    ];
-
-    // Load category templates if a category is selected
-    if (categoryId) {
-      promises.push(getCategoryTemplates(categoryId));
-    }
-
-    Promise.all(promises).then(([colTemplates, , categoryTemplateIds]) => {
-      if (cancelled) return;
-      setCollectionTemplates(colTemplates as ItemTemplate[]);
-      const catTemplates = (categoryTemplateIds as number[] | undefined) ?? [];
-      setRecommendedTemplateIds(catTemplates);
-
-      // Set default tab based on available templates
-      if (catTemplates.length > 0) {
-        setActiveTab('recommended');
-      } else if ((colTemplates as ItemTemplate[]).length > 0) {
-        setActiveTab('collection');
-      } else {
-        setActiveTab('library');
-      }
-      setLoading(false);
-    });
-
-    return () => { cancelled = true; };
-  }, [isOpen, collectionId, categoryId, loadCollectionTemplates, loadItemTemplates, getCategoryTemplates]);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const handleSelectTemplate = (template: ItemTemplate) => {
-    const properties: ItemProperty[] = template.properties.map((p) => ({
-      category: p.category,
-      name: p.name,
-      value: '',
-    }));
-    onSelect({ properties, templateKey: template.templateKey });
-  };
-
-  const handleStartFromScratch = () => {
-    onSelect({ properties: [], templateKey: null });
-  };
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  // Get recommended templates from both collection and library templates
-  const allTemplates = [...collectionTemplates];
-  itemTemplates.forEach(t => {
-    if (!allTemplates.some(ct => ct.itemTemplateId === t.itemTemplateId)) {
-      allTemplates.push(t);
-    }
-  });
-  const recommendedTemplates = recommendedTemplateIds
-    .map(id => allTemplates.find(t => t.itemTemplateId === id))
-    .filter((t): t is ItemTemplate => t !== undefined);
-
-  const displayTemplates = activeTab === 'recommended' 
-    ? recommendedTemplates 
-    : activeTab === 'collection' 
-      ? collectionTemplates 
-      : itemTemplates;
-
-  const hasRecommended = recommendedTemplateIds.length > 0;
-
-  return (
-    <div className="templateSelector" onClick={handleBackdropClick}>
-      <div className="templateSelector__container">
-        <div className="templateSelector__header">
-          <h2 className="templateSelector__title">Choose a Template</h2>
-          <button className="templateSelector__close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-
-        <div className="templateSelector__body">
-          {loading ? (
-            <p className="templateSelector__loading">Loading templates...</p>
-          ) : (
-            <>
-              <div className="templateSelector__tabs">
-                {hasRecommended && (
-                  <button
-                    className={`templateSelector__tab templateSelector__tab--recommended ${activeTab === 'recommended' ? 'templateSelector__tab--active' : ''}`}
-                    onClick={() => setActiveTab('recommended')}
-                  >
-                    ★ Recommended ({recommendedTemplates.length})
-                  </button>
-                )}
-                {collectionTemplates.length > 0 && (
-                  <button
-                    className={`templateSelector__tab ${activeTab === 'collection' ? 'templateSelector__tab--active' : ''}`}
-                    onClick={() => setActiveTab('collection')}
-                  >
-                    Collection ({collectionTemplates.length})
-                  </button>
-                )}
-                <button
-                  className={`templateSelector__tab ${activeTab === 'library' ? 'templateSelector__tab--active' : ''}`}
-                  onClick={() => setActiveTab('library')}
-                >
-                  Library ({itemTemplates.length})
-                </button>
-              </div>
-
-              {activeTab === 'recommended' && category && (
-                <p className="templateSelector__hint">
-                  Templates recommended for "{category.name}"
-                </p>
-              )}
-
-              <div className="templateSelector__list">
-                {displayTemplates.length > 0 ? (
-                  displayTemplates.map((template) => (
-                    <button
-                      key={template.itemTemplateId}
-                      className="templateSelector__item"
-                      onClick={() => handleSelectTemplate(template)}
-                    >
-                      <div className="templateSelector__itemHeader">
-                        <span className="templateSelector__itemName">{template.name}</span>
-                        {template.isSystem && (
-                          <span className="templateSelector__sharedBadge">System</span>
-                        )}
-                      </div>
-                      {template.description && (
-                        <p className="templateSelector__itemDescription">{template.description}</p>
-                      )}
-                      <div className="templateSelector__itemProperties">
-                        {template.properties.slice(0, 5).map((p, i) => (
-                          <span key={i} className="templateSelector__propertyTag">
-                            {p.category}: {p.name}
-                          </span>
-                        ))}
-                        {template.properties.length > 5 && (
-                          <span className="templateSelector__propertyMore">
-                            +{template.properties.length - 5} more
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <p className="templateSelector__empty">
-                    {activeTab === 'recommended'
-                      ? 'No recommended templates for this category.'
-                      : activeTab === 'collection'
-                        ? 'No templates associated with this collection.'
-                        : 'No templates available in the library.'}
-                  </p>
-                )}
-              </div>
-
-              <div className="templateSelector__footer">
-                <button
-                  className="templateSelector__scratchButton"
-                  onClick={handleStartFromScratch}
-                >
-                  Start from scratch
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+  return <ModalDialog onClose={onClose} label="Choose a Template" className="template-selector-dialog">
+    <div className="template-selector">
+      <header className="template-selector__header">
+        <h2 className="template-selector__title">Choose a Template</h2>
+        <button type="button" className="template-selector__close" onClick={onClose} aria-label="Close">×</button>
+      </header>
+      <div className="template-selector__body">
+        {loading ? <ContentState kind="loading" title="Loading templates..." /> :
+          error ? <ContentState kind="error" title="Unable to load templates"
+            action={<button type="button" onClick={retry}>Try again</button>}>{error}</ContentState> : <>
+            <div className="template-selector__groups" role="group" aria-label="Template sources">
+              {groups.map(group => <button key={group.id} type="button" className="template-selector__group"
+                aria-pressed={active.id === group.id} onClick={() => setSelectedGroup(group.id)}>
+                {group.label} ({group.templates.length})
+              </button>)}
+            </div>
+            {active.id === 'recommended' && category && <p className="template-selector__hint">Templates recommended for "{category.name}"</p>}
+            <div className="template-selector__list">
+              {active.templates.length === 0 ? <ContentState kind="empty" title="No templates available in the library." /> :
+                active.templates.map(template => <button key={template.itemTemplateId} type="button" className="template-selector__item" aria-label={template.name}
+                  onClick={() => onSelect({ templateKey: template.templateKey,
+                    properties: template.properties.map(({ category, name }) => ({ category, name, value: '' })) })}>
+                  <span className="template-selector__item-header">
+                    <span className="template-selector__item-name">{template.name}</span>
+                    {template.isSystem && <span className="template-selector__badge">System</span>}
+                  </span>
+                  {template.description && <span className="template-selector__description">{template.description}</span>}
+                  <span className="template-selector__properties">
+                    {template.properties.slice(0, 5).map((property, index) => <span key={index} className="template-selector__property">
+                      {property.category}: {property.name}
+                    </span>)}
+                    {template.properties.length > 5 && <span>+{template.properties.length - 5} more</span>}
+                  </span>
+                </button>)}
+            </div>
+          </>}
       </div>
+      <footer className="template-selector__footer">
+        <p>A template is optional. You can add properties as you go.</p>
+        <button type="button" className="detail__btn detail__btn--secondary"
+          onClick={() => onSelect({ properties: [], templateKey: null })}>Start from scratch</button>
+      </footer>
     </div>
-  );
+  </ModalDialog>;
 }
 
 export default TemplateSelector;

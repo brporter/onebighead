@@ -1,261 +1,107 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
+import { describe, it, expect } from 'vitest';
+import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PublishResolver } from '../src/components/common/PublishResolver';
-import type { PublishIntent } from '../src/utils/types';
+import type { ExecuteResponse, PublishRequirement } from '../src/utils/types';
+import { publicationOptions, requirements, saved } from './testUtils/publication';
+import { deferred } from './testUtils/deferred';
 
-const mockPreflight = vi.fn();
-const mockExecute = vi.fn();
-const mockShowToast = vi.fn();
-const mockClearIntent = vi.fn();
-const mockOnComplete = vi.fn();
-const mockRefetchUser = vi.fn();
-
-vi.mock('../src/api/publishManager', () => ({
-  publishManagerApi: {
-    preflight: (...args: unknown[]) => mockPreflight(...args),
-    execute: (...args: unknown[]) => mockExecute(...args),
-  },
-}));
-
-vi.mock('../src/contexts/useToast', () => ({
-  useToast: () => ({ showToast: mockShowToast }),
-}));
-
-vi.mock('../src/contexts/useUser', () => ({
-  useUser: () => ({
-    user: { activeWorkspace: { workspaceId: 1, workspaceName: 'Test WS' } },
-    refetch: mockRefetchUser,
-  }),
-}));
-
-describe('PublishResolver', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+describe('publication dialog', () => {
+  it('shows checking immediately and cancels without waiting for a server response', async () => {
+    const options = publicationOptions();
+    options.gateway.preflight.mockReturnValue(new Promise(() => {}));
+    render(<PublishResolver {...options} />);
+    expect(screen.getByRole('dialog', { name: 'Publish' })).toHaveAttribute('open');
+    expect(screen.getByRole('status')).toHaveTextContent('Checking visibility');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(options.dismiss).toHaveBeenCalledTimes(1);
   });
 
-  it('does not open dialog when no pending intent', () => {
-    render(
-      <PublishResolver intent={null} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />
-    );
-    const dialog = document.querySelector('dialog');
-    expect(dialog).toBeInTheDocument();
-    expect(dialog).not.toHaveAttribute('open');
-  });
-
-  it('opens dialog via showModal when preflight returns requirements', async () => {
-    mockPreflight.mockResolvedValue({
-      ready: false,
-      requirements: [{ kind: 'collection-not-public', collectionId: 5, collectionName: 'Vintage Cars' }],
-    });
-
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
-    await waitFor(() => {
-      const dialog = document.querySelector('dialog');
-      expect(dialog).toHaveAttribute('open');
-    });
-  });
-
-  it('closes dialog and clears intent on backdrop click', async () => {
-    mockPreflight.mockResolvedValue({
-      ready: false,
-      requirements: [{ kind: 'collection-not-public', collectionId: 5, collectionName: 'Vintage Cars' }],
-    });
-
-    const user = userEvent.setup();
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
-    const dialog = await waitFor(() => {
-      const d = document.querySelector('dialog');
-      expect(d).toHaveAttribute('open');
-      return d!;
-    });
-
-    await user.click(dialog);
-
-    expect(mockClearIntent).toHaveBeenCalled();
-  });
-
-  it('auto-executes when preflight returns ready', async () => {
-    mockPreflight.mockResolvedValue({ ready: true, requirements: [] });
-    mockExecute.mockResolvedValue({ success: true, changed: [{ type: 'item', id: 1, name: 'Test' }], promoted: [] });
-
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
-    await waitFor(() => {
-      expect(mockExecute).toHaveBeenCalled();
-    });
-    await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalled();
-    });
-    expect(mockClearIntent).toHaveBeenCalled();
-    expect(mockOnComplete).toHaveBeenCalled();
-  });
-
-  it('renders slug input for workspace-slug-required requirement', async () => {
-    mockPreflight.mockResolvedValue({
-      ready: false,
-      requirements: [{ kind: 'workspace-slug-required', workspaceId: 1, workspaceName: 'Test WS' }],
-    });
-
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
-    await waitFor(() => {
-      expect(screen.getByLabelText('Gallery URL')).toBeInTheDocument();
-    });
-  });
-
-  it('renders acknowledgment for collection-not-public', async () => {
-    mockPreflight.mockResolvedValue({
-      ready: false,
-      requirements: [{ kind: 'collection-not-public', collectionId: 5, collectionName: 'Vintage Cars' }],
-    });
-
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Vintage Cars/)).toBeInTheDocument();
-    });
-  });
-
-  it('renders impact warning for unpublish-will-hide-children', async () => {
-    mockPreflight.mockResolvedValue({
-      ready: false,
-      requirements: [{
-        kind: 'unpublish-will-hide-children',
-        entityType: 'category',
-        entityId: 1,
-        entityName: 'Watches',
-        affectedPublicItems: 12,
-        affectedPublicCategories: 2,
-      }],
-    });
-
-    const intent: PublishIntent = { action: 'unpublish', entities: [{ type: 'category', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/12 items/)).toBeInTheDocument();
-    });
-  });
-
-  it('submit is disabled until all requirements are resolved', async () => {
-    mockPreflight.mockResolvedValue({
-      ready: false,
-      requirements: [
-        { kind: 'collection-not-public', collectionId: 5, collectionName: 'Vintage Cars' },
-      ],
-    });
-
-    const user = userEvent.setup();
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /publish/i })).toBeDisabled();
-    });
-
-    const checkbox = await screen.findByRole('checkbox');
-    await user.click(checkbox);
-
-    expect(screen.getByRole('button', { name: /publish/i })).toBeEnabled();
-  });
-
-  it('calls execute with correct resolutions and shows toast', async () => {
-    mockPreflight.mockResolvedValue({
-      ready: false,
-      requirements: [
-        { kind: 'collection-not-public', collectionId: 5, collectionName: 'Vintage Cars' },
-      ],
-    });
-    mockExecute.mockResolvedValue({
-      success: true,
-      changed: [{ type: 'item', id: 1, name: 'Mustang' }],
-      promoted: [{ type: 'collection', id: 5, name: 'Vintage Cars' }],
-    });
-
-    const user = userEvent.setup();
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
-    const checkbox = await screen.findByRole('checkbox');
-    await user.click(checkbox);
-    await user.click(screen.getByRole('button', { name: /publish/i }));
-
-    await waitFor(() => {
-      expect(mockExecute).toHaveBeenCalledWith(1, expect.objectContaining({
-        action: 'publish',
-        resolutions: expect.arrayContaining([
-          expect.objectContaining({ kind: 'collection-not-public', collectionId: 5 }),
-        ]),
-      }));
-    });
-
-    await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalled();
-    });
-  });
-
-  it('handles execute failure by re-rendering requirements', async () => {
-    mockPreflight.mockResolvedValue({
-      ready: false,
-      requirements: [{ kind: 'workspace-slug-required', workspaceId: 1, workspaceName: 'Test WS' }],
-    });
-    mockExecute.mockResolvedValue({
-      success: false,
-      error: "Slug 'taken' is already taken",
-      requirements: [{ kind: 'workspace-slug-required', workspaceId: 1, workspaceName: 'Test WS' }],
-    });
-
-    const user = userEvent.setup();
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
+  it('reviews every requirement with unique labels and validates the gallery URL', async () => {
+    const options = publicationOptions();
+    options.gateway.preflight.mockResolvedValue({ ready: false, requirements });
+    render(<PublishResolver {...options} />);
     const input = await screen.findByLabelText('Gallery URL');
-    await user.type(input, 'taken');
-    await user.click(screen.getByRole('button', { name: /publish/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/already taken/)).toBeInTheDocument();
-    });
-  });
-
-  it('cancel clears intent', async () => {
-    mockPreflight.mockResolvedValue({
-      ready: false,
-      requirements: [{ kind: 'collection-not-public', collectionId: 5, collectionName: 'Vintage Cars' }],
-    });
-
+    const publish = screen.getByRole('button', { name: 'Publish' });
+    expect(input).toHaveAccessibleDescription(/3–50 lowercase/);
+    expect(input).toHaveAttribute('aria-invalid', 'false');
     const user = userEvent.setup();
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
-
-    const cancelBtn = await screen.findByRole('button', { name: /cancel/i });
-    await user.click(cancelBtn);
-
-    expect(mockClearIntent).toHaveBeenCalled();
+    await user.type(input, 'No');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    await user.clear(input); await user.type(input, 'library');
+    for (const checkbox of screen.getAllByRole('checkbox')) await user.click(checkbox);
+    expect(screen.getByText(/hide 1 item and 1 category/)).toBeVisible();
+    expect(publish).toBeEnabled();
+    await user.click(publish);
+    await waitFor(() => expect(options.complete).toHaveBeenCalledWith(saved));
+    expect(screen.getByRole('status')).toHaveTextContent('Visibility updated.');
   });
 
-  it('refetches user when workspace slug is set', async () => {
-    mockPreflight.mockResolvedValue({ ready: true, requirements: [] });
-    mockExecute.mockResolvedValue({
-      success: true,
-      changed: [{ type: 'item', id: 1, name: 'Test' }],
-      promoted: [],
-      workspaceSlugSet: 'my-gallery',
-    });
+  it.each([0, 2])('describes plural items and %s descendant categories when making a collection private', async count => {
+    const options = publicationOptions();
+    options.request = { ...options.request, action: 'unpublish' };
+    options.gateway.preflight.mockResolvedValue({ ready: false, requirements: [{ kind: 'unpublish-will-hide-children', entityType: 'collection', entityId: 2,
+      entityName: 'Books', affectedPublicItems: 4, affectedPublicCategories: count }] });
+    render(<PublishResolver {...options} />);
+    expect(await screen.findByText(/hide 4 items/)).toHaveTextContent(count ? 'and 2 categories' : '4 items from');
+    await userEvent.click(screen.getByRole('checkbox', { name: /impact on/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Make private' }));
+    await waitFor(() => expect(options.complete).toHaveBeenCalled());
+  });
 
-    const intent: PublishIntent = { action: 'publish', entities: [{ type: 'item', id: 1 }] };
-    render(<PublishResolver intent={intent} onClearIntent={mockClearIntent} onComplete={mockOnComplete} />);
+  it('fails closed with a visible explanation for an unsupported requirement', async () => {
+    const options = publicationOptions();
+    options.gateway.preflight.mockResolvedValue({ ready: false, requirements: [{ kind: 'future' } as unknown as PublishRequirement] });
+    render(<PublishResolver {...options} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('not supported');
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: true, cancelable: true }));
+    expect(options.dismiss).toHaveBeenCalledTimes(1);
+  });
 
-    await waitFor(() => {
-      expect(mockRefetchUser).toHaveBeenCalled();
-    });
+  it('keeps automatic write errors visible and offers a fresh check', async () => {
+    const options = publicationOptions();
+    options.gateway.preflight.mockResolvedValueOnce({ ready: true, requirements: [] });
+    options.gateway.execute.mockRejectedValueOnce(new Error('Offline'));
+    render(<StrictMode><PublishResolver {...options} /></StrictMode>);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Offline');
+    expect(options.gateway.execute).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Check again' }));
+    expect(await screen.findByRole('checkbox', { name: /Books/ })).not.toBeChecked();
+    await userEvent.click(screen.getByRole('dialog'));
+    expect(options.dismiss).toHaveBeenCalled();
+  });
+
+  it('blocks all dismissal paths while saving and retries a failed refresh without writing twice', async () => {
+    const options = publicationOptions();
+    const write = deferred<ExecuteResponse>();
+    options.gateway.execute.mockReturnValue(write.promise);
+    options.refresh.mockRejectedValueOnce(new Error('Refresh offline'));
+    const view = render(<PublishResolver {...options} />);
+    await userEvent.click(await screen.findByRole('checkbox'));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent(dialog, new Event('cancel', { bubbles: true, cancelable: true })); await userEvent.click(dialog);
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(screen.getByRole('checkbox')).toBeDisabled();
+    expect(options.dismiss).not.toHaveBeenCalled();
+    await act(async () => write.resolve(saved));
+    expect(await screen.findByRole('dialog', { name: 'Changes saved' })).toHaveTextContent('Your visibility changes were saved');
+    await userEvent.click(screen.getByRole('button', { name: 'Retry refresh' }));
+    await waitFor(() => expect(options.complete).toHaveBeenCalled());
+    expect(options.gateway.execute).toHaveBeenCalledTimes(1);
+    view.unmount();
+    expect(options.gateway.execute.mock.calls[0][2]!.signal!.aborted).toBe(true);
+  });
+
+  it('allows closing after a saved write when refresh remains unavailable', async () => {
+    const options = publicationOptions();
+    options.gateway.preflight.mockResolvedValue({ ready: true, requirements: [] });
+    options.refresh.mockRejectedValue(new Error('Offline'));
+    render(<PublishResolver {...options} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Close' }));
+    expect(options.dismiss).toHaveBeenCalledTimes(1);
+    expect(options.complete).not.toHaveBeenCalled();
   });
 });

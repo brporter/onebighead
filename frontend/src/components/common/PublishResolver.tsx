@@ -1,334 +1,83 @@
-import { useState, useEffect, useCallback } from 'react';
-import { publishManagerApi } from '../../api/publishManager';
-import { useToast } from '../../contexts/useToast';
-import { useUser } from '../../contexts/useUser';
+import { useId } from 'react';
+import type { PublishRequirement } from '../../utils/types';
 import { isValidSlug } from '../../utils/slugUtils';
-import { useDialog } from '../../utils/useDialog';
-import type {
-  PublishIntent,
-  PublishRequirement,
-  PublishResolution,
-  PreflightResponse,
-  ExecuteResponse,
-} from '../../utils/types';
+import { usePublicationSession } from '../../data/publishing/usePublicationSession';
+import { requirementKey, resolveRequirements, type PublicationDraft } from '../../data/publishing/publicationRequirements';
+import type { PublicationSessionOptions } from '../../data/publishing/publicationSession';
+import { ModalDialog } from './ModalDialog';
 import '../../styles/components/publish-resolver.css';
 
-interface PublishResolverProps {
-  intent: PublishIntent | null;
-  onClearIntent: () => void;
-  onComplete: () => void;
+export function PublishResolver(options: PublicationSessionOptions) {
+  const { state, session } = usePublicationSession(options);
+  const { phase, error, requirements, draft, saved } = state;
+  const action = options.request.action === 'publish' ? 'Publish' : 'Make private';
+  const title = saved ? 'Changes saved' : action;
+  const locked = phase === 'saving' || phase === 'refreshing' || phase === 'complete';
+  const reviewing = phase === 'review';
+  const retrying = phase === 'check-error' || phase === 'execute-error' || phase === 'refresh-error';
+  const progress = { checking: 'Checking visibility requirements…', saving: 'Saving visibility changes…', refreshing: 'Refreshing your collection…', complete: 'Visibility updated.' };
+
+  return <ModalDialog label={title} onClose={session.cancel}>
+    <section className="modal publish-resolver">
+      <header className="modal__header"><h2 className="modal__title">{title}</h2></header>
+      <div className="publish-resolver__body" aria-busy={locked || phase === 'checking'}>
+        {(phase === 'checking' || locked) && <p role="status">{progress[phase as keyof typeof progress]}</p>}
+        {error && <p className="modal__error" role="alert">{error}</p>}
+        {phase === 'refresh-error' && <p>Your visibility changes were saved. Retry refreshing to see the updated collection.</p>}
+        {(reviewing || phase === 'saving') && <>
+          <p className="publish-resolver__intro">Review these changes before continuing.</p>
+          <fieldset className="publish-resolver__requirements" aria-label="Required visibility changes" disabled={!reviewing}>
+            {requirements.map((requirement, index) => <Requirement key={index} requirement={requirement} draft={draft}
+              setSlug={session.setSlug} toggle={session.toggle} />)}
+          </fieldset>
+        </>}
+      </div>
+      <footer className="modal__footer publish-resolver__footer">
+        <button type="button" className="modal__button modal__button--secondary" disabled={locked} onClick={session.cancel}>
+          {saved ? 'Close' : 'Cancel'}
+        </button>
+        {reviewing && <button type="button" className="modal__button modal__button--primary"
+          disabled={resolveRequirements(requirements, draft) === null} onClick={() => void session.submit()}>{action}</button>}
+        {retrying && <button type="button" className="modal__button modal__button--primary" onClick={() => void session.retry()}>
+          {saved ? 'Retry refresh' : 'Check again'}
+        </button>}
+      </footer>
+    </section>
+  </ModalDialog>;
 }
 
-export function PublishResolver({ intent, onClearIntent, onComplete }: PublishResolverProps) {
-  const { showToast } = useToast();
-  const { user, refetch: refetchUser } = useUser();
-  const workspaceId = user?.activeWorkspace?.workspaceId;
-
-  const [requirements, setRequirements] = useState<PublishRequirement[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-
-  // Resolution state
-  const [slugValue, setSlugValue] = useState('');
-  const [acknowledgedCollections, setAcknowledgedCollections] = useState<Set<number>>(new Set());
-  const [acknowledgedCategories, setAcknowledgedCategories] = useState<Set<number>>(new Set());
-  const [acknowledgedUnpublish, setAcknowledgedUnpublish] = useState<Set<string>>(new Set());
-
-  const resetState = useCallback(() => {
-    setRequirements([]);
-    setError(null);
-    setSlugValue('');
-    setAcknowledgedCollections(new Set());
-    setAcknowledgedCategories(new Set());
-    setAcknowledgedUnpublish(new Set());
-    setShowModal(false);
-    setLoading(false);
-  }, []);
-
-  const buildToastMessage = useCallback((response: ExecuteResponse): string => {
-    if (response.changed.length === 0) return 'Done.';
-    if (response.changed.length === 1) {
-      const action = intent?.action === 'publish' ? 'published' : 'unpublished';
-      return `${response.changed[0].name} ${action}.`;
-    }
-    const action = intent?.action === 'publish' ? 'published' : 'unpublished';
-    return `${response.changed.length} items ${action}.`;
-  }, [intent]);
-
-  const buildToastDetails = useCallback((response: ExecuteResponse): string | undefined => {
-    if (response.promoted.length === 0) return undefined;
-    const names = response.promoted.map(p => `'${p.name}'`).join(', ');
-    return `Promoted: ${names} are now visible in your gallery.`;
-  }, []);
-
-  const doExecute = useCallback(async (resolutions: PublishResolution[]) => {
-    if (!intent || !workspaceId) return;
-
-    setLoading(true);
-    try {
-      const result = await publishManagerApi.execute(workspaceId, {
-        action: intent.action,
-        entities: intent.entities,
-        resolutions,
-      });
-
-      if (!result.success) {
-        setError(result.error ?? 'Publish failed');
-        if (result.requirements) {
-          setRequirements(result.requirements);
-        }
-        setLoading(false);
-        return;
-      }
-
-      if (result.workspaceSlugSet) {
-        await refetchUser();
-      }
-
-      showToast(buildToastMessage(result), buildToastDetails(result));
-      resetState();
-      onClearIntent();
-      onComplete();
-    } catch {
-      setError('An unexpected error occurred');
-      setLoading(false);
-    }
-  }, [intent, workspaceId, refetchUser, showToast, buildToastMessage, buildToastDetails, resetState, onClearIntent, onComplete]);
-
-  // Run preflight when intent changes
-  useEffect(() => {
-    if (!intent || !workspaceId) {
-      /* eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting state when intent is cleared */
-      resetState();
-      return;
-    }
-
-    let cancelled = false;
-
-    async function runPreflight() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const result: PreflightResponse = await publishManagerApi.preflight(
-          workspaceId!,
-          intent!.action,
-          intent!.entities,
-        );
-
-        if (cancelled) return;
-
-        if (result.ready) {
-          await doExecute([]);
-        } else {
-          setRequirements(result.requirements);
-          setShowModal(true);
-          setLoading(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setError('Failed to check publish requirements');
-          setShowModal(true);
-          setLoading(false);
-        }
-      }
-    }
-
-    runPreflight();
-    return () => { cancelled = true; };
-  }, [intent, workspaceId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const allResolved = useCallback((): boolean => {
-    for (const req of requirements) {
-      switch (req.kind) {
-        case 'workspace-slug-required':
-          if (!isValidSlug(slugValue)) return false;
-          break;
-        case 'collection-not-public':
-          if (!acknowledgedCollections.has(req.collectionId)) return false;
-          break;
-        case 'category-not-public':
-          if (!acknowledgedCategories.has(req.categoryId)) return false;
-          break;
-        case 'unpublish-will-hide-children':
-          if (!acknowledgedUnpublish.has(`${req.entityType}-${req.entityId}`)) return false;
-          break;
-      }
-    }
-    return true;
-  }, [requirements, slugValue, acknowledgedCollections, acknowledgedCategories, acknowledgedUnpublish]);
-
-  const buildResolutions = useCallback((): PublishResolution[] => {
-    const resolutions: PublishResolution[] = [];
-    for (const req of requirements) {
-      switch (req.kind) {
-        case 'workspace-slug-required':
-          resolutions.push({ kind: 'workspace-slug-required', slug: slugValue });
-          break;
-        case 'collection-not-public':
-          resolutions.push({ kind: 'collection-not-public', collectionId: req.collectionId });
-          break;
-        case 'category-not-public':
-          resolutions.push({ kind: 'category-not-public', categoryId: req.categoryId });
-          break;
-        case 'unpublish-will-hide-children':
-          resolutions.push({ kind: 'unpublish-will-hide-children', entityType: req.entityType, entityId: req.entityId });
-          break;
-      }
-    }
-    return resolutions;
-  }, [requirements, slugValue]);
-
-  const handleSubmit = useCallback(() => {
-    doExecute(buildResolutions());
-  }, [doExecute, buildResolutions]);
-
-  const handleCancel = useCallback(() => {
-    resetState();
-    onClearIntent();
-  }, [resetState, onClearIntent]);
-
-  const [dialogRef, handleBackdropClick] = useDialog(showModal, handleCancel);
-
-  const toggleCollection = useCallback((id: number) => {
-    setAcknowledgedCollections(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const toggleCategory = useCallback((id: number) => {
-    setAcknowledgedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const toggleUnpublish = useCallback((key: string) => {
-    setAcknowledgedUnpublish(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  }, []);
-
-  const isPublish = intent?.action === 'publish';
-  const title = isPublish ? 'Publish' : 'Make Private';
-
-  return (
-    <dialog ref={dialogRef} className="publish-resolver__dialog" onClick={handleBackdropClick}>
-      <div className="publish-resolver">
-        <div className="publish-resolver__header">
-          <h2 className="publish-resolver__title">{title}</h2>
-        </div>
-
-        <div className="publish-resolver__body">
-          {error && <div className="publish-resolver__error" role="alert">{error}</div>}
-
-          {requirements.map((req, i) => {
-            switch (req.kind) {
-              case 'workspace-slug-required':
-                return (
-                  <div key={i} className="publish-resolver__slug-group">
-                    <p className="publish-resolver__slug-label">
-                      Your workspace needs a public gallery URL before publishing.
-                    </p>
-                    <label htmlFor="publish-slug-input" className="publish-resolver__slug-label">Gallery URL</label>
-                    <input
-                      id="publish-slug-input"
-                      type="text"
-                      className="publish-resolver__slug-input"
-                      value={slugValue}
-                      onChange={e => setSlugValue(e.target.value)}
-                      placeholder="my-collection"
-                      maxLength={50}
-                    />
-                    <p className="publish-resolver__slug-preview">/public/{slugValue}</p>
-                  </div>
-                );
-
-              case 'collection-not-public':
-                return (
-                  <div key={i} className="publish-resolver__requirement">
-                    <input
-                      type="checkbox"
-                      id={`ack-col-${req.collectionId}`}
-                      checked={acknowledgedCollections.has(req.collectionId)}
-                      onChange={() => toggleCollection(req.collectionId)}
-                    />
-                    <label htmlFor={`ack-col-${req.collectionId}`}>
-                      Collection &apos;{req.collectionName}&apos; will be made public
-                    </label>
-                  </div>
-                );
-
-              case 'category-not-public':
-                return (
-                  <div key={i} className="publish-resolver__requirement">
-                    <input
-                      type="checkbox"
-                      id={`ack-cat-${req.categoryId}`}
-                      checked={acknowledgedCategories.has(req.categoryId)}
-                      onChange={() => toggleCategory(req.categoryId)}
-                    />
-                    <label htmlFor={`ack-cat-${req.categoryId}`}>
-                      Category &apos;{req.categoryName}&apos; will be made public
-                    </label>
-                  </div>
-                );
-
-              case 'unpublish-will-hide-children': {
-                const key = `${req.entityType}-${req.entityId}`;
-                return (
-                  <div key={i}>
-                    <div className="publish-resolver__impact">
-                      Making &apos;{req.entityName}&apos; private will hide{' '}
-                      {req.affectedPublicItems} {req.affectedPublicItems === 1 ? 'item' : 'items'}
-                      {req.affectedPublicCategories > 0 && (
-                        <> and {req.affectedPublicCategories} {req.affectedPublicCategories === 1 ? 'category' : 'categories'}</>
-                      )}
-                      {' '}from your public gallery. They will reappear if you make this {req.entityType} public again.
-                    </div>
-                    <div className="publish-resolver__requirement">
-                      <input
-                        type="checkbox"
-                        id={`ack-unpub-${key}`}
-                        checked={acknowledgedUnpublish.has(key)}
-                        onChange={() => toggleUnpublish(key)}
-                      />
-                      <label htmlFor={`ack-unpub-${key}`}>I understand</label>
-                    </div>
-                  </div>
-                );
-              }
-
-              default:
-                return null;
-            }
-          })}
-        </div>
-
-        <div className="publish-resolver__footer">
-          <button
-            type="button"
-            className="modal__button modal__button--secondary"
-            onClick={handleCancel}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="modal__button modal__button--primary"
-            onClick={handleSubmit}
-            disabled={!allResolved() || loading}
-          >
-            {loading ? 'Processing...' : isPublish ? 'Publish' : 'Make Private'}
-          </button>
-        </div>
-      </div>
-    </dialog>
-  );
+function Requirement({ requirement, draft, setSlug, toggle }: {
+  requirement: PublishRequirement; draft: PublicationDraft; setSlug: (value: string) => void; toggle: (key: string) => void;
+}) {
+  const id = useId();
+  const key = requirementKey(requirement);
+  if (key === null) return <p role="alert">This visibility requirement is not supported. Close this dialog and reload the application.</p>;
+  if (requirement.kind === 'workspace-slug-required') {
+    const invalid = draft.slug.length > 0 && !isValidSlug(draft.slug.trim());
+    return <div className="publish-resolver__slug-group">
+      <p><strong>{requirement.workspaceName}</strong> needs a public gallery URL before publishing.</p>
+      <label className="modal__label" htmlFor={id}>Gallery URL</label>
+      <input id={id} className="modal__input" value={draft.slug} onChange={event => setSlug(event.target.value)}
+        placeholder="my-collection" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={50}
+        aria-describedby={`${id}-hint ${id}-preview`} aria-invalid={invalid} />
+      <p id={`${id}-hint`} className="publish-resolver__hint">Use 3–50 lowercase letters, numbers, or single hyphens between words.</p>
+      <p id={`${id}-preview`} className="publish-resolver__hint">/public/{draft.slug.trim() || 'my-collection'}</p>
+    </div>;
+  }
+  const impact = requirement.kind === 'unpublish-will-hide-children' ? requirement : null;
+  const label = requirement.kind === 'collection-not-public' ? `Make collection “${requirement.collectionName}” public`
+    : requirement.kind === 'category-not-public' ? `Make category “${requirement.categoryName}” public`
+    : `I understand the impact on “${requirement.entityName}”`;
+  return <div className="publish-resolver__requirement">
+    {impact && <p id={`${id}-impact`} className="publish-resolver__impact">
+      Making <strong>{impact.entityName}</strong> private will hide {impact.affectedPublicItems} {impact.affectedPublicItems === 1 ? 'item' : 'items'}
+      {impact.affectedPublicCategories > 0 && <> and {impact.affectedPublicCategories} {impact.affectedPublicCategories === 1 ? 'category' : 'categories'}</>}
+      {' '}from your public gallery. Their visibility settings will be preserved.
+    </p>}
+    <label className="publish-resolver__acknowledgment" htmlFor={id}>
+      <input id={id} type="checkbox" checked={draft.acknowledged.has(key)} onChange={() => toggle(key)}
+        aria-describedby={impact ? `${id}-impact` : undefined} />
+      <span>{label}</span>
+    </label>
+  </div>;
 }

@@ -13,7 +13,7 @@ public class UserTests
 
         // Assert
         Assert.Equal(0, user.Id);
-        Assert.Equal(0, user.ActiveWorkspaceId);
+        Assert.Null(user.ActiveWorkspaceId);
         Assert.Equal(string.Empty, user.Email);
         Assert.Equal(IdentityProvider.None, user.IdentityProvider);
         Assert.Null(user.ProviderSubjectId);

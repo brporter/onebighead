@@ -25,7 +25,8 @@ public class StatisticsConcurrencyTests(PostgresIntegrationFixture fixture) : IA
     public async Task ConcurrentIncrements_DoNotLoseUpdates()
     {
         var factory = fixture.CreateContextFactory();
-        var workspaces = new WorkspaceStatisticsRepository(factory);
+        var writer = new WorkspaceStatisticsWriter();
+        var workspaces = new WorkspaceStatisticsRepository(factory, writer, writer);
         var collections = new CollectionStatisticsRepository(factory);
         await Task.WhenAll(Enumerable.Range(0, 20).Select(async _ =>
         {
@@ -52,7 +53,8 @@ public class StatisticsConcurrencyTests(PostgresIntegrationFixture fixture) : IA
     [Fact]
     public async Task WorkspaceStatistics_SeparateDailyAndAggregateCountersAndClampDecrements()
     {
-        var repository = new WorkspaceStatisticsRepository(fixture.CreateContextFactory());
+        var writer = new WorkspaceStatisticsWriter();
+        var repository = new WorkspaceStatisticsRepository(fixture.CreateContextFactory(), writer, writer);
         var date = new DateOnly(2026, 10, 5);
         await repository.IncrementAsync(1, StatisticType.CollectionCount, 3);
         await repository.IncrementAsync(1, StatisticType.CollectionCount, 7, date);

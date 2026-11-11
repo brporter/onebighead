@@ -1,0 +1,23 @@
+.themePreview { display: grid; gap: var(--space-lg); min-width: 0; }
+.themePreview__section { min-width: 0; padding: var(--space-lg); background: var(--color-surface-alt); border-radius: var(--radius-md); overflow-wrap: anywhere; }
+.themePreview__sectionTitle { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-sm); margin: 0 0 var(--space-md); font-size: 1rem; font-weight: 600; color: var(--color-text); }
+.themePreview__count { padding: 0 var(--space-sm); background: var(--color-surface); border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 500; color: var(--color-text-secondary); }
+.themePreview__empty, .themePreview__notice { margin: 0; color: var(--color-text-secondary); line-height: 1.5; }
+.themePreview__notice { margin-bottom: var(--space-md); }
+.themePreview__templates, .themePreview__templateProperties, .themePreview__categoryList { margin: 0; padding: 0; list-style: none; }
+.themePreview__templates { display: grid; gap: var(--space-md); }
+.themePreview__template { min-width: 0; padding: var(--space-md); background: var(--color-surface); border-radius: var(--radius-md); }
+.themePreview__templateName { margin: 0 0 var(--space-sm); font-size: 0.95rem; font-weight: 600; color: var(--color-text); }
+.themePreview__templateProperties { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.themePreview__propertyTag { min-width: 0; padding: var(--space-xs) var(--space-sm); background: var(--color-surface-alt); border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--color-text-secondary); }
+.themePreview__categoryList { display: grid; gap: var(--space-sm); }
+.themePreview__categoryItem { min-width: 0; margin-inline-start: calc(var(--theme-depth, 0) * var(--space-md)); padding: var(--space-sm) var(--space-md); border-inline-start: 2px solid var(--color-border); color: var(--color-text); }
+.themePreview__categoryName { display: block; font-size: 0.95rem; font-weight: 500; }
+.themePreview__parent { display: block; margin-top: var(--space-xs); color: var(--color-text-secondary); font-size: 0.8rem; }
+.themePreview__description { margin: var(--space-xs) 0 var(--space-sm); color: var(--color-text-secondary); font-size: 0.875rem; line-height: 1.5; }
+.themePreview__categoryItem .themePreview__description { margin-bottom: 0; }
+
+@media (max-width: 520px) {
+  .themePreview__section { padding: var(--space-md); }
+  .themePreview__categoryItem { padding-inline: var(--space-sm); }
+}

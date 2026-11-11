@@ -1,22 +1,28 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import App from '../src/App';
 import CollectionView from '../src/views/CollectionView';
 import CategoryView from '../src/views/CategoryView';
 import ItemView from '../src/views/ItemView';
-import { useData } from '../src/contexts/useData';
+import { useCollectionsData as useDataHook } from '../src/contexts/useData';
 import { useUser } from '../src/contexts/useUser';
 import { useToast } from '../src/contexts/useToast';
 import type { Category, Item, Collection } from '../src/utils/types';
 import { Visibility, UserFlag, WorkspaceRole } from '../src/utils/types';
 
+const useData = useDataHook as () => import('./testUtils/dataTypes').DataContextValue;
+
 // Mock the DataContext
-vi.mock('../src/contexts/useData', () => ({
+vi.mock('../src/contexts/useData', async () => {
+  const { mockDataHooks } = await import('./testUtils/mockDataHooks');
+  return mockDataHooks({
   useData: vi.fn(),
   DataProvider: ({ children }: { children: React.ReactNode }) => children,
-}));
+});
+});
 
 // Mock the UserContext
 vi.mock('../src/contexts/useUser', () => ({
@@ -44,18 +50,13 @@ vi.mock('../src/contexts/usePublish', () => ({
 
 // Helper to render with router
 function renderWithRouter(initialRoute = '/collections') {
-  return render(
-    <MemoryRouter initialEntries={[initialRoute]}>
-      <Routes>
-        <Route path="/" element={<App />}>
-          <Route path="collections" element={<CollectionView />} />
-          <Route path="collections/:collectionId" element={<CategoryView />} />
-          <Route path="collections/:collectionId/categories/:categoryId" element={<CategoryView />} />
-          <Route path="collections/:collectionId/items/:itemId" element={<ItemView />} />
-        </Route>
-      </Routes>
-    </MemoryRouter>
-  );
+  const router = createMemoryRouter([{ path: '/', element: <App />, children: [
+    { path: 'collections', element: <CollectionView /> },
+    { path: 'collections/:collectionId', element: <CategoryView /> },
+    { path: 'collections/:collectionId/categories/:categoryId', element: <CategoryView /> },
+    { path: 'collections/:collectionId/items/:itemId', element: <ItemView /> },
+  ] }, { path: '/settings', element: <h1>Workspace settings</h1> }], { initialEntries: [initialRoute] });
+  return { ...render(<RouterProvider router={router} />), router };
 }
 
 describe('App with Router', () => {
@@ -113,6 +114,7 @@ describe('App with Router', () => {
     categoriesError: null,
     loadCategoriesForCollection: vi.fn(),
     items: mockItems,
+    itemDetails: new Map(mockItems.map(item => [item.id!, item])),
     itemsLoading: false,
     itemsError: null,
     loadItemsForCategory: vi.fn(),
@@ -132,10 +134,7 @@ describe('App with Router', () => {
     propertyNameSuggestions: [],
     addLocalCategorySuggestion: vi.fn(),
     addLocalNameSuggestion: vi.fn(),
-    itemTemplates: [],
-    itemTemplatesLoading: false,
-    itemTemplatesError: null,
-    loadItemTemplates: vi.fn(async () => []),
+    fetchItemTemplates: vi.fn(async () => []),
     loadCollectionTemplates: vi.fn(async () => []),
     getCategoryTemplates: vi.fn(async () => []),
   };
@@ -168,7 +167,7 @@ describe('App with Router', () => {
     },
     loading: false,
     error: null,
-    refetch: vi.fn(),
+    signedOut: false, refetch: vi.fn(),
     logout: vi.fn(),
   };
 
@@ -261,6 +260,23 @@ describe('App with Router', () => {
   });
 
   describe('header', () => {
+    it('opens and closes the support composer from the header', async () => {
+      renderWithRouter();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Support' }));
+      expect(screen.getByRole('dialog', { name: 'Contact Support' })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('navigates to workspace settings to configure a public gallery', async () => {
+      vi.mocked(useUser).mockReturnValue(mockUserWithoutSlug);
+      const { router } = renderWithRouter();
+      await userEvent.click(screen.getByRole('button', { name: 'Set Up Public Gallery' }));
+      expect(screen.getByRole('heading', { name: 'Workspace settings' })).toBeInTheDocument();
+      expect(router.state.location.pathname + router.state.location.search).toBe('/settings?section=workspaces');
+    });
+
     it('should display collection name in header when viewing collection', () => {
       (useData as ReturnType<typeof vi.fn>).mockReturnValue({
         ...mockDataContext,

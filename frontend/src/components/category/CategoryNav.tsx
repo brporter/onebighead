@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import type { Category } from '../../utils/types';
-import { useData } from '../../contexts/useData';
+import { useCategoriesData, useItemsData } from '../../contexts/useData';
 import { getAccentColor } from '../../utils/accentColors';
-import { buildDrillPath, getVisibleCategories, getBreadcrumb } from '../../utils/categoryNavUtils';
+import { CategoryHierarchy } from '../../data/categories/CategoryHierarchy';
 import './CategoryNav.css';
 
 interface CategoryNavProps {
@@ -13,243 +13,74 @@ interface CategoryNavProps {
   onEdit?: () => void;
 }
 
+function CategoryButton({ category, label, active, colorIndex, childCount, onSelect }: {
+  category: Category; label: string; active: boolean; colorIndex: number; childCount: number;
+  onSelect: (id: number) => void;
+}) {
+  return <button type="button" className={`categoryNav__row${active ? ' categoryNav__row--active' : ''}`}
+    aria-current={active ? 'page' : undefined} onClick={() => onSelect(category.categoryId)}>
+    <span className="categoryNav__dot" style={{ backgroundColor: getAccentColor(colorIndex).start }} aria-hidden="true" />
+    <span className="categoryNav__rowContent">
+      <span className="categoryNav__name">{label}</span>
+      {childCount > 0 && <span className="categoryNav__count">({childCount})</span>}
+    </span>
+    {childCount > 0 && <span className="categoryNav__chevron" aria-hidden="true">&rsaquo;</span>}
+  </button>;
+}
+
 function CategoryNav({ categories, selectedCategoryId, onSelect, onCollapse, onEdit }: CategoryNavProps) {
-  const {
-    categoriesLoading,
-    categoriesError,
-    items,
-  } = useData();
-
-  // Filter out system categories that have no items
-  const visibleCategories = useMemo(() => {
-    const itemCategoryIds = new Set(
-      items.map((item) => item.categoryId).filter((id): id is number => id !== null)
-    );
-    return categories.filter((cat) => {
-      if (!cat.isSystem) return true;
-      return itemCategoryIds.has(cat.categoryId);
-    });
+  const { categoriesLoading, categoriesError } = useCategoriesData();
+  const { items } = useItemsData();
+  const hierarchy = useMemo(() => {
+    const occupied = new Set(items.map(item => item.categoryId));
+    return new CategoryHierarchy(categories.filter(category => !category.isSystem || occupied.has(category.categoryId)));
   }, [categories, items]);
+  const path = hierarchy.pathTo(selectedCategoryId);
+  const selected = path.at(-1);
+  const drillPath = selected && hierarchy.childrenOf(selected.categoryId).length === 0 && path.length > 1
+    ? path.slice(0, -1) : path;
+  const current = drillPath.at(-1);
+  const displayed = hierarchy.childrenOf(current?.categoryId ?? null);
+  const breadcrumb = [{ id: null as number | null, name: 'All' }, ...drillPath.map(category => ({ id: category.categoryId, name: category.name }))];
 
-  // Build drill path; if selected category is a leaf, slice off last element to stay at parent level
-  const drillPath = useMemo(() => {
-    const fullPath = buildDrillPath(visibleCategories, selectedCategoryId);
-    if (fullPath.length === 0) return fullPath;
+  if (categoriesError) return <aside className="categoryNav" aria-label="Categories">
+    <h2 className="categoryNav__headerTitle">Categories</h2>
+    <p className="categoryNav__error" role="alert">Error loading categories: {categoriesError}</p>
+  </aside>;
+  if (categoriesLoading) return <aside className="categoryNav" aria-label="Categories">
+    <h2 className="categoryNav__headerTitle">Categories</h2>
+    <p className="categoryNav__loading" role="status">Loading categories...</p>
+  </aside>;
 
-    const lastId = fullPath[fullPath.length - 1];
-    const children = visibleCategories.filter(c => c.parentCategoryId === lastId);
-    if (children.length === 0 && fullPath.length > 1) {
-      // Leaf category: stay at parent level
-      return fullPath.slice(0, -1);
-    }
-    return fullPath;
-  }, [visibleCategories, selectedCategoryId]);
-
-  const displayedCategories = useMemo(
-    () => getVisibleCategories(visibleCategories, drillPath),
-    [visibleCategories, drillPath]
-  );
-
-  const breadcrumb = useMemo(
-    () => getBreadcrumb(visibleCategories, drillPath),
-    [visibleCategories, drillPath]
-  );
-
-  const isDrilled = drillPath.length > 0;
-
-  // Current drilled-into category (last in path)
-  const currentDrilledCategory = useMemo(() => {
-    if (!isDrilled) return null;
-    const id = drillPath[drillPath.length - 1];
-    return visibleCategories.find(c => c.categoryId === id) ?? null;
-  }, [isDrilled, drillPath, visibleCategories]);
-
-  // Compute root color index: walk up to root ancestor for consistent coloring
-  const rootColorIndex = useMemo(() => {
-    if (!isDrilled) return 0;
-    const rootId = drillPath[0];
-    const roots = visibleCategories.filter(c => c.parentCategoryId === null);
-    return roots.findIndex(c => c.categoryId === rootId);
-  }, [isDrilled, drillPath, visibleCategories]);
-
-  // Precompute child counts and root color indices for O(1) lookups
-  const childCountMap = useMemo(() => {
-    const map = new Map<number, number>();
-    visibleCategories.forEach((cat) => {
-      if (cat.parentCategoryId != null) {
-        map.set(cat.parentCategoryId, (map.get(cat.parentCategoryId) ?? 0) + 1);
-      }
-    });
-    return map;
-  }, [visibleCategories]);
-
-  const rootIndexMap = useMemo(() => {
-    const byId = new Map(visibleCategories.map(c => [c.categoryId, c]));
-    const roots = visibleCategories.filter(c => c.parentCategoryId === null);
-    const map = new Map<number, number>();
-    visibleCategories.forEach((cat) => {
-      let current = cat;
-      while (current.parentCategoryId !== null) {
-        const parent = byId.get(current.parentCategoryId);
-        if (!parent) break;
-        current = parent;
-      }
-      map.set(cat.categoryId, roots.findIndex(c => c.categoryId === current.categoryId));
-    });
-    return map;
-  }, [visibleCategories]);
-
-  function handleBack() {
-    if (drillPath.length <= 1) {
-      onSelect(null);
-    } else {
-      // Go up to the parent of the current drilled level
-      const parentId = drillPath[drillPath.length - 2];
-      onSelect(parentId);
-    }
-  }
-
-  if (categoriesError) {
-    return (
-      <aside className="categoryNav">
-        <h2 className="categoryNav__headerTitle">Categories</h2>
-        <p className="categoryNav__error" role="alert">Error loading categories: {categoriesError}</p>
-      </aside>
-    );
-  }
-
-  if (categoriesLoading) {
-    return (
-      <aside className="categoryNav">
-        <h2 className="categoryNav__headerTitle">Categories</h2>
-        <p className="categoryNav__loading">Loading categories...</p>
-      </aside>
-    );
-  }
-
-  return (
-    <aside className="categoryNav">
-      <div className="categoryNav__header">
-        <h2 className="categoryNav__headerTitle">Categories</h2>
-        <div className="categoryNav__headerActions">
-          {onEdit && (
-            <button
-              type="button"
-              className="categoryNav__editBtn"
-              onClick={onEdit}
-              aria-label="Edit categories"
-            >
-              &#9998;
-            </button>
-          )}
-          {onCollapse && (
-            <button
-              type="button"
-              className="categoryNav__collapseBtn"
-              onClick={onCollapse}
-              aria-label="Collapse categories"
-            >
-              &laquo;
-            </button>
-          )}
-        </div>
+  return <aside className="categoryNav" aria-label="Categories">
+    <div className="categoryNav__header">
+      <h2 className="categoryNav__headerTitle">Categories</h2>
+      <div className="categoryNav__headerActions">
+        {onEdit && <button type="button" className="categoryNav__editBtn" onClick={onEdit} aria-label="Edit categories">&#9998;</button>}
+        {onCollapse && <button type="button" className="categoryNav__collapseBtn" onClick={onCollapse} aria-label="Collapse categories">&laquo;</button>}
       </div>
-
-      {isDrilled && (
-        <nav className="categoryNav__breadcrumb" aria-label="Category breadcrumb">
-          {breadcrumb.map((segment, idx) => {
-            const isLast = idx === breadcrumb.length - 1;
-            if (isLast) {
-              return (
-                <span key={segment.id ?? 'all'} className="categoryNav__breadcrumb-current">
-                  {segment.name}
-                </span>
-              );
-            }
-            return (
-              <React.Fragment key={segment.id ?? 'all'}>
-                <button
-                  type="button"
-                  className="categoryNav__breadcrumb-link"
-                  onClick={() => onSelect(segment.id)}
-                  aria-label={`Navigate to ${segment.name}`}
-                >
-                  {segment.name}
-                </button>
-                <span className="categoryNav__breadcrumb-sep" aria-hidden="true">&rsaquo;</span>
-              </React.Fragment>
-            );
-          })}
-        </nav>
-      )}
-
-      <div className="categoryNav__list">
-        {isDrilled && (
-          <button
-            type="button"
-            className="categoryNav__back"
-            onClick={handleBack}
-            aria-label="Go back"
-          >
-            &larr; Back
-          </button>
-        )}
-
-        {isDrilled && currentDrilledCategory && (
-          <button
-            type="button"
-            className={`categoryNav__row${selectedCategoryId === currentDrilledCategory.categoryId ? ' categoryNav__row--active' : ''}`}
-            onClick={() => onSelect(currentDrilledCategory.categoryId)}
-          >
-            <span
-              className="categoryNav__dot"
-              style={{ backgroundColor: getAccentColor(rootColorIndex >= 0 ? rootColorIndex : 0).start }}
-              aria-hidden="true"
-            />
-            <span className="categoryNav__rowContent">
-              <span className="categoryNav__name">All {currentDrilledCategory.name}</span>
-            </span>
-          </button>
-        )}
-
-        {displayedCategories.map((cat) => {
-          const colorIdx = isDrilled ? (rootColorIndex >= 0 ? rootColorIndex : 0) : (rootIndexMap.get(cat.categoryId) ?? 0);
-          const childCount = childCountMap.get(cat.categoryId) ?? 0;
-          const hasChildren = childCount > 0;
-          const isActive = cat.categoryId === selectedCategoryId;
-
-          return (
-            <button
-              type="button"
-              key={cat.categoryId}
-              className={`categoryNav__row${isActive ? ' categoryNav__row--active' : ''}`}
-              onClick={() => onSelect(cat.categoryId)}
-            >
-              <span
-                className="categoryNav__dot"
-                style={{ backgroundColor: getAccentColor(colorIdx >= 0 ? colorIdx : 0).start }}
-                aria-hidden="true"
-              />
-              <span className="categoryNav__rowContent">
-                <span className="categoryNav__name">{cat.name}</span>
-                {childCount > 0 && (
-                  <span className="categoryNav__count">({childCount})</span>
-                )}
-              </span>
-
-              {hasChildren && (
-                <span className="categoryNav__chevron" aria-hidden="true">&rsaquo;</span>
-              )}
-            </button>
-          );
-        })}
-
-        {displayedCategories.length === 0 && !isDrilled && (
-          <p className="categoryNav__empty">No categories yet</p>
-        )}
-      </div>
-    </aside>
-  );
+    </div>
+    {current && <nav className="categoryNav__breadcrumb" aria-label="Category breadcrumb">
+      {breadcrumb.map((segment, index) => index === breadcrumb.length - 1
+        ? <span key={segment.id} className="categoryNav__breadcrumb-current">{segment.name}</span>
+        : <Fragment key={segment.id ?? 'all'}>
+          <button type="button" className="categoryNav__breadcrumb-link" onClick={() => onSelect(segment.id)}
+            aria-label={`Navigate to ${segment.name}`}>{segment.name}</button>
+          <span className="categoryNav__breadcrumb-sep" aria-hidden="true">&rsaquo;</span>
+        </Fragment>)}
+    </nav>}
+    <div className="categoryNav__list">
+      {current && <>
+        <button type="button" className="categoryNav__back" onClick={() => onSelect(drillPath.at(-2)?.categoryId ?? null)} aria-label="Go back">&larr; Back</button>
+        <CategoryButton category={current} label={`All ${current.name}`} active={selectedCategoryId === current.categoryId}
+          colorIndex={hierarchy.rootIndex(current.categoryId)} childCount={0} onSelect={onSelect} />
+      </>}
+      {displayed.map(category => <CategoryButton key={category.categoryId} category={category} label={category.name}
+        active={category.categoryId === selectedCategoryId} colorIndex={hierarchy.rootIndex(category.categoryId)}
+        childCount={hierarchy.childrenOf(category.categoryId).length} onSelect={onSelect} />)}
+      {displayed.length === 0 && !current && <p className="categoryNav__empty">No categories yet</p>}
+    </div>
+  </aside>;
 }
 
 export { CategoryNav };

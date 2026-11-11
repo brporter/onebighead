@@ -1,6 +1,11 @@
 using OneBigHead.Server.Authentication;
 using OneBigHead.Server.Pages;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Routing;
 
 namespace OneBigHead.Server.Tests.Pages;
 
@@ -9,7 +14,10 @@ public class SignInModelTests
 {
     private static SignInModel CreateModel()
     {
-        return new SignInModel(Options.Create(new AuthenticationSettings()));
+        return new SignInModel(Options.Create(new AuthenticationSettings()))
+        {
+            Url = new UrlHelper(new ActionContext(new DefaultHttpContext(), new RouteData(), new ActionDescriptor()))
+        };
     }
 
     [Fact]
@@ -61,18 +69,6 @@ public class SignInModelTests
         model.OnGet(returnUrl: "/collections/5");
 
         Assert.Equal("/collections/5", model.ReturnUrl);
-    }
-
-    [Fact]
-    public void DevLoginEnabled_MatchesBuildConfiguration()
-    {
-        var model = CreateModel();
-
-#if DEBUG
-        Assert.True(model.DevLoginEnabled);
-#else
-        Assert.False(model.DevLoginEnabled);
-#endif
     }
 
     [Fact]
@@ -132,5 +128,25 @@ public class SignInModelTests
         model.OnGet(returnUrl: "/");
 
         Assert.Equal("/", model.SafeReturnUrl);
+    }
+
+    [Theory]
+    [InlineData("/\r\n/elsewhere.example.test")]
+    [InlineData("/\t/elsewhere.example.test")]
+    [InlineData("/collections\u0000")]
+    [InlineData("javascript:alert(1)")]
+    public void SafeReturnUrl_RejectsControlCharactersAndNonLocalDestinations(string destination)
+    {
+        var model = CreateModel();
+        model.OnGet(returnUrl: destination);
+        Assert.Equal("/collections", model.SafeReturnUrl);
+    }
+
+    [Fact]
+    public void SafeReturnUrl_ResolvesApplicationRelativePaths()
+    {
+        var model = CreateModel();
+        model.OnGet(returnUrl: "~/settings?section=support");
+        Assert.Equal("/settings?section=support", model.SafeReturnUrl);
     }
 }

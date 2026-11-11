@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Security.Claims;
 using System.Text.Json;
 using OneBigHead.Server.Authentication;
-using OneBigHead.Server.Services;
+using OneBigHead.Server.Services.Workspaces;
 using OneBigHead.Server.Telemetry;
 
 namespace OneBigHead.Server.Middleware;
@@ -15,7 +15,7 @@ namespace OneBigHead.Server.Middleware;
 /// </summary>
 public class WorkspaceActiveMiddleware(RequestDelegate next, ILogger<WorkspaceActiveMiddleware> logger)
 {
-    public async Task InvokeAsync(HttpContext context, IWorkspaceService workspaceService)
+    public async Task InvokeAsync(HttpContext context, IWorkspaceAccessService workspaceService)
     {
         using var activity = DiagnosticsConfig.AppActivitySource.StartActivity(nameof(WorkspaceActiveMiddleware), ActivityKind.Internal);
         var path = context.Request.Path.Value ?? "";

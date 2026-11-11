@@ -342,40 +342,28 @@ describe('ApiClient', () => {
     }, 1000);
 
     it('should cancel previous request with same key', async () => {
-      const abortSpy = vi.fn();
-      const originalAbortController = globalThis.AbortController;
-
-      let controllerCount = 0;
-      globalThis.AbortController = class extends originalAbortController {
-        constructor() {
-          super();
-          controllerCount++;
-          if (controllerCount === 1) {
-            this.abort = abortSpy;
-          }
-        }
-      } as typeof AbortController;
-
       mockFetch
-        .mockImplementationOnce(() => new Promise(() => {}))
+        .mockImplementationOnce((_url: string, options: globalThis.RequestInit) => new Promise((_resolve, reject) => {
+          options.signal!.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+        }))
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
           json: async () => ({ data: 'second' }),
         });
 
-      // Start first request (intentionally not awaited - will be aborted)
-      void client.get('/data', {}, 'shared-key');
+      const first = client.get('/data', {}, 'shared-key');
+      const firstResult = expect(first).rejects.toMatchObject({ statusText: 'Aborted' });
 
       // Start second request with same key - should abort first
       const promise2 = client.get('/data', {}, 'shared-key');
 
-      expect(abortSpy).toHaveBeenCalled();
+      expect(mockFetch.mock.calls[0][1].signal.aborted).toBe(true);
 
       const result = await promise2;
       expect(result).toEqual({ data: 'second' });
 
-      globalThis.AbortController = originalAbortController;
+      await firstResult;
     });
   });
 

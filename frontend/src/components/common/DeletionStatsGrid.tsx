@@ -1,3 +1,4 @@
+import '../../styles/components/DeletionStatsGrid.css';
 
 export interface DeletionStatsGridProps {
   collections?: number;

@@ -1,6 +1,6 @@
 // frontend/tests/QuickCreatePopover.test.tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import QuickCreatePopover from '../src/components/category/QuickCreatePopover';
 
@@ -14,6 +14,20 @@ describe('QuickCreatePopover', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('locks submission and Escape while pending and preserves the draft when re-enabled', () => {
+    const { rerender } = render(<QuickCreatePopover {...defaultProps} />);
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Draft' } });
+    rerender(<QuickCreatePopover {...defaultProps} disabled />);
+    expect(screen.getByLabelText('Name')).toBeDisabled();
+    const form = screen.getByRole('form', { name: 'Create category' });
+    fireEvent.submit(form);
+    fireEvent.keyDown(form, { key: 'Escape' });
+    expect(defaultProps.onSave).not.toHaveBeenCalled();
+    expect(defaultProps.onCancel).not.toHaveBeenCalled();
+    rerender(<QuickCreatePopover {...defaultProps} />);
+    expect(screen.getByLabelText('Name')).toHaveValue('Draft');
   });
 
   it('should render when visible', () => {

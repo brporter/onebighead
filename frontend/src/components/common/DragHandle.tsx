@@ -1,14 +1,16 @@
+import '../../styles/components/DragHandle.css';
 import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 interface DragHandleProps {
   listeners?: SyntheticListenerMap;
   attributes?: DraggableAttributes;
+  label?: string;
 }
 
-export function DragHandle({ listeners, attributes }: DragHandleProps) {
+export function DragHandle({ listeners, attributes, label }: DragHandleProps) {
   return (
-    <div className="drag-handle" {...listeners} {...attributes}>
+    <div className="drag-handle" {...listeners} {...attributes} aria-label={label}>
       <svg
         width="16"
         height="16"

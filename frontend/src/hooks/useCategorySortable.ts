@@ -45,7 +45,7 @@ export function useCategorySortable<T extends SortableItem>(
     const overItem = items.find((p) => p.id === over.id);
 
     // Reject cross-category drops
-    if (activeItem?.category !== overItem?.category) return;
+    if (!activeItem || !overItem || activeItem.category !== overItem.category) return;
 
     const oldIndex = items.findIndex((p) => p.id === active.id);
     const newIndex = items.findIndex((p) => p.id === over.id);

@@ -1,4 +1,3 @@
-using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Services.BulkUpdate;
 using Microsoft.AspNetCore.Authorization;
@@ -11,18 +10,22 @@ namespace OneBigHead.Server.Controllers;
 [Authorize]
 public class BulkUpdatesController : ApiControllerBase
 {
+    private const string InvalidTargetMessage = "Choose a valid scope for the item update.";
     private readonly IBulkUpdateQueue _queue;
     private readonly IPropertyDiffService _diffService;
-    private readonly IItemRepository _itemRepository;
+    private readonly IBulkUpdateTargets _targets;
+    private readonly IBulkUpdateJobs _jobs;
 
     public BulkUpdatesController(
         IBulkUpdateQueue queue,
         IPropertyDiffService diffService,
-        IItemRepository itemRepository)
+        IBulkUpdateTargets targets,
+        IBulkUpdateJobs jobs)
     {
         _queue = queue;
         _diffService = diffService;
-        _itemRepository = itemRepository;
+        _targets = targets;
+        _jobs = jobs;
     }
 
     [HttpPost("preview")]
@@ -30,18 +33,13 @@ public class BulkUpdatesController : ApiControllerBase
     {
         var workspaceId = GetWorkspaceId();
 
-        if (!TryParseScope(request.Scope, out var scope))
+        if (!BulkUpdateTarget.TryCreate(request.Scope, request.TemplateKey, request.CategoryId,
+                request.CollectionId, request.ExcludeItemId, out var target))
         {
-            return BadRequest("Invalid scope. Must be 'template', 'category', or 'collection'.");
+            return BadRequest(InvalidTargetMessage);
         }
 
-        var count = await GetAffectedCountAsync(scope, request, workspaceId);
-
-        // Subtract the excluded item if it would be in the count
-        if (request.ExcludeItemId.HasValue && count > 0)
-        {
-            count = Math.Max(0, count - 1);
-        }
+        var count = await _targets.CountAsync(target, workspaceId, HttpContext.RequestAborted);
 
         return Ok(new BulkUpdatePreviewResponse { AffectedItemCount = count });
     }
@@ -50,10 +48,13 @@ public class BulkUpdatesController : ApiControllerBase
     public ActionResult<BulkUpdateJobResponse> Enqueue(EnqueueBulkUpdateRequest request)
     {
         var workspaceId = GetWorkspaceId();
+        var userId = TryGetUserId();
+        if (userId is not > 0) return Unauthorized();
 
-        if (!TryParseScope(request.Scope, out var scope))
+        if (!BulkUpdateTarget.TryCreate(request.Scope, request.TemplateKey, request.CategoryId,
+                request.CollectionId, request.ExcludeItemId, out var target))
         {
-            return BadRequest("Invalid scope. Must be 'template', 'category', or 'collection'.");
+            return BadRequest(InvalidTargetMessage);
         }
 
         var oldProps = request.OldProperties
@@ -73,13 +74,10 @@ public class BulkUpdatesController : ApiControllerBase
         var job = new BulkUpdateJob
         {
             WorkspaceId = workspaceId,
-            Scope = scope,
-            TemplateKey = request.TemplateKey,
-            CategoryId = request.CategoryId,
-            CollectionId = request.CollectionId,
+            RequestedByUserId = userId.Value,
+            Target = target,
             Diff = diff,
             NewPropertyOrder = newProps,
-            ExcludeItemId = request.ExcludeItemId,
         };
 
         _queue.Enqueue(job);
@@ -91,7 +89,7 @@ public class BulkUpdatesController : ApiControllerBase
     public ActionResult<BulkUpdateJobResponse> GetStatus(Guid jobId)
     {
         var workspaceId = GetWorkspaceId();
-        var job = _queue.GetJob(jobId, workspaceId);
+        var job = _jobs.GetJob(jobId, workspaceId);
 
         if (job is null)
         {
@@ -105,7 +103,7 @@ public class BulkUpdatesController : ApiControllerBase
     public ActionResult<BulkUpdateJobResponse> GetCollectionStatus(int collectionId)
     {
         var workspaceId = GetWorkspaceId();
-        var job = _queue.GetActiveJobForCollection(collectionId, workspaceId);
+        var job = _jobs.GetActiveJobForCollection(collectionId, workspaceId);
 
         if (job is null)
         {
@@ -113,27 +111,6 @@ public class BulkUpdatesController : ApiControllerBase
         }
 
         return Ok(ToResponse(job));
-    }
-
-    private static bool TryParseScope(string scope, out BulkUpdateScope result)
-    {
-        return Enum.TryParse(scope, ignoreCase: true, out result) &&
-               Enum.IsDefined(result);
-    }
-
-    private async Task<int> GetAffectedCountAsync(
-        BulkUpdateScope scope, BulkUpdatePreviewRequest request, int workspaceId)
-    {
-        return scope switch
-        {
-            BulkUpdateScope.Template when request.TemplateKey.HasValue =>
-                await _itemRepository.CountByTemplateKeyAsync(request.TemplateKey.Value, workspaceId),
-            BulkUpdateScope.Category when request.CategoryId.HasValue =>
-                await _itemRepository.CountByCategoryIdAsync(request.CategoryId.Value, workspaceId),
-            BulkUpdateScope.Collection when request.CollectionId.HasValue =>
-                await _itemRepository.CountByCollectionIdAsync(request.CollectionId.Value, workspaceId),
-            _ => 0
-        };
     }
 
     private static BulkUpdateJobResponse ToResponse(BulkUpdateJob job)

@@ -4,6 +4,7 @@ using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
 using OneBigHead.Server.Services;
 using OneBigHead.Server.Services.BulkUpdate;
+using OneBigHead.Server.Services.Items;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -41,17 +42,13 @@ public class ItemsControllerIntegrationTests : IDisposable
         var contextFactory = new TestDbContextFactory(options);
         var itemRepository = new ItemRepository(contextFactory, mockStatsRepo, mockCollectionStatsRepo, new Mock<ILogger<ItemRepository>>().Object);
         var categoryRepository = new CategoryRepository(contextFactory);
-        var collectionRepository = new CollectionRepository(contextFactory, mockStatsRepo, mockCollectionStatsRepo);
-        var mockPublishManagerService = new Mock<IPublishManagerService>().Object;
+        var collectionRepository = new CollectionRepository(contextFactory);
+        var mockVisibilityService = new Mock<IVisibilityService>().Object;
 
         _controller = new ItemsController(
-            itemRepository,
-            categoryRepository,
-            collectionRepository,
-            mockPublishManagerService,
-            new BulkUpdateQueue(),
-            new Mock<IWorkspaceStatisticsRepository>().Object,
-            new Mock<ICollectionStatisticsRepository>().Object);
+            new ItemReadService(itemRepository, categoryRepository, collectionRepository, new VisibilityService()),
+            new ItemWriteService(itemRepository, categoryRepository, collectionRepository, mockVisibilityService, new BulkUpdateQueue()),
+            new ItemViewRecorder(itemRepository, mockStatsRepo, mockCollectionStatsRepo, TimeProvider.System));
 
         // Configure claims
         var claims = new List<Claim>

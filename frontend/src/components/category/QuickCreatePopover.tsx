@@ -1,99 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
-
-const RESERVED_NAMES = ['unassigned items'];
+import { useState, useEffect, useId } from 'react';
+import { validateCategoryName } from '../../data/categories/categoryDraft';
 
 interface QuickCreatePopoverProps {
   isVisible: boolean;
   onSave: (name: string) => void;
   onMoreDetails: (name: string) => void;
   onCancel: () => void;
+  onHasChanges?: (dirty: boolean) => void;
+  disabled?: boolean;
 }
 
-function QuickCreatePopover({ isVisible, onSave, onMoreDetails, onCancel }: QuickCreatePopoverProps) {
+export default function QuickCreatePopover(props: QuickCreatePopoverProps) {
+  return props.isVisible ? <QuickCreateForm {...props} /> : null;
+}
+
+function QuickCreateForm({ onSave, onMoreDetails, onCancel, onHasChanges, disabled = false }: QuickCreatePopoverProps) {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Reset and focus when popover opens
-  useEffect(() => {
-    if (isVisible) {
-      /* eslint-disable react-hooks/set-state-in-effect -- Resetting form state when popover opens */
-      setName('');
-      setError(null);
-      /* eslint-enable react-hooks/set-state-in-effect */
-      // Focus after render
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
-    }
-  }, [isVisible]);
-
-  if (!isVisible) return null;
-
-  const validateAndSave = () => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      setError('Name is required');
-      return;
-    }
-    if (RESERVED_NAMES.includes(trimmed.toLowerCase())) {
-      setError(`"${trimmed}" is a reserved name and cannot be used`);
-      return;
-    }
-    onSave(trimmed);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.stopPropagation();
-      e.preventDefault();
-      onCancel();
-    }
-  };
-
-  return (
-    <form className="quickCreatePopover" aria-label="Create category" onSubmit={(event) => { event.preventDefault(); validateAndSave(); }}>
-      <input
-        ref={inputRef}
-        type="text"
-        className="quickCreatePopover__input modal__input"
-        placeholder="Category name"
-        value={name}
-        onChange={(e) => {
-          setName(e.target.value);
-          setError(null);
-        }}
-        onKeyDown={handleKeyDown}
-      />
-      {error && (
-        <div className="quickCreatePopover__error modal__error" role="alert">
-          {error}
-        </div>
-      )}
+  const inputId = useId();
+  const dirty = name.length > 0;
+  useEffect(() => { onHasChanges?.(dirty); }, [dirty, onHasChanges]);
+  return <form className="quickCreatePopover" aria-label="Create category" onSubmit={event => {
+    event.preventDefault();
+    if (disabled) return;
+    const validation = validateCategoryName(name);
+    setError(validation);
+    if (!validation) onSave(name.trim());
+  }} onKeyDown={event => {
+    if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); if (!disabled) onCancel(); }
+  }}>
+    <fieldset className="category-manager-form__fields" disabled={disabled}>
+      <label className="modal__label" htmlFor={inputId}>Name</label>
+      <input id={inputId} autoFocus type="text" className="quickCreatePopover__input modal__input" placeholder="Category name"
+        value={name} onChange={event => { setName(event.target.value); setError(null); }} />
+      {error && <div className="quickCreatePopover__error modal__error" role="alert">{error}</div>}
       <div className="quickCreatePopover__actions">
-        <button
-          type="button"
-          className="modal__button modal__button--secondary"
-          onClick={() => onMoreDetails(name)}
-        >
-          More Details...
-        </button>
-        <button
-          type="button"
-          className="modal__button modal__button--secondary"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="modal__button modal__button--primary"
-        >
-          Save
-        </button>
+        <button type="button" className="modal__button modal__button--secondary" onClick={() => onMoreDetails(name)}>More Details...</button>
+        <button type="button" className="modal__button modal__button--secondary" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="modal__button modal__button--primary">Save</button>
       </div>
-    </form>
-  );
+    </fieldset>
+  </form>;
 }
-
-export default QuickCreatePopover;

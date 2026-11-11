@@ -1,7 +1,9 @@
+import '../../styles/components/PropertyRender.css';
 import type { ItemProperty } from '../../utils/types';
 
 interface PropertyRenderProps {
   properties?: ItemProperty[];
+  heading?: 'h2' | 'h3';
 }
 
 function groupPropertiesByCategory(properties: ItemProperty[] | undefined): [string, ItemProperty[]][] {
@@ -16,7 +18,7 @@ function groupPropertiesByCategory(properties: ItemProperty[] | undefined): [str
   return Array.from(groups.entries());
 }
 
-function PropertyRender({ properties }: PropertyRenderProps) {
+function PropertyRender({ properties, heading: Heading = 'h3' }: PropertyRenderProps) {
   const propertyGroups = groupPropertiesByCategory(properties);
 
   if (!propertyGroups.length) {
@@ -27,7 +29,7 @@ function PropertyRender({ properties }: PropertyRenderProps) {
     <div className="detail__properties">
       {propertyGroups.map(([category, props]) => (
         <section key={category} className="detail__property-group">
-          <h3 className="detail__property-group-title">{category}</h3>
+          <Heading className="detail__property-group-title">{category}</Heading>
           <dl className="detail__property-group-list">
             {props.map(({ name, value }) => (
               <div key={`${category}:${name}`} className="detail__property-row">

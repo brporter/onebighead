@@ -1,599 +1,269 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import UserManagement from '../src/components/user/UserManagement';
-import * as UserContext from '../src/contexts/useUser';
-import * as usersApiModule from '../src/api/users';
-import type { WorkspaceUser, CurrentUser } from '../src/utils/types';
-import { WorkspaceRole } from '../src/utils/types';
-
-vi.mock('../src/contexts/useUser', () => ({
-  useUser: vi.fn(),
-}));
-
-vi.mock('../src/api/users', () => ({
-  usersApi: {
-    getUsers: vi.fn(),
-    inviteUser: vi.fn(),
-    updateUserRole: vi.fn(),
-    removeUser: vi.fn(),
-  },
-}));
-
-// Mock window.alert and window.confirm
-const mockAlert = vi.fn();
-const mockConfirm = vi.fn();
-window.alert = mockAlert;
-window.confirm = mockConfirm;
-
-describe('UserManagement', () => {
-  const mockActiveWorkspace = {
-    workspaceId: 1,
-    workspaceName: 'Test Workspace',
-    workspaceRole: WorkspaceRole.WorkspaceAdmin,
-    hasCompletedWelcome: true,
-  };
-
-  const mockCurrentUser: CurrentUser = {
-    userId: 1,
-    email: 'admin@example.com',
-    workspaceId: 1,
-    workspaceName: 'Test Workspace',
-    hasCompletedWelcome: true,
-    hasAcceptedTerms: true,
-    isSystemAdministrator: false,
-    workspaceRole: WorkspaceRole.WorkspaceAdmin,
-    isWorkspaceAdmin: true,
-    activeWorkspace: mockActiveWorkspace,
-    workspaces: [mockActiveWorkspace],
-  };
-
-  const mockUsers: WorkspaceUser[] = [
-    {
-      userId: 1,
-      email: 'admin@example.com',
-      workspaceRole: WorkspaceRole.WorkspaceAdmin,
-      isLinked: true,
-      identityProvider: 'Microsoft',
-      createdAt: '2024-01-01T00:00:00Z',
-    },
-    {
-      userId: 2,
-      email: 'member@example.com',
-      workspaceRole: WorkspaceRole.Normal,
-      isLinked: true,
-      identityProvider: 'Google',
-      createdAt: '2024-01-02T00:00:00Z',
-    },
-    {
-      userId: 3,
-      email: 'pending@example.com',
-      workspaceRole: WorkspaceRole.Normal,
-      isLinked: false,
-      identityProvider: null,
-      createdAt: '2024-01-03T00:00:00Z',
-    },
-  ];
-
-  const mockOnDirtyChange = vi.fn();
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockConfirm.mockReturnValue(true);
-
-    vi.mocked(UserContext.useUser).mockReturnValue({
-      user: mockCurrentUser,
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-      logout: vi.fn(),
-    });
-
-    vi.mocked(usersApiModule.usersApi.getUsers).mockResolvedValue(mockUsers);
-    vi.mocked(usersApiModule.usersApi.inviteUser).mockResolvedValue({
-      userId: 4,
-      email: 'new@example.com',
-      workspaceRole: WorkspaceRole.Normal,
-      isLinked: false,
-      identityProvider: null,
-      createdAt: '2024-01-04T00:00:00Z',
-    });
-    vi.mocked(usersApiModule.usersApi.updateUserRole).mockResolvedValue(undefined);
-    vi.mocked(usersApiModule.usersApi.removeUser).mockResolvedValue(undefined);
-  });
-
-  describe('loading state', () => {
-    it('should show loading state initially', () => {
-      vi.mocked(usersApiModule.usersApi.getUsers).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
-
-      render(<UserManagement />);
-
-      expect(screen.getByText('Loading team members...')).toBeInTheDocument();
-    });
-
-    it('should load and display users', async () => {
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('admin@example.com')).toBeInTheDocument();
-      });
-
-      expect(screen.getByText('member@example.com')).toBeInTheDocument();
-      expect(screen.getByText('pending@example.com')).toBeInTheDocument();
-    });
-  });
-
-  describe('error handling', () => {
-    it('should display error when loading fails', async () => {
-      vi.mocked(usersApiModule.usersApi.getUsers).mockRejectedValue(new Error('Network error'));
-
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Network error')).toBeInTheDocument();
-      });
-    });
-
-    it('should display generic error for non-Error exceptions', async () => {
-      vi.mocked(usersApiModule.usersApi.getUsers).mockRejectedValue('Unknown error');
-
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Failed to load team members')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('user list display', () => {
-    it('should show "You" badge for current user', async () => {
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('You')).toBeInTheDocument();
-      });
-    });
-
-    it('should show "Pending" badge for unlinked users', async () => {
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Pending')).toBeInTheDocument();
-      });
-    });
-
-    it('should show "Active" badge for linked users', async () => {
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getAllByText('Active').length).toBe(2);
-      });
-    });
-
-    it('should show identity provider for linked users', async () => {
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Microsoft')).toBeInTheDocument();
-        expect(screen.getByText('Google')).toBeInTheDocument();
-      });
-    });
-
-    it('should disable controls for current user', async () => {
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('admin@example.com')).toBeInTheDocument();
-      });
-
-      // Find the role select for the current user (first user)
-      const roleSelects = screen.getAllByRole('combobox');
-      expect(roleSelects[1]).toBeDisabled(); // First user's role select (after invite role)
-
-      // Find the remove button for the current user
-      const removeButtons = screen.getAllByText('Remove');
-      expect(removeButtons[0]).toBeDisabled();
-    });
-  });
-
-  describe('invite user', () => {
-    it('should invite user when form is submitted', async () => {
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Enter email address')).toBeInTheDocument();
-      });
-
-      const emailInput = screen.getByPlaceholderText('Enter email address');
-      const inviteButton = screen.getByRole('button', { name: 'Invite' });
-
-      await user.type(emailInput, 'new@example.com');
-      await user.click(inviteButton);
-
-      await waitFor(() => {
-        expect(usersApiModule.usersApi.inviteUser).toHaveBeenCalledWith({
-          email: 'new@example.com',
-          role: WorkspaceRole.Normal,
-        });
-      });
-    });
-
-    it('should invite user as admin when selected', async () => {
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Enter email address')).toBeInTheDocument();
-      });
-
-      const emailInput = screen.getByPlaceholderText('Enter email address');
-      const roleSelect = screen.getAllByRole('combobox')[0]; // First combobox is invite role
-      const inviteButton = screen.getByRole('button', { name: 'Invite' });
-
-      await user.type(emailInput, 'newadmin@example.com');
-      await user.selectOptions(roleSelect, 'WorkspaceAdmin');
-      await user.click(inviteButton);
-
-      await waitFor(() => {
-        expect(usersApiModule.usersApi.inviteUser).toHaveBeenCalledWith({
-          email: 'newadmin@example.com',
-          role: WorkspaceRole.WorkspaceAdmin,
-        });
-      });
-    });
-
-    it('should clear form after successful invite', async () => {
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Enter email address')).toBeInTheDocument();
-      });
-
-      const emailInput = screen.getByPlaceholderText('Enter email address') as HTMLInputElement;
-      const inviteButton = screen.getByRole('button', { name: 'Invite' });
-
-      await user.type(emailInput, 'new@example.com');
-      await user.click(inviteButton);
-
-      await waitFor(() => {
-        expect(emailInput.value).toBe('');
-      });
-    });
-
-    it('should show error when invite fails', async () => {
-      vi.mocked(usersApiModule.usersApi.inviteUser).mockRejectedValue(new Error('Email already exists'));
-
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Enter email address')).toBeInTheDocument();
-      });
-
-      const emailInput = screen.getByPlaceholderText('Enter email address');
-      const inviteButton = screen.getByRole('button', { name: 'Invite' });
-
-      await user.type(emailInput, 'existing@example.com');
-      await user.click(inviteButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Email already exists')).toBeInTheDocument();
-      });
-    });
-
-    it('should disable invite button when email is empty', async () => {
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Invite' })).toBeDisabled();
-      });
-    });
-
-    it('should call onDirtyChange when email changes', async () => {
-      const user = userEvent.setup();
-      render(<UserManagement onDirtyChange={mockOnDirtyChange} />);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Enter email address')).toBeInTheDocument();
-      });
-
-      const emailInput = screen.getByPlaceholderText('Enter email address');
-      await user.type(emailInput, 'test@example.com');
-
-      await waitFor(() => {
-        expect(mockOnDirtyChange).toHaveBeenCalledWith(true);
-      });
-    });
-  });
-
-  describe('change user role', () => {
-    it('should update user role', async () => {
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('member@example.com')).toBeInTheDocument();
-      });
-
-      // Find the role select for the second user (member)
-      const roleSelects = screen.getAllByRole('combobox');
-      const memberRoleSelect = roleSelects[2]; // Skip invite role and admin role
-
-      await user.selectOptions(memberRoleSelect, 'WorkspaceAdmin');
-
-      await waitFor(() => {
-        expect(usersApiModule.usersApi.updateUserRole).toHaveBeenCalledWith(2, WorkspaceRole.WorkspaceAdmin);
-      });
-    });
-
-    it('should prevent demoting last admin', async () => {
-      // Set up scenario with only one admin
-      const singleAdminUsers: WorkspaceUser[] = [
-        {
-          userId: 1,
-          email: 'admin@example.com',
-          workspaceRole: WorkspaceRole.WorkspaceAdmin,
-          isLinked: true,
-          identityProvider: 'Microsoft',
-          createdAt: '2024-01-01T00:00:00Z',
-        },
-        {
-          userId: 2,
-          email: 'member@example.com',
-          workspaceRole: WorkspaceRole.Normal,
-          isLinked: true,
-          identityProvider: 'Google',
-          createdAt: '2024-01-02T00:00:00Z',
-        },
-      ];
-
-      // Update current user to be user 2 so we can try to demote user 1
-      vi.mocked(UserContext.useUser).mockReturnValue({
-        user: { ...mockCurrentUser, userId: 2 },
-        loading: false,
-        error: null,
-        refetch: vi.fn(),
-        logout: vi.fn(),
-      });
-
-      vi.mocked(usersApiModule.usersApi.getUsers).mockResolvedValue(singleAdminUsers);
-
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('admin@example.com')).toBeInTheDocument();
-      });
-
-      // Try to demote the only admin
-      const roleSelects = screen.getAllByRole('combobox');
-      const adminRoleSelect = roleSelects[1]; // First user's role select
-
-      await user.selectOptions(adminRoleSelect, 'Normal');
-
-      expect(mockAlert).toHaveBeenCalledWith('Cannot demote the last admin. Promote another user first.');
-      expect(usersApiModule.usersApi.updateUserRole).not.toHaveBeenCalled();
-    });
-
-    it('should show error when role update fails', async () => {
-      vi.mocked(usersApiModule.usersApi.updateUserRole).mockRejectedValue(new Error('Update failed'));
-
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('member@example.com')).toBeInTheDocument();
-      });
-
-      const roleSelects = screen.getAllByRole('combobox');
-      const memberRoleSelect = roleSelects[2];
-
-      await user.selectOptions(memberRoleSelect, 'WorkspaceAdmin');
-
-      await waitFor(() => {
-        expect(screen.getByText('Update failed')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('remove user', () => {
-    it('should remove user when confirmed', async () => {
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('member@example.com')).toBeInTheDocument();
-      });
-
-      const removeButtons = screen.getAllByText('Remove');
-      await user.click(removeButtons[1]); // Second remove button (member)
-
-      await waitFor(() => {
-        expect(usersApiModule.usersApi.removeUser).toHaveBeenCalledWith(2);
-      });
-    });
-
-    it('should show different confirm message for pending users', async () => {
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('pending@example.com')).toBeInTheDocument();
-      });
-
-      const removeButtons = screen.getAllByText('Remove');
-      await user.click(removeButtons[2]); // Third remove button (pending)
-
-      expect(mockConfirm).toHaveBeenCalledWith(
-        'Are you sure you want to cancel the invitation for pending@example.com?'
-      );
-    });
-
-    it('should show different confirm message for linked users', async () => {
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('member@example.com')).toBeInTheDocument();
-      });
-
-      const removeButtons = screen.getAllByText('Remove');
-      await user.click(removeButtons[1]); // Second remove button (member)
-
-      expect(mockConfirm).toHaveBeenCalledWith(
-        'Are you sure you want to remove member@example.com from the team? They will no longer have access.'
-      );
-    });
-
-    it('should not remove user when cancelled', async () => {
-      mockConfirm.mockReturnValue(false);
-
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('member@example.com')).toBeInTheDocument();
-      });
-
-      const removeButtons = screen.getAllByText('Remove');
-      await user.click(removeButtons[1]);
-
-      expect(usersApiModule.usersApi.removeUser).not.toHaveBeenCalled();
-    });
-
-    it('should prevent removing last admin', async () => {
-      // Set up scenario with only one admin
-      const singleAdminUsers: WorkspaceUser[] = [
-        {
-          userId: 1,
-          email: 'admin@example.com',
-          workspaceRole: WorkspaceRole.WorkspaceAdmin,
-          isLinked: true,
-          identityProvider: 'Microsoft',
-          createdAt: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      // Make current user different so they can try to remove the admin
-      vi.mocked(UserContext.useUser).mockReturnValue({
-        user: { ...mockCurrentUser, userId: 999 },
-        loading: false,
-        error: null,
-        refetch: vi.fn(),
-        logout: vi.fn(),
-      });
-
-      vi.mocked(usersApiModule.usersApi.getUsers).mockResolvedValue(singleAdminUsers);
-
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('admin@example.com')).toBeInTheDocument();
-      });
-
-      const removeButton = screen.getByText('Remove');
-      await user.click(removeButton);
-
-      expect(mockAlert).toHaveBeenCalledWith('Cannot remove the last admin. Promote another user first.');
-      expect(usersApiModule.usersApi.removeUser).not.toHaveBeenCalled();
-    });
-
-    it('should show error when remove fails', async () => {
-      vi.mocked(usersApiModule.usersApi.removeUser).mockRejectedValue(new Error('Remove failed'));
-
-      const user = userEvent.setup();
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('member@example.com')).toBeInTheDocument();
-      });
-
-      const removeButtons = screen.getAllByText('Remove');
-      await user.click(removeButtons[1]);
-
-      await waitFor(() => {
-        expect(screen.getByText('Remove failed')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('legend', () => {
-    it('should display role descriptions', async () => {
-      render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Can create collections, templates, invite users, and export data/)).toBeInTheDocument();
-        expect(screen.getByText(/Can create and edit items and categories/)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('snapshots', () => {
-    it('should match snapshot with users loaded', async () => {
-      const { container } = render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('admin@example.com')).toBeInTheDocument();
-      });
-
-      expect(container).toMatchSnapshot();
-    });
-
-    it('should match snapshot while loading', () => {
-      vi.mocked(usersApiModule.usersApi.getUsers).mockImplementation(
-        () => new Promise(() => {})
-      );
-
-      const { container } = render(<UserManagement />);
-
-      expect(container).toMatchSnapshot();
-    });
-
-    it('should match snapshot with error', async () => {
-      vi.mocked(usersApiModule.usersApi.getUsers).mockRejectedValue(new Error('Failed to load'));
-
-      const { container } = render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Failed to load')).toBeInTheDocument();
-      });
-
-      expect(container).toMatchSnapshot();
-    });
-
-    it('should match snapshot with pending user', async () => {
-      const pendingOnlyUsers: WorkspaceUser[] = [
-        {
-          userId: 1,
-          email: 'pending@example.com',
-          workspaceRole: WorkspaceRole.Normal,
-          isLinked: false,
-          identityProvider: null,
-          createdAt: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      vi.mocked(usersApiModule.usersApi.getUsers).mockResolvedValue(pendingOnlyUsers);
-      vi.mocked(UserContext.useUser).mockReturnValue({
-        user: { ...mockCurrentUser, userId: 999 },
-        loading: false,
-        error: null,
-        refetch: vi.fn(),
-        logout: vi.fn(),
-      });
-
-      const { container } = render(<UserManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText('pending@example.com')).toBeInTheDocument();
-      });
-
-      expect(container).toMatchSnapshot();
-    });
-  });
+import { useUser } from '../src/contexts/useUser';
+import { usersApi } from '../src/api/users';
+import { WorkspaceRole, type CurrentUser } from '../src/utils/types';
+import { deferred } from './testUtils/deferred';
+import { team, teamAdministrator, createdInvitation } from './testUtils/team';
+
+vi.mock('../src/contexts/useUser', () => ({ useUser: vi.fn() }));
+vi.mock('../src/api/users', () => ({ usersApi: { getUsers: vi.fn(), getInvitations: vi.fn(), cancelInvitation: vi.fn(), inviteUser: vi.fn(), updateUserRole: vi.fn(), removeUser: vi.fn() } }));
+const api = vi.mocked(usersApi);
+function identity(user: CurrentUser | null) {
+  vi.mocked(useUser).mockReturnValue({ user, loading: false, error: null, signedOut: false, refetch: vi.fn(), logout: vi.fn() });
+}
+beforeEach(() => {
+  vi.resetAllMocks();
+  identity(teamAdministrator());
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  api.getUsers.mockResolvedValue(team());
+  api.inviteUser.mockResolvedValue(createdInvitation());
+  api.getInvitations.mockResolvedValue([]);
+  api.cancelInvitation.mockResolvedValue(undefined);
+  api.updateUserRole.mockResolvedValue(undefined);
+  api.removeUser.mockResolvedValue(undefined);
+});
+const loaded = () => screen.findByRole('heading', { name: 'member@example.com' });
+
+it('keeps a labelled invitation form visible and disabled during initial loading', () => {
+  api.getUsers.mockReturnValue(new Promise(() => {}));
+  render(<UserManagement />);
+  expect(screen.getByText('Loading team members...')).toBeInTheDocument();
+  expect(screen.getByRole('form', { name: 'Invite a teammate' })).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'Email address' })).toBeDisabled();
+  expect(screen.getByRole('combobox', { name: 'Invite as' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Create invitation link' })).toBeDisabled();
+});
+
+it('shows active members and pending invitations with individually labelled actions', async () => {
+  render(<UserManagement />);
+  await loaded();
+  expect(screen.getAllByRole('listitem')).toHaveLength(3);
+  expect(screen.getByText('You')).toBeInTheDocument();
+  expect(screen.getAllByText('Active')).toHaveLength(2);
+  expect(screen.getByText('Pending')).toBeInTheDocument();
+  const self = screen.getByRole('combobox', { name: 'Role for admin@example.com' });
+  expect(self).toBeDisabled();
+  expect(self).toHaveAccessibleDescription('You cannot change your own role or remove yourself.');
+  expect(screen.getByRole('button', { name: 'Remove admin@example.com' })).toBeDisabled();
+  expect(screen.getByRole('combobox', { name: 'Role for member@example.com' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Cancel invitation for pending@example.com' })).toBeEnabled();
+  expect(screen.getByRole('textbox', { name: 'Email address' })).toHaveAccessibleDescription(/private link/);
+});
+
+it('explains why another last administrator cannot be edited', async () => {
+  identity(teamAdministrator(1, 9));
+  render(<UserManagement />);
+  await loaded();
+  const role = screen.getByRole('combobox', { name: 'Role for admin@example.com' });
+  expect(role).toBeDisabled();
+  expect(role).toHaveAccessibleDescription(/Promote another member/);
+  expect(screen.getByRole('button', { name: 'Remove admin@example.com' })).toBeDisabled();
+});
+
+it('shows a retryable initial error and supports an empty team', async () => {
+  api.getUsers.mockRejectedValueOnce(new Error('Server unavailable')).mockResolvedValue([]);
+  render(<UserManagement />);
+  expect(await screen.findByText('Unable to load team members')).toBeInTheDocument();
+  expect(screen.getByText('Server unavailable')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Refresh team' }));
+  expect(await screen.findByText('No team members found.')).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'Email address' })).toBeEnabled();
+});
+
+it.each([null, { ...teamAdministrator(), isWorkspaceAdmin: false }])('requires administrator access before reading data: %s', user => {
+  identity(user);
+  render(<UserManagement />);
+  expect(screen.getByText('Workspace administrator access is required.')).toBeInTheDocument();
+  expect(api.getUsers).not.toHaveBeenCalled();
+});
+
+it('reports role-only drafts and clears navigation constraints on unmount', async () => {
+  const status = vi.fn();
+  const { unmount } = render(<UserManagement onStatusChange={status} />);
+  await loaded();
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Invite as' }), WorkspaceRole.WorkspaceAdmin);
+  expect(status).toHaveBeenLastCalledWith({ dirty: true, pending: false });
+  unmount();
+  expect(status).toHaveBeenLastCalledWith({ dirty: false, pending: false });
+});
+
+it('preserves failed invitation drafts and clears them only after a successful retry', async () => {
+  api.inviteUser.mockRejectedValueOnce(new Error('Invitation failed'));
+  const status = vi.fn();
+  render(<UserManagement onStatusChange={status} />);
+  await loaded();
+  const email = screen.getByRole('textbox', { name: 'Email address' });
+  await userEvent.type(email, 'new@example.com');
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Invite as' }), WorkspaceRole.WorkspaceAdmin);
+  await userEvent.click(screen.getByRole('button', { name: 'Create invitation link' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Invitation failed');
+  expect(email).toHaveValue('new@example.com');
+  expect(screen.getByRole('combobox', { name: 'Invite as' })).toHaveValue(WorkspaceRole.WorkspaceAdmin);
+  await userEvent.click(screen.getByRole('button', { name: 'Create invitation link' }));
+  await waitFor(() => expect(email).toHaveValue(''));
+  expect(api.inviteUser).toHaveBeenLastCalledWith({ email: 'new@example.com', role: WorkspaceRole.WorkspaceAdmin });
+  expect(screen.getByText('Invitation link created. Share it privately with the intended person.')).toBeInTheDocument();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(status).toHaveBeenLastCalledWith({ dirty: false, pending: false });
+});
+
+it('creates a link for an email label without treating it as membership identity', async () => {
+  render(<UserManagement />);
+  await loaded();
+  await userEvent.type(screen.getByRole('textbox', { name: 'Email address' }), 'MEMBER@example.com');
+  fireEvent.submit(screen.getByRole('form', { name: 'Invite a teammate' }));
+  expect(await screen.findByRole('textbox', { name: 'Invitation link' })).toBeInTheDocument();
+  expect(api.inviteUser).toHaveBeenCalledWith({ email: 'MEMBER@example.com', role: WorkspaceRole.Normal });
+});
+
+it('keeps controls locked and confirmed roles visible until the refresh settles', async () => {
+  const write = deferred<void>();
+  const read = deferred<ReturnType<typeof team>>();
+  api.updateUserRole.mockReturnValue(write.promise);
+  api.getUsers.mockResolvedValueOnce(team()).mockReturnValueOnce(read.promise).mockResolvedValue(team());
+  const status = vi.fn();
+  render(<UserManagement onStatusChange={status} />);
+  await loaded();
+  const role = screen.getByRole('combobox', { name: 'Role for member@example.com' });
+  await userEvent.selectOptions(role, WorkspaceRole.WorkspaceAdmin);
+  expect(status).toHaveBeenLastCalledWith({ dirty: false, pending: true });
+  expect(role).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Cancel invitation for pending@example.com' })).toBeDisabled();
+  await act(async () => write.resolve());
+  expect(role).toHaveValue(WorkspaceRole.WorkspaceAdmin);
+  expect(role).toBeDisabled();
+  expect(screen.getByText('Refreshing team members…')).toBeInTheDocument();
+  await act(async () => read.reject(new Error('Read unavailable')));
+  expect(screen.getByText('Unable to refresh team members')).toBeInTheDocument();
+  expect(role).toHaveValue(WorkspaceRole.WorkspaceAdmin);
+  expect(role).toBeEnabled();
+  await userEvent.click(screen.getByRole('button', { name: 'Refresh team' }));
+  await waitFor(() => expect(screen.queryByText('Unable to refresh team members')).not.toBeInTheDocument());
+  expect(api.updateUserRole).toHaveBeenCalledExactlyOnceWith(2, WorkspaceRole.WorkspaceAdmin);
+  expect(status).toHaveBeenLastCalledWith({ dirty: false, pending: false });
+});
+
+it.each([['Remove member@example.com', 2, 'lose access'], ['Cancel invitation for pending@example.com', 3, 'Cancel the invitation']])('confirms %s and retains the confirmed removal if refresh fails', async (label, id, confirmation) => {
+  api.getUsers.mockResolvedValueOnce(team()).mockRejectedValue(new Error('Read unavailable'));
+  render(<UserManagement />);
+  await loaded();
+  await userEvent.click(screen.getByRole('button', { name: String(label) }));
+  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining(String(confirmation)));
+  await waitFor(() => expect(api.removeUser).toHaveBeenCalledWith(id));
+  expect(await screen.findByText('Unable to refresh team members')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: String(label) })).not.toBeInTheDocument();
+});
+
+it('does not remove a person when confirmation is cancelled', async () => {
+  vi.mocked(window.confirm).mockReturnValue(false);
+  render(<UserManagement />);
+  await loaded();
+  await userEvent.click(screen.getByRole('button', { name: 'Remove member@example.com' }));
+  expect(api.removeUser).not.toHaveBeenCalled();
+  expect(screen.getAllByRole('listitem')).toHaveLength(3);
+});
+
+it.each(['workspace', 'identity'] as const)('resets drafts and cancels obsolete reads on %s change', async change => {
+  const oldRead = deferred<ReturnType<typeof team>>();
+  api.getUsers.mockReturnValueOnce(oldRead.promise).mockResolvedValue([]);
+  const { rerender } = render(<UserManagement />);
+  const signal = api.getUsers.mock.calls[0][0]?.signal;
+  identity(change === 'workspace' ? { ...teamAdministrator(2), activeWorkspace: null } as unknown as CurrentUser : teamAdministrator(1, 9));
+  rerender(<UserManagement />);
+  expect(signal?.aborted).toBe(true);
+  expect(await screen.findByText('No team members found.')).toBeInTheDocument();
+  await act(async () => oldRead.resolve(team()));
+  expect(screen.queryByText('member@example.com')).not.toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'Email address' })).toHaveValue('');
+});
+
+it('discards an old workspace draft and ignores its late write result', async () => {
+  const write = deferred<ReturnType<typeof createdInvitation>>();
+  api.inviteUser.mockReturnValue(write.promise);
+  const { rerender } = render(<UserManagement />);
+  await loaded();
+  await userEvent.type(screen.getByRole('textbox', { name: 'Email address' }), 'new@example.com');
+  await userEvent.click(screen.getByRole('button', { name: 'Create invitation link' }));
+  identity(teamAdministrator(2));
+  api.getUsers.mockResolvedValue([]);
+  rerender(<UserManagement />);
+  expect(await screen.findByText('No team members found.')).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'Email address' })).toHaveValue('');
+  await act(async () => write.resolve(createdInvitation()));
+  expect(api.getUsers).toHaveBeenCalledTimes(2);
+  expect(screen.queryByText('Invitation link created. Share it privately with the intended person.')).not.toBeInTheDocument();
+});
+
+it('gives separate mounted forms unique labels and hints', async () => {
+  render(<><UserManagement /><UserManagement /></>);
+  await waitFor(() => expect(screen.getAllByRole('listitem')).toHaveLength(6));
+  const forms = screen.getAllByRole('form', { name: 'Invite a teammate' });
+  const emails = forms.map(form => within(form).getByRole('textbox', { name: 'Email address' }));
+  expect(emails[0].id).not.toBe(emails[1].id);
+  for (const email of emails) expect(email).toHaveAccessibleDescription(/private link/);
+});
+
+it('recovers an invitation-list failure without disabling member management', async () => {
+  api.getInvitations.mockRejectedValueOnce(new Error('Invitations offline')).mockResolvedValue([]);
+  render(<UserManagement />);
+  await loaded();
+  expect(await screen.findByText('Unable to load invitations')).toBeInTheDocument();
+  expect(screen.getByRole('combobox', { name: 'Role for member@example.com' })).toBeEnabled();
+  await userEvent.click(screen.getByRole('button', { name: 'Refresh invitations' }));
+  expect(await screen.findByText('No pending invitations.')).toBeInTheDocument();
+});
+
+it('confirms replacement and cancellation of pending links and retains confirmed data if refresh fails', async () => {
+  const pending = createdInvitation().invitation;
+  api.getInvitations.mockResolvedValueOnce([pending, { ...pending, invitationId: 'other', email: 'other@example.com', role: WorkspaceRole.WorkspaceAdmin }]).mockRejectedValue(new Error('Offline'));
+  render(<UserManagement />);
+  await loaded();
+  const renew = await screen.findByRole('button', { name: 'Create new link for new@example.com' });
+  vi.mocked(window.confirm).mockReturnValueOnce(false);
+  await userEvent.click(renew);
+  expect(api.inviteUser).not.toHaveBeenCalled();
+  await userEvent.click(renew);
+  expect(await screen.findByRole('textbox', { name: 'Invitation link' })).toBeInTheDocument();
+  expect(screen.getByText('Unable to refresh invitations')).toBeInTheDocument();
+  const cancel = screen.getByRole('button', { name: 'Cancel invitation for new@example.com' });
+  vi.mocked(window.confirm).mockReturnValueOnce(false);
+  await userEvent.click(cancel);
+  expect(api.cancelInvitation).not.toHaveBeenCalled();
+  await userEvent.click(cancel);
+  await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Invitation link' })).not.toBeInTheDocument());
+  expect(api.cancelInvitation).toHaveBeenCalledWith(pending.invitationId);
+  await userEvent.click(screen.getByRole('button', { name: 'Refresh invitations' }));
+  expect(api.inviteUser).toHaveBeenCalledOnce();
+});
+
+it('copies a private link and offers manual copying when clipboard access fails', async () => {
+  const writeText = vi.fn().mockRejectedValueOnce(new Error('Clipboard blocked')).mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+  render(<UserManagement />);
+  await loaded();
+  await userEvent.type(screen.getByRole('textbox', { name: 'Email address' }), 'new@example.com');
+  await userEvent.click(screen.getByRole('button', { name: 'Create invitation link' }));
+  const link = await screen.findByRole('textbox', { name: 'Invitation link' }) as HTMLInputElement;
+  fireEvent.focus(link);
+  expect(link.selectionEnd).toBe(link.value.length);
+  await userEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Clipboard blocked');
+  await userEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+  expect(await screen.findByText('Link copied.')).toBeInTheDocument();
+  expect(writeText).toHaveBeenLastCalledWith(expect.stringContaining('#' + createdInvitation().token));
+});
+
+it('shows member-action errors without affecting the invitation draft', async () => {
+  api.updateUserRole.mockRejectedValueOnce(new Error('Role change failed'));
+  api.getInvitations.mockResolvedValue([{ ...createdInvitation().invitation, expiresAt: '2000-01-01T00:00:00Z' }]);
+  render(<UserManagement />);
+  await loaded();
+  expect(await screen.findByText('Member · Expired — create a new link')).toBeInTheDocument();
+  await userEvent.type(screen.getByRole('textbox', { name: 'Email address' }), 'draft@example.com');
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role for member@example.com' }), WorkspaceRole.WorkspaceAdmin);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Role change failed');
+  expect(screen.getByRole('textbox', { name: 'Email address' })).toHaveValue('draft@example.com');
 });

@@ -1,4 +1,5 @@
 using OneBigHead.Server.Controllers;
+using OneBigHead.Server.Services.Exports;
 using OneBigHead.Server.Data;
 using OneBigHead.Server.DTOs;
 using OneBigHead.Server.Models;
@@ -28,11 +29,11 @@ public class ExportControllerTests
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockItemRepository = new Mock<IItemRepository>();
         _mockItemTemplateRepository = new Mock<IItemTemplateRepository>();
-        _controller = new ExportController(
+        _controller = new ExportController(new WorkspaceExportService(
             _mockCollectionRepository.Object,
             _mockCategoryRepository.Object,
             _mockItemRepository.Object,
-            _mockItemTemplateRepository.Object);
+            _mockItemTemplateRepository.Object, TimeProvider.System));
 
         var claims = new List<Claim>
         {
@@ -51,6 +52,35 @@ public class ExportControllerTests
     }
 
     #region ExportData Tests
+
+    [Fact]
+    public async Task ExportData_PreservesTemplatePropertyDefinitionsInTheDownloadedArchive()
+    {
+        _mockCollectionRepository.Setup(r => r.GetAllAsync(TestWorkspaceId)).ReturnsAsync([]);
+        _mockCategoryRepository.Setup(r => r.GetAllAsync(TestWorkspaceId)).ReturnsAsync([]);
+        _mockItemRepository.Setup(r => r.GetAllAsync(TestWorkspaceId)).ReturnsAsync([]);
+        _mockItemTemplateRepository.Setup(r => r.GetWorkspaceTemplatesAsync(TestWorkspaceId)).ReturnsAsync([
+            new ItemTemplate
+            {
+                Id = 17, Name = "Books", Description = "Book details",
+                Properties = [new ItemTemplateProperty { Category = "Publication", Name = "Publisher", SortOrder = 4 },
+                    new ItemTemplateProperty { Category = "Publication", Name = "Year", SortOrder = 2 }]
+            }
+        ]);
+
+        var file = Assert.IsType<FileStreamResult>(await _controller.ExportData());
+        using (file.FileStream)
+        {
+            var export = await ExtractExportDataFromStream(file.FileStream);
+            var template = Assert.Single(export.ItemTemplates);
+            Assert.Equal(17, template.ItemTemplateId);
+            Assert.Equal("Books", template.Name);
+            Assert.Equal("Book details", template.Description);
+            Assert.Equal(new[] { ("Publication", "Publisher", 4), ("Publication", "Year", 2) },
+                template.Properties.Select(property => (property.Category, property.Name, property.SortOrder)));
+        }
+        _mockItemTemplateRepository.Verify(r => r.GetWorkspaceTemplatesAsync(TestWorkspaceId), Times.Once);
+    }
 
     [Fact]
     public async Task ExportData_ReturnsFileResult_WithCorrectContentType()

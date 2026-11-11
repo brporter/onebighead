@@ -1,0 +1,98 @@
+import { act, renderHook } from '@testing-library/react';
+import { expect, it, vi } from 'vitest';
+import { useCollectionDraft } from '../../src/data/collections/useCollectionDraft';
+import { useCollectionSetup } from '../../src/data/collections/useCollectionSetup';
+import { createMockCollection, createMockCollectionTheme } from '../testUtils/factories';
+import { deferred } from '../testUtils/deferred';
+
+it('validates and normalizes collection drafts, preserves failed edits and serializes saves', async () => {
+  const collection = createMockCollection({ name: 'Library', description: undefined, heroImageUrl: null });
+  const pending = deferred<void>();
+  const save = vi.fn().mockReturnValueOnce(pending.promise).mockResolvedValue(undefined);
+  const done = vi.fn();
+  const { result } = renderHook(() => useCollectionDraft(collection, save, done));
+  expect(result.current.dirty).toBe(false);
+  act(() => result.current.setDraft({ name: ' ', description: '', heroImageUrl: '' }));
+  await act(() => result.current.save());
+  expect(result.current.error).toBe('Name is required');
+  expect(save).not.toHaveBeenCalled();
+  act(() => result.current.setDraft({ name: ' Updated ', description: ' Notes ', heroImageUrl: ' https://example.com/cover.jpg ' }));
+  let first!: Promise<void>;
+  act(() => { first = result.current.save(); void result.current.save(); });
+  expect(save).toHaveBeenCalledExactlyOnceWith(collection.collectionId, { name: 'Updated', description: 'Notes', heroImageUrl: 'https://example.com/cover.jpg' });
+  expect(result.current.pending).toBe(true);
+  await act(async () => { pending.reject('offline'); await first; });
+  expect(result.current.error).toBe('Failed to save collection');
+  expect(result.current.draft.name).toBe(' Updated ');
+  act(() => result.current.setDraft({ name: 'Updated', description: ' ', heroImageUrl: ' ' }));
+  await act(() => result.current.save());
+  expect(save).toHaveBeenLastCalledWith(collection.collectionId, { name: 'Updated', description: undefined, heroImageUrl: undefined });
+  expect(done).toHaveBeenCalledOnce();
+});
+
+it('tracks description and cover changes separately and ignores completion after unmount', async () => {
+  const collection = createMockCollection({ name: 'Library', description: 'Original', heroImageUrl: 'https://example.com/old.jpg' });
+  const pending = deferred<void>();
+  const done = vi.fn();
+  const { result, unmount } = renderHook(() => useCollectionDraft(collection, () => pending.promise, done));
+  expect(result.current.dirty).toBe(false);
+  act(() => result.current.setDraft(previous => ({ ...previous, description: 'Changed' })));
+  expect(result.current.dirty).toBe(true);
+  act(() => result.current.setDraft(previous => ({ ...previous, description: 'Original', heroImageUrl: '' })));
+  expect(result.current.dirty).toBe(true);
+  let saving!: Promise<void>;
+  act(() => { saving = result.current.save(); });
+  unmount();
+  await act(async () => { pending.resolve(); await saving; });
+  expect(done).not.toHaveBeenCalled();
+});
+
+it('requires an available theme and name, and distinguishes explicit selection from the default', async () => {
+  const general = createMockCollectionTheme({ themeId: 1, name: 'General' });
+  const books = createMockCollectionTheme({ themeId: 2, name: 'Books' });
+  const setup = vi.fn().mockResolvedValue(createMockCollection({ collectionId: 7 }));
+  const done = vi.fn();
+  const { result, rerender } = renderHook(({ themes }) => useCollectionSetup(themes, setup, done), { initialProps: { themes: [books] } });
+  expect(result.current.selectedTheme).toBeNull();
+  await act(() => result.current.create(true));
+  expect(result.current.error).toBe('Unable to find default theme');
+  await act(() => result.current.create(false));
+  expect(result.current.error).toBe('Please select a theme');
+  rerender({ themes: [general, books] });
+  expect(result.current.selectedTheme).toEqual(general);
+  expect(result.current.dirty).toBe(false);
+  act(() => result.current.selectTheme(2));
+  expect(result.current.dirty).toBe(true);
+  act(() => result.current.selectTheme(1));
+  expect(result.current.dirty).toBe(false);
+  await act(() => result.current.create(false));
+  expect(result.current.error).toBe('Name is required');
+  act(() => { result.current.setName(' Library '); result.current.setDescription(' Notes '); result.current.selectTheme(2); });
+  await act(() => result.current.create(false));
+  expect(setup).toHaveBeenCalledExactlyOnceWith({ name: 'Library', description: 'Notes', themeId: 2 });
+  expect(done).toHaveBeenCalledExactlyOnceWith(7);
+});
+
+it('creates with defaults or entered text, serializes creation and suppresses late navigation', async () => {
+  const general = createMockCollectionTheme({ themeId: 1, name: 'General' });
+  const pending = deferred<ReturnType<typeof createMockCollection>>();
+  const setup = vi.fn().mockReturnValueOnce(pending.promise).mockResolvedValue(createMockCollection());
+  const done = vi.fn();
+  const { result, unmount } = renderHook(() => useCollectionSetup([general], setup, done));
+  act(() => result.current.setDescription(' Notes '));
+  expect(result.current.dirty).toBe(true);
+  let first!: Promise<void>;
+  act(() => { first = result.current.create(true); void result.current.create(true); });
+  expect(setup).toHaveBeenCalledExactlyOnceWith({ name: 'My Collection', description: 'Notes', themeId: 1 });
+  await act(async () => { pending.reject(new Error('Setup failed')); await first; });
+  expect(result.current.error).toBe('Setup failed');
+  act(() => result.current.setName(' Named '));
+  await act(() => result.current.create(true));
+  expect(setup).toHaveBeenLastCalledWith({ name: 'Named', description: 'Notes', themeId: 1 });
+  const late = deferred<ReturnType<typeof createMockCollection>>();
+  setup.mockReturnValueOnce(late.promise);
+  act(() => { first = result.current.create(false); });
+  unmount();
+  await act(async () => { late.resolve(createMockCollection()); await first; });
+  expect(done).toHaveBeenCalledOnce();
+});

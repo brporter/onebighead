@@ -1,0 +1,54 @@
+.admin-panel {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.admin-panel__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.4rem; }
+.admin-panel__description { color: var(--color-text-muted); line-height: 1.6; margin-block: var(--space-sm) var(--space-lg); }
+.admin-panel__heading, .admin-panel__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
+.admin-panel__heading { justify-content: space-between; }
+.admin-panel__table-scroll { overflow-x: auto; max-width: 100%; margin-top: var(--space-md); }
+.admin-panel__table { width: 100%; border-collapse: collapse; }
+.admin-panel__table caption { padding-block: var(--space-sm); text-align: left; color: var(--color-text-muted); font-size: 0.85rem; }
+.admin-panel__table th, .admin-panel__table td { padding: var(--space-md); text-align: left; border-bottom: 1px solid var(--color-border); }
+.admin-panel__table thead th { background: var(--color-surface-alt); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.admin-panel__table tbody th { font-weight: 500; overflow-wrap: anywhere; min-width: 9rem; }
+.admin-panel__table tbody tr:hover { background: var(--color-surface-alt); }
+.admin-panel__table td { max-width: 25rem; overflow-wrap: anywhere; }
+.admin-panel__table input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--color-primary); }
+.admin-panel__permission { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; cursor: pointer; }
+.admin-panel__permission input { margin: 0; }
+
+.admin-panel__button {
+  min-height: 44px;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.admin-panel__button:hover:not(:disabled) { background: var(--color-surface-alt); }
+.admin-panel__button--primary { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-primary-text); }
+.admin-panel__button--primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+.admin-panel__button--danger { color: var(--color-danger); border-color: var(--color-danger-border); }
+.admin-panel__button--danger:hover:not(:disabled) { background: var(--color-danger-bg); }
+.admin-panel__button:disabled { opacity: 0.6; cursor: wait; }
+.admin-panel__button:focus-visible, .admin-panel__table-scroll:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+.admin-panel__search { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); margin-block: var(--space-lg); }
+.admin-panel__search input { flex: 1 1 15rem; min-width: 0; min-height: 44px; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); color: var(--color-text); background: var(--color-bg); font: inherit; }
+.admin-panel__search input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.admin-panel__search label { color: var(--color-text-secondary); }
+
+@media (max-width: 600px) {
+  .admin-panel__search label { flex-basis: 100%; }
+  .admin-panel__search input { flex-basis: 100%; }
+  .admin-panel__search button { flex: 1; }
+  .admin-panel__table th, .admin-panel__table td { padding: var(--space-sm); }
+}

@@ -14,6 +14,8 @@ export { default as SiteHeader } from './SiteHeader';
 export { WorkspaceSwitcher } from './WorkspaceSwitcher';
 export { TermsAcceptance } from './TermsAcceptance';
 export { BulkUpdateModal, type ScopeOption } from './BulkUpdateModal';
+export { BulkUpdateStatus } from './BulkUpdateStatus';
+export { ContentState } from './ContentState';
 export { PublishButton } from './PublishButton';
 export { PublicBadge } from './PublicBadge';
 export { VisibilityFilter } from './VisibilityFilter';

@@ -7,11 +7,12 @@ import { createMockCategory, createMockCollection, createMockDataContextValue, c
 
 // Mock the useData hook
 vi.mock('../src/contexts/useData', async () => {
+  const { mockDataHooks } = await import('./testUtils/mockDataHooks');
   const actual = await vi.importActual<typeof import('../src/contexts/DataContext')>('../src/contexts/DataContext');
-  return {
+  return mockDataHooks({
     ...actual,
     useData: vi.fn(),
-  };
+  });
 });
 
 describe('CategoryNav', () => {
@@ -30,7 +31,7 @@ describe('CategoryNav', () => {
   ];
 
   beforeEach(() => {
-    vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
+    vi.mocked(DataContext.useCollectionsData).mockReturnValue(createMockDataContextValue({
       categories: mockCategories,
       addCategory: vi.fn(async () => 6),
       addCollection: vi.fn(async () => createMockCollection()),
@@ -315,7 +316,7 @@ describe('CategoryNav', () => {
         createMockCategory({ categoryId: 1, name: 'Rangefinders', parentCategoryId: null, effectiveIsPublic: false }),
         createMockCategory({ categoryId: 5, name: 'SLR Cameras', parentCategoryId: null, effectiveIsPublic: false }),
       ];
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
+      vi.mocked(DataContext.useCollectionsData).mockReturnValue(createMockDataContextValue({
         categories: publicCategories,
       }));
 
@@ -341,7 +342,7 @@ describe('CategoryNav', () => {
         createMockCategory({ categoryId: 10, name: 'System Cat', parentCategoryId: null, isSystem: true }),
       ];
 
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
+      vi.mocked(DataContext.useCollectionsData).mockReturnValue(createMockDataContextValue({
         categories: categoriesWithSystem,
         items: [],
       }));
@@ -358,7 +359,7 @@ describe('CategoryNav', () => {
         createMockCategory({ categoryId: 10, name: 'System Cat', parentCategoryId: null, isSystem: true }),
       ];
 
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
+      vi.mocked(DataContext.useCollectionsData).mockReturnValue(createMockDataContextValue({
         categories: categoriesWithSystem,
         items: [createMockItem({ id: 100, categoryId: 10 })],
       }));
@@ -372,7 +373,7 @@ describe('CategoryNav', () => {
 
   describe('loading/error states', () => {
     it('shows loading message when categoriesLoading', () => {
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
+      vi.mocked(DataContext.useCollectionsData).mockReturnValue(createMockDataContextValue({
         categoriesLoading: true,
       }));
 
@@ -383,7 +384,7 @@ describe('CategoryNav', () => {
     });
 
     it('shows error message when categoriesError', () => {
-      vi.mocked(DataContext.useData).mockReturnValue(createMockDataContextValue({
+      vi.mocked(DataContext.useCollectionsData).mockReturnValue(createMockDataContextValue({
         categoriesError: 'Failed to fetch categories: Internal Server Error',
       }));
 
@@ -394,6 +395,29 @@ describe('CategoryNav', () => {
       expect(screen.getByText(/Error loading categories:/)).toBeInTheDocument();
       expect(screen.getByText(/Failed to fetch categories: Internal Server Error/)).toBeInTheDocument();
     });
+  });
+
+  it('keeps cycles and missing parents navigable with an accessible current selection', async () => {
+    const categories = [
+      createMockCategory({ categoryId: 10, name: 'A', parentCategoryId: 11 }),
+      createMockCategory({ categoryId: 11, name: 'B', parentCategoryId: 10 }),
+      createMockCategory({ categoryId: 12, name: 'Orphan', parentCategoryId: 999 }),
+    ];
+    const onSelect = vi.fn();
+    const { rerender } = render(<CategoryNav categories={categories} selectedCategoryId={null} onSelect={onSelect} />);
+    expect(screen.getByRole('complementary', { name: 'Categories' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'A(1)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Orphan' })).toBeInTheDocument();
+    rerender(<CategoryNav categories={categories} selectedCategoryId={11} onSelect={onSelect} />);
+    const selected = screen.getByRole('button', { name: 'B' });
+    expect(selected).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: 'All A' })).not.toHaveAttribute('aria-current');
+    await userEvent.click(screen.getByRole('button', { name: 'Go back' }));
+    expect(onSelect).toHaveBeenLastCalledWith(null);
+    rerender(<CategoryNav categories={categories} selectedCategoryId={12} onSelect={onSelect} />);
+    expect(screen.getByRole('button', { name: 'All Orphan' })).toHaveAttribute('aria-current', 'page');
+    rerender(<CategoryNav categories={categories} selectedCategoryId={999} onSelect={onSelect} />);
+    expect(screen.queryByRole('navigation', { name: 'Category breadcrumb' })).not.toBeInTheDocument();
   });
 
   describe('snapshots', () => {

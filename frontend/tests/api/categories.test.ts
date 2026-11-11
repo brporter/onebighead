@@ -176,3 +176,13 @@ describe('categoriesApi', () => {
     });
   });
 });
+
+it.each([undefined, 5])('forwards cancellation for category reads scoped to %s', async collectionId => {
+  const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
+  vi.stubGlobal('fetch', fetch);
+  const controller = new AbortController();
+  await categoriesApi.getAll(collectionId, { signal: controller.signal });
+  expect(fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+  controller.abort();
+  vi.unstubAllGlobals();
+});

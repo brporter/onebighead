@@ -5,5 +5,6 @@ public enum BulkUpdateJobStatus
     Queued,
     Running,
     Completed,
-    Failed
+    Failed,
+    Cancelled
 }

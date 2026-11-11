@@ -1,402 +1,96 @@
-import { useState, useEffect, useId, useCallback } from 'react';
-import type { Category } from '../../utils/types';
-import { useData } from '../../contexts/useData';
+import { useId, useState } from 'react';
+import { useCategoriesData } from '../../contexts/useData';
 import { usePublish } from '../../contexts/usePublish';
+import { useCategoryManager } from '../../data/categories/useCategoryManager';
 import { ModalDialog } from '../common/ModalDialog';
+import { ContentState } from '../common/ContentState';
 import CategoryManagerTree from './CategoryManagerTree';
 import CategoryManagerForm from './CategoryManagerForm';
 import QuickCreatePopover from './QuickCreatePopover';
 import './CategoryManagerModal.css';
 
-interface CategoryManagerModalProps {
-  collectionId: number;
-  isOpen: boolean;
-  onClose: () => void;
+interface CategoryManagerModalProps { collectionId: number; isOpen: boolean; onClose: () => void }
+
+export default function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManagerModalProps) {
+  return isOpen ? <CategoryManagerSession key={collectionId} collectionId={collectionId} onClose={onClose} /> : null;
 }
 
-function CategoryManagerModal({ collectionId, isOpen, onClose }: CategoryManagerModalProps) {
-  const {
-    categories,
-    loadCategoriesForCollection,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    reorderCategories,
-  } = useData();
+function CategoryManagerSession({ collectionId, onClose }: Omit<CategoryManagerModalProps, 'isOpen'>) {
+  const manager = useCategoryManager(collectionId, useCategoriesData(), onClose);
   const { requestPublish, requestUnpublish } = usePublish();
-
   const formId = useId();
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [isNew, setIsNew] = useState(false);
-  const [formHasChanges, setFormHasChanges] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [view, setView] = useState<'tree' | 'form'>('tree');
-  const [showQuickCreate, setShowQuickCreate] = useState(false);
-  const [initialName, setInitialName] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const form = manager.editor.type === 'form' ? manager.editor : null;
+  const selected = manager.categories.find(category => category.categoryId === form?.category?.categoryId) ?? form?.category;
+  const close = () => manager.leave('close');
+  const back = () => manager.leave('tree');
+  const confirmDelete = () => {
+    setDeleting(false);
+    void manager.execute({ type: 'delete', categoryId: selected!.categoryId });
+  };
 
-  // Load categories when modal opens and reset state
-  useEffect(() => {
-    if (isOpen) {
-      loadCategoriesForCollection(collectionId);
-      /* eslint-disable react-hooks/set-state-in-effect -- Resetting selection state when modal opens */
-      setSelectedCategoryId(null);
-      setIsNew(false);
-      setFormHasChanges(false);
-      setView('tree');
-      setShowQuickCreate(false);
-      setInitialName('');
-      /* eslint-enable react-hooks/set-state-in-effect */
-    }
-  }, [isOpen, collectionId, loadCategoriesForCollection]);
-
-  const selectedCategory = selectedCategoryId
-    ? categories.find(c => c.categoryId === selectedCategoryId) ?? null
-    : null;
-
-  // Pending navigation target for discard confirmation
-  const [pendingNavigation, setPendingNavigation] = useState<{ type: 'close' } | null>(null);
-
-  const handleCloseAttempt = useCallback(() => {
-    if (view === 'tree') {
-      onClose();
-    } else if (formHasChanges) {
-      setPendingNavigation({ type: 'close' });
-      setShowCancelConfirm(true);
-    } else {
-      setView('tree');
-      setSelectedCategoryId(null);
-    }
-  }, [view, formHasChanges, onClose]);
-
-  const handleEditCategory = useCallback((categoryId: number) => {
-    setSelectedCategoryId(categoryId);
-    setIsNew(false);
-    setInitialName('');
-    setView('form');
-  }, []);
-
-  const handleAdd = useCallback(() => {
-    setShowQuickCreate(true);
-  }, []);
-
-  const handleQuickCreateSave = useCallback(async (name: string) => {
-    setShowQuickCreate(false);
-    try {
-      const newId = await addCategory({
-        collectionId, name, description: '', parentCategoryId: null, itemTemplateIds: [],
-      });
-      const rootSiblings = categories.filter(c => c.parentCategoryId === null && !c.isSystem);
-      const sortUpdates = [
-        { categoryId: newId, sortOrder: 0 },
-        ...rootSiblings.map((s, i) => ({ categoryId: s.categoryId, sortOrder: i + 1 })),
-      ];
-      await reorderCategories(sortUpdates);
-      await loadCategoriesForCollection(collectionId);
-    } catch (err) {
-      console.error('Failed to create category:', err);
-    }
-  }, [collectionId, categories, addCategory, reorderCategories, loadCategoriesForCollection]);
-
-  const handleQuickCreateMoreDetails = useCallback((name: string) => {
-    setShowQuickCreate(false);
-    setInitialName(name);
-    setSelectedCategoryId(null);
-    setIsNew(true);
-    setView('form');
-  }, []);
-
-  const handleQuickCreateCancel = useCallback(() => {
-    setShowQuickCreate(false);
-  }, []);
-
-  const handleBack = useCallback(() => {
-    if (formHasChanges) {
-      setPendingNavigation({ type: 'close' });
-      setShowCancelConfirm(true);
-    } else {
-      setView('tree');
-      setSelectedCategoryId(null);
-    }
-  }, [formHasChanges]);
-
-  const handleCancelClick = useCallback(() => {
-    if (formHasChanges) {
-      setPendingNavigation(null);
-      setShowCancelConfirm(true);
-    }
-  }, [formHasChanges]);
-
-  const handleDiscardConfirm = useCallback(() => {
-    setShowCancelConfirm(false);
-    setFormHasChanges(false);
-    const nav = pendingNavigation;
-    setPendingNavigation(null);
-    if (nav?.type === 'close') {
-      setView('tree');
-      setSelectedCategoryId(null);
-    }
-  }, [pendingNavigation]);
-
-  const handleSave = useCallback(async (updates: { name: string; description: string; parentCategoryId: number | null; itemTemplateIds: number[] }) => {
-    try {
-      if (isNew) {
-        await addCategory({
-          collectionId,
-          name: updates.name,
-          description: updates.description,
-          parentCategoryId: updates.parentCategoryId,
-          itemTemplateIds: updates.itemTemplateIds,
-        });
-        await loadCategoriesForCollection(collectionId);
-        setView('tree');
-        setSelectedCategoryId(null);
-        setIsNew(false);
-      } else if (selectedCategoryId) {
-        await updateCategory(selectedCategoryId, updates);
-        await loadCategoriesForCollection(collectionId);
-        setView('tree');
-        setSelectedCategoryId(null);
-        setIsNew(false);
-      }
-    } catch (err) {
-      console.error('Failed to save category:', err);
-    }
-  }, [isNew, selectedCategoryId, collectionId, addCategory, updateCategory, loadCategoriesForCollection]);
-
-  const handleDeleteClick = useCallback(() => {
-    if (selectedCategoryId && selectedCategory && !selectedCategory.isSystem) {
-      setShowDeleteConfirm(true);
-    }
-  }, [selectedCategoryId, selectedCategory]);
-
-  const handleDeleteConfirm = useCallback(async () => {
-    if (!selectedCategoryId) return;
-    const deletedId = selectedCategoryId;
-    setShowDeleteConfirm(false);
-    try {
-      await deleteCategory(deletedId);
-      await loadCategoriesForCollection(collectionId);
-      setView('tree');
-      setSelectedCategoryId(null);
-      setIsNew(false);
-      setFormHasChanges(false);
-    } catch (err) {
-      console.error('Failed to delete category:', err);
-    }
-  }, [selectedCategoryId, deleteCategory, collectionId, loadCategoriesForCollection]);
-
-  const handleReorder = useCallback(async (updates: { categoryId: number; sortOrder: number }[]) => {
-    try {
-      await reorderCategories(updates);
-      await loadCategoriesForCollection(collectionId);
-    } catch (err) {
-      console.error('Failed to reorder categories:', err);
-    }
-  }, [reorderCategories, collectionId, loadCategoriesForCollection]);
-
-  const handleReparent = useCallback(async (categoryId: number, newParentId: number | null, insertAtCategoryId?: number, insertAfter?: boolean) => {
-    try {
-      const cat = categories.find(c => c.categoryId === categoryId);
-      if (!cat) return;
-
-      await updateCategory(categoryId, {
-        name: cat.name,
-        description: cat.description,
-        parentCategoryId: newParentId,
-        itemTemplateIds: cat.itemTemplateIds,
-      });
-
-      // Compute new sort orders for the target sibling group
-      const siblings = categories
-        .filter(c => c.parentCategoryId === newParentId && c.categoryId !== categoryId && !c.isSystem)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
-
-      let sortUpdates: { categoryId: number; sortOrder: number }[];
-
-      if (insertAtCategoryId != null) {
-        // Insert at a specific position relative to a sibling
-        const targetIndex = siblings.findIndex(c => c.categoryId === insertAtCategoryId);
-        if (targetIndex !== -1) {
-          const insertIndex = insertAfter ? targetIndex + 1 : targetIndex;
-          const reordered = [...siblings];
-          reordered.splice(insertIndex, 0, cat);
-          sortUpdates = reordered.map((c, i) => ({ categoryId: c.categoryId, sortOrder: i }));
-        } else {
-          // Target not found — append to end
-          sortUpdates = [
-            ...siblings.map((s, i) => ({ categoryId: s.categoryId, sortOrder: i })),
-            { categoryId, sortOrder: siblings.length },
-          ];
-        }
-      } else {
-        // No position specified — append to end
-        sortUpdates = [
-          ...siblings.map((s, i) => ({ categoryId: s.categoryId, sortOrder: i })),
-          { categoryId, sortOrder: siblings.length },
-        ];
-      }
-
-      await reorderCategories(sortUpdates);
-      await loadCategoriesForCollection(collectionId);
-    } catch (err) {
-      console.error('Failed to reparent category:', err);
-    }
-  }, [categories, updateCategory, reorderCategories, collectionId, loadCategoriesForCollection]);
-
-  const handlePublish = useCallback((category: Category) => {
-    requestPublish([{ type: 'category', id: category.categoryId }]);
-  }, [requestPublish]);
-
-  const handleUnpublish = useCallback((category: Category) => {
-    requestUnpublish([{ type: 'category', id: category.categoryId }]);
-  }, [requestUnpublish]);
-
-  return (
-    <ModalDialog isOpen={isOpen} onClose={handleCloseAttempt} className="modal-dialog--wide" label="Category Manager">
-      <div className="modal modal--wide">
-        <div className="modal__header">
-          <h2 className="modal__title categoryManager__title">Category Manager</h2>
-          <button
-            type="button"
-            className="modal__close"
-            onClick={handleCloseAttempt}
-            aria-label="Close"
-          >
-            &times;
+  return <ModalDialog onClose={close} className="modal-dialog--wide" label="Category Manager">
+    <div className="modal modal--wide categoryManager">
+      <div className="modal__header">
+        <h2 className="modal__title">Category Manager</h2>
+        <button type="button" className="modal__close" onClick={close} disabled={manager.pending} aria-label="Close">&times;</button>
+      </div>
+      <div key={manager.editor.type} className="categoryManager__body" aria-busy={manager.pending}>
+        {manager.error && <div className="modal__error" role="alert">
+          <p>{manager.saved ? 'Your change was saved, but the remaining steps could not finish.' : 'Unable to save your changes.'} {manager.error}</p>
+          <button type="button" className="modal__button" disabled={manager.pending} onClick={() => void manager.retry()}>
+            {manager.saved ? 'Finish saving' : 'Try again'}
           </button>
-        </div>
-        <div className="categoryManager">
-          <div className={`categoryManager__track${view === 'form' ? ' categoryManager__track--form' : ''}`}>
-            <div className="categoryManager__tree">
-              <CategoryManagerTree
-                categories={categories}
-                onEditCategory={handleEditCategory}
-                onAdd={handleAdd}
-                onReorder={handleReorder}
-                onReparent={handleReparent}
-                toolbarSlot={showQuickCreate ? (
-                  <QuickCreatePopover
-                    isVisible={showQuickCreate}
-                    onSave={handleQuickCreateSave}
-                    onMoreDetails={handleQuickCreateMoreDetails}
-                    onCancel={handleQuickCreateCancel}
-                  />
-                ) : undefined}
-              />
-            </div>
-            <div className="categoryManager__form">
-              <CategoryManagerForm
-                category={selectedCategory}
-                categories={categories}
-                collectionId={collectionId}
-                isNew={isNew}
-                initialName={initialName}
-                onSave={handleSave}
-                onBack={handleBack}
-                onPublish={handlePublish}
-                onUnpublish={handleUnpublish}
-                onHasChanges={setFormHasChanges}
-                formId={formId}
-              />
-            </div>
+        </div>}
+        {manager.pending && <p role="status">Saving category changes…</p>}
+        {manager.resource.loading ? <ContentState kind="loading" title="Loading categories…" /> :
+          manager.resource.error ? <ContentState kind="error" title="Unable to load categories"
+            action={<button type="button" onClick={manager.resource.retry}>Try again</button>}>{manager.resource.error}</ContentState> :
+          manager.editor.type === 'tree' ? <CategoryManagerTree categories={manager.categories} disabled={manager.locked}
+            onEditCategory={id => manager.openForm(manager.categories.find(category => category.categoryId === id)!)}
+            onAdd={manager.openQuick} onReorder={updates => void manager.execute({ type: 'reorder', updates })}
+            onReparent={(categoryId, parentId, insertAtCategoryId, insertAfter) => void manager.execute({ type: 'reparent', categoryId, parentId, insertAtCategoryId, insertAfter })} /> :
+          manager.editor.type === 'quick' ? <>
+            <h3>Add category</h3><p className="categoryManager__hint">Start with a name, or add details and choose a parent category.</p>
+            <QuickCreatePopover isVisible disabled={manager.locked} onSave={name => void manager.execute({ type: 'quick-create', name })}
+              onMoreDetails={name => manager.openForm(null, name)} onCancel={back} onHasChanges={manager.setDirty} />
+          </> : <CategoryManagerForm category={selected ?? null} categories={manager.categories} collectionId={collectionId}
+            isNew={!form!.category} initialName={form!.initialName} onSave={draft => void manager.execute({ type: 'save', categoryId: form!.category?.categoryId ?? null, draft })}
+            onBack={back} onHasChanges={manager.setDirty} formId={formId} disabled={manager.locked}
+            onPublish={category => requestPublish([{ type: 'category', id: category.categoryId }])}
+            onUnpublish={category => requestUnpublish([{ type: 'category', id: category.categoryId }])} />}
+      </div>
+      {manager.editor.type !== 'quick' && <div className="categoryManager__footer">
+        {form ? <>
+          {selected && !selected.isSystem && <button type="button" className="modal__button modal__button--danger" disabled={manager.locked} onClick={() => setDeleting(true)}>Delete</button>}
+          <div className="categoryManager__footer-right">
+            <button type="button" className="modal__button modal__button--secondary" disabled={manager.locked} onClick={back}>Cancel</button>
+            <button type="submit" form={formId} className="modal__button modal__button--primary" disabled={manager.locked || selected?.isSystem}>
+              {selected ? 'Save Changes' : 'Create'}
+            </button>
           </div>
-        </div>
-        <div className="categoryManager__footer">
-          {view === 'form' ? (
-            <>
-              {selectedCategory && !isNew && !selectedCategory.isSystem ? (
-                <button type="button" className="modal__button modal__button--danger" onClick={handleDeleteClick}>
-                  Delete
-                </button>
-              ) : (
-                <div />
-              )}
-              <div className="categoryManager__footer-right">
-                <button type="button" className="modal__button modal__button--secondary" onClick={handleCancelClick} disabled={!isNew && !formHasChanges}>
-                  Cancel
-                </button>
-                <button type="submit" form={formId} className="modal__button modal__button--primary" disabled={selectedCategory?.isSystem}>
-                  {isNew ? 'Create' : 'Save Changes'}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div />
-              <div className="categoryManager__footer-right">
-                <button type="button" className="modal__button modal__button--secondary" onClick={onClose}>
-                  Close
-                </button>
-              </div>
-            </>
-          )}
+        </> : <button type="button" className="modal__button modal__button--secondary categoryManager__close" disabled={manager.pending} onClick={close}>Close</button>}
+      </div>}
+    </div>
+    {deleting && <ModalDialog label="Delete Category" onClose={() => setDeleting(false)}>
+      <div className="modal">
+        <div className="modal__header"><h2 className="modal__title">Delete Category</h2></div>
+        <div className="modal__body"><p>Delete “{selected!.name}”? Items will move to “Unassigned Items”. Child categories will move to this category’s parent.</p></div>
+        <div className="modal__footer">
+          <button type="button" className="modal__button" onClick={() => setDeleting(false)}>Cancel</button>
+          <button type="button" className="modal__button modal__button--danger" onClick={confirmDelete}>Delete</button>
         </div>
       </div>
-
-      {showDeleteConfirm && selectedCategory && (
-        <ModalDialog label="Delete Category" onClose={() => setShowDeleteConfirm(false)}>
-          <div className="modal" style={{ maxWidth: '420px' }}>
-            <div className="modal__header">
-              <h2 className="modal__title categoryManager__title">Delete Category</h2>
-            </div>
-            <div className="modal__body">
-              <p className="modal__info">
-                Are you sure you want to delete &ldquo;{selectedCategory.name}&rdquo;? Items in this category will be moved to &ldquo;Unassigned Items&rdquo;.
-              </p>
-            </div>
-            <div className="modal__footer">
-              <button
-                type="button"
-                className="modal__button modal__button--secondary"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="modal__button modal__button--danger"
-                onClick={handleDeleteConfirm}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </ModalDialog>
-      )}
-
-      {showCancelConfirm && (
-        <ModalDialog label="Discard Changes" onClose={() => setShowCancelConfirm(false)}>
-          <div className="modal" style={{ maxWidth: '420px' }}>
-            <div className="modal__header">
-              <h2 className="modal__title categoryManager__title">Discard Changes</h2>
-            </div>
-            <div className="modal__body">
-              <p className="modal__info">
-                You have unsaved changes. Are you sure you want to discard them?
-              </p>
-            </div>
-            <div className="modal__footer">
-              <button
-                type="button"
-                className="modal__button modal__button--secondary"
-                onClick={() => setShowCancelConfirm(false)}
-              >
-                Keep Editing
-              </button>
-              <button
-                type="button"
-                className="modal__button modal__button--danger"
-                onClick={handleDiscardConfirm}
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        </ModalDialog>
-      )}
-    </ModalDialog>
-  );
+    </ModalDialog>}
+    {manager.destination && <ModalDialog label={manager.saved ? 'Leave saved changes' : 'Discard Changes'} onClose={manager.cancelLeave}>
+      <div className="modal">
+        <div className="modal__header"><h2 className="modal__title">{manager.saved ? 'Leave saved changes?' : 'Discard Changes'}</h2></div>
+        <div className="modal__body"><p>{manager.saved ? 'Some changes are already saved. Leaving will not undo them, and the category order may still need updating.' : 'You have unsaved changes. Are you sure you want to discard them?'}</p></div>
+        <div className="modal__footer">
+          <button type="button" className="modal__button" onClick={manager.cancelLeave}>Keep Editing</button>
+          <button type="button" className="modal__button modal__button--danger" onClick={manager.confirmLeave}>{manager.saved ? 'Leave' : 'Discard'}</button>
+        </div>
+      </div>
+    </ModalDialog>}
+  </ModalDialog>;
 }
-
-export default CategoryManagerModal;

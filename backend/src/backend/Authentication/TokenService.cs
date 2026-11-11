@@ -23,12 +23,15 @@ public class TokenService : ITokenService
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimNames.AuthenticationStamp, user.AuthenticationStamp.ToString("N")),
             new(ClaimTypes.Email, user.Email),
-            new(ClaimNames.WorkspaceId, user.ActiveWorkspaceId.ToString()),
             new(ClaimNames.Provider, user.IdentityProvider.ToString()),
             new(ClaimNames.WorkspaceRole, workspaceRole.ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
+
+        if (user.ActiveWorkspaceId is int workspaceId)
+            claims.Add(new Claim(ClaimNames.WorkspaceId, workspaceId.ToString()));
 
         if (user.IsSystemAdministrator)
         {

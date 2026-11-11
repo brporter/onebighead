@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CollectionDashboard from '../src/components/collection/CollectionDashboard';
 import { collectionsApi } from '../src/api/collections';
 import type { CollectionStatisticsResponse } from '../src/api/collections';
+import { deferred } from './testUtils/deferred';
 
 vi.mock('../src/api/collections', () => ({
   collectionsApi: {
@@ -167,7 +168,47 @@ describe('CollectionDashboard', () => {
 
     render(<CollectionDashboard collectionId={42} onSelectItem={mockOnSelectItem} />);
 
-    expect(collectionsApi.getStatistics).toHaveBeenCalledWith(42);
+    expect(collectionsApi.getStatistics).toHaveBeenCalledWith(42, { signal: expect.any(AbortSignal) });
+  });
+
+  it('cancels retired collection reads and ignores their late results', async () => {
+    const first = deferred<CollectionStatisticsResponse>();
+    const second = deferred<CollectionStatisticsResponse>();
+    vi.mocked(collectionsApi.getStatistics).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const { rerender, unmount } = render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+    const firstSignal = vi.mocked(collectionsApi.getStatistics).mock.calls[0][1]!.signal!;
+    rerender(<CollectionDashboard collectionId={2} onSelectItem={mockOnSelectItem} />);
+    expect(firstSignal.aborted).toBe(true);
+    const secondSignal = vi.mocked(collectionsApi.getStatistics).mock.calls[1][1]!.signal!;
+    expect(secondSignal.aborted).toBe(false);
+    await act(async () => second.resolve({ ...mockStats, itemCount: 7 }));
+    expect(screen.getByText('7')).toBeInTheDocument();
+    await act(async () => first.resolve(mockStats));
+    expect(screen.queryByText('42')).not.toBeInTheDocument();
+    unmount();
+    expect(secondSignal.aborted).toBe(true);
+  });
+
+  it.each([
+    [2 * 60_000, '2m ago'],
+    [3 * 3_600_000, '3h ago'],
+    [31 * 86_400_000, null],
+  ])('shows older additions using the appropriate relative time (%s ms)', async (age, relative) => {
+    const now = new Date('2026-06-15T12:00:00Z');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(now);
+    const date = new Date(now.getTime() - age);
+    try {
+      vi.mocked(collectionsApi.getStatistics).mockResolvedValue({ ...mockStats,
+        totalImageSizeBytes: 1024 ** 4,
+        recentlyAddedItems: [{ itemId: 9, itemName: 'Archive', createdAt: date.toISOString() }],
+      });
+      render(<CollectionDashboard collectionId={1} onSelectItem={mockOnSelectItem} />);
+      expect(await screen.findByText(relative ?? date.toLocaleDateString())).toBeInTheDocument();
+      expect(screen.getByText('1.0 TB')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should not show panels when lists are empty but itemCount > 0', async () => {

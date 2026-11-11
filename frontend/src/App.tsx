@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import './styles/App.css';
-import { useData } from './contexts/useData';
+import { useCollectionsData } from './contexts/useData';
 import { useUser } from './contexts/useUser';
 import UserButton from './components/user/UserButton';
 import { SupportModal } from './components/support/SupportModal';
@@ -9,7 +9,7 @@ import { UnreadSupportBanner } from './components/support/UnreadSupportBanner';
 import { SiteHeader, SiteFooter } from './components/common';
 
 function AppContent() {
-  const { collections, collectionsLoading, loadCollections, currentCollection } = useData();
+  const { collections, collectionsLoading, loadCollections, currentCollection } = useCollectionsData();
 
   const { user } = useUser();
   const navigate = useNavigate();

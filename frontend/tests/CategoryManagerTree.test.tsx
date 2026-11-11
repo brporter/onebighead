@@ -200,7 +200,7 @@ describe('CategoryManagerTree', () => {
     it('uses useDroppable hook with root-drop-zone id', () => {
       render(<CategoryManagerTree {...defaultProps} />);
 
-      expect(mockUseDroppable).toHaveBeenCalledWith({ id: 'root-drop-zone' });
+      expect(mockUseDroppable).toHaveBeenCalledWith({ id: 'root-drop-zone', disabled: false });
     });
 
     it('applies --over modifier class when isOver is true', () => {

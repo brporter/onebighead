@@ -107,6 +107,8 @@ public class UnpublishWillHideChildrenResolution : PublishResolution
 {
     public required string EntityType { get; set; }
     public int EntityId { get; set; }
+    public int? AffectedPublicItems { get; set; }
+    public int? AffectedPublicCategories { get; set; }
 }
 
 public class ExecuteResponse

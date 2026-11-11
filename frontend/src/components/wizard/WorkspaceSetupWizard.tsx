@@ -1,437 +1,177 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useUser } from '../../contexts/useUser';
-import { useData } from '../../contexts/useData';
+import { useThemesData, useCollectionsData } from '../../contexts/useData';
 import { authApi, workspacesApi } from '../../api';
-import type { CollectionTheme } from '../../utils/types';
-import ThemeCard from '../collection/ThemeCard';
+import type { CurrentUser } from '../../utils/types';
+import { useAsyncAction } from '../../utils/useAsyncAction';
+import { getErrorMessage } from '../../utils/errorUtils';
+import { createWelcomeFlow, createWorkspaceFlow, type SetupFlow, type WorkspaceSetupResult } from '../../data/onboarding/setupFlow';
+import { setupAttemptStorage } from '../../data/onboarding/setupAttemptStorage';
+import { useEditorStatus, type EditorStatus, type EditorStatusListener } from '../../data/shared/useEditorStatus';
+import { ContentState } from '../common/ContentState';
+import { TermsAcceptance } from '../common/TermsAcceptance';
+import { SetupThemePicker } from '../collection/SetupThemePicker';
 import ThemePreview from '../collection/ThemePreview';
-import { TermsAcceptance } from '../common';
+import '../../styles/components/WorkspaceSetupWizard.css';
 
-export interface WorkspaceSetupResult {
-  workspaceId: number;
-  workspaceName: string;
-  collectionId: number;
-  collectionName: string;
-}
-
+export type { WorkspaceSetupResult } from '../../data/onboarding/setupFlow';
 interface WorkspaceSetupWizardProps {
-  /** Whether to show the terms acceptance step */
   showTerms?: boolean;
-  /** Whether this is the initial welcome wizard (vs creating additional workspace) */
   isWelcome?: boolean;
-  /** Called when setup is complete */
   onComplete: (result: WorkspaceSetupResult) => void;
-  /** Called when user cancels (only shown if not isWelcome) */
   onCancel?: () => void;
-  /** Called when user skips setup (only for welcome wizard) */
   onSkip?: () => void;
+  onStatusChange?: EditorStatusListener;
+}
+type Step = 'terms' | 'details' | 'theme' | 'preview';
+
+function WorkspaceSetupWizard(props: WorkspaceSetupWizardProps) {
+  const { user, loading } = useUser();
+  if (loading || !user) return <ContentState kind="loading" title="Loading workspace..." />;
+  return <SetupFlowSession key={`${user.userId}:${props.isWelcome ? user.workspaceId : 'new'}`} {...props} user={user} />;
 }
 
-type StepId = 'terms' | 'details' | 'theme' | 'preview';
-
-function WorkspaceSetupWizard({
-  showTerms = false,
-  isWelcome = false,
-  onComplete,
-  onCancel,
-  onSkip,
-}: WorkspaceSetupWizardProps) {
-  const { user, refetch: refetchUser } = useUser();
-  const { themes, themesLoading, loadThemes, setupCollection } = useData();
-
-  // Determine initial step
-  const getInitialStep = (): StepId => {
-    if (showTerms && !user?.hasAcceptedTerms) {
-      return 'terms';
-    }
-    return 'details';
-  };
-
-  const [activeStep, setActiveStep] = useState<StepId>(getInitialStep);
-  const [termsAccepted, setTermsAccepted] = useState(user?.hasAcceptedTerms ?? false);
-  const [workspaceName, setWorkspaceName] = useState('');
-  const hasPrefilledWorkspaceName = useRef(false);
-  const [collectionName, setCollectionName] = useState('');
-  const [collectionDescription, setCollectionDescription] = useState('');
-  const [selectedThemeId, setSelectedThemeId] = useState<number | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Build steps array based on whether terms should be shown
-  const steps: { id: StepId; label: string }[] = [];
-  if (showTerms) {
-    steps.push({ id: 'terms', label: 'Terms' });
+function SetupFlowSession(props: WorkspaceSetupWizardProps & { user: CurrentUser }) {
+  const { refetch } = useUser();
+  const { loadCollections } = useCollectionsData();
+  function initialize(): { flow: SetupFlow; error?: never } | { flow?: never; error: string } {
+    try {
+      const refresh = () => refetch({ throwOnError: true });
+      return { flow: props.isWelcome ? createWelcomeFlow(authApi.completeWelcome, async () => {
+        await refresh();
+        await loadCollections({ throwOnError: true });
+      }) : createWorkspaceFlow(workspacesApi.setup, refresh, setupAttemptStorage(props.user.userId)) };
+    } catch (error) { return { error: getErrorMessage(error, 'Unable to recover workspace setup') }; }
   }
-  steps.push(
+  const [state, setState] = useState(initialize);
+  if (!state.flow) return <ContentState kind="error" title="Unable to recover workspace setup"
+    action={<><button type="button" onClick={() => setState(initialize())}>Try again</button>
+      {props.onCancel && <button type="button" onClick={props.onCancel}>Close setup</button>}</>}>{state.error}</ContentState>;
+  return <SetupSession {...props} flow={state.flow} />;
+}
+
+function SetupSession({ user, flow, showTerms = false, isWelcome = false, onComplete, onCancel, onSkip, onStatusChange }: WorkspaceSetupWizardProps & { user: CurrentUser; flow: SetupFlow }) {
+  const { refetch } = useUser();
+  const { themes, themesLoading, themesError, loadThemes } = useThemesData();
+  const [termsAccepted, setTermsAccepted] = useState(user.hasAcceptedTerms);
+  const [step, setStep] = useState<Step>(showTerms && !user.hasAcceptedTerms ? 'terms' : 'details');
+  const [initialName] = useState(isWelcome ? user.email : '');
+  const [workspaceName, setWorkspaceName] = useState(flow.draft?.workspaceName ?? initialName);
+  const [collectionName, setCollectionName] = useState(flow.draft?.collectionName ?? '');
+  const [description, setDescription] = useState(flow.draft?.description ?? '');
+  const [selectedId, selectTheme] = useState<number | null>(flow.draft?.themeId ?? null);
+  const [resume, setResume] = useState<(() => void)>();
+  const [termsStatus, setTermsStatus] = useState<EditorStatus>({ dirty: false, pending: false });
+  const action = useAsyncAction();
+  const id = useId();
+  const general = themes.find(theme => theme.name === 'General');
+  const selectedTheme = themes.find(theme => theme.themeId === (selectedId ?? general?.themeId));
+  const locked = action.pending || flow.started;
+  const dirty = workspaceName !== initialName || collectionName !== '' || description !== '' || selectedId !== null;
+  useEditorStatus(dirty || termsStatus.dirty, locked || termsStatus.pending, onStatusChange);
+  const detailsValid = !!workspaceName.trim() && (!isWelcome || !!collectionName.trim());
+  const termsValid = !showTerms || termsAccepted;
+  const themeValid = !!selectedTheme && !themesLoading && !themesError;
+  const available = { terms: !termsAccepted, details: termsValid, theme: termsValid && detailsValid, preview: termsValid && detailsValid && themeValid };
+  const steps: { id: Step; label: string }[] = [
+    ...(showTerms ? [{ id: 'terms' as const, label: 'Terms' }] : []),
     { id: 'details', label: isWelcome ? 'Welcome' : 'Details' },
-    { id: 'theme', label: 'Theme' },
-    { id: 'preview', label: 'Preview' }
-  );
+    { id: 'theme', label: 'Theme' }, { id: 'preview', label: 'Preview' },
+  ];
+  const Heading = isWelcome ? 'h1' : 'h2';
+  const skip = flow.skip;
+  useEffect(() => { void loadThemes(); }, [loadThemes]);
 
-  useEffect(() => {
-    loadThemes();
-  }, [loadThemes]);
+  function start<T>(operation: () => Promise<T>, onSuccess: (result: T) => void) {
+    const run = () => { void action.run(operation, 'Failed to complete setup', onSuccess); };
+    setResume(() => run);
+    run();
+  }
 
-  // Pre-fill workspace name with email for welcome wizard (only once)
-  useEffect(() => {
-    if (isWelcome && user?.email && !hasPrefilledWorkspaceName.current) {
-      hasPrefilledWorkspaceName.current = true;
-      setWorkspaceName(user.email);
-    }
-  }, [isWelcome, user?.email]);
-
-  // Auto-select General theme as default
-  useEffect(() => {
-    if (themes.length > 0 && selectedThemeId === null) {
-      const generalTheme = themes.find((t) => t.name === 'General');
-      if (generalTheme) {
-        setSelectedThemeId(generalTheme.themeId);
-      }
-    }
-  }, [themes, selectedThemeId]);
-
-  const selectedTheme: CollectionTheme | null = selectedThemeId
-    ? themes.find((t) => t.themeId === selectedThemeId) ?? null
-    : null;
-
-  const handleTermsAccepted = async () => {
-    setTermsAccepted(true);
-    await refetchUser();
-    setActiveStep('details');
-  };
-
-  const canProceed = (step: StepId): boolean => {
-    switch (step) {
-      case 'terms':
-        return termsAccepted;
-      case 'details':
-        return workspaceName.trim().length > 0;
-      case 'theme':
-        return selectedThemeId !== null;
-      case 'preview':
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  const currentStepIndex = steps.findIndex((s) => s.id === activeStep);
-
-  const handleNext = () => {
-    if (currentStepIndex < steps.length - 1) {
-      setActiveStep(steps[currentStepIndex + 1].id);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStepIndex > 0) {
-      // Don't go back to terms if already accepted
-      const prevStep = steps[currentStepIndex - 1];
-      if (prevStep.id === 'terms' && termsAccepted) {
-        return;
-      }
-      setActiveStep(prevStep.id);
-    }
-  };
-
-  const handleSkip = async () => {
-    if (!isWelcome || !onSkip) return;
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      // Complete welcome without full setup
-      await authApi.completeWelcome(workspaceName.trim() || undefined);
-      await refetchUser();
-      onSkip();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to complete setup');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedThemeId) {
-      setError('Please select a theme');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      if (isWelcome) {
-        // For welcome wizard: complete welcome then create collection
-        await authApi.completeWelcome(workspaceName.trim());
-
-        const collection = await setupCollection({
-          name: collectionName.trim() || 'My Collection',
-          description: collectionDescription.trim(),
-          themeId: selectedThemeId,
-        });
-
-        await refetchUser();
-
-        onComplete({
-          workspaceId: user?.workspaceId ?? 0,
-          workspaceName: workspaceName.trim(),
-          collectionId: collection.collectionId,
-          collectionName: collection.name,
-        });
-      } else {
-        // For settings: use the new setup endpoint
-        const result = await workspacesApi.setup({
-          workspaceName: workspaceName.trim(),
-          collectionName: collectionName.trim() || undefined,
-          collectionDescription: collectionDescription.trim() || undefined,
-          themeId: selectedThemeId,
-        });
-
-        // Explicitly switch to the new workspace to ensure the JWT cookie is updated
-        // This works around Vite proxy not properly forwarding Set-Cookie headers
-        await workspacesApi.switch(result.workspaceId);
-
-        await refetchUser();
-
-        onComplete({
-          workspaceId: result.workspaceId,
-          workspaceName: result.workspaceName,
-          collectionId: result.collectionId,
-          collectionName: result.collectionName,
-        });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to complete setup');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const renderStepContent = () => {
-    switch (activeStep) {
-      case 'terms':
-        return (
-          <div className="setupWizard__content setupWizard__content--terms">
-            <TermsAcceptance onAccepted={handleTermsAccepted} />
-          </div>
-        );
-
-      case 'details':
-        return (
-          <div className="setupWizard__content">
-            {isWelcome && (
-              <div className="welcomeWizard__intro">
-                <h2 className="welcomeWizard__greeting">Welcome to OneBigHead!</h2>
-                <p className="welcomeWizard__description">
-                  Let's get you set up. First, tell us a bit about yourself and your first
-                  collection.
-                </p>
-              </div>
-            )}
-
-            <div className="setupWizard__field">
-              <label htmlFor="workspace-name" className="setupWizard__label">
-                {isWelcome ? 'Organization / Workspace Name' : 'New Workspace Name'}{' '}
-                <span className="setupWizard__required">*</span>
-              </label>
-              <input
-                id="workspace-name"
-                type="text"
-                className="setupWizard__input"
-                value={workspaceName}
-                onChange={(e) => setWorkspaceName(e.target.value)}
-                placeholder={isWelcome ? 'Your name, company, or workspace' : 'Enter workspace name'}
-                autoFocus
-              />
-              <p className="setupWizard__hint">This is how your workspace will be identified.</p>
-            </div>
-
-            <div className="setupWizard__field">
-              <label htmlFor="collection-name" className="setupWizard__label">
-                {isWelcome ? 'First Collection Name' : 'Collection Name'}
-              </label>
-              <input
-                id="collection-name"
-                type="text"
-                className="setupWizard__input"
-                value={collectionName}
-                onChange={(e) => setCollectionName(e.target.value)}
-                placeholder="e.g., My Book Collection (defaults to 'My Collection')"
-              />
-            </div>
-
-            <div className="setupWizard__field">
-              <label htmlFor="collection-description" className="setupWizard__label">
-                Description
-              </label>
-              <textarea
-                id="collection-description"
-                className="setupWizard__textarea"
-                value={collectionDescription}
-                onChange={(e) => setCollectionDescription(e.target.value)}
-                placeholder="What will you be collecting?"
-                rows={3}
-              />
-            </div>
-          </div>
-        );
-
-      case 'theme':
-        return (
-          <div className="setupWizard__content">
-            <p className="setupWizard__hint">
-              Choose a theme to get started with pre-configured templates and categories. You can
-              always customize these later.
-            </p>
-            {themesLoading ? (
-              <p className="setupWizard__loading">Loading themes...</p>
-            ) : (
-              <div className="setupWizard__themeGrid">
-                {themes.map((theme) => (
-                  <ThemeCard
-                    key={theme.themeId}
-                    theme={theme}
-                    isSelected={selectedThemeId === theme.themeId}
-                    onSelect={() => setSelectedThemeId(theme.themeId)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
-      case 'preview':
-        return (
-          <div className="setupWizard__content">
-            {selectedTheme ? (
-              <>
-                <div className="setupWizard__summary">
-                  <h3 className="setupWizard__summaryTitle">Setup Summary</h3>
-                  <dl className="setupWizard__summaryList">
-                    <dt>Workspace Name</dt>
-                    <dd>{workspaceName}</dd>
-                    <dt>Collection Name</dt>
-                    <dd>{collectionName || 'My Collection'}</dd>
-                    {collectionDescription && (
-                      <>
-                        <dt>Description</dt>
-                        <dd>{collectionDescription}</dd>
-                      </>
-                    )}
-                    <dt>Theme</dt>
-                    <dd>{selectedTheme.name}</dd>
-                  </dl>
-                </div>
-                <ThemePreview theme={selectedTheme} />
-              </>
-            ) : (
-              <p className="setupWizard__hint">Please select a theme to see the preview.</p>
-            )}
-          </div>
-        );
-    }
-  };
-
-  const showSkipButton = isWelcome && onSkip && activeStep !== 'terms';
-  const showCancelButton = !isWelcome && onCancel;
-
-  return (
-    <div className={`setupWizard ${!isWelcome ? 'setupWizard--modal' : ''}`}>
-      <div className="setupWizard__container">
-        <div className="setupWizard__header">
-          <h1 className="setupWizard__title">
-            {isWelcome ? 'Get Started' : 'Create New Workspace'}
-          </h1>
-          <div className="setupWizard__headerActions">
-            {showCancelButton && (
-              <button
-                className="setupWizard__cancelBtn"
-                onClick={onCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-            )}
-            {showSkipButton && (
-              <button
-                className="setupWizard__skipBtn"
-                onClick={handleSkip}
-                disabled={isSubmitting}
-              >
-                Skip Setup
-              </button>
-            )}
-          </div>
+  return <section className={`workspace-setup setupWizard${isWelcome ? '' : ' setupWizard--modal'}`} aria-labelledby={`${id}-title`}>
+    <div className="setupWizard__container">
+      <div className="setupWizard__header">
+        <Heading id={`${id}-title`} className="setupWizard__title">{isWelcome ? 'Get Started' : 'Create New Workspace'}</Heading>
+        <div className="setupWizard__headerActions">
+          {!isWelcome && onCancel && step !== 'terms' && <button type="button" className="setupWizard__cancelBtn" disabled={action.pending} onClick={() => {
+            if (flow.draft || !dirty || window.confirm('You have unsaved changes. Discard them?')) onCancel();
+          }}>{flow.draft ? 'Close setup' : 'Cancel'}</button>}
+          {skip && onSkip && step !== 'terms' && <button type="button" className="setupWizard__skipBtn" disabled={locked}
+            onClick={() => start(skip, onSkip)}>Skip Setup</button>}
         </div>
-
-        <nav className="setupWizard__tabs">
-          {steps.map((step, index) => (
-            <button
-              key={step.id}
-              className={`setupWizard__tab ${activeStep === step.id ? 'setupWizard__tab--active' : ''}`}
-              onClick={() => {
-                // Allow clicking only if previous steps are complete
-                if (index === 0 || canProceed(steps[index - 1].id)) {
-                  // Don't allow going back to terms if already accepted
-                  if (step.id === 'terms' && termsAccepted) return;
-                  setActiveStep(step.id);
-                }
-              }}
-              disabled={index > 0 && !canProceed(steps[index - 1].id)}
-            >
-              <span className="setupWizard__tabNumber">{index + 1}</span>
-              {step.label}
-            </button>
-          ))}
-        </nav>
-
-        {error && (
-          <div className="setupWizard__error" role="alert">
-            {error}
+      </div>
+      {action.error && <ContentState kind="error" title="Unable to finish setup">{action.error}</ContentState>}
+      {flow.started && <div className="workspace-setup__continuation" role="status">
+        <p>Your setup details are kept. Continue to check the result and finish setup.</p>
+        <button type="button" className="setupWizard__btn setupWizard__btn--primary" disabled={action.pending}
+          onClick={resume ?? (() => start(() => flow.complete(flow.draft!), onComplete))}>
+          {action.pending ? 'Finishing setup...' : 'Continue setup'}
+        </button>
+      </div>}
+      <div className="workspace-setup__body">
+        <fieldset className="workspace-setup__fields" disabled={locked} aria-busy={action.pending}>
+          <nav className="setupWizard__tabs" aria-label="Workspace setup steps">
+            {steps.map((item, index) => <button type="button" key={item.id} className={`setupWizard__tab${step === item.id ? ' setupWizard__tab--active' : ''}`}
+              aria-current={step === item.id ? 'step' : undefined} disabled={!available[item.id]} onClick={() => setStep(item.id)}>
+              <span className="setupWizard__tabNumber" aria-hidden="true">{index + 1}</span>{item.label}
+            </button>)}
+          </nav>
+          <div className="setupWizard__content">
+            {step === 'terms' && <TermsAcceptance onStatusChange={setTermsStatus} onAccepted={async () => {
+              await refetch({ throwOnError: true });
+              setTermsAccepted(true);
+              setStep('details');
+            }} />}
+            {step === 'details' && <>
+              {isWelcome && <div className="workspace-setup__intro">
+                <h2>Welcome to OneBigHead!</h2>
+                <p>Let's get you set up. First, tell us a bit about yourself and your first collection.</p>
+              </div>}
+              <div className="setupWizard__field">
+                <label htmlFor={`${id}-workspace`} className="setupWizard__label">{isWelcome ? 'Organization / Workspace Name' : 'New Workspace Name'}<span aria-hidden="true"> *</span></label>
+                <input id={`${id}-workspace`} className="setupWizard__input" maxLength={200} value={workspaceName} onChange={event => setWorkspaceName(event.target.value)}
+                  aria-required="true" aria-describedby={`${id}-hint`} autoFocus placeholder={isWelcome ? 'Your name, company, or workspace' : 'Enter workspace name'} />
+                <p id={`${id}-hint`} className="setupWizard__hint">This is how your workspace will be identified.</p>
+              </div>
+              <div className="setupWizard__field">
+                <label htmlFor={`${id}-collection`} className="setupWizard__label">{isWelcome ? 'First Collection Name' : 'Collection Name'}{isWelcome && <span aria-hidden="true"> *</span>}</label>
+                <input id={`${id}-collection`} className="setupWizard__input" maxLength={200} value={collectionName} onChange={event => setCollectionName(event.target.value)} aria-required={isWelcome}
+                  placeholder={isWelcome ? 'e.g., My Book Collection' : "Defaults to 'My Collection'"} />
+              </div>
+              <div className="setupWizard__field">
+                <label htmlFor={`${id}-description`} className="setupWizard__label">Description</label>
+                <textarea id={`${id}-description`} className="setupWizard__textarea" maxLength={1000} value={description} onChange={event => setDescription(event.target.value)} rows={3} placeholder="What will you be collecting?" />
+              </div>
+            </>}
+            {step === 'theme' && <>
+              <p className="setupWizard__hint">Choose a theme to get started with pre-configured templates and categories. You can always customize these later.</p>
+              <SetupThemePicker themes={themes} loading={themesLoading} error={themesError} retry={loadThemes} selectedId={selectedTheme?.themeId} select={selectTheme} />
+            </>}
+            {step === 'preview' && (selectedTheme ? <>
+              <div className="setupWizard__summary">
+                <h3 className="setupWizard__summaryTitle">Setup Summary</h3>
+                <dl className="setupWizard__summaryList">
+                  <dt>Workspace Name</dt><dd>{workspaceName.trim()}</dd>
+                  <dt>Collection Name</dt><dd>{collectionName.trim() || 'My Collection'}</dd>
+                  {description.trim() && <><dt>Description</dt><dd>{description.trim()}</dd></>}
+                  <dt>Theme</dt><dd>{selectedTheme.name}</dd>
+                </dl>
+              </div>
+              <ThemePreview theme={selectedTheme} />
+            </> : <ContentState kind="empty" title="Choose an available theme before creating the workspace" />)}
           </div>
-        )}
-
-        {renderStepContent()}
-
-        {/* Hide navigation footer on terms step - TermsAcceptance has its own button */}
-        {activeStep !== 'terms' && (
-          <div className="setupWizard__footer">
-            <button
-              className="setupWizard__btn setupWizard__btn--secondary"
-              onClick={handlePrevious}
-              disabled={
-                currentStepIndex === 0 ||
-                (steps[currentStepIndex - 1]?.id === 'terms' && termsAccepted) ||
-                isSubmitting
-              }
-            >
-              Previous
-            </button>
-
-            {activeStep === 'preview' ? (
-              <button
-                className="setupWizard__btn setupWizard__btn--primary"
-                onClick={handleSubmit}
-                disabled={!canProceed('details') || !canProceed('theme') || isSubmitting}
-              >
-                {isSubmitting ? 'Creating...' : isWelcome ? 'Get Started' : 'Create Workspace'}
-              </button>
-            ) : (
-              <button
-                className="setupWizard__btn setupWizard__btn--primary"
-                onClick={handleNext}
-                disabled={!canProceed(activeStep)}
-              >
-                Next
-              </button>
-            )}
-          </div>
-        )}
+          {step !== 'terms' && !flow.started && <div className="setupWizard__footer">
+            <button type="button" className="setupWizard__btn setupWizard__btn--secondary" disabled={step === 'details'} onClick={() => setStep(step === 'preview' ? 'theme' : 'details')}>Previous</button>
+            {step === 'preview' ? <button type="button" className="setupWizard__btn setupWizard__btn--primary" disabled={!available.preview}
+              onClick={() => start(() => flow.complete({ workspaceName: workspaceName.trim(), collectionName: collectionName.trim(), description: description.trim(), themeId: selectedTheme!.themeId }), onComplete)}>
+              {action.pending ? 'Creating...' : isWelcome ? 'Get Started' : 'Create Workspace'}
+            </button> : <button type="button" className="setupWizard__btn setupWizard__btn--primary" disabled={step === 'details' ? !available.theme : !available.preview}
+              onClick={() => setStep(step === 'details' ? 'theme' : 'preview')}>Next</button>}
+          </div>}
+        </fieldset>
       </div>
     </div>
-  );
+  </section>;
 }
 
 export default WorkspaceSetupWizard;

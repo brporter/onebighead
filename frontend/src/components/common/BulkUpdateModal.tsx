@@ -1,24 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { bulkUpdatesApi } from '../../api/bulkUpdates';
-import type { BulkUpdateJobResponse, EnqueueBulkUpdateRequest } from '../../api/bulkUpdates';
+import { isBulkUpdateActive, useBulkUpdateMonitor } from '../../data/bulkUpdates/useBulkUpdateMonitor';
+import { useBulkUpdateSubmission } from '../../data/bulkUpdates/useBulkUpdateSubmission';
+import { BulkUpdateStatus } from './BulkUpdateStatus';
 import { ModalDialog } from './ModalDialog';
+import type { ScopeOption } from '../../data/bulkUpdates/types';
+import { useEditorStatus, type EditorStatusListener } from '../../data/shared/useEditorStatus';
 import '../../styles/components/BulkUpdateModal.css';
-
-type ModalPhase = 'prompt' | 'progress' | 'complete';
-
-interface ScopeOption {
-  scope: string;
-  label: string;
-  count: number;
-  templateKey?: string;
-  categoryId?: number;
-  collectionId?: number;
-}
 
 interface BulkUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete?: () => void;
+  onStatusChange?: EditorStatusListener;
   scopeOptions: ScopeOption[];
   oldProperties: { category: string; name: string }[];
   newProperties: { category: string; name: string }[];
@@ -26,215 +20,71 @@ interface BulkUpdateModalProps {
   excludeItemId?: number;
 }
 
-function BulkUpdateModal({
-  isOpen,
-  onClose,
-  onComplete,
-  scopeOptions,
-  oldProperties,
-  newProperties,
-  renameMappings,
-  excludeItemId,
-}: BulkUpdateModalProps) {
-  const [phase, setPhase] = useState<ModalPhase>('prompt');
+/** Closing unmounts the workflow, resetting selection and cancelling pending work. */
+function BulkUpdateModal(props: BulkUpdateModalProps) {
+  return props.isOpen ? <BulkUpdateDialog {...props} /> : null;
+}
+
+function BulkUpdateDialog({ onClose, onComplete, onStatusChange, scopeOptions, oldProperties, newProperties, renameMappings, excludeItemId }: BulkUpdateModalProps) {
   const [selectedScope, setSelectedScope] = useState(0);
-  const [job, setJob] = useState<BulkUpdateJobResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const pollRef = useRef<number | null>(null);
+  const submission = useBulkUpdateSubmission(bulkUpdatesApi);
+  const monitor = useBulkUpdateMonitor(submission.job, bulkUpdatesApi);
+  const inProgress = submission.submitting || (monitor.job !== null && isBulkUpdateActive(monitor.job) && !monitor.error);
+  const hasJob = monitor.job !== null;
+  useEditorStatus(false, inProgress, onStatusChange);
 
-  const stopPolling = useCallback(() => {
-    if (pollRef.current !== null) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  }, []);
-
-  // Reset state when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      void Promise.resolve().then(() => {
-        setPhase('prompt');
-        setJob(null);
-        setError(null);
-        setSelectedScope(0);
-      });
-    }
-  }, [isOpen]);
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => stopPolling();
-  }, [stopPolling]);
-
-  const startPolling = useCallback((jobId: string) => {
-    stopPolling();
-    pollRef.current = window.setInterval(async () => {
-      try {
-        const status = await bulkUpdatesApi.getStatus(jobId);
-        setJob(status);
-
-        if (status.status === 'Completed' || status.status === 'Failed') {
-          stopPolling();
-          setPhase('complete');
-        }
-      } catch {
-        stopPolling();
-        setError('Failed to check update status');
-        setPhase('complete');
-      }
-    }, 500);
-  }, [stopPolling]);
-
-  const handleApply = async () => {
+  function handleApply() {
     const option = scopeOptions[selectedScope];
-    if (!option) return;
+    void submission.submit({
+      scope: option.scope, templateKey: option.templateKey, categoryId: option.categoryId,
+      collectionId: option.collectionId, excludeItemId, oldProperties, newProperties, renameMappings,
+    });
+  }
 
-    setError(null);
-
-    const request: EnqueueBulkUpdateRequest = {
-      scope: option.scope,
-      templateKey: option.templateKey,
-      categoryId: option.categoryId,
-      collectionId: option.collectionId,
-      excludeItemId,
-      oldProperties: oldProperties.map(p => ({ category: p.category, name: p.name })),
-      newProperties: newProperties.map(p => ({ category: p.category, name: p.name })),
-      renameMappings: renameMappings?.map(m => ({
-        oldCategory: m.oldCategory,
-        oldName: m.oldName,
-        newCategory: m.newCategory,
-        newName: m.newName,
-      })),
-    };
-
-    try {
-      const result = await bulkUpdatesApi.enqueue(request);
-      setJob(result);
-      setPhase('progress');
-      startPolling(result.jobId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start bulk update');
-    }
-  };
-
-  const handleClose = () => {
-    if (phase === 'progress') return;
-    stopPolling();
-    if (phase === 'complete') {
-      onComplete?.();
-    }
+  function handleClose() {
+    if (inProgress) return;
+    if (hasJob) onComplete?.();
     onClose();
-  };
+  }
 
-  return (
-    <ModalDialog isOpen={isOpen} onClose={handleClose} label="Bulk property update">
-      <div className="modal bulk-update-modal">
-        <div className="modal__header">
-          <h3 className="modal__title">
-            {phase === 'prompt' && 'Apply Property Changes'}
-            {phase === 'progress' && 'Updating Items...'}
-            {phase === 'complete' && 'Update Complete'}
-          </h3>
-          {phase !== 'progress' && (
-            <button className="modal__close" onClick={handleClose} type="button">
-              &times;
-            </button>
-          )}
-        </div>
+  const title = !hasJob ? 'Apply Property Changes' : inProgress ? 'Updating Items…' :
+    monitor.error ? 'Update status unavailable' : monitor.job!.status === 'Failed' ? 'Update failed' : 'Update complete';
 
-        <div className="modal__body">
-          {phase === 'prompt' && (
-            <>
-              <p className="modal__info">
-                Apply these property changes to other existing items?
-              </p>
-
-              {scopeOptions.length === 1 ? (
-                <p className="bulk-update-modal__count">
-                  {scopeOptions[0].count} {scopeOptions[0].count === 1 ? 'item' : 'items'} {scopeOptions[0].label}
-                </p>
-              ) : (
-                <div className="bulk-update-modal__scopes">
-                  {scopeOptions.map((option, index) => (
-                    <label key={option.scope + (option.categoryId ?? '') + (option.collectionId ?? '')} className="bulk-update-modal__scope">
-                      <input
-                        type="radio"
-                        name="bulkUpdateScope"
-                        checked={selectedScope === index}
-                        onChange={() => setSelectedScope(index)}
-                      />
-                      <span>{option.count} {option.count === 1 ? 'item' : 'items'} {option.label}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {error && <p className="modal__error">{error}</p>}
-
-              <div className="modal__actions">
-                <button
-                  className="modal__button modal__button--primary"
-                  onClick={handleApply}
-                  disabled={scopeOptions[selectedScope]?.count === 0}
-                  type="button"
-                >
-                  {scopeOptions.length === 1 ? 'Apply to All' : 'Apply'}
-                </button>
-                <button
-                  className="modal__button modal__button--secondary"
-                  onClick={handleClose}
-                  type="button"
-                >
-                  Skip
-                </button>
-              </div>
-            </>
-          )}
-
-          {phase === 'progress' && job && (
-            <div className="bulk-update-modal__progress">
-              <progress
-                className="bulk-update-modal__bar"
-                aria-label="Items updated"
-                value={job.totalItems > 0 ? job.processedItems + job.failedItems : undefined}
-                max={job.totalItems || 1}
-              />
-              <p className="bulk-update-modal__progress-text">
-                {job.processedItems + job.failedItems} / {job.totalItems} items
-              </p>
-            </div>
-          )}
-
-          {phase === 'complete' && (
-            <>
-              {job?.status === 'Completed' && (
-                <p className="bulk-update-modal__summary">
-                  Updated {job.processedItems} {job.processedItems === 1 ? 'item' : 'items'}.
-                  {job.failedItems > 0 && ` (${job.failedItems} skipped)`}
-                </p>
-              )}
-              {job?.status === 'Failed' && (
-                <p className="modal__error">
-                  Update failed: {job.errorMessage ?? 'Unknown error'}
-                </p>
-              )}
-              {error && <p className="modal__error">{error}</p>}
-
-              <div className="modal__actions">
-                <button
-                  className="modal__button modal__button--primary"
-                  onClick={handleClose}
-                  type="button"
-                >
-                  Close
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+  return <ModalDialog isOpen onClose={handleClose} label="Bulk property update">
+    <div className="modal bulk-update-modal" aria-busy={submission.submitting}>
+      <div className="modal__header">
+        <h3 className="modal__title">{title}</h3>
+        {!inProgress && <button className="modal__close" onClick={handleClose} type="button" aria-label="Close bulk update">&times;</button>}
       </div>
-    </ModalDialog>
-  );
+      <div className="modal__body">
+        {!hasJob ? <>
+          <p className="modal__info">Apply these property changes to other existing items?</p>
+          {scopeOptions.length === 1 ? <p className="bulk-update-modal__count">
+            {scopeOptions[0].count} {scopeOptions[0].count === 1 ? 'item' : 'items'} {scopeOptions[0].label}
+          </p> : <div className="bulk-update-modal__scopes">
+            {scopeOptions.map((option, index) => <label key={index} className="bulk-update-modal__scope">
+              <input type="radio" name="bulkUpdateScope" checked={selectedScope === index}
+                disabled={submission.submitting} onChange={() => setSelectedScope(index)} />
+              <span>{option.count} {option.count === 1 ? 'item' : 'items'} {option.label}</span>
+            </label>)}
+          </div>}
+          {submission.error && <p className="modal__error" role="alert">{submission.error}</p>}
+          <div className="modal__actions">
+            <button className="modal__button modal__button--primary" onClick={handleApply}
+              disabled={submission.submitting || !scopeOptions[selectedScope]?.count} type="button">
+              {submission.submitting ? 'Starting update…' : scopeOptions.length === 1 ? 'Apply to All' : 'Apply'}
+            </button>
+            <button className="modal__button modal__button--secondary" onClick={handleClose} disabled={submission.submitting} type="button">Skip</button>
+          </div>
+        </> : <>
+          <BulkUpdateStatus job={monitor.job} error={monitor.error} onRetry={monitor.retry} />
+          {!inProgress && <div className="modal__actions">
+            <button className="modal__button modal__button--primary" onClick={handleClose} type="button">Close</button>
+          </div>}
+        </>}
+      </div>
+    </div>
+  </ModalDialog>;
 }
 
 export { BulkUpdateModal };
