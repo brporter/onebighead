@@ -51,10 +51,14 @@ it('identifies current workspaces and serializes switch, leave and restore actio
   fireEvent.click(screen.getByRole('button', { name: 'Leave Shared' }));
   await waitFor(() => expect(refetch).toHaveBeenCalledTimes(2));
   vi.mocked(workspacesApi.restoreWorkspace).mockRejectedValueOnce(new Error('Restore unavailable'));
+  // Session refresh starts a separate recovery-list read; wait for its UI too.
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Restore Archive' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Restore Archive' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Restore unavailable');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Restore Archive' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Restore Archive' }));
   await waitFor(() => expect(refetch).toHaveBeenCalledTimes(4));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Restore Archive' })).toBeEnabled());
 });
 
 it('reports failed recovery reads, retries them, and explains empty membership lists', async () => {
